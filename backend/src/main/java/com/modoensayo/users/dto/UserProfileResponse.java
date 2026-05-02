@@ -5,5 +5,7 @@ public record UserProfileResponse(
         String email,
         String fullName,
         String phone,
-        java.util.List<String> roles
+        java.util.List<String> roles,
+        Double averageStudentScore,
+        Long totalStudentReviews
 ) {}

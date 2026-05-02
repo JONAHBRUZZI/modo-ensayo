@@ -35,7 +35,7 @@ docker compose up -d postgres pgadmin
 pgAdmin queda disponible en `http://localhost:5050`.
 
 Credenciales por defecto (archivo `.env.example`):
-- Email: `admin@modoensayo.local`
+- Email: `admin@modoensayo.com`
 - Password: `admin123`
 
 Datos para registrar el server de PostgreSQL dentro de pgAdmin:
@@ -44,6 +44,37 @@ Datos para registrar el server de PostgreSQL dentro de pgAdmin:
 - Database: `modoensayo`
 - Username: `modoensayo`
 - Password: `modoensayo`
+
+## Integracion Mercado Pago
+
+La plataforma utiliza **Mercado Pago Checkout Pro** para procesar pagos.
+
+### Flujo de Pago
+1. Usuario agrega clases al carrito
+2. Al hacer clic en "Pagar con Mercado Pago", el backend crea una **preferencia de pago**
+3. Usuario es redirigido a Mercado Pago (modo sandbox en desarrollo)
+4. Despues del pago, Mercado Pago redirige a:
+   - `/payment/success` - Pago exitoso
+   - `/payment/failure` - Pago cancelado/rechazado
+   - `/payment/pending` - Pago en proceso (efectivo, transferencia)
+
+### Configuracion
+Para desarrollo, configurar las siguientes variables de entorno:
+```bash
+MERCADOPAGO_PUBLIC_KEY=TEST-xxxxxxxxxxxxxxxxxxxx
+MERCADOPAGO_ACCESS_TOKEN=TEST-xxxxxxxxxxxxxxxxxxxx
+APP_FRONTEND_URL=http://localhost:5173
+APP_BACKEND_URL=https://tu-subdominio.ngrok-free.app
+```
+
+> Para recibir webhooks en local, levanta un tunel con ngrok:
+> `ngrok http 8080`
+> y usa la URL HTTPS en `APP_BACKEND_URL`.
+
+Para produccion, usar credenciales de produccion:
+```bash
+MERCADOPAGO_ACCESS_TOKEN=APP_USR-...
+```
 
 ## Despliegue AWS con Terraform
 

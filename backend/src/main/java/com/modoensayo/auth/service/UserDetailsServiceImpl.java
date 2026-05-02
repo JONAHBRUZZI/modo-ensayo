@@ -1,7 +1,7 @@
 package com.modoensayo.auth.service;
 
-import com.modoensayo.auth.domain.User;
-import com.modoensayo.auth.repository.UserRepository;
+import com.modoensayo.users.domain.User;
+import com.modoensayo.users.repository.UserRepository;
 import com.modoensayo.users.repository.UserRoleRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -34,7 +34,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .map(ur -> new SimpleGrantedAuthority("ROLE_" + ur.getRole().getName()))
                 .toList();
 
-        return new org.springframework.security.core.userdetails.User(
+        return new CustomUserDetails(
+                user.getId().toString(),
                 user.getEmail(),
                 user.getPasswordHash(),
                 authorities

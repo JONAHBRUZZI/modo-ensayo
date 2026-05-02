@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface VenueRepository extends JpaRepository<Venue, UUID> {
     List<Venue> findByStatus(String status);
+    long countByStatus(String status);
+    List<Venue> findByAdminId(UUID adminId);
 }

@@ -1,8 +1,16 @@
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /app
+
+COPY backend/pom.xml ./
+RUN mvn dependency:go-offline -B || true
+
+COPY backend/src ./src
+RUN mvn package -DskipTests -B
+
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Placeholder image for initial scaffold.
-COPY backend /app/backend
+COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
-CMD ["sh", "-c", "echo 'Backend scaffold ready'; sleep infinity"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

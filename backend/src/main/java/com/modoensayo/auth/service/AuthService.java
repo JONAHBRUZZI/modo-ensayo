@@ -1,17 +1,17 @@
 package com.modoensayo.auth.service;
 
-import com.modoensayo.auth.domain.User;
 import com.modoensayo.auth.dto.AuthResponse;
 import com.modoensayo.auth.dto.LoginRequest;
 import com.modoensayo.auth.dto.RegisterRequest;
-import com.modoensayo.auth.repository.UserRepository;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.security.JwtUtil;
 import com.modoensayo.users.domain.Role;
+import com.modoensayo.users.domain.User;
 import com.modoensayo.users.domain.UserRole;
 import com.modoensayo.users.domain.UserRoleId;
 import com.modoensayo.users.repository.RoleRepository;
 import com.modoensayo.users.repository.UserRoleRepository;
+import com.modoensayo.users.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +53,9 @@ public class AuthService {
                 .phone(request.phone())
                 .build();
 
-        userRepository.save(user);
+
+        user = userRepository.save(user);
+
 
         Role userRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new BusinessException("Default role not found"));
@@ -84,8 +86,32 @@ public class AuthService {
                 .map(ur -> ur.getRole().getName())
                 .toList();
 
-        String token = jwtUtil.generateToken(user.getEmail(), Map.of("roles", roles));
+        String token = jwtUtil.generateToken(user.getEmail(),
+                Map.of("roles", roles, "userId", user.getId().toString()));
 
         return new AuthResponse(token, user.getEmail(), user.getFullName(), roles);
+    }
+
+    @Transactional
+    public AuthResponse requestTeacherRole(String userId) {
+        User user = userRepository.findById(java.util.UUID.fromString(userId))
+                .orElseThrow(() -> new BusinessException("User not found"));
+
+        Role teacherRole = roleRepository.findByName("TEACHER")
+                .orElseThrow(() -> new BusinessException("Teacher role not found"));
+
+        boolean alreadyTeacher = userRoleRepository.findByUserId(user.getId()).stream()
+                .anyMatch(ur -> "TEACHER".equals(ur.getRole().getName()));
+        if (alreadyTeacher) {
+            throw new BusinessException("Already a teacher");
+        }
+
+        UserRole userRoleEntity = new UserRole();
+        userRoleEntity.setId(new UserRoleId(user.getId(), teacherRole.getId()));
+        userRoleEntity.setUser(user);
+        userRoleEntity.setRole(teacherRole);
+        userRoleRepository.save(userRoleEntity);
+
+        return generateAuthResponse(user);
     }
 }

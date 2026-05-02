@@ -5,5 +5,8 @@ public record VenueResponse(
         String name,
         String address,
         String description,
+        String imageUrl,
+        String phone,
+        String email,
         String status
 ) {}

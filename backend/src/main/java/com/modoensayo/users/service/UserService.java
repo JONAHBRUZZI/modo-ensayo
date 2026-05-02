@@ -1,11 +1,13 @@
 package com.modoensayo.users.service;
 
-import com.modoensayo.auth.domain.User;
-import com.modoensayo.auth.repository.UserRepository;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
+import com.modoensayo.reviews.enums.ReviewTargetType;
+import com.modoensayo.reviews.repository.ReviewRepository;
+import com.modoensayo.users.domain.User;
 import com.modoensayo.users.dto.UpdateProfileRequest;
 import com.modoensayo.users.dto.UserProfileResponse;
 import com.modoensayo.users.repository.UserRoleRepository;
+import com.modoensayo.users.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,11 +18,14 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
+    private final ReviewRepository reviewRepository;
 
     public UserService(UserRepository userRepository,
-                       UserRoleRepository userRoleRepository) {
+                       UserRoleRepository userRoleRepository,
+                       ReviewRepository reviewRepository) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
+        this.reviewRepository = reviewRepository;
     }
 
     @Transactional(readOnly = true)
@@ -37,7 +42,9 @@ public class UserService {
                 user.getEmail(),
                 user.getFullName(),
                 user.getPhone(),
-                roles
+                roles,
+                reviewRepository.findAverageScore(ReviewTargetType.STUDENT, user.getId()),
+                reviewRepository.countByTargetTypeAndTargetId(ReviewTargetType.STUDENT, user.getId())
         );
     }
 

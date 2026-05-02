@@ -67,10 +67,11 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../hooks/useAuth'
 
 const router = useRouter()
+const route = useRoute()
 const { login } = useAuth()
 
 const form = ref({ email: '', password: '' })
@@ -83,7 +84,8 @@ const handleLogin = async () => {
 
   try {
     await login(form.value.email, form.value.password)
-    router.push({ name: 'Home' })
+    const redirect = route.query.redirect || '/'
+    router.push(redirect)
   } catch (err) {
     error.value = err.response?.data?.message || 'Credenciales invalidas. Verifica tu email y password.'
   } finally {

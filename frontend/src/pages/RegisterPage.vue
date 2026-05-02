@@ -105,10 +105,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../hooks/useAuth'
 
 const router = useRouter()
+const route = useRoute()
 const { register } = useAuth()
 
 const form = ref({
@@ -141,7 +142,8 @@ const handleRegister = async () => {
 
   try {
     await register(form.value.fullName, form.value.email, form.value.password, form.value.phone)
-    router.push({ name: 'Home' })
+    const redirect = route.query.redirect || '/'
+    router.push(redirect)
   } catch (err) {
     error.value = err.response?.data?.message || 'Error al crear la cuenta. Intenta con otro email.'
   } finally {

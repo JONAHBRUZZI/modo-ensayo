@@ -45,6 +45,9 @@ create table if not exists venues (
   name text not null,
   address text,
   description text,
+  image_url text,
+  phone text,
+  email text,
   status text check (status in ('PENDING','APPROVED','REJECTED')),
   created_at timestamptz default now()
 );
@@ -57,6 +60,12 @@ create table if not exists rooms (
   floor_type text,
   has_mirrors boolean default false,
   has_sound boolean default false,
+  has_ballet_bar boolean default false,
+  has_air_conditioning boolean default false,
+  has_natural_light boolean default false,
+  lighting text,
+  wall_color text,
+  image_url text,
   created_at timestamptz default now()
 );
 
@@ -160,4 +169,15 @@ create table if not exists notifications (
   message text,
   read boolean default false,
   created_at timestamptz default now()
+);
+
+create table if not exists attendance (
+  id uuid primary key default uuid_generate_v4(),
+  class_id uuid references classes(id),
+  beneficiary_id uuid,
+  beneficiary_type text,
+  present boolean default true,
+  marked_by text,
+  created_at timestamptz default now(),
+  unique (class_id, beneficiary_id)
 );

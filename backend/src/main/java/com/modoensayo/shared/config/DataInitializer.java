@@ -39,34 +39,34 @@ public class DataInitializer implements CommandLineRunner {
                 roleRepository.save(Role.builder().name("VENUE_ADMIN").build()));
 
         User admin = userRepository.findByEmail("admin@test.com").orElseGet(() ->
-                userRepository.save(User.builder()
+                User.builder()
                         .email("admin@test.com")
                         .fullName("Admin Principal")
-                        .build()));
+                        .build());
         admin.setPasswordHash(passwordEncoder.encode("admin123"));
         userRepository.save(admin);
 
         User teacher = userRepository.findByEmail("teacher@test.com").orElseGet(() ->
-                userRepository.save(User.builder()
+                User.builder()
                         .email("teacher@test.com")
                         .fullName("Profesor Demo")
-                        .build()));
+                        .build());
         teacher.setPasswordHash(passwordEncoder.encode("teacher123"));
         userRepository.save(teacher);
 
         User regular = userRepository.findByEmail("user@test.com").orElseGet(() ->
-                userRepository.save(User.builder()
+                User.builder()
                         .email("user@test.com")
                         .fullName("Usuario Demo")
-                        .build()));
+                        .build());
         regular.setPasswordHash(passwordEncoder.encode("user123"));
         userRepository.save(regular);
 
         User venueAdmin = userRepository.findByEmail("venueadmin@test.com").orElseGet(() ->
-                userRepository.save(User.builder()
+                User.builder()
                         .email("venueadmin@test.com")
                         .fullName("Director Sede Demo")
-                        .build()));
+                        .build());
         venueAdmin.setPasswordHash(passwordEncoder.encode("venue123"));
         userRepository.save(venueAdmin);
 

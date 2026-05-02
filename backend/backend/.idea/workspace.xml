@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="4397c2e7-f00b-4865-8b6e-c22455bf8fd5" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.env" beforeDir="false" afterPath="$PROJECT_DIR$/../.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/../.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/ModoesayoApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/ModoesayoApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/associates/controller/AssociateController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/associates/controller/AssociateController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/auth/domain/User.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/auth/repository/UserRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/auth/service/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/auth/service/AuthService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/auth/service/UserDetailsServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/auth/service/UserDetailsServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/classes/enums/ClassStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/classes/enums/ClassStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/classes/repository/ClassRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/classes/repository/ClassRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/payments/controller/PaymentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/payments/controller/PaymentController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/payments/repository/EnrollmentRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/payments/repository/EnrollmentRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/payments/repository/PaymentRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/payments/repository/PaymentRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/payments/service/PaymentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/payments/service/PaymentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/shared/security/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/shared/security/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/domain/UserRole.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/domain/UserRole.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/dto/UserProfileResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/dto/UserProfileResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/repository/UserRoleRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/repository/UserRoleRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/users/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/controller/VenueController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/controller/VenueController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/domain/Room.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/domain/Room.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/domain/Venue.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/domain/Venue.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/dto/RoomRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/dto/RoomRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/dto/RoomResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/dto/RoomResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/dto/VenueRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/dto/VenueRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/dto/VenueResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/dto/VenueResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/repository/VenueRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/repository/VenueRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/service/VenueService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/modoensayo/venues/service/VenueService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../docs/PRD.md" beforeDir="false" afterPath="$PROJECT_DIR$/../docs/PRD.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../docs/api-endpoints.md" beforeDir="false" afterPath="$PROJECT_DIR$/../docs/api-endpoints.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../docs/architecture.md" beforeDir="false" afterPath="$PROJECT_DIR$/../docs/architecture.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../docs/business-rules.md" beforeDir="false" afterPath="$PROJECT_DIR$/../docs/business-rules.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../docs/database-schema.md" beforeDir="false" afterPath="$PROJECT_DIR$/../docs/database-schema.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/CartPage-DOBQ4Bd8.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/ClassesPage-CfZO_Mj_.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/HomePage-DwV9YyHW.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/LoginPage-DWHbSA3o.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/ProfilePage-BSuXWcGk.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/RegisterPage-zBQbMWEM.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/cartService-CMvlSDjE.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/index-CLt0jPJR.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/assets/index-D8hTPpgW.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/dist/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/layouts/DefaultLayout.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/layouts/DefaultLayout.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/CartPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/CartPage.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/ClassesPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/ClassesPage.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/HomePage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/HomePage.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/LoginPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/LoginPage.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/ProfilePage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/ProfilePage.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/RegisterPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/RegisterPage.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/router/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/router/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/cartService.js" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/cartService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/userService.js" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/userService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../infra/docker/backend.Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/../infra/docker/backend.Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../infra/docker/frontend.Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/../infra/docker/frontend.Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../infra/postgres/init/01_schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../infra/postgres/init/01_schema.sql" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="3DAsdpRkP4Vjk7nTMybR1Hd7nNy" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.modo ensayo.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Spring Boot.ModoesayoApplication.executor": "Run",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration name="modo ensayo" type="Application" factoryName="Application">
+      <envs>
+        <env name="MERCADOPAGO_ACCESS_TOKEN" value="TEST-6beb3502-8dd5-4601-af00-e72a105973ec" />
+        <env name="APP_BACKEND_URL" value="https://5e71-200-73-246-100.ngrok-free.app" />
+        <env name="APP_FRONTEND_URL" value="http://localhost:5173" />
+      </envs>
+      <option name="MAIN_CLASS_NAME" value="com.modoensayo.ModoesayoApplication" />
+      <module name="modoensayo" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.31033.145" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="4397c2e7-f00b-4865-8b6e-c22455bf8fd5" name="Changes" comment="" />
+      <created>1777736300808</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1777736300808</updated>
+      <workItem from="1777736302945" duration="7000" />
+    </task>
+    <servers />
+  </component>
+</project>

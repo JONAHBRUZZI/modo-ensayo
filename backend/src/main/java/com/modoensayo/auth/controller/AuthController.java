@@ -4,8 +4,10 @@ import com.modoensayo.auth.dto.AuthResponse;
 import com.modoensayo.auth.dto.LoginRequest;
 import com.modoensayo.auth.dto.RegisterRequest;
 import com.modoensayo.auth.service.AuthService;
+import com.modoensayo.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,5 +31,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/request-teacher")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AuthResponse> requestTeacherRole() {
+        String userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(authService.requestTeacherRole(userId));
     }
 }

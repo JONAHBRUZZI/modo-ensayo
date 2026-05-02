@@ -19,4 +19,9 @@ export const cartService = {
     const { data } = await api.post('/payments/checkout', checkoutData)
     return data
   },
+
+  async createMercadoPagoPreference() {
+    const { data } = await api.post('/payments/mercadopago/create-preference')
+    return data
+  },
 }

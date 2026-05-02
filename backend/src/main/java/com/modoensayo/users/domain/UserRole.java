@@ -1,6 +1,6 @@
 package com.modoensayo.users.domain;
 
-import com.modoensayo.auth.domain.User;
+import com.modoensayo.users.domain.User;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;

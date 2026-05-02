@@ -34,7 +34,11 @@ public class Venue extends BaseEntity {
 
     private String address;
     private String description;
+    private String imageUrl;
+    private String phone;
+    private String email;
 
     @Column(nullable = false)
-    private String status;
+    @Builder.Default
+    private String status = "PENDING";
 }

@@ -7,5 +7,11 @@ public record RoomResponse(
         Integer capacity,
         String floorType,
         Boolean hasMirrors,
-        Boolean hasSound
+        Boolean hasSound,
+        Boolean hasBalletBar,
+        Boolean hasAirConditioning,
+        Boolean hasNaturalLight,
+        String lighting,
+        String wallColor,
+        String imageUrl
 ) {}

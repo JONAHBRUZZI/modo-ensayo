@@ -38,7 +38,7 @@ services:
       dockerfile: infra/docker/backend.Dockerfile
     container_name: modoensayo-backend
     env_file:
-      - .env.example
+      - .env
     ports:
       - "${BACKEND_PORT}:8080"
     depends_on:

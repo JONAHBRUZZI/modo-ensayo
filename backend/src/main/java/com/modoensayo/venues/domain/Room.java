@@ -45,4 +45,19 @@ public class Room extends BaseEntity {
 
     @Builder.Default
     private Boolean hasSound = false;
+
+    @Builder.Default
+    private Boolean hasBalletBar = false;
+
+    @Builder.Default
+    private Boolean hasAirConditioning = false;
+
+    @Builder.Default
+    private Boolean hasNaturalLight = false;
+
+    private String lighting;
+
+    private String wallColor;
+
+    private String imageUrl;
 }

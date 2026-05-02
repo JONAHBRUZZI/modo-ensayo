@@ -8,6 +8,8 @@ import java.util.UUID;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     List<Enrollment> findByBeneficiaryId(UUID beneficiaryId);
+    List<Enrollment> findByClassId(UUID classId);
+    long countByClassId(UUID classId);
     boolean existsByClassIdAndBeneficiaryTypeAndBeneficiaryId(
             UUID classId, String beneficiaryType, UUID beneficiaryId);
 }

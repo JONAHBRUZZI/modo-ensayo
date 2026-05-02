@@ -5,5 +5,7 @@ public enum ClassStatus {
     PUBLISHED,
     FULL,
     CANCELLED,
-    COMPLETED
+    POR_VALIDAR,
+    COMPLETED,
+    SUSPENDED
 }

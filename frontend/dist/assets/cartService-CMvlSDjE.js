@@ -1,1 +1,0 @@
-import{l as a}from"./index-D8hTPpgW.js";const c={async addToCart(t){const{data:e}=await a.post("/payments/cart",t);return e},async getCart(){const{data:t}=await a.get("/payments/cart");return t},async removeFromCart(t){await a.delete(`/payments/cart/${t}`)},async checkout(t){const{data:e}=await a.post("/payments/checkout",t);return e}};export{c};

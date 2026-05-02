@@ -1,0 +1,1 @@
+import{y as t}from"./index-DbqgjRYM.js";const c={async list(){const{data:a}=await t.get("/associates");return a},async create(a){const{data:s}=await t.post("/associates",a);return s},async delete(a){await t.delete(`/associates/${a}`)}};export{c as a};

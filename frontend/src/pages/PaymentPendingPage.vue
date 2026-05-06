@@ -1,22 +1,21 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8 text-center">
-      <div class="bg-white p-8 rounded-lg shadow-md">
-        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
-          <svg class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <div class="min-h-screen flex items-center justify-center py-12 px-4">
+    <div class="max-w-md w-full text-center">
+      <div class="bg-[#161824] p-8 rounded-2xl border border-white/10 shadow-2xl">
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-500/20 border border-amber-500/30 mb-5">
+          <svg class="h-8 w-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 class="text-3xl font-extrabold text-gray-900 mb-2">Pago en Proceso</h2>
-        <p class="text-gray-600 mb-6">Tu pago está siendo procesado. Te notificaremos por correo cuando se complete.</p>
-        
+        <h2 class="text-3xl font-bold text-white mb-2">Pago en Proceso</h2>
+        <p class="text-gray-400 mb-8 text-sm leading-relaxed">Tu pago está siendo procesado. Te notificaremos por correo cuando se complete.</p>
         <div class="space-y-3">
-          <router-link to="/profile" 
-                       class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+          <router-link to="/profile"
+                       class="w-full flex justify-center py-3 px-4 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors">
             Ver mis inscripciones
           </router-link>
-          <router-link to="/" 
-                       class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+          <router-link to="/"
+                       class="w-full flex justify-center py-3 px-4 rounded-xl text-sm font-medium border border-white/15 text-gray-300 hover:bg-white/5 transition-colors">
             Volver al inicio
           </router-link>
         </div>

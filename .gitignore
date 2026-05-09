@@ -1,0 +1,18 @@
+# Entornos y variables
+.env
+.env.*
+
+# IDEs
+.idea/
+.vscode/
+
+# Node y frontend
+frontend/node_modules/
+frontend/dist/
+
+# Maven y Java
+backend/target/
+
+# Archivos del sistema
+Thumbs.db
+.DS_Store

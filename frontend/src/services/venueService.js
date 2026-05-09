@@ -1,6 +1,10 @@
 import api from './api'
 
 export const venueService = {
+  async create(request) {
+    const { data } = await api.post('/venues', request)
+    return data
+  },
   async listApproved() {
     const { data } = await api.get('/venues')
     return data

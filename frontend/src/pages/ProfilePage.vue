@@ -1,165 +1,306 @@
 <template>
-  <div class="max-w-2xl mx-auto">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-white mb-2">Mi Perfil</h1>
-      <p class="text-gray-400">Gestiona tu información personal</p>
+  <div class="max-w-2xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-white mb-1">Mi Perfil</h1>
+        <p class="text-gray-400 text-sm">Gestiona tu información personal</p>
+      </div>
+      <button v-if="!editMode" @click="editMode = true"
+              class="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm transition-colors">
+        Editar
+      </button>
     </div>
 
-    <!-- Profile Card -->
+    <!-- Tarjeta de perfil -->
     <div class="bg-[#161824] rounded-2xl border border-white/10 overflow-hidden">
-      <div class="h-32 bg-gradient-to-r from-indigo-600 to-purple-600"></div>
+      <!-- Banner -->
+      <div class="h-20 bg-gradient-to-r from-indigo-600/40 via-purple-600/40 to-pink-600/40"></div>
 
+      <!-- Avatar + datos básicos -->
       <div class="px-6 pb-6">
-        <div class="relative flex justify-between items-end -mt-12 mb-6">
-          <div class="w-24 h-24 bg-[#161824] rounded-2xl border-4 border-[#161824] shadow-xl flex items-center justify-center">
-            <span class="text-4xl font-bold text-indigo-400">
-              {{ user?.fullName?.charAt(0)?.toUpperCase() || 'U' }}
-            </span>
+        <div class="flex items-end gap-4 -mt-8 mb-5">
+          <div class="relative">
+            <div class="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center border-2 border-[#161824] shadow-xl">
+              <span class="text-xl font-bold text-white">{{ userInitial }}</span>
+            </div>
+            <button v-if="editMode" @click="triggerAvatarUpload"
+                    class="absolute -bottom-1 -right-1 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center transition-colors">
+              <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+            <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="handleAvatarChange" />
           </div>
-          <button @click="isEditing = !isEditing"
-                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors">
-            {{ isEditing ? 'Cancelar' : 'Editar Perfil' }}
-          </button>
+
+          <!-- Badge identidad -->
+          <div class="mb-1">
+            <EstadoBadge v-if="identidadValidada" estado="CONFIRMADA" />
+            <EstadoBadge v-else-if="identidadEnRevision" estado="EN_REVISION" />
+            <router-link v-else to="/profile/identity"
+                         class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-full text-xs font-semibold hover:bg-amber-500/25 transition-colors">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Sin verificar
+            </router-link>
+          </div>
         </div>
 
-        <!-- View Mode -->
-        <div v-if="!isEditing" class="space-y-5">
-          <div>
-            <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</label>
-            <p class="text-base font-semibold text-white mt-1">{{ profile?.fullName }}</p>
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Email</label>
-            <p class="text-base text-gray-300 mt-1">{{ profile?.email }}</p>
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</label>
-            <p class="text-base text-gray-300 mt-1">{{ profile?.phone || 'No registrado' }}</p>
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</label>
-            <div class="flex flex-wrap gap-2 mt-2">
-              <span v-for="role in profile?.roles" :key="role"
-                    class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-medium rounded-full border border-indigo-500/30">
-                {{ role }}
-              </span>
+        <!-- Campos -->
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Nombre Registrado
+                <span class="ml-1 text-[10px] text-gray-600 normal-case font-normal">(no modificable)</span>
+              </label>
+              <div class="flex items-center gap-2">
+                <p class="text-white text-sm font-medium">{{ profile?.fullName || '—' }}</p>
+                <svg class="w-3.5 h-3.5 text-gray-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">RUT</label>
+              <p class="text-white text-sm font-medium font-mono">{{ profile?.rut || '—' }}</p>
+              <p class="text-xs text-gray-600 mt-0.5">No modificable</p>
             </div>
           </div>
+
+          <!-- Nombre social -->
           <div>
-            <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Score como alumno</label>
-            <p class="text-base text-gray-300 mt-1">
-              {{ profile?.averageStudentScore ? Number(profile.averageStudentScore).toFixed(2) : 'Sin evaluaciones' }}
-              <span class="text-sm text-gray-500 ml-1">({{ profile?.totalStudentReviews || 0 }} evaluaciones)</span>
-            </p>
+            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+              Nombre Social
+              <span class="ml-1 text-[10px] text-gray-500 normal-case font-normal">(cómo te mostramos en el sistema)</span>
+            </label>
+            <input v-if="editMode" v-model="form.socialName" placeholder="Ej: Carlos, Caro, Profe..."
+                   class="w-full px-3 py-2 bg-[#0d0f1a] border border-white/15 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+            <p v-if="!editMode && profile?.socialName" class="text-white text-sm">{{ profile.socialName }}</p>
+            <p v-else-if="!editMode" class="text-gray-500 text-sm italic">Sin nombre social</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
+              <p class="text-white text-sm">{{ profile?.email || '—' }}</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Teléfono</label>
+              <input v-if="editMode" v-model="form.phone"
+                     class="w-full px-3 py-2 bg-[#0d0f1a] border border-white/15 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              <p v-else class="text-white text-sm">{{ profile?.phone || '—' }}</p>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Nacimiento</label>
+            <input v-if="editMode" v-model="form.birthdate" type="date"
+                   class="w-full px-3 py-2 bg-[#0d0f1a] border border-white/15 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all [color-scheme:dark]" />
+            <p v-else class="text-white text-sm">{{ formatDate(profile?.birthdate) || '—' }}</p>
+          </div>
+
+          <!-- Cambiar contraseña -->
+          <div v-if="editMode" class="border-t border-white/5 pt-4 space-y-3">
+            <p class="text-sm font-medium text-gray-300">Cambiar Contraseña <span class="text-gray-500 font-normal text-xs">(opcional)</span></p>
+            <input v-model="form.newPassword" type="password" placeholder="Nueva contraseña"
+                   class="w-full px-3 py-2 bg-[#0d0f1a] border border-white/15 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+            <input v-if="form.newPassword" v-model="form.confirmPassword" type="password" placeholder="Confirmar nueva contraseña"
+                   class="w-full px-3 py-2 bg-[#0d0f1a] border border-white/15 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
           </div>
         </div>
 
-        <!-- Edit Mode -->
-        <form v-else @submit.prevent="updateProfile" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Nombre Completo</label>
-            <input v-model="editForm.fullName" type="text" required
-                   class="w-full px-3 py-2.5 bg-[#0d0f1a] border border-white/15 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-            <input :value="profile?.email" type="email" disabled
-                   class="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-gray-500 cursor-not-allowed">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Teléfono</label>
-            <input v-model="editForm.phone" type="tel"
-                   class="w-full px-3 py-2.5 bg-[#0d0f1a] border border-white/15 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                   placeholder="+56912345678">
-          </div>
-          <div class="flex gap-3 pt-2">
-            <button type="submit" :disabled="isSaving"
-                    class="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-              {{ isSaving ? 'Guardando...' : 'Guardar Cambios' }}
-            </button>
-            <button type="button" @click="isEditing = false"
-                    class="px-4 py-2.5 border border-white/15 text-gray-300 rounded-lg font-medium hover:bg-white/5 transition-colors">
-              Cancelar
-            </button>
-          </div>
-        </form>
+        <!-- Error inline -->
+        <div v-if="saveError" class="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <svg class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p class="text-sm text-red-400">{{ saveError }}</p>
+        </div>
+
+        <!-- Acciones en modo edición -->
+        <div v-if="editMode" class="flex gap-2 mt-5">
+          <button @click="cancelEdit"
+                  class="flex-1 py-2.5 border border-white/15 text-gray-300 rounded-lg text-sm hover:bg-white/5 transition-colors">
+            Cancelar
+          </button>
+          <button @click="saveProfile" :disabled="saving"
+                  class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+            {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Quick Links -->
-    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <router-link v-for="link in quickLinks" :key="link.to" :to="link.to"
-                   class="flex items-center p-4 bg-[#161824] rounded-xl border border-white/10 hover:border-white/20 transition-all group">
-        <div class="p-2 rounded-lg mr-4 flex-shrink-0" :class="link.iconBg">
-          <component :is="'svg'" class="w-5 h-5" :class="link.iconColor" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="link.iconPath" />
-          </component>
-        </div>
+    <!-- Contexto operativo -->
+    <div v-if="puedeAlternarModo" class="bg-[#161824] rounded-2xl border border-white/10 p-5">
+      <div class="flex items-center justify-between mb-4">
         <div>
-          <h4 class="font-semibold text-white text-sm group-hover:text-indigo-400 transition-colors">{{ link.title }}</h4>
-          <p class="text-xs text-gray-500 mt-0.5">{{ link.subtitle }}</p>
+          <h2 class="text-sm font-semibold text-white">Contexto operativo</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Selecciona cómo quieres operar en el sistema</p>
+        </div>
+        <span class="text-xs px-2 py-0.5 rounded-full border"
+          :class="modoActual === 'sede' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : modoActual === 'profesor' ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' : 'bg-purple-500/10 border-purple-500/30 text-purple-400'">
+          {{ modoActual === 'sede' ? 'Mi Sede activo' : modoActual === 'profesor' ? 'Maestro activo' : 'Alumno activo' }}
+        </span>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Alumno -->
+        <button @click="cambiarModo('alumno')" type="button"
+          class="flex flex-col items-center justify-center gap-1.5 flex-1 py-4 rounded-xl border transition-all duration-300"
+          :class="modoActual === 'alumno' ? 'bg-purple-500/10 border-purple-500/40 shadow-[0_0_14px_rgba(168,85,247,0.2)]' : 'bg-white/3 border-white/8 hover:border-white/15'">
+          <svg class="w-5 h-5 transition-colors duration-300"
+            :class="modoActual === 'alumno' ? 'text-purple-400 drop-shadow-[0_0_5px_rgba(168,85,247,0.8)]' : 'text-gray-500'"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span class="text-xs font-semibold transition-colors duration-300"
+            :class="modoActual === 'alumno' ? 'text-purple-300' : 'text-gray-500'">Alumno</span>
+        </button>
+
+        <!-- Maestro -->
+        <button v-if="puedeVerContextoProfesor" @click="cambiarModo('profesor')" type="button"
+          class="flex flex-col items-center justify-center gap-1.5 flex-1 py-4 rounded-xl border transition-all duration-300"
+          :class="modoActual === 'profesor' ? 'bg-indigo-500/10 border-indigo-400/40 shadow-[0_0_14px_rgba(99,102,241,0.2)]' : 'bg-white/3 border-white/8 hover:border-white/15'">
+          <svg class="w-5 h-5 transition-colors duration-300"
+            :class="modoActual === 'profesor' ? 'text-indigo-400 drop-shadow-[0_0_5px_rgba(99,102,241,0.8)]' : 'text-gray-500'"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 14l9-5-9-5-9 5 9 5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+          </svg>
+          <span class="text-xs font-semibold transition-colors duration-300"
+            :class="modoActual === 'profesor' ? 'text-indigo-300' : 'text-gray-500'">Maestro</span>
+        </button>
+
+        <!-- Mi Sede -->
+        <button v-if="puedeVerContextoSede" @click="cambiarModo('sede')" type="button"
+          class="flex flex-col items-center justify-center gap-1.5 flex-1 py-4 rounded-xl border transition-all duration-300"
+          :class="modoActual === 'sede' ? 'bg-emerald-500/10 border-emerald-400/40 shadow-[0_0_14px_rgba(16,185,129,0.2)]' : 'bg-white/3 border-white/8 hover:border-white/15'">
+          <svg class="w-5 h-5 transition-colors duration-300"
+            :class="modoActual === 'sede' ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]' : 'text-gray-500'"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <span class="text-xs font-semibold transition-colors duration-300"
+            :class="modoActual === 'sede' ? 'text-emerald-300' : 'text-gray-500'">Mi Sede</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div class="grid grid-cols-2 gap-3">
+      <router-link v-for="link in quickLinks" :key="link.to" :to="link.to"
+                   class="bg-[#161824] border border-white/10 hover:border-white/20 rounded-xl p-4 flex items-center gap-3 transition-all group">
+        <div :class="link.iconBg" class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg :class="link.iconColor" class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="link.icon" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p class="text-white text-sm font-medium group-hover:text-indigo-300 transition-colors">{{ link.label }}</p>
+          <p class="text-xs text-gray-500 truncate">{{ link.desc }}</p>
         </div>
       </router-link>
     </div>
-
-    <!-- Toast -->
-    <Transition enter-active-class="transform ease-out duration-300 transition"
-                enter-from-class="translate-y-2 opacity-0" enter-to-class="translate-y-0 opacity-100"
-                leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="showToast"
-           class="fixed bottom-4 right-4 z-50 bg-emerald-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <p class="font-semibold text-sm">Perfil actualizado correctamente</p>
-      </div>
-    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '../hooks/useAuth'
+import { useRouter } from 'vue-router'
 import { userService } from '../services/userService'
+import EstadoBadge from '../components/EstadoBadge.vue'
 
-const { user } = useAuth()
+const { user, identidadValidada, identidadEnRevision, updateUserProfile,
+        puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede,
+        modoActual, setModo } = useAuth()
+const router = useRouter()
+
+const destinos = { alumno: '/alumno/dashboard', profesor: '/profesor/dashboard', sede: '/sede/dashboard' }
+const cambiarModo = (modo) => {
+  setModo(modo)
+  router.push(destinos[modo])
+}
 const profile = ref(null)
-const isEditing = ref(false)
-const isSaving = ref(false)
-const showToast = ref(false)
-const editForm = ref({ fullName: '', phone: '' })
+const editMode = ref(false)
+const saving = ref(false)
+const saveError = ref('')
+const avatarInput = ref(null)
+const form = ref({ socialName: '', phone: '', birthdate: '', newPassword: '', confirmPassword: '' })
+
+const userInitial = computed(() => {
+  const name = profile.value?.socialName || profile.value?.fullName || ''
+  return name.charAt(0).toUpperCase() || 'U'
+})
 
 const quickLinks = [
-  { to: '/classes', title: 'Mis Clases', subtitle: 'Ver inscripciones activas', iconBg: 'bg-indigo-500/20', iconColor: 'text-indigo-400', iconPath: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
-  { to: '/profile/refund-method', title: 'Método de Devolución', subtitle: 'Configurar reembolsos', iconBg: 'bg-amber-500/20', iconColor: 'text-amber-400', iconPath: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a1 1 0 11-2 0 1 1 0 012 0z' },
-  { to: '/profile/identity', title: 'Verificar Identidad', subtitle: 'Subir documento', iconBg: 'bg-blue-500/20', iconColor: 'text-blue-400', iconPath: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
-  { to: '/associates', title: 'Familiares', subtitle: 'Gestionar asociados', iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-400', iconPath: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
-  { to: '/reviews', title: 'Evaluaciones', subtitle: 'Completar pendientes', iconBg: 'bg-amber-500/20', iconColor: 'text-amber-400', iconPath: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81H7.03a1 1 0 00.95-.69l1.07-3.292z' },
+  { to: '/alumno/mis-clases', label: 'Mis Clases', desc: 'Clases inscritas', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', iconBg: 'bg-indigo-500/20', iconColor: 'text-indigo-400' },
+  { to: '/alumno/pagos', label: 'Mis Pagos', desc: 'Historial de pagos', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-400' },
+  { to: '/alumno/asociados', label: 'Familiares', desc: 'Gestionar asociados', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', iconBg: 'bg-purple-500/20', iconColor: 'text-purple-400' },
+  { to: '/profile/identity', label: 'Verificación', desc: 'Validar identidad', icon: 'M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2', iconBg: 'bg-amber-500/20', iconColor: 'text-amber-400' },
 ]
 
-onMounted(async () => { await loadProfile() })
-
-const loadProfile = async () => {
+onMounted(async () => {
   try {
     profile.value = await userService.getProfile()
-    editForm.value = { fullName: profile.value.fullName, phone: profile.value.phone || '' }
-  } catch (error) {
-    console.error('Error loading profile:', error)
+    form.value.socialName = profile.value?.socialName || ''
+    form.value.phone = profile.value?.phone || ''
+    form.value.birthdate = profile.value?.birthdate || ''
+  } catch { /* ignore */ }
+})
+
+const formatDate = (d) => {
+  if (!d) return null
+  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+const cancelEdit = () => {
+  editMode.value = false
+  saveError.value = ''
+  form.value.socialName = profile.value?.socialName || ''
+  form.value.phone = profile.value?.phone || ''
+  form.value.birthdate = profile.value?.birthdate || ''
+  form.value.newPassword = ''
+  form.value.confirmPassword = ''
+}
+
+const saveProfile = async () => {
+  saving.value = true
+  saveError.value = ''
+  try {
+    if (form.value.newPassword && form.value.newPassword !== form.value.confirmPassword) {
+      saveError.value = 'Las contraseñas no coinciden.'
+      return
+    }
+    const data = {
+      // Se envía fullName como respaldo para compatibilidad con versiones anteriores del backend
+      fullName: profile.value?.fullName,
+      socialName: form.value.socialName?.trim() || null,
+      phone: form.value.phone,
+      birthdate: form.value.birthdate || null,
+      ...(form.value.newPassword && { password: form.value.newPassword }),
+    }
+    profile.value = await userService.updateProfile(data)
+    updateUserProfile({ socialName: profile.value.socialName, phone: profile.value.phone })
+    editMode.value = false
+  } catch (err) {
+    const msg = err?.response?.data?.message || err?.response?.data || null
+    saveError.value = msg ? `Error: ${msg}` : 'No se pudieron guardar los cambios. Intenta de nuevo.'
+  } finally {
+    saving.value = false
   }
 }
 
-const updateProfile = async () => {
-  isSaving.value = true
-  try {
-    profile.value = await userService.updateProfile({ fullName: editForm.value.fullName, phone: editForm.value.phone })
-    isEditing.value = false
-    showToast.value = true
-    setTimeout(() => { showToast.value = false }, 3000)
-  } catch (error) {
-    console.error('Error updating profile:', error)
-    alert('Error al actualizar el perfil')
-  } finally {
-    isSaving.value = false
-  }
+const triggerAvatarUpload = () => avatarInput.value?.click()
+const handleAvatarChange = (e) => {
+  const file = e.target.files[0]
+  if (file) console.log('Avatar upload:', file.name) // placeholder
 }
 </script>

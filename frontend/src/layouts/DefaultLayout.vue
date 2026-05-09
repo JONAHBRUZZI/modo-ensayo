@@ -3,72 +3,126 @@
     <!-- Navbar -->
     <nav class="sticky top-0 z-40 bg-[#0a0b14]/90 backdrop-blur-md border-b border-white/5">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16 items-center">
+        <div class="flex justify-between h-16 items-center gap-4">
           <!-- Logo + Nav Links -->
-          <div class="flex items-center gap-8">
-            <router-link to="/" class="flex items-center gap-2 font-bold text-white hover:text-gray-200 transition-colors">
+          <div class="flex items-center gap-6 min-w-0">
+            <router-link to="/" class="flex items-center gap-2 font-bold text-white hover:text-gray-200 transition-colors flex-shrink-0">
               <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
               </svg>
-              <span>Modo Ensayo</span>
+              <span class="hidden sm:block">Modo Ensayo</span>
             </router-link>
 
             <div class="hidden md:flex items-center gap-1">
-              <router-link
-                to="/"
+              <router-link to="/"
                 class="px-3 py-2 text-sm font-medium transition-colors"
-                :class="$route.path === '/' ? 'text-white border-b-2 border-white pb-[6px]' : 'text-gray-400 hover:text-white'"
-              >Dashboard</router-link>
-              <router-link
-                to="/classes"
-                class="px-3 py-2 text-sm font-medium transition-colors"
-                :class="$route.path === '/classes' ? 'text-white' : 'text-gray-400 hover:text-white'"
-              >Cronograma</router-link>
-              <router-link
-                v-if="isAuthenticated"
-                to="/cart"
-                class="px-3 py-2 text-sm font-medium transition-colors"
-                :class="$route.path === '/cart' ? 'text-white' : 'text-gray-400 hover:text-white'"
-              >
-                <span class="flex items-center gap-1.5">
-                  Pagos
-                  <span v-if="cartCount > 0" class="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.1rem] text-center leading-none">
-                    {{ cartCount > 9 ? '9+' : cartCount }}
-                  </span>
-                </span>
+                :class="$route.path === '/' ? 'text-white' : 'text-gray-400 hover:text-white'">
+                Inicio
               </router-link>
-              <router-link
-                v-if="isAuthenticated"
-                to="/admin"
+              <router-link to="/classes"
                 class="px-3 py-2 text-sm font-medium transition-colors"
-                :class="$route.path.startsWith('/admin') ? 'text-white' : 'text-gray-400 hover:text-white'"
-              >Métricas</router-link>
+                :class="$route.path === '/classes' ? 'text-white' : 'text-gray-400 hover:text-white'">
+                Cronograma
+              </router-link>
+
+              <!-- Links según modo/rol -->
+              <template v-if="isAuthenticated">
+                <template v-if="modoActual === 'profesor'">
+                  <router-link to="/profesor/dashboard"
+                    class="px-3 py-2 text-sm font-medium transition-colors"
+                    :class="$route.path.startsWith('/profesor') ? 'text-white' : 'text-gray-400 hover:text-white'">
+                    Mis Clases
+                  </router-link>
+                  <router-link to="/profesor/metricas"
+                    class="px-3 py-2 text-sm font-medium transition-colors"
+                    :class="$route.path === '/profesor/metricas' ? 'text-white' : 'text-gray-400 hover:text-white'">
+                    Métricas
+                  </router-link>
+                </template>
+                <template v-else-if="modoActual === 'sede'">
+                  <router-link to="/sede/dashboard"
+                    class="px-3 py-2 text-sm font-medium transition-colors"
+                    :class="$route.path === '/sede/dashboard' ? 'text-white' : 'text-gray-400 hover:text-white'">
+                    Panel
+                  </router-link>
+                  <router-link to="/sede/clases-por-confirmar"
+                    class="px-3 py-2 text-sm font-medium transition-colors"
+                    :class="$route.path === '/sede/clases-por-confirmar' ? 'text-white' : 'text-gray-400 hover:text-white'">
+                    Confirmar
+                  </router-link>
+                  <router-link to="/sede/mis-clases"
+                    class="px-3 py-2 text-sm font-medium transition-colors"
+                    :class="$route.path === '/sede/mis-clases' ? 'text-white' : 'text-gray-400 hover:text-white'">
+                    Clases
+                  </router-link>
+                  <router-link to="/sede/metricas"
+                    class="px-3 py-2 text-sm font-medium transition-colors"
+                    :class="$route.path === '/sede/metricas' ? 'text-white' : 'text-gray-400 hover:text-white'">
+                    Métricas
+                  </router-link>
+                </template>
+                <template v-else>
+                  <router-link to="/alumno/dashboard"
+                    class="px-3 py-2 text-sm font-medium transition-colors"
+                    :class="$route.path.startsWith('/alumno') ? 'text-white' : 'text-gray-400 hover:text-white'">
+                    Mi Espacio
+                  </router-link>
+                </template>
+
+                <router-link
+                  :to="modoActual === 'profesor' ? '/profesor/pagos' : '/cart'"
+                  class="px-3 py-2 text-sm font-medium transition-colors"
+                  :class="($route.path === '/cart' || $route.path === '/profesor/pagos') ? 'text-white' : 'text-gray-400 hover:text-white'">
+                  <span class="flex items-center gap-1.5">
+                    Pagos
+                    <span v-if="cartCount > 0 && modoActual !== 'profesor'" class="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.1rem] text-center leading-none">
+                      {{ cartCount > 9 ? '9+' : cartCount }}
+                    </span>
+                  </span>
+                </router-link>
+
+                <router-link v-if="isAdmin" to="/admin"
+                  class="px-3 py-2 text-sm font-medium transition-colors"
+                  :class="$route.path.startsWith('/admin') ? 'text-white' : 'text-gray-400 hover:text-white'">
+                  Admin
+                </router-link>
+              </template>
             </div>
           </div>
 
-          <!-- Auth -->
-          <div class="flex items-center gap-3">
+          <!-- Auth area -->
+          <div class="flex items-center gap-2 flex-shrink-0">
             <template v-if="!isAuthenticated">
-              <router-link
-                to="/login"
-                class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm shadow-purple-500/30"
-              >Iniciar Sesión</router-link>
+              <router-link to="/login"
+                class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm shadow-purple-500/30">
+                Iniciar Sesión
+              </router-link>
             </template>
 
             <template v-else>
+              <InterruptorContexto />
+              <BtnGestionaClases />
               <NotificationBell />
-              <div class="relative">
-                <button
-                  @click="showUserMenu = !showUserMenu"
-                  class="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                    <span class="text-sm font-semibold text-white">
-                      {{ user?.fullName?.charAt(0)?.toUpperCase() || 'U' }}
-                    </span>
+
+              <div class="relative" v-click-outside="() => showUserMenu = false">
+                <button @click="showUserMenu = !showUserMenu"
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
+                  <div class="relative w-7 h-7">
+                    <div class="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300"
+                      :class="modoActual === 'sede'
+                        ? 'bg-gradient-to-br from-emerald-600 to-teal-700 shadow-[0_0_10px_rgba(16,185,129,0.35)]'
+                        : modoActual === 'profesor'
+                          ? 'bg-gradient-to-br from-indigo-600 to-violet-700 shadow-[0_0_10px_rgba(99,102,241,0.35)]'
+                          : 'bg-gradient-to-br from-purple-600 to-indigo-700'">
+                      <span class="text-[10px] font-bold text-white tracking-wide">{{ userInitials }}</span>
+                    </div>
+                    <!-- Punto indicador de modo -->
+                    <span v-if="puedeAlternarModo"
+                      class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0a0b14] transition-all duration-300"
+                      :class="modoActual === 'sede' ? 'bg-emerald-400' : modoActual === 'profesor' ? 'bg-indigo-400' : 'bg-purple-400'" />
                   </div>
-                  <span class="hidden sm:block text-sm font-medium">{{ user?.fullName?.split(' ')[0] || 'Usuario' }}</span>
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span class="hidden lg:block text-sm font-medium max-w-[100px] truncate">{{ displayName }}</span>
+                  <svg class="w-3.5 h-3.5 hidden sm:block opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
@@ -81,16 +135,82 @@
                   leave-from-class="transform opacity-100 scale-100"
                   leave-to-class="transform opacity-0 scale-95"
                 >
-                  <div
-                    v-if="showUserMenu"
-                    class="absolute right-0 mt-2 w-48 bg-[#161824] rounded-lg shadow-xl py-1 ring-1 ring-white/10 z-50"
-                  >
-                    <router-link to="/profile" @click="showUserMenu = false" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                  <div v-if="showUserMenu"
+                    class="absolute right-0 mt-2 w-52 bg-[#161824] rounded-xl shadow-2xl py-1.5 ring-1 ring-white/10 z-50">
+
+                    <div class="px-4 py-2.5 border-b border-white/5 mb-1">
+                      <p class="text-sm font-medium text-white truncate">{{ user?.fullName }}</p>
+                      <p class="text-xs text-gray-500 truncate">{{ user?.email }}</p>
+                      <!-- Badge contexto activo -->
+                      <div class="mt-2 flex items-center gap-1.5">
+                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all duration-300"
+                          :class="modoActual === 'profesor'
+                            ? 'bg-purple-500/15 border-purple-500/30 text-purple-300'
+                            : 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'">
+                          <svg v-if="modoActual === 'alumno'" class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <svg v-else class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 14l9-5-9-5-9 5 9 5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                          </svg>
+                          {{ modoActual === 'sede' ? 'Mi Sede' : modoActual === 'profesor' ? 'Modo Profesor' : 'Modo Alumno' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <router-link to="/profile" @click="showUserMenu = false"
+                      class="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
                       Mi Perfil
                     </router-link>
-                    <button @click="handleLogout" class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
-                      Cerrar Sesión
-                    </button>
+
+                    <!-- Mis Familiares — solo modo alumno -->
+                    <router-link v-if="modoActual === 'alumno'" to="/alumno/asociados" @click="showUserMenu = false"
+                      class="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Mis Familiares
+                    </router-link>
+
+                    <!-- Pagos alumno -->
+                    <router-link v-if="modoActual === 'alumno'" to="/alumno/pagos" @click="showUserMenu = false"
+                      class="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                      Mis Pagos
+                    </router-link>
+
+                    <!-- Pagos profesor — cobros por clases -->
+                    <router-link v-if="modoActual === 'profesor'" to="/profesor/pagos" @click="showUserMenu = false"
+                      class="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                      </svg>
+                      Cobros de Clases
+                    </router-link>
+
+                    <router-link to="/notificaciones" @click="showUserMenu = false"
+                      class="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      Notificaciones
+                    </router-link>
+
+                    <div class="border-t border-white/5 mt-1 pt-1">
+                      <button @click="handleLogout"
+                        class="flex items-center gap-2.5 w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Cerrar Sesión
+                      </button>
+                    </div>
                   </div>
                 </Transition>
               </div>
@@ -100,7 +220,7 @@
       </div>
     </nav>
 
-    <!-- Main Content — no container on home, padded elsewhere -->
+    <!-- Main Content -->
     <main :class="$route.path !== '/' ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : ''">
       <router-view />
     </main>
@@ -123,7 +243,7 @@
             <h4 class="text-sm font-semibold text-white mb-3">Ecosistema</h4>
             <div class="space-y-2">
               <router-link to="/classes" class="block text-sm text-gray-500 hover:text-gray-300 transition-colors">Academias</router-link>
-              <router-link to="/teacher/register" class="block text-sm text-gray-500 hover:text-gray-300 transition-colors">Profesores</router-link>
+              <router-link to="/profesor/registro" class="block text-sm text-gray-500 hover:text-gray-300 transition-colors">Profesores</router-link>
               <router-link to="/register" class="block text-sm text-gray-500 hover:text-gray-300 transition-colors">Familias</router-link>
             </div>
           </div>
@@ -154,7 +274,7 @@
         </div>
 
         <div class="border-t border-white/5 pt-6 text-sm text-gray-600">
-          <p>© 2024 Modo Ensayo. El pulso del arte.</p>
+          <p>© 2025 Modo Ensayo. El pulso del arte.</p>
         </div>
       </div>
     </footer>
@@ -162,20 +282,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '../hooks/useAuth'
 import { cartService } from '../services/cartService'
 import NotificationBell from '../components/NotificationBell.vue'
+import BtnGestionaClases from '../components/BtnGestionaClases.vue'
+import InterruptorContexto from '../components/InterruptorContexto.vue'
 
-const { isAuthenticated, user, logout } = useAuth()
+const { isAuthenticated, user, logout, modoActual, puedeAlternarModo, isAdmin, isSede, displayName } = useAuth()
 const cartCount = ref(0)
 const showUserMenu = ref(false)
+
+const userInitials = computed(() => {
+  const parts = (user.value?.fullName || '').trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  return (parts[0]?.[0] || 'U').toUpperCase()
+})
 
 onMounted(async () => {
   if (isAuthenticated.value) {
     try {
       const cart = await cartService.getCart()
-      cartCount.value = cart.length
+      cartCount.value = Array.isArray(cart) ? cart.length : 0
     } catch {
       // ignore
     }
@@ -185,5 +313,16 @@ onMounted(async () => {
 const handleLogout = () => {
   showUserMenu.value = false
   logout()
+}
+
+// Directiva click-outside
+const vClickOutside = {
+  mounted(el, binding) {
+    el._clickOutside = (e) => { if (!el.contains(e.target)) binding.value(e) }
+    document.addEventListener('click', el._clickOutside)
+  },
+  unmounted(el) {
+    document.removeEventListener('click', el._clickOutside)
+  },
 }
 </script>

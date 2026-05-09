@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+backend/target/
+
+# Environment
+.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/terraform.tfvars
+
+# Build
+frontend/dist/
+
+# Logs
+*.log

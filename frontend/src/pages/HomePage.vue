@@ -21,11 +21,11 @@
             para profesionalizar la educación artística con tecnología de vanguardia.
           </p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <router-link to="/venue-admin"
+            <router-link to="/quiero-gestionar-sede"
               class="px-6 py-3 rounded-lg border border-white/20 text-white text-sm font-medium hover:bg-white/10 transition-colors">
               Gestionar mi sede
             </router-link>
-            <router-link to="/teacher/classes"
+            <router-link to="/quiero-ser-profesor"
               class="px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white text-sm font-semibold transition-colors shadow-lg shadow-cyan-500/25">
               Crear mis clases
             </router-link>

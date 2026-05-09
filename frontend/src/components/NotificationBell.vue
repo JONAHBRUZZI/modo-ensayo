@@ -1,117 +1,120 @@
 <template>
-  <div class="relative">
-    <button
-      class="relative rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-      @click="toggleMenu"
-      aria-label="Notificaciones"
-    >
-      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-        />
+  <div class="relative" ref="bellRef">
+    <!-- Botón campana -->
+    <button @click="toggleMenu" aria-label="Notificaciones"
+      class="relative p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
-      <span
-        v-if="unreadCount > 0"
-        class="absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white"
-      >
+
+      <!-- Badge contador -->
+      <span v-if="unreadCount > 0"
+        class="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full leading-none shadow-sm">
         {{ unreadCount > 9 ? '9+' : unreadCount }}
       </span>
     </button>
 
-    <Transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
-      <div
-        v-if="showMenu"
-        class="absolute right-0 z-50 mt-2 w-96 rounded-xl border bg-white p-3 shadow-xl"
-      >
-        <div class="mb-2 flex items-center justify-between border-b pb-2">
-          <h3 class="text-sm font-semibold text-gray-800">Notificaciones</h3>
-          <button
-            v-if="notifications.length > 0"
-            class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
-            @click="markAllRead"
-          >
-            Marcar todas
-          </button>
+    <!-- Dropdown -->
+    <Transition
+      enter-active-class="transition ease-out duration-150"
+      enter-from-class="opacity-0 scale-95 translate-y-1"
+      enter-to-class="opacity-100 scale-100 translate-y-0"
+      leave-active-class="transition ease-in duration-100"
+      leave-from-class="opacity-100 scale-100 translate-y-0"
+      leave-to-class="opacity-0 scale-95 translate-y-1">
+      <div v-if="showMenu"
+        class="absolute right-0 z-50 mt-2 w-80 bg-[#161824] border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+
+        <!-- Cabecera -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-white/5">
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-semibold text-white">Notificaciones</h3>
+            <span v-if="unreadCount > 0"
+              class="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full leading-none">
+              {{ unreadCount }}
+            </span>
+          </div>
+          <div class="flex items-center gap-3">
+            <button v-if="unreadCount > 0" @click="markAllRead"
+              class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+              Todo leído
+            </button>
+            <router-link to="/notificaciones" @click="showMenu = false"
+              class="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              Ver todo →
+            </router-link>
+          </div>
         </div>
 
-        <div v-if="loading" class="py-6 text-center text-sm text-gray-500">Cargando...</div>
-        <div v-else-if="notifications.length === 0" class="py-6 text-center text-sm text-gray-500">
-          No tienes notificaciones nuevas.
-        </div>
-        <ul v-else class="max-h-80 space-y-2 overflow-auto">
-          <li v-for="item in notifications" :key="item.id" class="rounded-lg border bg-gray-50 p-3">
-            <p class="text-sm text-gray-700">{{ item.message }}</p>
-            <div class="mt-2 flex items-center justify-between">
-              <span class="text-xs text-gray-500">{{ formatDate(item.createdAt) }}</span>
-              <button class="text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="markRead(item.id)">
-                Marcar leida
-              </button>
+        <!-- Lista -->
+        <div class="max-h-72 overflow-y-auto">
+          <div v-if="notifs.length === 0" class="py-10 text-center">
+            <div class="inline-flex items-center justify-center w-10 h-10 bg-white/5 rounded-full mb-3">
+              <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
             </div>
-          </li>
-        </ul>
+            <p class="text-xs text-gray-500">No tienes notificaciones nuevas.</p>
+          </div>
+
+          <ul v-else class="divide-y divide-white/5">
+            <li v-for="n in notifs" :key="n.id"
+              @click="markRead(n.id)"
+              class="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-white/3"
+              :class="!n.read ? 'bg-indigo-500/5' : ''">
+
+              <!-- Icono tipo -->
+              <div :class="iconConfig(n.type).bg"
+                class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg :class="iconConfig(n.type).color" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="iconConfig(n.type).path" />
+                </svg>
+              </div>
+
+              <!-- Contenido -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-1">
+                  <p class="text-xs font-semibold text-white leading-tight">{{ n.title }}</p>
+                  <span v-if="!n.read" class="w-1.5 h-1.5 bg-indigo-400 rounded-full flex-shrink-0 mt-1"></span>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5 leading-relaxed line-clamp-2">{{ n.message }}</p>
+                <p class="text-[10px] text-gray-600 mt-1">{{ formatTime(n.createdAt) }}</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Pie -->
+        <div class="border-t border-white/5 px-4 py-2.5">
+          <router-link to="/notificaciones" @click="showMenu = false"
+            class="flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-indigo-400 transition-colors">
+            Ver todas las notificaciones
+          </router-link>
+        </div>
       </div>
     </Transition>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import rescheduleService from '../services/rescheduleService'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useNotifications } from '../hooks/useNotifications'
+
+const { notifs, unreadCount, iconConfig, markRead, markAllRead, formatTime } = useNotifications()
 
 const showMenu = ref(false)
-const loading = ref(false)
-const unreadCount = ref(0)
-const notifications = ref([])
+const bellRef = ref(null)
 
-onMounted(async () => {
-  await refreshCount()
-})
+const toggleMenu = () => { showMenu.value = !showMenu.value }
 
-const refreshCount = async () => {
-  try {
-    const { data } = await rescheduleService.getUnreadCount()
-    unreadCount.value = data
-  } catch (error) {
-    unreadCount.value = 0
+const handleClickOutside = (e) => {
+  if (bellRef.value && !bellRef.value.contains(e.target)) {
+    showMenu.value = false
   }
 }
 
-const loadNotifications = async () => {
-  loading.value = true
-  try {
-    const { data } = await rescheduleService.getNotifications()
-    notifications.value = data
-  } catch (error) {
-    notifications.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
-const toggleMenu = async () => {
-  showMenu.value = !showMenu.value
-  if (showMenu.value) {
-    await loadNotifications()
-  }
-}
-
-const markRead = async (id) => {
-  await rescheduleService.markRead(id)
-  notifications.value = notifications.value.filter((item) => item.id !== id)
-  unreadCount.value = Math.max(0, unreadCount.value - 1)
-}
-
-const markAllRead = async () => {
-  await rescheduleService.markAllRead()
-  notifications.value = []
-  unreadCount.value = 0
-}
-
-const formatDate = (isoDate) => {
-  if (!isoDate) return ''
-  return new Date(isoDate).toLocaleString('es-CL')
-}
+onMounted(() => document.addEventListener('mousedown', handleClickOutside))
+onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
 </script>

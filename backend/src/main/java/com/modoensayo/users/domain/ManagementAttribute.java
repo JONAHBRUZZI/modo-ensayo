@@ -23,7 +23,6 @@ public class ManagementAttribute {
     @Column(nullable = false)
     private PermissionType tipoPermiso;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private String tipoOrigen;
 

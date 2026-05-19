@@ -234,6 +234,81 @@ Semanas 7-8:  Performance, seguridad, despliegue AWS
 
 ---
 
+## Arquitectura backend (actualizada Mayo 2026)
+
+```
+com.modoensayo/
+  admin/           → AdminSedeService (aprobacion/rechazo de sedes)
+  associates/      → Asociados/familiares del usuario
+  attendance/      → Asistencia a clases
+  auth/            → Login, registro, JWT
+  classes/         → Clases, busqueda, validacion, estados automaticos
+  ├── controller/  → ClassController, SearchController
+  ├── dto/         → SearchRequest, CursoSearchDto
+  ├── enums/       → ClassStatus, Disciplina, NivelClase, TipoClase, TipoPiso
+  ├── service/     → SearchService, ValidacionService, AgendaService, CursoCatalogService
+  └── task/        → ClassStateScheduler (transiciones automaticas de estado)
+  notifications/   → Sistema de notificaciones
+  payments/        → Carrito, MercadoPago, checkout
+  reschedules/     → Reagendamientos con flujo de respuestas
+  ├── dto/         → ProponerReagendamientoRequest
+  ├── enums/       → EstadoReagendamiento, PropuestoPor, RespuestaAlumno
+  ├── service/     → ReagendamientoCatalogService
+  └── task/        → ReagendamientoTimeoutScheduler (timeout 48h)
+  reviews/         → Resenas y calificaciones
+  users/           → Usuarios, roles, perfil profesional, atributos de gestion
+  ├── domain/      → User, ManagementAttribute, ProfessionalProfile, VenueStaff
+  ├── enums/       → PermissionType, UserEstado, MetodoDevolucion
+  ├── repository/  → ManagementAttributeRepository, ProfessionalProfileRepository, VenueStaffRepository
+  ├── dto/         → AtributosActivosDTO
+  └── service/     → AttributeService, AttributeCleanupService, CloudStorageService
+  venues/          → Sedes, salas, equipamiento, agenda de reservas
+  ├── domain/      → Venue, Room, RoomAvailability, Equipamiento, Agenda
+  ├── enums/       → EstadoSede
+  ├── repository/  → EquipamientoRepository, AgendaRepository
+  └── service/     → SedeService
+  shared/          → Seguridad (JWT, SecurityConfig), excepciones, utilidades
+```
+
+### Schedulers activos
+
+| Scheduler | Frecuencia | Funcion |
+|-----------|-----------|---------|
+| ClassStateScheduler | Cada 15 min | PUBLICADA→EN_CURSO cuando inicia, EN_CURSO→POR_VALIDAR cuando termina |
+| ReagendamientoTimeoutScheduler | Cada 1 hora | Marca respuestas vencidas (48h) como RECHAZADO_AUTOMATICO |
+| AttributeCleanupService | Cada 5 min | Elimina ManagementAttributes expirados |
+| ClassCompletionProcessor | Programado | Completa clases finalizadas |
+
+---
+
+## Historial de integracion (Mayo 2026)
+
+Se absorbieron 4 microservicios (`api-gateway`, `catalog-service`, `eureka-server`, `identity-service`) al monolito Spring Boot existente.
+
+### Commits realizados
+
+| Commit | Descripcion |
+|--------|-------------|
+| `df337d4` | feat: integrate microservice logic into monolith — 40 archivos, +2129 lineas |
+| `d5f75b5` | fix: remove @Enumerated from String field and add SearchController |
+
+### Resultados de verificacion
+
+| Verificacion | Resultado |
+|-------------|-----------|
+| `./mvnw compile` | BUILD SUCCESS — 167 archivos |
+| `./mvnw test` | 9/9 pasan |
+| `GET /actuator/health` | 200 |
+| `POST /api/auth/login` | 200 + JWT |
+| `GET /api/classes` | 200 |
+| `GET /api/venues` | 200 |
+| `GET /api/search` | 200 |
+| Proxy frontend→backend (todas las rutas) | 200 |
+| `.env` en repo | No trackeado |
+| `.gitignore` | Completo |
+
+---
+
 ## Integracion con IA (Claude Code, Copilot, Cursor)
 
 ### Al iniciar sesion con IA

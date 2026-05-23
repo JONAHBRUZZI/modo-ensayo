@@ -1,0 +1,1 @@
+import{D as p}from"./index-BvmNktIN.js";const n={async upload(t,o="documents"){const a=new FormData;a.append("file",t);const{data:e}=await p.post(`/upload?type=${o}`,a,{headers:{"Content-Type":"multipart/form-data"}});return e}};export{n as u};

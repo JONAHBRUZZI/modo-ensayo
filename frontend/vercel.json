@@ -1,6 +1,5 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "framework": "vue"
+  "buildCommand": "echo 'Skipping build - using pre-built dist'",
+  "installCommand": "echo 'Skipping install'",
+  "outputDirectory": "dist"
 }

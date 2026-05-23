@@ -9,8 +9,6 @@ services:
       POSTGRES_PASSWORD: modoensayo
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U modoensayo -d modoensayo"]
       interval: 10s
@@ -27,15 +25,14 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/modoensayo
       SPRING_DATASOURCE_USERNAME: modoensayo
       SPRING_DATASOURCE_PASSWORD: modoensayo
       JWT_SECRET: 7Dt5OOsrW2R6v2Eyk2rqzQnmXcEe/agy0lTFWbja1ww=
       MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-TEST-xxxxxxxxxxxxxxxxxxxx}
-      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://www.modoensayo.cl}
-      APP_BACKEND_URL: ${APP_BACKEND_URL:-https://api.modoensayo.cl}
+      APP_FRONTEND_URL: https://www.modoensayo.cl
+      APP_BACKEND_URL: https://api.modoensayo.cl
       STORAGE_PROVIDER: local
       STORAGE_UPLOAD_DIR: /app/uploads
     volumes:
@@ -43,19 +40,12 @@ services:
     ports:
       - "8080:8080"
 
-  nginx:
-    image: nginx:alpine
-    container_name: modoensayo-nginx
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: modoensayo-tunnel
     restart: always
-    depends_on:
-      - backend
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./deploy/nginx-docker.conf:/etc/nginx/conf.d/default.conf:ro
-      - uploads_data:/app/uploads:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    network_mode: host
 
 volumes:
   postgres_data:

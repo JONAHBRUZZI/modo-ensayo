@@ -1,6 +1,8 @@
 import { ref, computed } from 'vue'
 import api from '@/services/api'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+
 // Auth store class
 class AuthStore {
   constructor() {
@@ -150,7 +152,7 @@ export function useAuth() {
 
   async function logout() {
     try {
-      await fetch('/api/auth/logout', {
+      await fetch(`${API_BASE}/api/auth/logout`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${store.getToken()}` }
       })
@@ -185,7 +187,7 @@ export function useAuth() {
     try {
       const rt = store.getRefreshToken()
       if (!rt) return false
-      const res = await fetch('/api/auth/refresh', {
+      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

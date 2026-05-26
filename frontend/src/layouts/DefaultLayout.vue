@@ -67,7 +67,7 @@
                 <button
                   v-for="mode in availableModes"
                   :key="mode.value"
-                  @click="setModo(mode.value)"
+                  @click="cambiarModo(mode.value)"
                   :class="[
                     'px-3 py-1 rounded-md text-sm transition-all',
                     modoActual === mode.value ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
@@ -187,6 +187,18 @@ const modeLabel = computed(() => {
 
 function handleLogout() {
   logout()
+}
+
+function cambiarModo(mode) {
+  setModo(mode)
+  const dashboards = {
+    alumno: '/alumno/dashboard',
+    profesor: '/profesor/dashboard',
+    sede: '/sede/dashboard',
+    admin: '/admin'
+  }
+  const target = dashboards[mode] || '/'
+  router.push(target)
 }
 
 function handleClickOutside(e) {

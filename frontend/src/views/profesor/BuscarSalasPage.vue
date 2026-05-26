@@ -12,7 +12,7 @@
             <div><p class="text-white font-medium">{{ room.name }}</p><p class="text-gray-400 text-sm">Capacidad: {{ room.capacity }} | {{ room.equipment || '' }}</p></div>
             <div class="flex items-center space-x-2">
               <span class="badge badge-green">Disponible</span>
-              <router-link :to="'/alumno/crear-clase?roomId=' + room.id + '&venueId=' + venue.id" class="btn-primary text-xs !py-1.5 !px-3">Crear clase</router-link>
+              <router-link :to="'/alumno/crear-clase?roomId=' + room.id + '&venueId=' + venue.id" class="btn-primary text-xs !py-1.5 !px-3">Agendar sala</router-link>
             </div>
           </div>
         </div>

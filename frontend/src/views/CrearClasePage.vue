@@ -1,6 +1,6 @@
 <template>
   <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-3xl font-bold text-white mb-8">Crear Nueva Clase</h1>
+    <h1 class="text-3xl font-bold text-white mb-8">Agendar Sala y Crear Clase</h1>
     <form @submit.prevent="handleCreate" class="card space-y-4">
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Titulo</label><input v-model="form.title" required class="input-field" /></div>
       <div class="grid grid-cols-2 gap-4">
@@ -21,7 +21,7 @@
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Sede</label><select v-model="form.venueId" required class="input-field"><option value="">Seleccionar sede</option><option v-for="v in venues" :key="v.id" :value="v.id">{{ v.name }}</option></select></div>
       <div v-if="form.venueId"><label class="block text-sm font-medium text-gray-300 mb-1">Sala</label><select v-model="form.roomId" required class="input-field"><option value="">Seleccionar sala</option><option v-for="r in rooms" :key="r.id" :value="r.id">{{ r.name }} (cap: {{ r.capacity }})</option></select></div>
       <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
-      <button type="submit" :disabled="creating" class="btn-primary w-full">{{ creating ? 'Creando...' : 'Crear Clase' }}</button>
+      <button type="submit" :disabled="creating" class="btn-primary w-full">{{ creating ? 'Creando...' : 'Agendar Sala y Crear Clase' }}</button>
     </form>
   </div>
 </template>

@@ -20,25 +20,37 @@
             <template v-if="isAuthenticated">
               <!-- Profesor mode -->
               <template v-if="isTeacher && modoActual === 'profesor'">
-                <router-link to="/profesor/dashboard" class="nav-link">Mis Clases</router-link>
+                <router-link to="/profesor/dashboard" class="nav-link">Dashboard</router-link>
+                <router-link to="/profesor/clases-propias" class="nav-link">Clases Propias</router-link>
+                <router-link to="/profesor/clases-asignadas" class="nav-link">Clases Asignadas</router-link>
+                <router-link to="/profesor/buscar-salas" class="nav-link">Buscar Salas</router-link>
                 <router-link to="/profesor/metricas" class="nav-link">Metricas</router-link>
               </template>
 
               <!-- Sede mode -->
               <template v-if="isSede && modoActual === 'sede'">
                 <router-link to="/sede/dashboard" class="nav-link">Panel</router-link>
-                <router-link to="/sede/clases-por-confirmar" class="nav-link">Confirmar</router-link>
+                <router-link to="/sede/salas" class="nav-link">Salas</router-link>
                 <router-link to="/sede/mis-clases" class="nav-link">Clases</router-link>
-                <router-link to="/sede/metricas" class="nav-link">Metricas</router-link>
+                <router-link to="/sede/clases-por-confirmar" class="nav-link">Confirmar</router-link>
+                <router-link to="/sede/configuracion" class="nav-link">Config</router-link>
+              </template>
+
+              <!-- Admin mode -->
+              <template v-if="isAdmin && modoActual === 'admin'">
+                <router-link to="/admin" class="nav-link">Dashboard</router-link>
+                <router-link to="/admin/roles" class="nav-link">Aprobaciones</router-link>
+                <router-link to="/admin/usuarios" class="nav-link">Usuarios</router-link>
               </template>
 
               <!-- Alumno mode -->
               <template v-if="modoActual === 'alumno'">
                 <router-link to="/alumno/dashboard" class="nav-link">Mi Espacio</router-link>
+                <router-link to="/classes" class="nav-link">Clases</router-link>
                 <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
               </template>
 
-              <!-- Cart -->
+              <!-- Cart - always visible -->
               <router-link to="/cart" class="nav-link relative">
                 Carrito
                 <span v-if="cartCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -46,8 +58,8 @@
                 </span>
               </router-link>
 
-              <!-- Admin link -->
-              <router-link v-if="isAdmin" to="/admin" class="nav-link text-primary">Admin</router-link>
+              <!-- Admin quick link always visible if admin -->
+              <router-link v-if="isAdmin && modoActual !== 'admin'" to="/admin" class="nav-link text-primary text-xs">Admin</router-link>
             </template>
           </div>
 
@@ -160,6 +172,7 @@ const availableModes = computed(() => {
   const modes = [{ value: 'alumno', label: 'Alumno' }]
   if (isTeacher.value) modes.push({ value: 'profesor', label: 'Maestro' })
   if (isSede.value) modes.push({ value: 'sede', label: 'Mi Sede' })
+  if (isAdmin.value) modes.push({ value: 'admin', label: 'Admin' })
   return modes
 })
 

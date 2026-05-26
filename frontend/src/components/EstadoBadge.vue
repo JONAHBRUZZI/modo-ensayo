@@ -24,6 +24,7 @@ const label = computed(() => {
     case 'DISABLED': return 'Deshabilitado'
     case 'PUBLISHED': return 'Publicado'
     case 'DRAFT': return 'Borrador'
+    case 'NO_SOLICITADA': return 'No solicitada'
     default: return props.status || 'Desconocido'
   }
 })

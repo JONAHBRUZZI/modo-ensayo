@@ -14,7 +14,7 @@
       </div>
       <div class="card">
         <h3 class="text-gray-400 text-sm mb-1">Identidad</h3>
-        <EstadoBadge :status="identidadValidada ? 'APPROVED' : identidadEnRevision ? 'PENDING' : 'REJECTED'" />
+        <EstadoBadge :status="identidadEstado" />
       </div>
     </div>
 
@@ -40,11 +40,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuth } from '@/stores/auth'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 
-const { displayName, identidadValidada, identidadEnRevision } = useAuth()
+const { displayName, identidadValidada, identidadEnRevision, identidadRechazada } = useAuth()
+
+const identidadEstado = computed(() => {
+  if (identidadValidada.value) return 'APPROVED'
+  if (identidadEnRevision.value) return 'PENDING'
+  if (identidadRechazada.value) return 'REJECTED'
+  return 'NO_SOLICITADA'
+})
 
 const stats = ref({
   totalClases: 0,

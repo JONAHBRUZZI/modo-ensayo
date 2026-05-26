@@ -107,13 +107,14 @@ export function useAuth() {
   const isAuthenticated = computed(() => store.isAuthenticated())
   const identidadValidada = computed(() => user.value?.atributosActivos?.identidadValidada || false)
   const identidadEnRevision = computed(() => user.value?.atributosActivos?.identidadEnRevision || false)
+  const identidadRechazada = computed(() => user.value?.atributosActivos?.identidadRechazada || false)
   const tieneReservasActivas = computed(() => user.value?.atributosActivos?.tieneReservasActivas || false)
   const tieneAsignacionesActivas = computed(() => user.value?.atributosActivos?.tieneAsignacionesActivas || false)
 
   const puedeAlternarModo = computed(() => {
     if (!user.value) return false
     const roles = user.value.roles || []
-    return roles.includes('TEACHER') || roles.includes('VENUE_ADMIN')
+    return roles.includes('TEACHER') || roles.includes('VENUE_ADMIN') || roles.includes('ADMIN')
   })
 
   const puedeVerContextoProfesor = computed(() => user.value?.roles?.includes('TEACHER') || false)
@@ -184,12 +185,12 @@ export function useAuth() {
         const status = res.data.status
         updateUserAttributes({
           identidadValidada: status === 'APPROVED',
-          identidadEnRevision: status === 'PENDING'
+          identidadEnRevision: status === 'PENDING',
+          identidadRechazada: status === 'REJECTED'
         })
       }
     } catch {
-      // No verification found — identity is not validated
-      updateUserAttributes({ identidadValidada: false, identidadEnRevision: false })
+      updateUserAttributes({ identidadValidada: false, identidadEnRevision: false, identidadRechazada: false })
     }
   }
 
@@ -226,6 +227,7 @@ export function useAuth() {
     isAuthenticated,
     identidadValidada,
     identidadEnRevision,
+    identidadRechazada,
     tieneReservasActivas,
     tieneAsignacionesActivas,
     puedeAlternarModo,

@@ -23,22 +23,33 @@
         <span class="text-white font-semibold text-lg">Total</span>
         <span class="text-primary font-bold text-xl">${{ total.toLocaleString() }}</span>
       </div>
-      <button @click="checkout" :disabled="checkingOut" class="btn-primary w-full text-lg py-3">
+      <button @click="showConfirm = true" :disabled="checkingOut" class="btn-primary w-full text-lg py-3">
         {{ checkingOut ? 'Procesando...' : 'Pagar con MercadoPago' }}
       </button>
     </div>
   </div>
+
+  <ConfirmModal
+    :show="showConfirm"
+    title="¿Confirma su pago?"
+    :message="`Procesarás ${items.length} inscripción(es) por un total de $${total.toLocaleString()}. Esta acción no se puede deshacer.`"
+    confirmText="Sí, pagar"
+    @close="showConfirm = false"
+    @confirm="handleConfirmedCheckout"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import paymentService from '@/services/paymentService'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 
 const router = useRouter()
 const items = ref([])
 const loading = ref(true)
 const checkingOut = ref(false)
+const showConfirm = ref(false)
 
 const total = computed(() => items.value.reduce((sum, i) => sum + (i.price || 0), 0))
 
@@ -60,15 +71,17 @@ async function removeItem(id) {
   } catch {}
 }
 
-async function checkout() {
+async function handleConfirmedCheckout() {
+  showConfirm.value = false
   checkingOut.value = true
   try {
     const data = await paymentService.createMercadoPagoPreference()
-    if (data?.preferenceId) {
-      // Redirect to MercadoPago or show preference
-      window.location.href = data.initPoint || `/payment/pending`
+    if (data?.initPoint) {
+      window.location.href = data.initPoint
+    } else if (data?.sandboxInitPoint) {
+      window.location.href = data.sandboxInitPoint
     } else {
-      router.push('/payment/success')
+      router.push('/payment/pending')
     }
   } catch {
     router.push('/payment/failure')

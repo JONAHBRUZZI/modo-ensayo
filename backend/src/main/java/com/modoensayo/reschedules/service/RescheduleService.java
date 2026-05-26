@@ -17,6 +17,8 @@ import com.modoensayo.reschedules.repository.*;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.venues.dto.RoomAvailabilityResponse;
+import com.modoensayo.classes.enums.TipoClase;
+import com.modoensayo.venues.repository.VenueRepository;
 import com.modoensayo.venues.service.RoomAvailabilityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,7 @@ public class RescheduleService {
     private final EnrollmentRepository enrollmentRepository;
     private final PaymentRepository paymentRepository;
     private final ClassRepository classRepository;
+    private final VenueRepository venueRepository;
     private final RoomAvailabilityService roomAvailabilityService;
 
     @Transactional
@@ -70,8 +73,13 @@ public class RescheduleService {
         return toDto(rescheduleRepository.save(r));
     }
 
+    /**
+     * R19: For PROPIA classes only the teacher (owner) can decide.
+     * For ASIGNADA classes only the venue admin can decide.
+     * callerIsVenueAdmin=true when the caller has ADMIN_SEDE role.
+     */
     @Transactional
-    public RescheduleResponseDto teacherDecision(UUID rescheduleId, boolean accepted, UUID teacherId) {
+    public RescheduleResponseDto teacherDecision(UUID rescheduleId, boolean accepted, UUID callerId, boolean callerIsVenueAdmin) {
         Reschedule r = rescheduleRepository.findById(rescheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reschedule not found"));
 
@@ -79,14 +87,36 @@ public class RescheduleService {
             throw new BusinessException("Este reagendamiento no esta en estado PROPOSED.");
         }
 
+        // R19: validate authority based on class type
+        Class classEntity = classRepository.findById(r.getClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
+        TipoClase tipo = classEntity.getTipoClase() != null ? classEntity.getTipoClase() : TipoClase.PROPIA;
+
+        if (tipo == TipoClase.PROPIA) {
+            if (!callerId.equals(classEntity.getTeacherId())) {
+                throw new BusinessException("Solo el Maestro Independiente dueno de esta clase puede gestionar su reagendamiento (R19).");
+            }
+        } else {
+            // ASIGNADA: only the venue admin of this venue can act
+            if (!callerIsVenueAdmin) {
+                throw new BusinessException("El Maestro Dependiente no puede gestionar el reagendamiento de una Clase Asignada. Corresponde al Administrador de Sede (R19).");
+            }
+            boolean adminOwnsVenue = venueRepository.findByAdminId(callerId).stream()
+                    .anyMatch(v -> v.getId().equals(classEntity.getRoom().getVenue().getId()));
+            if (!adminOwnsVenue) {
+                throw new BusinessException("Solo el Administrador de Sede de esta clase puede gestionar su reagendamiento (R19).");
+            }
+        }
+
+        UUID teacherId = callerId;
+
         if (accepted) {
             r.setStatus(RescheduleStatus.TEACHER_ACCEPTED);
             r.setResponseDeadline(Instant.now().plusSeconds(48 * 3600));
             r.setTeacherId(teacherId);
             rescheduleRepository.save(r);
 
-            Class classEntity = classRepository.findById(r.getClassId()).orElse(null);
-            if (classEntity != null && r.getProposedTime() != null) {
+            if (r.getProposedTime() != null) {
                 classEntity.setStartTime(r.getProposedTime());
                 if (classEntity.getDuration() != null) {
                     classEntity.setEndTime(r.getProposedTime().plusSeconds(classEntity.getDuration() * 60L));

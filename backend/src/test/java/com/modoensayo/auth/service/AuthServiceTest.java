@@ -18,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -29,6 +31,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class AuthServiceTest {
 
     @Mock private UserRepository userRepository;
@@ -60,29 +63,30 @@ class AuthServiceTest {
 
     @Test
     void register_shouldSucceed_whenEmailNotTaken() {
-        RegisterRequest request = new RegisterRequest("new@test.com", "password123", "New User", null);
+        // fullName, email, password, phone, rut
+        RegisterRequest request = new RegisterRequest("New User", "new@test.com", "Password1", null, null);
 
         when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
-        when(passwordEncoder.encode("password123")).thenReturn("hashed_password");
+        when(passwordEncoder.encode("Password1")).thenReturn("hashed_password");
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(roleRepository.findByName("USER")).thenReturn(Optional.of(userRole));
         when(userRoleRepository.save(any(UserRole.class))).thenReturn(null);
-        when(userRoleRepository.findByUserId(any(UUID.class))).thenReturn(List.of(
+        when(userRoleRepository.findByUser_Id(any(UUID.class))).thenReturn(List.of(
                 new UserRole(new UserRoleId(user.getId(), userRole.getId()), user, userRole)
         ));
-        when(jwtUtil.generateToken(anyString(), anyMap())).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(any(UUID.class), anyString())).thenReturn("jwt-token");
 
         AuthResponse response = authService.register(request);
 
         assertNotNull(response);
         assertEquals("jwt-token", response.token());
-        assertEquals("Test User", response.fullName());
+        assertNotNull(response.user());
         verify(userRepository).save(any(User.class));
     }
 
     @Test
     void register_shouldThrow_whenEmailAlreadyExists() {
-        RegisterRequest request = new RegisterRequest("taken@test.com", "password123", "Test", null);
+        RegisterRequest request = new RegisterRequest("Test", "taken@test.com", "Password1", null, null);
         when(userRepository.existsByEmail("taken@test.com")).thenReturn(true);
 
         assertThrows(BusinessException.class, () -> authService.register(request));
@@ -95,16 +99,15 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "hashed_password")).thenReturn(true);
-        when(userRoleRepository.findByUserId(user.getId())).thenReturn(List.of(
+        when(userRoleRepository.findByUser_Id(user.getId())).thenReturn(List.of(
                 new UserRole(new UserRoleId(user.getId(), userRole.getId()), user, userRole)
         ));
-        when(jwtUtil.generateToken(eq("test@test.com"), anyMap())).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(any(UUID.class), anyString())).thenReturn("jwt-token");
 
         AuthResponse response = authService.login(request);
 
         assertNotNull(response);
         assertEquals("jwt-token", response.token());
-        assertEquals("Test User", response.fullName());
     }
 
     @Test

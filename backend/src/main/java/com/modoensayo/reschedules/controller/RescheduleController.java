@@ -45,9 +45,15 @@ public class RescheduleController {
     public ResponseEntity<RescheduleResponseDto> teacherDecision(
             @AuthenticationPrincipal CustomUserDetails user,
             @RequestBody Map<String, Object> body) {
+        Object confirm = body.get("confirmacion");
+        if (confirm == null || !Boolean.TRUE.equals(confirm)) {
+            return ResponseEntity.badRequest().build();
+        }
         UUID rescheduleId = UUID.fromString((String) body.get("rescheduleId"));
         boolean accepted = Boolean.TRUE.equals(body.get("accepted"));
-        return ResponseEntity.ok(rescheduleService.teacherDecision(rescheduleId, accepted, user.getUserId()));
+        boolean isVenueAdmin = user.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN_SEDE"));
+        return ResponseEntity.ok(rescheduleService.teacherDecision(rescheduleId, accepted, user.getUserId(), isVenueAdmin));
     }
 
     @PostMapping("/student-decision")

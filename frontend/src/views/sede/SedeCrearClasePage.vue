@@ -29,7 +29,7 @@ import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 
 const router = useRouter()
-const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, startTime: '', roomId: '', teacherId: null })
+const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, startTime: '', roomId: '', teacherId: null, tipoClase: 'ASIGNADA' })
 const rooms = ref([])
 const teachers = ref([])
 const error = ref('')

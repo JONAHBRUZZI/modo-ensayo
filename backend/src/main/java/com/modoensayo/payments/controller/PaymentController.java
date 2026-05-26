@@ -51,4 +51,14 @@ public class PaymentController {
     public ResponseEntity<Map<String, Object>> createPreference(@AuthenticationPrincipal CustomUserDetails user) {
         return ResponseEntity.ok(paymentService.createMercadoPagoPreference(user.getUserId()));
     }
+
+    @GetMapping("/my-enrollments")
+    public ResponseEntity<List<Map<String, Object>>> getMyEnrollments(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(paymentService.getMyEnrollments(user.getUserId()));
+    }
+
+    @GetMapping("/my-history")
+    public ResponseEntity<List<Map<String, Object>>> getMyPaymentHistory(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(paymentService.getMyPaymentHistory(user.getUserId()));
+    }
 }

@@ -30,8 +30,8 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const data = await paymentService.getCart()
-    pagos.value = data?.history || []
+    const data = await paymentService.getMyPaymentHistory()
+    pagos.value = Array.isArray(data) ? data : []
   } catch {
     pagos.value = []
   } finally {

@@ -3,13 +3,18 @@ package com.modoensayo.payments.service;
 import com.modoensayo.classes.domain.Class;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.payments.domain.CartItem;
+import com.modoensayo.payments.domain.Enrollment;
+import com.modoensayo.payments.domain.Payment;
 import com.modoensayo.payments.repository.CartItemRepository;
+import com.modoensayo.payments.repository.EnrollmentRepository;
+import com.modoensayo.payments.repository.PaymentRepository;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +22,8 @@ public class PaymentService {
 
     private final CartItemRepository cartItemRepository;
     private final ClassRepository classRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional
     public void addToCart(UUID ownerId, UUID classId, String beneficiaryType, UUID beneficiaryId) {
@@ -59,6 +66,54 @@ public class PaymentService {
         Map<String, Object> result = new HashMap<>();
         result.put("items", items);
         result.put("total", items.stream().mapToDouble(CartItem::getPrice).sum());
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMyEnrollments(UUID userId) {
+        List<Enrollment> enrollments = enrollmentRepository.findByBeneficiaryId(userId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Enrollment e : enrollments) {
+            classRepository.findById(e.getClassId()).ifPresent(c -> {
+                Map<String, Object> item = new HashMap<>();
+                item.put("classId", c.getId().toString());
+                item.put("title", c.getTitle());
+                item.put("discipline", c.getDiscipline() != null ? c.getDiscipline().name() : null);
+                item.put("level", c.getLevel() != null ? c.getLevel().name() : null);
+                item.put("startTime", c.getStartTime());
+                item.put("endTime", c.getEndTime());
+                item.put("status", c.getStatus().name());
+                item.put("price", c.getPrice());
+                item.put("enrollmentStatus", e.getStatus());
+                result.add(item);
+            });
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMyPaymentHistory(UUID userId) {
+        List<Enrollment> enrollments = enrollmentRepository.findByBeneficiaryId(userId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Enrollment e : enrollments) {
+            Optional<Class> classOpt = classRepository.findById(e.getClassId());
+            String classTitle = classOpt.map(Class::getTitle).orElse("Clase eliminada");
+            List<Payment> payments = paymentRepository.findByEnrollmentId(e.getId());
+            for (Payment p : payments) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", p.getId().toString());
+                item.put("classTitle", classTitle);
+                item.put("amount", p.getAmount());
+                item.put("status", p.getStatus().name());
+                item.put("createdAt", p.getCreatedAt());
+                result.add(item);
+            }
+        }
+        result.sort((a, b) -> {
+            var da = (java.time.Instant) a.get("createdAt");
+            var db = (java.time.Instant) b.get("createdAt");
+            return db.compareTo(da);
+        });
         return result;
     }
 

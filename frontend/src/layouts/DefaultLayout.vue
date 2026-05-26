@@ -25,6 +25,7 @@
                 <router-link to="/profesor/clases-asignadas" class="nav-link">Clases Asignadas</router-link>
                 <router-link to="/profesor/buscar-salas" class="nav-link">Buscar Salas</router-link>
                 <router-link to="/profesor/metricas" class="nav-link">Metricas</router-link>
+                <router-link to="/profesor/pagos" class="nav-link">Pagos</router-link>
               </template>
 
               <!-- Sede mode -->
@@ -32,7 +33,10 @@
                 <router-link to="/sede/dashboard" class="nav-link">Panel</router-link>
                 <router-link to="/sede/salas" class="nav-link">Salas</router-link>
                 <router-link to="/sede/mis-clases" class="nav-link">Clases</router-link>
+                <router-link to="/sede/crear-clase" class="nav-link">Crear Clase</router-link>
                 <router-link to="/sede/clases-por-confirmar" class="nav-link">Confirmar</router-link>
+                <router-link to="/sede/profesores" class="nav-link">Profesores</router-link>
+                <router-link to="/sede/metricas" class="nav-link">Metricas</router-link>
                 <router-link to="/sede/configuracion" class="nav-link">Config</router-link>
               </template>
 
@@ -46,7 +50,8 @@
               <!-- Alumno mode -->
               <template v-if="modoActual === 'alumno'">
                 <router-link to="/alumno/dashboard" class="nav-link">Mi Espacio</router-link>
-                <router-link to="/classes" class="nav-link">Clases</router-link>
+                <router-link to="/alumno/mis-clases" class="nav-link">Mis Clases</router-link>
+                <router-link to="/alumno/asociados" class="nav-link">Asociados</router-link>
                 <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
                 <router-link to="/cart" class="nav-link relative">
                   Carrito

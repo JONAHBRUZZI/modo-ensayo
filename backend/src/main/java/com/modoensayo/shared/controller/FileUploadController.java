@@ -24,6 +24,16 @@ public class FileUploadController {
                                                        @RequestParam("file") MultipartFile file,
                                                        @RequestParam(defaultValue = "documents") String type) {
         try {
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "El archivo esta vacio"));
+            }
+            String contentType = file.getContentType();
+            if (contentType == null || (!contentType.startsWith("image/") && !contentType.equals("application/pdf"))) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Solo se aceptan archivos JPG, PNG o PDF"));
+            }
+            if (file.getSize() > 5 * 1024 * 1024) {
+                return ResponseEntity.badRequest().body(Map.of("error", "El archivo no debe superar los 5MB"));
+            }
             String url = storageService.upload(file, type);
             Map<String, String> result = new HashMap<>();
             result.put("url", url);
@@ -31,7 +41,7 @@ public class FileUploadController {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Upload failed", e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "Upload failed"));
+            return ResponseEntity.internalServerError().body(Map.of("error", "Error al subir el archivo"));
         }
     }
 }

@@ -8,10 +8,13 @@ import com.modoensayo.venues.domain.Venue;
 import com.modoensayo.venues.dto.VenueResponse;
 import com.modoensayo.venues.enums.EstadoSede;
 import com.modoensayo.venues.repository.VenueRepository;
+import com.modoensayo.reschedules.domain.Notification;
+import com.modoensayo.reschedules.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,6 +27,7 @@ public class AdminService {
     private final UserRoleRepository userRoleRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final VenueRepository venueRepository;
+    private final NotificationRepository notificationRepository;
 
     public Map<String, Object> getStats() {
         Map<String, Object> stats = new HashMap<>();
@@ -62,7 +66,16 @@ public class AdminService {
                         userRoleRepository.save(ur);
                     }
                 }
+                notificationRepository.save(Notification.builder()
+                        .userId(iv.getUserId())
+                        .message("Tu identidad ha sido VALIDADA. Ahora puedes crear clases como Maestro Independiente.")
+                        .read(false).createdAt(Instant.now()).build());
             }
+        } else {
+            notificationRepository.save(Notification.builder()
+                    .userId(iv.getUserId())
+                    .message("Tu solicitud de validacion de identidad ha sido RECHAZADA. Revisa tu documento y vuelve a intentarlo.")
+                    .read(false).createdAt(Instant.now()).build());
         }
 
         return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt());
@@ -81,6 +94,14 @@ public class AdminService {
         Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));
         v.setStatus(EstadoSede.APROBADA);
         v = venueRepository.save(v);
+
+        if (v.getAdminId() != null) {
+            notificationRepository.save(Notification.builder()
+                    .userId(v.getAdminId())
+                    .message("Tu sede '" + v.getName() + "' ha sido APROBADA. Ya puedes gestionar salas y disponibilidad.")
+                    .read(false).createdAt(Instant.now()).build());
+        }
+
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
                 v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt());
@@ -92,6 +113,14 @@ public class AdminService {
         v.setStatus(EstadoSede.RECHAZADA);
         v.setRejectionReason(reason);
         v = venueRepository.save(v);
+
+        if (v.getAdminId() != null) {
+            notificationRepository.save(Notification.builder()
+                    .userId(v.getAdminId())
+                    .message("Tu sede '" + v.getName() + "' ha sido RECHAZADA. Motivo: " + (reason != null ? reason : "No especificado") + ". Corrige los datos y reenvia.")
+                    .read(false).createdAt(Instant.now()).build());
+        }
+
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
                 v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt());

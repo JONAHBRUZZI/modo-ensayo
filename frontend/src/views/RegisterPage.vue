@@ -18,7 +18,12 @@
         <DocumentoIdentidad v-model="documento" />
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Contrasena</label>
-          <input type="password" v-model="password" required class="input-field" placeholder="Minimo 8 caracteres" />
+          <input type="password" v-model="password" required class="input-field" placeholder="Min 8 caracteres, mayuscula, minuscula, numero" />
+          <p class="text-xs text-gray-500 mt-1">Minimo 8 caracteres, al menos una mayuscula, una minuscula y un numero.</p>
+        </div>
+        <div class="flex items-start space-x-2">
+          <input type="checkbox" v-model="aceptoTerminos" id="terminos" class="mt-1 text-primary" />
+          <label for="terminos" class="text-xs text-gray-400">Acepto los terminos y condiciones de Modo Ensayo y autorizo el tratamiento de mis datos personales conforme a la Ley 19.628.</label>
         </div>
         <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
         <button type="submit" :disabled="loading" class="btn-primary w-full">
@@ -47,11 +52,21 @@ const email = ref('')
 const phone = ref('')
 const documento = ref({ tipo: 'RUT', numero: '' })
 const password = ref('')
+const aceptoTerminos = ref(false)
 const error = ref('')
 const loading = ref(false)
 
 async function handleRegister() {
   error.value = ''
+  if (!aceptoTerminos.value) {
+    error.value = 'Debes aceptar los terminos y condiciones para registrarte.'
+    return
+  }
+  const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+  if (!pwRegex.test(password.value)) {
+    error.value = 'La contrasena debe tener al menos 8 caracteres, una mayuscula, una minuscula y un numero.'
+    return
+  }
   loading.value = true
   try {
     await register(

@@ -21,15 +21,22 @@ public class AssociateService {
 
     public List<AssociateResponse> getByOwner(UUID ownerId) {
         return associateRepository.findByOwnerId(ownerId).stream()
-                .map(a -> new AssociateResponse(a.getId(), a.getEmail(), a.getStatus(), a.getCreatedAt()))
+                .map(a -> new AssociateResponse(a.getId(), a.getEmail(), a.getName(), a.getRelationship(), a.getBirthDate(), a.getRut(), a.getStatus(), a.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public AssociateResponse create(UUID ownerId, AssociateRequest req) {
-        Associate a = Associate.builder().ownerId(ownerId).email(req.email()).build();
+        Associate a = Associate.builder()
+                .ownerId(ownerId)
+                .email(req.email())
+                .name(req.name())
+                .relationship(req.relationship())
+                .birthDate(req.birthDate())
+                .rut(req.rut())
+                .build();
         a = associateRepository.save(a);
-        return new AssociateResponse(a.getId(), a.getEmail(), a.getStatus(), a.getCreatedAt());
+        return new AssociateResponse(a.getId(), a.getEmail(), a.getName(), a.getRelationship(), a.getBirthDate(), a.getRut(), a.getStatus(), a.getCreatedAt());
     }
 
     @Transactional

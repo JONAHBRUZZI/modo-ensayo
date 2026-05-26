@@ -24,7 +24,8 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Numero de documento *</label>
-          <input v-model="form.documentNumber" required class="input-field" placeholder="12.345.678-9" />
+          <input v-model="form.documentNumber" required class="input-field" :placeholder="form.documentType === 'RUT' ? '12.345.678-9' : 'Numero de pasaporte'" @blur="validarRut" />
+          <p v-if="rutError" class="text-xs text-red-400 mt-1">{{ rutError }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Nombre completo (segun documento) *</label>
@@ -76,6 +77,7 @@ const uploading = ref(false)
 const msg = ref('')
 const msgType = ref('')
 const form = reactive({ documentType: '', documentNumber: '', fullName: '', birthDate: '' })
+const rutError = ref('')
 
 onMounted(async () => {
   try { verification.value = await userService.getIdentityVerification() } catch {}
@@ -83,8 +85,33 @@ onMounted(async () => {
 
 function handleFile(e) { file.value = e.target.files[0] }
 
+function validarRut() {
+  rutError.value = ''
+  if (form.documentType !== 'RUT' || !form.documentNumber) return
+  const rut = form.documentNumber.replace(/[^0-9kK]/g, '')
+  if (rut.length < 2) { rutError.value = 'RUT invalido'; return }
+  const dv = rut.slice(-1).toUpperCase()
+  const cuerpo = rut.slice(0, -1)
+  let suma = 0
+  let multiplo = 2
+  for (let i = cuerpo.length - 1; i >= 0; i--) {
+    suma += parseInt(cuerpo[i]) * multiplo
+    multiplo = multiplo < 7 ? multiplo + 1 : 2
+  }
+  const dvEsperado = 11 - (suma % 11)
+  const dvCalculado = dvEsperado === 11 ? '0' : dvEsperado === 10 ? 'K' : dvEsperado.toString()
+  if (dv !== dvCalculado) rutError.value = 'RUT invalido: el digito verificador no coincide'
+}
+
 async function upload() {
   if (!file.value) { msg.value = 'Debes subir un documento'; msgType.value = 'error'; return }
+  if (rutError.value) { msg.value = 'Corrige el RUT antes de enviar'; msgType.value = 'error'; return }
+  if (form.birthDate) {
+    const birth = new Date(form.birthDate)
+    if (birth > new Date()) { msg.value = 'La fecha de nacimiento no puede ser futura'; msgType.value = 'error'; return }
+    const age = (new Date() - birth) / (365.25 * 24 * 60 * 60 * 1000)
+    if (age < 14) { msg.value = 'Debes ser mayor de 14 anos para verificar tu identidad'; msgType.value = 'error'; return }
+  }
   uploading.value = true
   msg.value = ''
   try {

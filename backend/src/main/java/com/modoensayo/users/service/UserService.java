@@ -87,6 +87,11 @@ public class UserService {
 
     @Transactional
     public IdentityVerificationResponse uploadIdentity(CustomUserDetails userDetails, String documentUrl, String documentType, String documentNumber, String fullName, java.time.LocalDate birthDate) {
+        if ("RUT".equals(documentType) && documentNumber != null && !documentNumber.isBlank()) {
+            if (!validarRutChileno(documentNumber)) {
+                throw new BusinessException("El RUT ingresado no es valido. Verifica el digito verificador.");
+            }
+        }
         IdentityVerification iv = identityVerificationRepository.findByUserId(userDetails.getUserId())
                 .orElse(IdentityVerification.builder().userId(userDetails.getUserId()).build());
         iv.setDocumentUrl(documentUrl);
@@ -98,6 +103,22 @@ public class UserService {
         iv = identityVerificationRepository.save(iv);
         return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt(),
                 iv.getDocumentType(), iv.getDocumentNumber(), iv.getFullName(), iv.getBirthDate());
+    }
+
+    private boolean validarRutChileno(String rut) {
+        String clean = rut.replaceAll("[^0-9kK]", "");
+        if (clean.length() < 2) return false;
+        String dv = clean.substring(clean.length() - 1).toUpperCase();
+        String cuerpo = clean.substring(0, clean.length() - 1);
+        int suma = 0;
+        int multiplo = 2;
+        for (int i = cuerpo.length() - 1; i >= 0; i--) {
+            suma += Character.getNumericValue(cuerpo.charAt(i)) * multiplo;
+            multiplo = multiplo < 7 ? multiplo + 1 : 2;
+        }
+        int dvEsperado = 11 - (suma % 11);
+        String dvCalculado = dvEsperado == 11 ? "0" : dvEsperado == 10 ? "K" : String.valueOf(dvEsperado);
+        return dv.equals(dvCalculado);
     }
 
     @Transactional

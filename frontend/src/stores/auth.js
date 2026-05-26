@@ -139,6 +139,7 @@ export function useAuth() {
     const { token: t, refreshToken: rt, user: u } = res.data
     store.setToken(t, rt)
     store.setUser(u)
+    setModo('alumno')
     return u
   }
 
@@ -153,6 +154,7 @@ export function useAuth() {
     const { token: t, refreshToken: rt, user: u } = res.data
     store.setToken(t, rt)
     store.setUser(u)
+    setModo('alumno')
     return u
   }
 

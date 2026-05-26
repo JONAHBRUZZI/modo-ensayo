@@ -76,10 +76,11 @@
 </template>
 
 <script setup>
-import { useAuth } from '../hooks/useAuth'
+import { onMounted } from 'vue'
+import { useAuth } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
-const { puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, setModo } = useAuth()
+const { puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, setModo, isAuthenticated, syncActividadMaestro } = useAuth()
 const router = useRouter()
 
 const destinos = { alumno: '/alumno/dashboard', profesor: '/profesor/dashboard', sede: '/sede/dashboard' }
@@ -88,4 +89,8 @@ const activar = (modo) => {
   setModo(modo)
   router.push(destinos[modo])
 }
+
+onMounted(() => {
+  if (isAuthenticated.value) syncActividadMaestro()
+})
 </script>

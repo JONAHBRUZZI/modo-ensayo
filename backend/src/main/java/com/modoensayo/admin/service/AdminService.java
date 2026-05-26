@@ -70,23 +70,10 @@ public class AdminService {
         iv = identityVerificationRepository.save(iv);
 
         if ("approve".equals(action)) {
-            User user = userRepository.findById(iv.getUserId()).orElse(null);
-            if (user != null) {
-                Role teachRole = roleRepository.findByName("TEACHER").orElse(null);
-                if (teachRole != null) {
-                    boolean hasRole = user.getUserRoles().stream()
-                            .anyMatch(ur -> ur.getRole().getName().equals("TEACHER"));
-                    if (!hasRole) {
-                        UserRoleId uriId = new UserRoleId(user.getId(), teachRole.getId());
-                        UserRole ur = new UserRole(uriId, user, teachRole);
-                        userRoleRepository.save(ur);
-                    }
-                }
-                notificationRepository.save(Notification.builder()
-                        .userId(iv.getUserId())
-                        .message("Tu identidad ha sido VALIDADA. Ahora puedes crear clases como Maestro Independiente.")
-                        .read(false).createdAt(Instant.now()).build());
-            }
+            notificationRepository.save(Notification.builder()
+                    .userId(iv.getUserId())
+                    .message("Tu identidad ha sido VALIDADA. Ahora puedes registrar una sede o reservar salas para crear clases.")
+                    .read(false).createdAt(Instant.now()).build());
         } else {
             notificationRepository.save(Notification.builder()
                     .userId(iv.getUserId())
@@ -112,9 +99,22 @@ public class AdminService {
         v = venueRepository.save(v);
 
         if (v.getAdminId() != null) {
+            // Asignar rol VENUE_ADMIN automáticamente al aprobar la sede
+            User owner = userRepository.findById(v.getAdminId()).orElse(null);
+            if (owner != null) {
+                Role venueAdminRole = roleRepository.findByName("VENUE_ADMIN").orElse(null);
+                if (venueAdminRole != null) {
+                    boolean hasRole = owner.getUserRoles().stream()
+                            .anyMatch(ur -> ur.getRole().getName().equals("VENUE_ADMIN"));
+                    if (!hasRole) {
+                        UserRoleId uriId = new UserRoleId(owner.getId(), venueAdminRole.getId());
+                        userRoleRepository.save(new UserRole(uriId, owner, venueAdminRole));
+                    }
+                }
+            }
             notificationRepository.save(Notification.builder()
                     .userId(v.getAdminId())
-                    .message("Tu sede '" + v.getName() + "' ha sido APROBADA. Ya puedes gestionar salas y disponibilidad.")
+                    .message("Tu sede '" + v.getName() + "' ha sido APROBADA. Ya tienes acceso al panel de gestión de tu sede.")
                     .read(false).createdAt(Instant.now()).build());
         }
 

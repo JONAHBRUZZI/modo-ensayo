@@ -1,6 +1,7 @@
 package com.modoensayo.users.controller;
 
 import com.modoensayo.auth.service.CustomUserDetails;
+import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.users.domain.RefundMethod;
 import com.modoensayo.users.dto.*;
 import com.modoensayo.users.service.UserService;
@@ -26,6 +27,27 @@ public class UserController {
     private final UserService userService;
     private final EnrollmentRepository enrollmentRepository;
     private final ClassRepository classRepository;
+
+    /**
+     * Retorna si el usuario tiene clases propias activas (futuras/en curso) o clases asignadas activas.
+     * El frontend usa esto para decidir si mostrar el botón "Maestro" en el interruptor.
+     */
+    @GetMapping("/me/actividad-maestro")
+    public ResponseEntity<Map<String, Object>> getActividadMaestro(@AuthenticationPrincipal CustomUserDetails user) {
+        Instant ahora = Instant.now();
+        boolean tieneReservasActivas = classRepository.findByTeacherId(user.getUserId()).stream()
+                .anyMatch(c -> c.getTipoClase() == TipoClase.PROPIA
+                        && (c.getStatus() == ClassStatus.PUBLISHED || c.getStatus() == ClassStatus.DRAFT)
+                        && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
+        boolean tieneAsignacionesActivas = classRepository.findByTeacherId(user.getUserId()).stream()
+                .anyMatch(c -> c.getTipoClase() == TipoClase.ASIGNADA
+                        && (c.getStatus() == ClassStatus.PUBLISHED || c.getStatus() == ClassStatus.DRAFT)
+                        && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
+        Map<String, Object> result = new HashMap<>();
+        result.put("tieneReservasActivas", tieneReservasActivas);
+        result.put("tieneAsignacionesActivas", tieneAsignacionesActivas);
+        return ResponseEntity.ok(result);
+    }
 
     @GetMapping("/me/stats")
     public ResponseEntity<Map<String, Object>> getStats(@AuthenticationPrincipal CustomUserDetails user) {
@@ -93,6 +115,13 @@ public class UserController {
     public ResponseEntity<Void> deleteIdentity(@AuthenticationPrincipal CustomUserDetails user) {
         userService.deleteIdentityDocument(user.getUserId());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/me/professional-profile")
+    public ResponseEntity<Void> saveProfessionalProfile(@AuthenticationPrincipal CustomUserDetails user,
+                                                         @RequestBody Map<String, Object> body) {
+        userService.saveProfessionalProfile(user.getUserId(), body);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/me/password")

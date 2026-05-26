@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final RefundMethodRepository refundMethodRepository;
+    private final ProfessionalProfileRepository professionalProfileRepository;
     private final PasswordEncoder passwordEncoder;
 
     public UserProfileResponse getProfile(CustomUserDetails userDetails) {
@@ -99,6 +101,24 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("No verification found"));
         iv.setDocumentUrl(null);
         identityVerificationRepository.save(iv);
+    }
+
+    @Transactional
+    public ProfessionalProfile saveProfessionalProfile(UUID userId, Map<String, Object> data) {
+        User user = getUser(userId);
+        ProfessionalProfile profile = professionalProfileRepository.findByUser_Id(userId)
+                .orElse(ProfessionalProfile.builder().user(user).build());
+        if (data.get("specialty") != null) profile.setSpecialty((String) data.get("specialty"));
+        if (data.get("experienceYears") instanceof Number n) profile.setExperienceYears(n.intValue());
+        if (data.get("description") != null) profile.setDescription((String) data.get("description"));
+        if (data.get("especialidad") != null) profile.setEspecialidad((String) data.get("especialidad"));
+        if (data.get("nivelEnsenanza") != null) profile.setNivelEnsenanza((String) data.get("nivelEnsenanza"));
+        if (data.get("formacion") != null) profile.setFormacion((String) data.get("formacion"));
+        if (data.get("instagram") != null) profile.setInstagram((String) data.get("instagram"));
+        if (data.get("youtube") != null) profile.setYoutube((String) data.get("youtube"));
+        if (data.get("sitioWeb") != null) profile.setSitioWeb((String) data.get("sitioWeb"));
+        if (data.get("linkedin") != null) profile.setLinkedin((String) data.get("linkedin"));
+        return professionalProfileRepository.save(profile);
     }
 
     @Transactional

@@ -21,4 +21,11 @@ public class ProfessionalProfile {
     private Double averageRating;
     private String specialty;
     private Integer experienceYears;
+    private String especialidad;
+    private String nivelEnsenanza;
+    private String formacion;
+    private String instagram;
+    private String youtube;
+    private String sitioWeb;
+    private String linkedin;
 }

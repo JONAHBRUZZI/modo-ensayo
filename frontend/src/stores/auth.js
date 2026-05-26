@@ -117,7 +117,12 @@ export function useAuth() {
     return roles.includes('TEACHER') || roles.includes('VENUE_ADMIN') || roles.includes('ADMIN')
   })
 
-  const puedeVerContextoProfesor = computed(() => user.value?.roles?.includes('TEACHER') || false)
+  // Botón Maestro visible solo si tiene rol Y tiene actividad vigente (clases propias o asignadas activas)
+  const puedeVerContextoProfesor = computed(() => {
+    if (!user.value?.roles?.includes('TEACHER')) return false
+    return (user.value?.atributosActivos?.tieneReservasActivas || false) ||
+           (user.value?.atributosActivos?.tieneAsignacionesActivas || false)
+  })
   const puedeVerContextoSede = computed(() => user.value?.roles?.includes('VENUE_ADMIN') || false)
 
   const isAdmin = computed(() => user.value?.roles?.includes('ADMIN') || false)
@@ -175,6 +180,20 @@ export function useAuth() {
       const raw = JSON.parse(localStorage.getItem('auth_user') || '{}')
       raw.atributosActivos = { ...raw.atributosActivos, ...attrs }
       localStorage.setItem('auth_user', JSON.stringify(raw))
+    }
+  }
+
+  async function syncActividadMaestro() {
+    try {
+      const res = await api.get('/users/me/actividad-maestro')
+      if (res.data) {
+        updateUserAttributes({
+          tieneReservasActivas: res.data.tieneReservasActivas,
+          tieneAsignacionesActivas: res.data.tieneAsignacionesActivas
+        })
+      }
+    } catch {
+      // silencioso — no crítico
     }
   }
 
@@ -244,6 +263,7 @@ export function useAuth() {
     updateUserAttributes,
     updateUserProfile,
     refreshToken,
-    syncIdentityStatus
+    syncIdentityStatus,
+    syncActividadMaestro
   }
 }

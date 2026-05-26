@@ -1,16 +1,10 @@
 package com.modoensayo.classes.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
 import java.time.Instant;
+import java.util.UUID;
 
 public record ClassRequest(
-        @NotNull String roomId,
-        @NotBlank String title,
-        String discipline,
-        @NotNull Integer capacity,
-        @NotNull Integer price,
-        @NotNull Instant startTime,
-        @NotNull Instant endTime
+    String title, String discipline, String level, String description,
+    Integer capacity, Integer duration, Double price, Integer minAge, Integer maxAge,
+    Instant startTime, UUID roomId
 ) {}

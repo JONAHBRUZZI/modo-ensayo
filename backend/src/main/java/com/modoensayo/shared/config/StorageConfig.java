@@ -10,7 +10,7 @@ public class StorageConfig {
     private String uploadDir = "uploads";
     private String supabaseUrl;
     private String supabaseKey;
-    private String supabaseBucket;
+    private String supabaseBucket = "modoensayo";
 
     public String getProvider() { return provider; }
     public void setProvider(String provider) { this.provider = provider; }

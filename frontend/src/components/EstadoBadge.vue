@@ -1,33 +1,53 @@
 <template>
-  <span :class="badgeClass" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
-    <span :class="dotClass" class="w-1.5 h-1.5 rounded-full"></span>
-    {{ label }}
-  </span>
+  <span :class="badgeClass">{{ label }}</span>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 
 const props = defineProps({
-  estado: { type: String, required: true },
+  status: { type: String, default: '' }
 })
 
-const map = {
-  ACTIVA:     { label: 'Activa',     bg: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30', dot: 'bg-emerald-400' },
-  CONFIRMADA: { label: 'Confirmada', bg: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30', dot: 'bg-emerald-400' },
-  PAGADA:     { label: 'Pagada',     bg: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30', dot: 'bg-emerald-400' },
-  EN_ESPERA:  { label: 'En Espera',  bg: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',   dot: 'bg-amber-400' },
-  PENDIENTE:  { label: 'Pendiente',  bg: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',   dot: 'bg-amber-400' },
-  EN_REVISION:{ label: 'En Revisión',bg: 'bg-blue-500/15 text-blue-400 border border-blue-500/30',     dot: 'bg-blue-400' },
-  CANCELADA:  { label: 'Cancelada',  bg: 'bg-red-500/15 text-red-400 border border-red-500/30',         dot: 'bg-red-400' },
-  RECHAZADA:  { label: 'Rechazada',  bg: 'bg-red-500/15 text-red-400 border border-red-500/30',         dot: 'bg-red-400' },
-  COMPLETADA: { label: 'Completada', bg: 'bg-gray-500/15 text-gray-400 border border-gray-500/30',      dot: 'bg-gray-400' },
-  PROXIMA:    { label: 'Próxima',    bg: 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30', dot: 'bg-indigo-400' },
-  EN_CURSO:   { label: 'En Curso',   bg: 'bg-purple-500/15 text-purple-400 border border-purple-500/30', dot: 'bg-purple-400 animate-pulse' },
-}
+const label = computed(() => {
+  switch (props.status?.toUpperCase()) {
+    case 'ACTIVE': return 'Activo'
+    case 'PENDING': return 'Pendiente'
+    case 'APPROVED': return 'Aprobado'
+    case 'REJECTED': return 'Rechazado'
+    case 'COMPLETED': return 'Completado'
+    case 'CANCELLED': return 'Cancelado'
+    case 'IN_PROGRESS': return 'En Progreso'
+    case 'REALIZED': return 'Realizado'
+    case 'NOT_REALIZED': return 'No Realizado'
+    case 'ENABLED': return 'Habilitado'
+    case 'DISABLED': return 'Deshabilitado'
+    case 'PUBLISHED': return 'Publicado'
+    case 'DRAFT': return 'Borrador'
+    default: return props.status || 'Desconocido'
+  }
+})
 
-const entry = computed(() => map[props.estado?.toUpperCase()] || { label: props.estado, bg: 'bg-gray-500/15 text-gray-400 border border-gray-500/30', dot: 'bg-gray-400' })
-const badgeClass = computed(() => entry.value.bg)
-const dotClass = computed(() => entry.value.dot)
-const label = computed(() => entry.value.label)
+const badgeClass = computed(() => {
+  switch (props.status?.toUpperCase()) {
+    case 'ACTIVE':
+    case 'APPROVED':
+    case 'COMPLETED':
+    case 'REALIZED':
+    case 'ENABLED':
+    case 'PUBLISHED':
+      return 'badge badge-green'
+    case 'PENDING':
+    case 'IN_PROGRESS':
+    case 'DRAFT':
+      return 'badge badge-yellow'
+    case 'REJECTED':
+    case 'CANCELLED':
+    case 'NOT_REALIZED':
+    case 'DISABLED':
+      return 'badge badge-red'
+    default:
+      return 'badge badge-blue'
+  }
+})
 </script>

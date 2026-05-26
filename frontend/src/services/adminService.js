@@ -1,28 +1,48 @@
 import api from './api'
 
-export const adminService = {
+export default {
   async getStats() {
-    const { data } = await api.get('/admin/stats')
-    return data
+    const res = await api.get('/admin/stats')
+    return res.data
   },
-  async getPendingVerifications() {
-    const { data } = await api.get('/admin/identity-verifications')
-    return data
+
+  async getIdentityVerifications() {
+    const res = await api.get('/admin/identity-verifications')
+    return res.data
   },
+
   async reviewIdentity(id, action) {
-    const { data } = await api.patch(`/admin/identity-verifications/${id}?action=${action}`)
-    return data
+    const res = await api.patch(`/admin/identity-verifications/${id}?action=${action}`)
+    return res.data
   },
+
   async getPendingVenues() {
-    const { data } = await api.get('/admin/venues/pending')
-    return data
+    const res = await api.get('/admin/venues/pending')
+    return res.data
   },
+
   async approveVenue(id) {
-    const { data } = await api.patch(`/admin/venues/${id}/approve`)
-    return data
+    const res = await api.patch(`/admin/venues/${id}/approve`)
+    return res.data
   },
+
   async rejectVenue(id) {
-    const { data } = await api.patch(`/admin/venues/${id}/reject`)
-    return data
+    const res = await api.patch(`/admin/venues/${id}/reject`)
+    return res.data
+  },
+
+  async getUsers() {
+    const res = await api.get('/admin/users')
+    return res.data
+  },
+
+  async assignRole(userId, roleName) {
+    const res = await api.post(`/admin/users/${userId}/roles`, { roleName })
+    return res.data
+  },
+
+  async revokeRole(userId, roleName) {
+    const res = await api.delete(`/admin/users/${userId}/roles/${roleName}`)
+    return res.data
   }
 }

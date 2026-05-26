@@ -1,177 +1,109 @@
 package com.modoensayo.venues.service;
 
-import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
-import com.modoensayo.venues.domain.Room;
-import com.modoensayo.venues.domain.Venue;
-import com.modoensayo.venues.dto.RoomRequest;
-import com.modoensayo.venues.dto.RoomResponse;
-import com.modoensayo.venues.dto.VenueRequest;
-import com.modoensayo.venues.dto.VenueResponse;
-import com.modoensayo.venues.repository.RoomRepository;
-import com.modoensayo.venues.repository.VenueRepository;
+import com.modoensayo.venues.domain.*;
+import com.modoensayo.venues.dto.*;
+import com.modoensayo.venues.enums.EstadoSede;
+import com.modoensayo.venues.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class VenueService {
 
     private final VenueRepository venueRepository;
     private final RoomRepository roomRepository;
+    private final RoomAvailabilityRepository roomAvailabilityRepository;
 
-    public VenueService(VenueRepository venueRepository, RoomRepository roomRepository) {
-        this.venueRepository = venueRepository;
-        this.roomRepository = roomRepository;
-    }
-
-    @Transactional(readOnly = true)
     public List<VenueResponse> listApproved() {
-        return venueRepository.findByStatus("APPROVED").stream()
-                .map(this::toVenueResponse)
-                .toList();
+        return venueRepository.findByStatusOrderByCreatedAtDesc("APROBADA").stream()
+                .map(this::toVenueResponse).collect(Collectors.toList());
     }
 
     @Transactional
-    public VenueResponse create(String adminId, VenueRequest request) {
-        Venue venue = Venue.builder()
-                .adminId(UUID.fromString(adminId))
-                .name(request.name())
-                .address(request.address())
-                .description(request.description())
-                .imageUrl(request.imageUrl())
-                .phone(request.phone())
-                .email(request.email())
-                .status("PENDING")
-                .build();
-
-        venueRepository.save(venue);
-        return toVenueResponse(venue);
+    public VenueResponse create(VenueRequest req) {
+        Venue v = Venue.builder()
+                .name(req.name()).city(req.city()).address(req.address())
+                .description(req.description()).phone(req.phone()).email(req.email())
+                .status(EstadoSede.PENDIENTE_APROBACION).build();
+        return toVenueResponse(venueRepository.save(v));
     }
 
-    @Transactional(readOnly = true)
-    public List<RoomResponse> getRooms(String venueId) {
-        return roomRepository.findByVenueId(UUID.fromString(venueId)).stream()
-                .map(this::toRoomResponse)
-                .toList();
+    public List<VenueResponse> getMyVenues(UUID adminId) {
+        return venueRepository.findByAdminId(adminId).stream()
+                .map(this::toVenueResponse).collect(Collectors.toList());
     }
 
     @Transactional
-    public RoomResponse createRoom(RoomRequest request) {
-        Venue venue = venueRepository.findById(UUID.fromString(request.venueId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
-
-        Room room = Room.builder()
-                .venue(venue)
-                .name(request.name())
-                .capacity(request.capacity())
-                .floorType(request.floorType())
-                .hasMirrors(request.hasMirrors() != null ? request.hasMirrors() : false)
-                .hasSound(request.hasSound() != null ? request.hasSound() : false)
-                .hasBalletBar(request.hasBalletBar() != null ? request.hasBalletBar() : false)
-                .hasAirConditioning(request.hasAirConditioning() != null ? request.hasAirConditioning() : false)
-                .hasNaturalLight(request.hasNaturalLight() != null ? request.hasNaturalLight() : false)
-                .lighting(request.lighting())
-                .wallColor(request.wallColor())
-                .imageUrl(request.imageUrl())
-                .build();
-
-        roomRepository.save(room);
-        return toRoomResponse(room);
-    }
-
-    private VenueResponse toVenueResponse(Venue venue) {
-        return new VenueResponse(
-                venue.getId().toString(),
-                venue.getName(),
-                venue.getAddress(),
-                venue.getDescription(),
-                venue.getImageUrl(),
-                venue.getPhone(),
-                venue.getEmail(),
-                venue.getStatus()
-        );
-    }
-
-    private RoomResponse toRoomResponse(Room room) {
-        return new RoomResponse(
-                room.getId().toString(),
-                room.getVenue().getId().toString(),
-                room.getName(),
-                room.getCapacity(),
-                room.getFloorType(),
-                room.getHasMirrors(),
-                room.getHasSound(),
-                room.getHasBalletBar(),
-                room.getHasAirConditioning(),
-                room.getHasNaturalLight(),
-                room.getLighting(),
-                room.getWallColor(),
-                room.getImageUrl()
-        );
-    }
-
-    @Transactional(readOnly = true)
-    public List<VenueResponse> getVenuesByAdminId(String adminId) {
-        return venueRepository.findByAdminId(UUID.fromString(adminId)).stream()
-                .map(this::toVenueResponse)
-                .toList();
+    public VenueResponse createVenueAdmin(UUID adminId, VenueRequest req) {
+        Venue v = Venue.builder()
+                .adminId(adminId).name(req.name()).city(req.city()).address(req.address())
+                .description(req.description()).phone(req.phone()).email(req.email())
+                .status(EstadoSede.APROBADA).build();
+        return toVenueResponse(venueRepository.save(v));
     }
 
     @Transactional
-    public VenueResponse updateVenue(String venueId, String adminId, VenueRequest request) {
-        Venue venue = venueRepository.findById(UUID.fromString(venueId))
+    public VenueResponse updateVenue(UUID venueId, VenueRequest req) {
+        Venue v = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
-        if (!venue.getAdminId().equals(UUID.fromString(adminId))) {
-            throw new BusinessException("No tienes permiso para editar esta sede");
-        }
-        venue.setName(request.name());
-        venue.setAddress(request.address());
-        venue.setDescription(request.description());
-        venue.setImageUrl(request.imageUrl());
-        venue.setPhone(request.phone());
-        venue.setEmail(request.email());
-        venueRepository.save(venue);
-        return toVenueResponse(venue);
+        if (req.name() != null) v.setName(req.name());
+        if (req.city() != null) v.setCity(req.city());
+        if (req.address() != null) v.setAddress(req.address());
+        if (req.description() != null) v.setDescription(req.description());
+        if (req.phone() != null) v.setPhone(req.phone());
+        if (req.email() != null) v.setEmail(req.email());
+        return toVenueResponse(venueRepository.save(v));
     }
 
-    @Transactional(readOnly = true)
-    public List<RoomResponse> getRoomsForAdmin(String venueId, String adminId) {
-        Venue venue = venueRepository.findById(UUID.fromString(venueId))
-                .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
-        if (!venue.getAdminId().equals(UUID.fromString(adminId))) {
-            throw new BusinessException("No tienes permiso para ver las salas de esta sede");
-        }
-        return getRooms(venueId);
+    public List<RoomResponse> getRooms(UUID venueId) {
+        return roomRepository.findByVenueId(venueId).stream()
+                .map(this::toRoomResponse).collect(Collectors.toList());
     }
 
     @Transactional
-    public RoomResponse createRoomForAdmin(String venueId, String adminId, RoomRequest request) {
-        Venue venue = venueRepository.findById(UUID.fromString(venueId))
+    public RoomResponse createRoom(UUID venueId, RoomRequest req) {
+        Venue v = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
-        if (!venue.getAdminId().equals(UUID.fromString(adminId))) {
-            throw new BusinessException("No tienes permiso para crear salas en esta sede");
-        }
-        if (request.capacity() == null || request.capacity() <= 0) {
-            throw new BusinessException("La capacidad debe ser mayor a 0");
-        }
-        Room room = Room.builder()
-                .venue(venue)
-                .name(request.name())
-                .capacity(request.capacity())
-                .floorType(request.floorType())
-                .hasMirrors(request.hasMirrors() != null ? request.hasMirrors() : false)
-                .hasSound(request.hasSound() != null ? request.hasSound() : false)
-                .hasBalletBar(request.hasBalletBar() != null ? request.hasBalletBar() : false)
-                .hasAirConditioning(request.hasAirConditioning() != null ? request.hasAirConditioning() : false)
-                .hasNaturalLight(request.hasNaturalLight() != null ? request.hasNaturalLight() : false)
-                .lighting(request.lighting())
-                .wallColor(request.wallColor())
-                .imageUrl(request.imageUrl())
-                .build();
-        roomRepository.save(room);
-        return toRoomResponse(room);
+        Room r = Room.builder().venue(v).name(req.name()).capacity(req.capacity())
+                .floorType(req.floorType()).type(req.type()).hasMirrors(req.hasMirrors())
+                .hasSound(req.hasSound()).equipment(req.equipment()).build();
+        return toRoomResponse(roomRepository.save(r));
+    }
+
+    public List<RoomAvailabilityResponse> getRoomAvailability(UUID roomId) {
+        return roomAvailabilityRepository.findByRoomId(roomId).stream()
+                .map(a -> new RoomAvailabilityResponse(a.getId(), a.getRoom().getId(), a.getStartTime(), a.getEndTime()))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public RoomAvailabilityResponse createAvailability(UUID roomId, RoomAvailabilityRequest req) {
+        Room r = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
+        RoomAvailability a = RoomAvailability.builder().room(r).startTime(req.startTime()).endTime(req.endTime()).build();
+        a = roomAvailabilityRepository.save(a);
+        return new RoomAvailabilityResponse(a.getId(), a.getRoom().getId(), a.getStartTime(), a.getEndTime());
+    }
+
+    @Transactional
+    public void deleteAvailability(UUID availId) {
+        roomAvailabilityRepository.deleteById(availId);
+    }
+
+    private VenueResponse toVenueResponse(Venue v) {
+        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
+                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(), v.getCreatedAt());
+    }
+
+    private RoomResponse toRoomResponse(Room r) {
+        return new RoomResponse(r.getId(), r.getVenue().getId(), r.getVenue().getName(),
+                r.getName(), r.getCapacity(), r.getFloorType(), r.getType(), r.getEquipment(), r.getCreatedAt());
     }
 }

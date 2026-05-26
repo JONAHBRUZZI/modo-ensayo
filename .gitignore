@@ -1,18 +1,21 @@
-# Entornos y variables
-.env
-.env.*
-
-# IDEs
-.idea/
-.vscode/
-
-# Node y frontend
+# Frontend
 frontend/node_modules/
 frontend/dist/
+frontend/.vite/
 
-# Maven y Java
+# Backend
 backend/target/
+backend/.idea/
 
-# Archivos del sistema
-Thumbs.db
+# Env files with secrets
+.env
+backend/.env
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.iml

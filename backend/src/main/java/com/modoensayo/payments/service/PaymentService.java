@@ -1,74 +1,70 @@
 package com.modoensayo.payments.service;
 
+import com.modoensayo.classes.domain.Class;
+import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.payments.domain.CartItem;
-import com.modoensayo.payments.dto.CartItemRequest;
-import com.modoensayo.payments.dto.CheckoutRequest;
-import com.modoensayo.payments.dto.CheckoutResponse;
 import com.modoensayo.payments.repository.CartItemRepository;
-import com.modoensayo.payments.repository.EnrollmentRepository;
-import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentService {
 
     private final CartItemRepository cartItemRepository;
-    private final EnrollmentRepository enrollmentRepository;
-
-    public PaymentService(CartItemRepository cartItemRepository,
-                          EnrollmentRepository enrollmentRepository) {
-        this.cartItemRepository = cartItemRepository;
-        this.enrollmentRepository = enrollmentRepository;
-    }
+    private final ClassRepository classRepository;
 
     @Transactional
-    public void addToCart(String ownerId, CartItemRequest request) {
-        UUID classId = UUID.fromString(request.classId());
-        UUID beneficiaryId = request.beneficiaryId() != null ? UUID.fromString(request.beneficiaryId()) : null;
-
-        if (enrollmentRepository.existsByClassIdAndBeneficiaryTypeAndBeneficiaryId(
-                classId, request.beneficiaryType(), beneficiaryId)) {
-            throw new BusinessException("Already enrolled in this class");
-        }
+    public void addToCart(UUID ownerId, UUID classId) {
+        Class c = classRepository.findById(classId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
         CartItem item = CartItem.builder()
-                .ownerId(UUID.fromString(ownerId))
-                .classId(classId)
-                .beneficiaryType(request.beneficiaryType())
-                .beneficiaryId(beneficiaryId)
+                .ownerId(ownerId).classId(classId)
+                .classTitle(c.getTitle()).discipline(c.getDiscipline() != null ? c.getDiscipline().name() : null)
+                .level(c.getLevel() != null ? c.getLevel().name() : null).price(c.getPrice())
                 .build();
-
         cartItemRepository.save(item);
     }
 
-    @Transactional(readOnly = true)
-    public List<CartItem> getCart(String ownerId) {
-        return cartItemRepository.findByOwnerId(UUID.fromString(ownerId));
+    public List<CartItem> getCart(UUID ownerId) {
+        return cartItemRepository.findByOwnerId(ownerId);
     }
 
     @Transactional
-    public void removeFromCart(String ownerId, String itemId) {
-        cartItemRepository.findById(UUID.fromString(itemId))
-                .ifPresent(item -> {
-                    if (!item.getOwnerId().equals(UUID.fromString(ownerId))) {
-                        throw new ResourceNotFoundException("Cart item not found");
-                    }
-                    cartItemRepository.delete(item);
-                });
+    public void removeFromCart(UUID itemId) {
+        cartItemRepository.deleteById(itemId);
     }
 
     @Transactional
-    public void clearCart(String ownerId) {
-        cartItemRepository.deleteByOwnerId(UUID.fromString(ownerId));
+    public void clearCart(UUID ownerId) {
+        cartItemRepository.deleteByOwnerId(ownerId);
     }
 
     @Transactional
-    public CheckoutResponse checkout(String ownerId, CheckoutRequest request) {
-        throw new BusinessException("Checkout directo deshabilitado. Usa Mercado Pago.");
+    public Map<String, Object> checkout(UUID ownerId) {
+        List<CartItem> items = cartItemRepository.findByOwnerId(ownerId);
+        cartItemRepository.deleteByOwnerId(ownerId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("items", items);
+        result.put("total", items.stream().mapToDouble(CartItem::getPrice).sum());
+        return result;
+    }
+
+    public Map<String, Object> createMercadoPagoPreference(UUID ownerId) {
+        List<CartItem> items = cartItemRepository.findByOwnerId(ownerId);
+        double total = items.stream().mapToDouble(CartItem::getPrice).sum();
+        String prefId = UUID.randomUUID().toString().substring(0, 16);
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("preferenceId", prefId);
+        resp.put("initPoint", "/payment/pending");
+        resp.put("total", total);
+        resp.put("items", items);
+        return resp;
     }
 }

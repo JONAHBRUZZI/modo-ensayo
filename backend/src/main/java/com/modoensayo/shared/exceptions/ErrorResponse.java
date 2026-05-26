@@ -1,17 +1,9 @@
 package com.modoensayo.shared.exceptions;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.Instant;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ErrorResponse {
-    private int status;
-    private String message;
-    private Instant timestamp;
-    private String path;
+public record ErrorResponse(int status, String message, Instant timestamp) {
+    public ErrorResponse(int status, String message) {
+        this(status, message, Instant.now());
+    }
 }

@@ -1,17 +1,11 @@
 package com.modoensayo.classes.dto;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public record ClassResponse(
-        String id,
-        String roomId,
-        String venueName,
-        String teacherId,
-        String title,
-        String discipline,
-        Integer capacity,
-        Integer price,
-        Instant startTime,
-        Instant endTime,
-        String status
+    UUID id, String title, String discipline, String level, String description,
+    Integer capacity, Integer duration, Double price, Integer minAge, Integer maxAge,
+    Instant startTime, UUID roomId, String roomName, UUID venueId, String venueName,
+    UUID teacherId, String status, Integer enrolledCount, Instant createdAt
 ) {}

@@ -1,58 +1,73 @@
 package com.modoensayo.admin.controller;
 
-import com.modoensayo.admin.dto.AdminStatsResponse;
 import com.modoensayo.admin.service.AdminService;
-import com.modoensayo.shared.security.SecurityUtils;
+import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.users.dto.IdentityVerificationResponse;
-import com.modoensayo.venues.domain.Venue;
+import com.modoensayo.venues.dto.VenueResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ADMIN')")
 public class AdminController {
 
     private final AdminService adminService;
 
-    @GetMapping("/identity-verifications")
-    public ResponseEntity<List<IdentityVerificationResponse>> listPendingVerifications() {
-        return ResponseEntity.ok(adminService.listPendingVerifications());
-    }
-
     @GetMapping("/stats")
-    public ResponseEntity<AdminStatsResponse> getStats() {
+    public ResponseEntity<Map<String, Object>> getStats() {
         return ResponseEntity.ok(adminService.getStats());
     }
 
+    @GetMapping("/identity-verifications")
+    public ResponseEntity<List<IdentityVerificationResponse>> getVerifications() {
+        return ResponseEntity.ok(adminService.getIdentityVerifications());
+    }
+
     @PatchMapping("/identity-verifications/{id}")
-    public ResponseEntity<IdentityVerificationResponse> reviewIdentity(
-            @PathVariable String id, @RequestParam String action) {
-        return ResponseEntity.ok(adminService.reviewIdentity(id, action, SecurityUtils.getCurrentUserId()));
+    public ResponseEntity<IdentityVerificationResponse> review(@PathVariable UUID id,
+                                                                @RequestParam String action,
+                                                                @AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(adminService.reviewIdentity(id, action, user.getUserId()));
     }
 
     @GetMapping("/venues/pending")
-    public ResponseEntity<List<Venue>> listPendingVenues() {
-        return ResponseEntity.ok(adminService.listPendingVenues());
+    public ResponseEntity<List<VenueResponse>> getPendingVenues() {
+        return ResponseEntity.ok(adminService.getPendingVenues());
     }
 
     @PatchMapping("/venues/{id}/approve")
-    public ResponseEntity<Venue> approveVenue(@PathVariable String id) {
-        return ResponseEntity.ok(adminService.reviewVenue(id, "APPROVED"));
+    public ResponseEntity<VenueResponse> approveVenue(@PathVariable UUID id) {
+        return ResponseEntity.ok(adminService.approveVenue(id));
     }
 
     @PatchMapping("/venues/{id}/reject")
-    public ResponseEntity<Venue> rejectVenue(@PathVariable String id) {
-        return ResponseEntity.ok(adminService.reviewVenue(id, "REJECTED"));
+    public ResponseEntity<VenueResponse> rejectVenue(@PathVariable UUID id) {
+        return ResponseEntity.ok(adminService.rejectVenue(id));
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<Map<String, Object>>> getUsers() {
+        return ResponseEntity.ok(adminService.getUsers());
+    }
+
+    @PostMapping("/users/{id}/roles")
+    public ResponseEntity<Void> assignRole(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        adminService.assignRole(id, body.get("roleName"));
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/users/{id}/roles/{roleName}")
+    public ResponseEntity<Void> revokeRole(@PathVariable UUID id, @PathVariable String roleName) {
+        adminService.revokeRole(id, roleName);
+        return ResponseEntity.noContent().build();
     }
 }

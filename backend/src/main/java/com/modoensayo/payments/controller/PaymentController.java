@@ -1,101 +1,50 @@
 package com.modoensayo.payments.controller;
 
-import com.mercadopago.exceptions.MPApiException;
-import com.mercadopago.exceptions.MPException;
+import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.payments.domain.CartItem;
-import com.modoensayo.payments.domain.Enrollment;
-import com.modoensayo.payments.dto.CartItemRequest;
-import com.modoensayo.payments.dto.CheckoutRequest;
-import com.modoensayo.payments.dto.CheckoutResponse;
-import com.modoensayo.payments.dto.MercadoPagoPreferenceResponse;
-import com.modoensayo.payments.repository.EnrollmentRepository;
-import com.modoensayo.payments.service.MercadoPagoService;
 import com.modoensayo.payments.service.PaymentService;
-import com.modoensayo.shared.security.SecurityUtils;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final MercadoPagoService mercadoPagoService;
-    private final EnrollmentRepository enrollmentRepository;
 
     @PostMapping("/cart")
-    public ResponseEntity<Void> addToCart(@Valid @RequestBody CartItemRequest request) {
-        paymentService.addToCart(SecurityUtils.getCurrentUserId(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<Void> addToCart(@AuthenticationPrincipal CustomUserDetails user,
+                                           @RequestBody Map<String, UUID> body) {
+        paymentService.addToCart(user.getUserId(), body.get("classId"));
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/cart")
-    public ResponseEntity<List<CartItem>> getCart() {
-        return ResponseEntity.ok(paymentService.getCart(SecurityUtils.getCurrentUserId()));
+    public ResponseEntity<Map<String, Object>> getCart(@AuthenticationPrincipal CustomUserDetails user) {
+        List<CartItem> items = paymentService.getCart(user.getUserId());
+        return ResponseEntity.ok(Map.of("items", items));
     }
 
-    @DeleteMapping("/cart")
-    public ResponseEntity<Void> clearCart() {
-        paymentService.clearCart(SecurityUtils.getCurrentUserId());
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/cart/{itemId}")
-    public ResponseEntity<Void> removeFromCart(@PathVariable String itemId) {
-        paymentService.removeFromCart(SecurityUtils.getCurrentUserId(), itemId);
+    @DeleteMapping("/cart/{id}")
+    public ResponseEntity<Void> removeFromCart(@PathVariable UUID id) {
+        paymentService.removeFromCart(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<CheckoutResponse> checkout(@RequestBody CheckoutRequest request) {
-        return ResponseEntity.ok(paymentService.checkout(SecurityUtils.getCurrentUserId(), request));
+    public ResponseEntity<Map<String, Object>> checkout(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(paymentService.checkout(user.getUserId()));
     }
 
     @PostMapping("/mercadopago/create-preference")
-    public ResponseEntity<MercadoPagoPreferenceResponse> createMercadoPagoPreference() {
-        try {
-            return ResponseEntity.ok(mercadoPagoService.createPreference(SecurityUtils.getCurrentUserId()));
-        } catch (MPException | MPApiException e) {
-            log.error("Error al crear preferencia de Mercado Pago", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @PostMapping("/webhook")
-    public ResponseEntity<Void> webhook(@RequestBody Map<String, Object> payload) {
-        String paymentId = mercadoPagoService.extractPaymentIdFromWebhook(payload);
-        if (paymentId == null || paymentId.isBlank()) {
-            log.warn("Webhook MP without payment id. payload={}", payload);
-            return ResponseEntity.accepted().build();
-        }
-
-        try {
-            mercadoPagoService.processWebhookPayment(paymentId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("Error processing MP webhook paymentId={}", paymentId, e);
-            return ResponseEntity.status(HttpStatus.ACCEPTED).build();
-        }
-    }
-
-    @GetMapping("/enrollments/class/{classId}")
-    public ResponseEntity<List<Enrollment>> getEnrollmentsByClass(@PathVariable String classId) {
-        return ResponseEntity.ok(enrollmentRepository.findByClassId(UUID.fromString(classId)));
+    public ResponseEntity<Map<String, Object>> createPreference(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(paymentService.createMercadoPagoPreference(user.getUserId()));
     }
 }

@@ -1,33 +1,23 @@
 package com.modoensayo.users.domain;
 
-import com.modoensayo.users.domain.User;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "user_roles")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class UserRole {
-    @EmbeddedId
-    private UserRoleId id;
 
-    @ManyToOne
+    @EmbeddedId
+    @Builder.Default
+    private UserRoleId id = new UserRoleId();
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("userId")
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @MapsId("roleId")
     @JoinColumn(name = "role_id")
     private Role role;

@@ -3,18 +3,11 @@ package com.modoensayo.attendance.controller;
 import com.modoensayo.attendance.dto.AttendanceRequest;
 import com.modoensayo.attendance.dto.AttendanceResponse;
 import com.modoensayo.attendance.service.AttendanceService;
-import com.modoensayo.shared.security.SecurityUtils;
-import jakarta.validation.Valid;
+import com.modoensayo.auth.service.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,16 +20,13 @@ public class AttendanceController {
     private final AttendanceService attendanceService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
-    public ResponseEntity<List<AttendanceResponse>> markAttendance(@Valid @RequestBody AttendanceRequest request) {
-        String teacherId = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(attendanceService.markAttendance(teacherId, request));
+    public ResponseEntity<List<AttendanceResponse>> markAttendance(@RequestBody AttendanceRequest req,
+                                                                    @AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(attendanceService.markAttendance(req, user.getEmail()));
     }
 
     @GetMapping("/class/{classId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'VENUE_ADMIN', 'ADMIN')")
     public ResponseEntity<List<AttendanceResponse>> getAttendance(@PathVariable UUID classId) {
-        return ResponseEntity.ok(attendanceService.getAttendanceByClass(classId));
+        return ResponseEntity.ok(attendanceService.getAttendance(classId));
     }
 }

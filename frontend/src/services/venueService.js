@@ -1,55 +1,77 @@
 import api from './api'
 
-export const venueService = {
-  async create(request) {
-    const { data } = await api.post('/venues', request)
-    return data
+export default {
+  async createVenue(data) {
+    const res = await api.post('/venues', data)
+    return res.data
   },
-  async listApproved() {
-    const { data } = await api.get('/venues')
-    return data
+
+  async getVenues() {
+    const res = await api.get('/venues')
+    return res.data
   },
+
   async getMyVenues() {
-    const { data } = await api.get('/venue-admin/my-venues')
-    return data
+    const res = await api.get('/venue-admin/my-venues')
+    return res.data
   },
-  async createVenue(request) {
-    const { data } = await api.post('/venue-admin/venues', request)
-    return data
+
+  async createVenueAdmin(data) {
+    const res = await api.post('/venue-admin/venues', data)
+    return res.data
   },
-  async updateVenue(id, request) {
-    const { data } = await api.patch(`/venue-admin/venues/${id}`, request)
-    return data
+
+  async updateVenue(id, data) {
+    const res = await api.patch(`/venue-admin/venues/${id}`, data)
+    return res.data
   },
-  async getRooms(venueId) {
-    const { data } = await api.get(`/venue-admin/venues/${venueId}/rooms`)
-    return data
+
+  async getVenueMetrics() {
+    const res = await api.get('/venue-admin/metrics')
+    return res.data
   },
-  async createRoom(venueId, request) {
-    const { data } = await api.post(`/venue-admin/venues/${venueId}/rooms`, request)
-    return data
+
+  async getVenueProfessors() {
+    const res = await api.get('/venue-admin/professors')
+    return res.data
   },
-  async getClassesPendingConfirmation() {
-    const { data } = await api.get('/venue-admin/classes/pending-confirmation')
-    return data
+
+  async getVenueRooms(venueId) {
+    const res = await api.get(`/venue-admin/venues/${venueId}/rooms`)
+    return res.data
   },
+
+  async createRoom(venueId, data) {
+    const res = await api.post(`/venue-admin/venues/${venueId}/rooms`, data)
+    return res.data
+  },
+
+  async getPendingClasses() {
+    const res = await api.get('/venue-admin/classes/pending-confirmation')
+    return res.data
+  },
+
   async confirmClassRealized(classId) {
-    const { data } = await api.patch(`/venue-admin/classes/${classId}/confirm-realized`)
-    return data
+    const res = await api.patch(`/venue-admin/classes/${classId}/confirm-realized`)
+    return res.data
   },
+
   async confirmClassNotRealized(classId) {
-    const { data } = await api.patch(`/venue-admin/classes/${classId}/confirm-not-realized`)
-    return data
+    const res = await api.patch(`/venue-admin/classes/${classId}/confirm-not-realized`)
+    return res.data
   },
-  async createRoomAvailability(roomId, request) {
-    const { data } = await api.post(`/venue-admin/rooms/${roomId}/availability`, request)
-    return data
+
+  async createRoomAvailability(roomId, data) {
+    const res = await api.post(`/venue-admin/rooms/${roomId}/availability`, data)
+    return res.data
   },
+
   async getRoomAvailability(roomId) {
-    const { data } = await api.get(`/venue-admin/rooms/${roomId}/availability`)
-    return data
+    const res = await api.get(`/venue-admin/rooms/${roomId}/availability`)
+    return res.data
   },
-  async deleteRoomAvailability(roomId, availabilityId) {
-    await api.post(`/venue-admin/rooms/${roomId}/availability/delete/${availabilityId}`)
-  },
+
+  async deleteRoomAvailability(roomId, slotId) {
+    await api.post(`/venue-admin/rooms/${roomId}/availability/delete/${slotId}`)
+  }
 }

@@ -1,37 +1,55 @@
 import api from './api'
 
-export const classService = {
-  async listPublished() {
-    const { data } = await api.get('/classes')
-    return data
+export default {
+  async getClasses(params) {
+    const res = await api.get('/classes', { params })
+    return res.data
   },
-  async createClass(request) {
-    const { data } = await api.post('/classes', request)
-    return data
+
+  async createClass(data) {
+    const res = await api.post('/classes', data)
+    return res.data
   },
-  async getMyClasses() {
-    const { data } = await api.get('/teacher/classes')
-    return data
+
+  async getTeacherClasses() {
+    const res = await api.get('/teacher/classes')
+    return res.data
   },
+
   async getVenues() {
-    const { data } = await api.get('/venues')
-    return data
+    const res = await api.get('/venues')
+    return res.data
   },
+
   async getVenueRooms(venueId) {
-    const { data } = await api.get(`/venues/${venueId}/rooms`)
-    return data
+    const res = await api.get(`/venues/${venueId}/rooms`)
+    return res.data
   },
+
   async getRoomAvailability(roomId, afterTime) {
-    const params = afterTime ? { afterTime } : {}
-    const { data } = await api.get(`/venues/rooms/${roomId}/availability`, { params })
-    return data
+    const res = await api.get(`/venues/rooms/${roomId}/availability`, {
+      params: { afterTime }
+    })
+    return res.data
   },
-  async markAttendance(request) {
-    const { data } = await api.post('/attendance', request)
-    return data
+
+  async markAttendance(classId, data) {
+    const res = await api.post('/attendance', { classId, ...data })
+    return res.data
   },
+
   async getClassAttendance(classId) {
-    const { data } = await api.get(`/attendance/class/${classId}`)
-    return data
+    const res = await api.get(`/attendance/class/${classId}`)
+    return res.data
   },
+
+  async getTeacherMetrics() {
+    const res = await api.get('/teacher/metrics')
+    return res.data
+  },
+
+  async getTeacherEarnings() {
+    const res = await api.get('/teacher/earnings')
+    return res.data
+  }
 }

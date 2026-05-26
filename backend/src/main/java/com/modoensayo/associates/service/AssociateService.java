@@ -4,63 +4,35 @@ import com.modoensayo.associates.domain.Associate;
 import com.modoensayo.associates.dto.AssociateRequest;
 import com.modoensayo.associates.dto.AssociateResponse;
 import com.modoensayo.associates.repository.AssociateRepository;
-import com.modoensayo.shared.exceptions.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AssociateService {
 
     private final AssociateRepository associateRepository;
 
-    public AssociateService(AssociateRepository associateRepository) {
-        this.associateRepository = associateRepository;
+    public List<AssociateResponse> getByOwner(UUID ownerId) {
+        return associateRepository.findByOwnerId(ownerId).stream()
+                .map(a -> new AssociateResponse(a.getId(), a.getEmail(), a.getStatus(), a.getCreatedAt()))
+                .collect(Collectors.toList());
     }
 
     @Transactional
-    public AssociateResponse create(String ownerId, AssociateRequest request) {
-        Associate associate = Associate.builder()
-                .ownerId(UUID.fromString(ownerId))
-                .name(request.name())
-                .relation(request.relation())
-                .birthDate(request.birthDate())
-                .rut(request.rut())
-                .build();
-
-        associateRepository.save(associate);
-
-        return toResponse(associate);
-    }
-
-    @Transactional(readOnly = true)
-    public List<AssociateResponse> findByOwner(String ownerId) {
-        return associateRepository.findByOwnerId(UUID.fromString(ownerId)).stream()
-                .map(this::toResponse)
-                .toList();
+    public AssociateResponse create(UUID ownerId, AssociateRequest req) {
+        Associate a = Associate.builder().ownerId(ownerId).email(req.email()).build();
+        a = associateRepository.save(a);
+        return new AssociateResponse(a.getId(), a.getEmail(), a.getStatus(), a.getCreatedAt());
     }
 
     @Transactional
-    public void delete(String ownerId, String associateId) {
-        Associate associate = associateRepository.findById(UUID.fromString(associateId))
-                .orElseThrow(() -> new ResourceNotFoundException("Associate not found"));
-
-        if (!associate.getOwnerId().equals(UUID.fromString(ownerId))) {
-            throw new ResourceNotFoundException("Associate not found");
-        }
-
-        associateRepository.delete(associate);
-    }
-
-    private AssociateResponse toResponse(Associate associate) {
-        return new AssociateResponse(
-                associate.getId().toString(),
-                associate.getName(),
-                associate.getRelation(),
-                associate.getBirthDate(),
-                associate.getRut()
-        );
+    public void delete(UUID id) {
+        associateRepository.deleteById(id);
     }
 }

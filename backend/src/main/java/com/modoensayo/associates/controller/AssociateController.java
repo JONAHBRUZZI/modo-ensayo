@@ -3,44 +3,36 @@ package com.modoensayo.associates.controller;
 import com.modoensayo.associates.dto.AssociateRequest;
 import com.modoensayo.associates.dto.AssociateResponse;
 import com.modoensayo.associates.service.AssociateService;
-import com.modoensayo.shared.security.SecurityUtils;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import com.modoensayo.auth.service.CustomUserDetails;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/associates")
+@RequiredArgsConstructor
 public class AssociateController {
 
     private final AssociateService associateService;
 
-    public AssociateController(AssociateService associateService) {
-        this.associateService = associateService;
+    @GetMapping
+    public ResponseEntity<List<AssociateResponse>> list(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(associateService.getByOwner(user.getUserId()));
     }
 
     @PostMapping
-    public ResponseEntity<AssociateResponse> create(@Valid @RequestBody AssociateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(associateService.create(SecurityUtils.getCurrentUserId(), request));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<AssociateResponse>> getByOwner() {
-        return ResponseEntity.ok(associateService.findByOwner(SecurityUtils.getCurrentUserId()));
+    public ResponseEntity<AssociateResponse> create(@AuthenticationPrincipal CustomUserDetails user,
+                                                     @RequestBody AssociateRequest req) {
+        return ResponseEntity.ok(associateService.create(user.getUserId(), req));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        associateService.delete(SecurityUtils.getCurrentUserId(), id);
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        associateService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

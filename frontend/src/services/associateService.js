@@ -1,15 +1,17 @@
 import api from './api'
 
-export const associateService = {
-  async list() {
-    const { data } = await api.get('/associates')
-    return data
+export default {
+  async getAssociates() {
+    const res = await api.get('/associates')
+    return res.data
   },
-  async create(associateData) {
-    const { data } = await api.post('/associates', associateData)
-    return data
+
+  async createAssociate(data) {
+    const res = await api.post('/associates', data)
+    return res.data
   },
-  async delete(id) {
+
+  async deleteAssociate(id) {
     await api.delete(`/associates/${id}`)
   }
 }

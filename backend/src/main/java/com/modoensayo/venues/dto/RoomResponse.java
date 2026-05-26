@@ -1,17 +1,7 @@
 package com.modoensayo.venues.dto;
 
-public record RoomResponse(
-        String id,
-        String venueId,
-        String name,
-        Integer capacity,
-        String floorType,
-        Boolean hasMirrors,
-        Boolean hasSound,
-        Boolean hasBalletBar,
-        Boolean hasAirConditioning,
-        Boolean hasNaturalLight,
-        String lighting,
-        String wallColor,
-        String imageUrl
-) {}
+import java.time.Instant;
+import java.util.UUID;
+
+public record RoomResponse(UUID id, UUID venueId, String venueName, String name, Integer capacity,
+                           String floorType, String type, String equipment, Instant createdAt) {}

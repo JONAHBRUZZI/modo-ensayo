@@ -1,54 +1,53 @@
 package com.modoensayo.classes.domain;
 
 import com.modoensayo.classes.enums.ClassStatus;
+import com.modoensayo.classes.enums.Disciplina;
+import com.modoensayo.classes.enums.NivelClase;
 import com.modoensayo.shared.config.BaseEntity;
 import com.modoensayo.venues.domain.Room;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-
+import jakarta.persistence.*;
+import lombok.*;
 import java.time.Instant;
 import java.util.UUID;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "classes")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Class extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
+    private String title;
+
+    @Enumerated(EnumType.STRING)
+    private Disciplina discipline;
+
+    @Enumerated(EnumType.STRING)
+    private NivelClase level;
+
+    @Column(length = 2000)
+    private String description;
+
+    private Integer capacity;
+
+    private Integer duration;
+
+    private Double price;
+
+    private Integer minAge;
+
+    private Integer maxAge;
+
+    private Instant startTime;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
     private Room room;
 
     private UUID teacherId;
 
-    private String title;
-    private String discipline;
-    private Integer capacity;
-    private Integer price;
-
-    private Instant startTime;
-    private Instant endTime;
-
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ClassStatus status;
+    @Builder.Default
+    private ClassStatus status = ClassStatus.DRAFT;
 }

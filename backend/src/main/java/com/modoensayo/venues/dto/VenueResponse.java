@@ -1,12 +1,7 @@
 package com.modoensayo.venues.dto;
 
-public record VenueResponse(
-        String id,
-        String name,
-        String address,
-        String description,
-        String imageUrl,
-        String phone,
-        String email,
-        String status
-) {}
+import java.time.Instant;
+import java.util.UUID;
+
+public record VenueResponse(UUID id, String name, String city, String address, String description,
+                            String phone, String email, String status, Instant createdAt) {}

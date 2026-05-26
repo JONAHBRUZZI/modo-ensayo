@@ -1,24 +1,24 @@
 import api from './api'
 
-export const userService = {
+export default {
   async getProfile() {
-    const { data } = await api.get('/users/me')
-    return data
+    const res = await api.get('/users/me')
+    return res.data
   },
 
-  async updateProfile(profileData) {
-    const { data } = await api.put('/users/me', profileData)
-    return data
+  async updateProfile(data) {
+    const res = await api.put('/users/me', data)
+    return res.data
   },
 
   async getRefundMethods() {
-    const { data } = await api.get('/users/me/refund-methods')
-    return data
+    const res = await api.get('/users/me/refund-methods')
+    return res.data
   },
 
-  async createRefundMethod(methodData) {
-    const { data } = await api.post('/users/me/refund-methods', methodData)
-    return data
+  async createRefundMethod(data) {
+    const res = await api.post('/users/me/refund-methods', data)
+    return res.data
   },
 
   async deleteRefundMethod(id) {
@@ -26,12 +26,12 @@ export const userService = {
   },
 
   async getIdentityVerification() {
-    const { data } = await api.get('/users/me/identity-verification')
-    return data
+    const res = await api.get('/users/me/identity-verification')
+    return res.data
   },
 
-  async uploadIdentity(documentUrl) {
-    const { data } = await api.post('/users/me/identity-verification', { documentUrl })
-    return data
-  },
+  async uploadIdentityDocument(documentUrl) {
+    const res = await api.post('/users/me/identity-verification', { documentUrl })
+    return res.data
+  }
 }

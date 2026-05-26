@@ -1,0 +1,25 @@
+[Unit]
+Description=Modo Ensayo Backend
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=modoensayo
+WorkingDirectory=/opt/modoensayo
+ExecStart=/usr/bin/java -jar /opt/modoensayo/modoensayo.jar
+Restart=always
+RestartSec=10
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=SERVER_PORT=8080
+Environment=SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/modoensayo
+Environment=SPRING_DATASOURCE_USERNAME=modoensayo
+Environment=SPRING_DATASOURCE_PASSWORD=modoensayo
+Environment=JWT_SECRET=7Dt5OOsrW2R6v2Eyk2rqzQnmXcEe/agy0lTFWbja1ww=
+Environment=MERCADOPAGO_ACCESS_TOKEN=TEST-xxxxxxxxxxxxxxxxxxxx
+Environment=APP_FRONTEND_URL=https://TU_DOMINIO
+Environment=APP_BACKEND_URL=https://TU_DOMINIO
+Environment=STORAGE_PROVIDER=local
+Environment=STORAGE_UPLOAD_DIR=/opt/modoensayo/uploads
+
+[Install]
+WantedBy=multi-user.target

@@ -1,33 +1,23 @@
 {
-  "name": "modoensayo-frontend",
+  "name": "modo-ensayo-frontend",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint . --ext .vue,.js --fix",
-    "format": "prettier --write \"src/**/*.{js,vue,css}\"",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.21",
-    "vue-router": "^4.3.0",
-    "axios": "^1.6.8"
+    "axios": "^1.7.2",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.4",
-    "vite": "^5.2.8",
-    "tailwindcss": "^3.4.3",
-    "postcss": "^8.4.38",
+    "@vitejs/plugin-vue": "^5.2.1",
     "autoprefixer": "^10.4.19",
-    "eslint": "^8.57.0",
-    "eslint-plugin-vue": "^9.24.0",
-    "globals": "^15.1.0",
-    "prettier": "^3.2.5",
-    "vitest": "^1.5.0",
-    "jsdom": "^24.0.0"
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.0.0"
   }
 }

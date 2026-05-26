@@ -1,71 +1,52 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: modoensayo-postgres
+    container_name: modoensayo-db
+    restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT}:5432"
+      POSTGRES_DB: modoensayo
+      POSTGRES_USER: modoensayo
+      POSTGRES_PASSWORD: modoensayo
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U modoensayo -d modoensayo"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  pgadmin:
-    image: dpage/pgadmin4:8
-    container_name: modoensayo-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "${PGADMIN_PORT}:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-
   backend:
     build:
-      context: .
-      dockerfile: infra/docker/backend.Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: modoensayo-backend
-    env_file:
-      - .env
-    ports:
-      - "${BACKEND_PORT}:8080"
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
-
-  frontend:
-    build:
-      context: .
-      dockerfile: infra/docker/frontend.Dockerfile
-    container_name: modoensayo-frontend
-    ports:
-      - "${FRONTEND_PORT}:3000"
-    depends_on:
-      - backend
-
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: modoensayo-nginx
-    ports:
-      - "${NGINX_PORT}:80"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/modoensayo
+      SPRING_DATASOURCE_USERNAME: modoensayo
+      SPRING_DATASOURCE_PASSWORD: modoensayo
+      JWT_SECRET: 7Dt5OOsrW2R6v2Eyk2rqzQnmXcEe/agy0lTFWbja1ww=
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-TEST-xxxxxxxxxxxxxxxxxxxx}
+      APP_FRONTEND_URL: https://www.modoensayo.cl
+      APP_BACKEND_URL: https://api.modoensayo.cl
+      STORAGE_PROVIDER: local
+      STORAGE_UPLOAD_DIR: /app/uploads
     volumes:
-      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - frontend
-      - backend
+      - uploads_data:/app/uploads
+    ports:
+      - "8080:8080"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: modoensayo-tunnel
+    restart: always
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    network_mode: host
 
 volumes:
   postgres_data:
-  pgadmin_data:
+  uploads_data:

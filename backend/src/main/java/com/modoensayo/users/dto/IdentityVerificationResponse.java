@@ -1,9 +1,8 @@
 package com.modoensayo.users.dto;
 
+import java.time.Instant;
+import java.util.UUID;
+
 public record IdentityVerificationResponse(
-        String id,
-        String userId,
-        String documentUrl,
-        String status,
-        String reviewedBy
+    UUID id, UUID userId, String documentUrl, String status, Instant createdAt
 ) {}

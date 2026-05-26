@@ -1,62 +1,93 @@
 package com.modoensayo.users.service;
 
+import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
-import com.modoensayo.reviews.enums.ReviewTargetType;
-import com.modoensayo.reviews.repository.ReviewRepository;
-import com.modoensayo.users.domain.User;
-import com.modoensayo.users.dto.UpdateProfileRequest;
-import com.modoensayo.users.dto.UserProfileResponse;
-import com.modoensayo.users.repository.UserRoleRepository;
-import com.modoensayo.users.repository.UserRepository;
+import com.modoensayo.users.domain.*;
+import com.modoensayo.users.dto.*;
+import com.modoensayo.users.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final ReviewRepository reviewRepository;
+    private final IdentityVerificationRepository identityVerificationRepository;
+    private final RefundMethodRepository refundMethodRepository;
 
-    public UserService(UserRepository userRepository,
-                       UserRoleRepository userRoleRepository,
-                       ReviewRepository reviewRepository) {
-        this.userRepository = userRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.reviewRepository = reviewRepository;
-    }
-
-    @Transactional(readOnly = true)
-    public UserProfileResponse getProfile(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        var roles = userRoleRepository.findByUserId(user.getId()).stream()
-                .map(ur -> ur.getRole().getName())
-                .toList();
-
-        return new UserProfileResponse(
-                user.getId().toString(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getPhone(),
-                roles,
-                reviewRepository.findAverageScore(ReviewTargetType.STUDENT, user.getId()),
-                reviewRepository.countByTargetTypeAndTargetId(ReviewTargetType.STUDENT, user.getId())
-        );
+    public UserProfileResponse getProfile(CustomUserDetails userDetails) {
+        User user = getUser(userDetails.getUserId());
+        IdentityVerification iv = identityVerificationRepository.findByUserId(user.getId()).orElse(null);
+        return mapToProfile(user, iv);
     }
 
     @Transactional
-    public UserProfileResponse updateProfile(String email, UpdateProfileRequest request) {
-        User user = userRepository.findByEmail(email)
+    public UserProfileResponse updateProfile(CustomUserDetails userDetails, UpdateProfileRequest req) {
+        User user = getUser(userDetails.getUserId());
+        if (req.socialName() != null) user.setSocialName(req.socialName());
+        if (req.phone() != null) user.setPhone(req.phone());
+        user = userRepository.save(user);
+        IdentityVerification iv = identityVerificationRepository.findByUserId(user.getId()).orElse(null);
+        return mapToProfile(user, iv);
+    }
+
+    public List<RefundMethod> getRefundMethods(CustomUserDetails userDetails) {
+        return refundMethodRepository.findByUserId(userDetails.getUserId());
+    }
+
+    @Transactional
+    public RefundMethod createRefundMethod(CustomUserDetails userDetails, RefundMethodRequest req) {
+        RefundMethod rm = RefundMethod.builder()
+                .userId(userDetails.getUserId())
+                .bank(req.bank())
+                .accountType(req.accountType())
+                .accountNumber(req.accountNumber())
+                .accountHolder(req.accountHolder())
+                .rut(req.rut())
+                .build();
+        return refundMethodRepository.save(rm);
+    }
+
+    @Transactional
+    public void deleteRefundMethod(UUID id) {
+        refundMethodRepository.deleteById(id);
+    }
+
+    public IdentityVerificationResponse getIdentityVerification(CustomUserDetails userDetails) {
+        IdentityVerification iv = identityVerificationRepository.findByUserId(userDetails.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("No verification found"));
+        return new IdentityVerificationResponse(iv.getId(), iv.getUserId(), iv.getDocumentUrl(), iv.getStatus(), iv.getCreatedAt());
+    }
+
+    @Transactional
+    public IdentityVerificationResponse uploadIdentity(CustomUserDetails userDetails, String documentUrl) {
+        IdentityVerification iv = identityVerificationRepository.findByUserId(userDetails.getUserId())
+                .orElse(IdentityVerification.builder().userId(userDetails.getUserId()).build());
+        iv.setDocumentUrl(documentUrl);
+        iv.setStatus("PENDING");
+        iv = identityVerificationRepository.save(iv);
+        return new IdentityVerificationResponse(iv.getId(), iv.getUserId(), iv.getDocumentUrl(), iv.getStatus(), iv.getCreatedAt());
+    }
+
+    private User getUser(UUID id) {
+        return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
 
-        user.setFullName(request.fullName());
-        user.setPhone(request.phone());
-        userRepository.save(user);
-
-        return getProfile(email);
+    private UserProfileResponse mapToProfile(User user, IdentityVerification iv) {
+        Set<String> roles = user.getUserRoles().stream()
+                .map(ur -> ur.getRole().getName()).collect(Collectors.toSet());
+        boolean identidadValidada = iv != null && "APPROVED".equals(iv.getStatus());
+        boolean identidadEnRevision = iv != null && "PENDING".equals(iv.getStatus());
+        return new UserProfileResponse(user.getId(), user.getEmail(), user.getFullName(),
+                user.getSocialName(), user.getPhone(), user.getRut(), roles, user.isEnabled(),
+                identidadValidada, identidadEnRevision);
     }
 }

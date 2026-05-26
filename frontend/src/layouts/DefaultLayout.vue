@@ -35,11 +35,12 @@
               <!-- Alumno mode -->
               <template v-if="modoActual === 'alumno'">
                 <router-link to="/alumno/dashboard" class="nav-link">Mi Espacio</router-link>
+                <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
               </template>
 
-              <!-- Cart / Payments -->
+              <!-- Cart -->
               <router-link to="/cart" class="nav-link relative">
-                Pagos
+                Carrito
                 <span v-if="cartCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {{ cartCount }}
                 </span>

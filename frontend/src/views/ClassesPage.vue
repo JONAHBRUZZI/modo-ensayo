@@ -3,11 +3,11 @@
     <h1 class="text-3xl font-bold text-white mb-4">Clases Disponibles</h1>
     <div class="card mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
       <select v-model="filtros.disciplina" class="input-field text-sm py-2">
-        <option value="">Todas</option>
+        <option value="">TODAS</option>
         <option v-for="d in disciplinas" :key="d" :value="d">{{ d }}</option>
       </select>
       <select v-model="filtros.nivel" class="input-field text-sm py-2">
-        <option value="">Todas</option>
+        <option value="">TODAS</option>
         <option v-for="n in niveles" :key="n" :value="n">{{ n }}</option>
       </select>
       <input v-model="filtros.comuna" class="input-field text-sm py-2" placeholder="Comuna" />

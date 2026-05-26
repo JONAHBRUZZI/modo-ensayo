@@ -29,12 +29,13 @@
             <input type="date" v-model="form.birthDate" required class="input-field" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">RUT <span class="text-gray-500">(opcional)</span></label>
-            <input type="text" v-model="form.rut" class="input-field" placeholder="12.345.678-9" />
+            <label class="block text-sm font-medium text-gray-300 mb-1">RUT *</label>
+            <input type="text" v-model="form.rut" required class="input-field" placeholder="12.345.678-9" @input="formatearRut" @blur="validarRut" />
+            <p v-if="rutError" class="text-xs text-red-400 mt-1">{{ rutError }}</p>
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Email <span class="text-gray-500">(opcional)</span></label>
           <input type="email" v-model="form.email" class="input-field" placeholder="asociado@email.com" />
         </div>
         <button type="submit" :disabled="creating" class="btn-primary">
@@ -79,6 +80,7 @@ const associates = ref([])
 const loading = ref(true)
 const showForm = ref(false)
 const form = reactive({ name: '', relationship: '', birthDate: '', rut: '', email: '' })
+const rutError = ref('')
 const creating = ref(false)
 const showConfirm = ref(false)
 const associateToDelete = ref(null)
@@ -100,6 +102,7 @@ async function loadAssociates() {
 }
 
 async function createAssociate() {
+  if (rutError.value) return
   creating.value = true
   try {
     await associateService.createAssociate({
@@ -110,11 +113,40 @@ async function createAssociate() {
       email: form.email || null
     })
     Object.assign(form, { name: '', relationship: '', birthDate: '', rut: '', email: '' })
+    rutError.value = ''
     showForm.value = false
     await loadAssociates()
   } catch {} finally {
     creating.value = false
   }
+}
+
+function formatearRut() {
+  if (!form.rut) return
+  let valor = form.rut.replace(/[^0-9kK]/g, '')
+  if (valor.length < 2) { form.rut = valor; return }
+  const dv = valor.slice(-1)
+  let cuerpo = valor.slice(0, -1)
+  cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  form.rut = cuerpo + '-' + dv
+}
+
+function validarRut() {
+  rutError.value = ''
+  if (!form.rut) return
+  const rut = form.rut.replace(/[^0-9kK]/g, '')
+  if (rut.length < 2) { rutError.value = 'RUT invalido'; return }
+  const dv = rut.slice(-1).toUpperCase()
+  const cuerpo = rut.slice(0, -1)
+  let suma = 0
+  let multiplo = 2
+  for (let i = cuerpo.length - 1; i >= 0; i--) {
+    suma += parseInt(cuerpo[i]) * multiplo
+    multiplo = multiplo < 7 ? multiplo + 1 : 2
+  }
+  const dvEsperado = 11 - (suma % 11)
+  const dvCalculado = dvEsperado === 11 ? '0' : dvEsperado === 10 ? 'K' : dvEsperado.toString()
+  if (dv !== dvCalculado) rutError.value = 'RUT invalido: digito verificador no coincide'
 }
 
 function confirmDelete(associate) {

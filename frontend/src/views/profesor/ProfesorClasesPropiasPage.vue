@@ -21,7 +21,7 @@ const clases = ref([])
 const loading = ref(true)
 
 onMounted(async () => {
-  try { clases.value = await classService.getTeacherClasses() } catch { clases.value = [] }
+  try { clases.value = await classService.getTeacherPropias() } catch { clases.value = [] }
   loading.value = false
 })
 

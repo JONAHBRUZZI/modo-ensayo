@@ -30,9 +30,11 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
+import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
+const { syncActividadMaestro } = useAuth()
 const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, minAge: 0, maxAge: 99, startTime: '', venueId: '', roomId: '' })
 const venues = ref([])
 const rooms = ref([])
@@ -58,7 +60,8 @@ async function handleCreate() {
   creating.value = true
   try {
     await classService.createClass(form.value)
-    router.push('/alumno/dashboard')
+    await syncActividadMaestro()
+    router.push('/profesor/clases-propias')
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al crear clase'
   } finally {

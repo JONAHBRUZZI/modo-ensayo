@@ -20,8 +20,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 
+const { displayName } = useAuth()
 const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, ganancias: 0 })
 
 onMounted(async () => {

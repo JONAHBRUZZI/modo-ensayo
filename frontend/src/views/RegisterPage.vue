@@ -12,10 +12,9 @@
           <input type="email" v-model="email" required class="input-field" placeholder="tu@email.com" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Telefono</label>
-          <input type="tel" v-model="phone" required class="input-field" placeholder="+56912345678" />
+          <label class="block text-sm font-medium text-gray-300 mb-1">Telefono <span class="text-gray-500">(opcional)</span></label>
+          <input type="tel" v-model="phone" class="input-field" placeholder="+56912345678" />
         </div>
-        <DocumentoIdentidad v-model="documento" />
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Contrasena</label>
           <input type="password" v-model="password" required class="input-field" placeholder="Min 8 caracteres, mayuscula, minuscula, numero" />
@@ -42,7 +41,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
-import DocumentoIdentidad from '@/components/DocumentoIdentidad.vue'
 
 const router = useRouter()
 const { register } = useAuth()
@@ -50,7 +48,6 @@ const { register } = useAuth()
 const fullName = ref('')
 const email = ref('')
 const phone = ref('')
-const documento = ref({ tipo: 'RUT', numero: '' })
 const password = ref('')
 const aceptoTerminos = ref(false)
 const error = ref('')
@@ -74,7 +71,7 @@ async function handleRegister() {
       email.value,
       password.value,
       phone.value,
-      documento.value.numero
+      null
     )
     router.push('/')
   } catch (e) {

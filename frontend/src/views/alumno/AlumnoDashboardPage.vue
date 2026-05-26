@@ -141,7 +141,7 @@
 
         <!-- Crear perfil de maestro / buscar salas -->
         <div v-if="identidadValidada">
-          <router-link to="/profesor/registro"
+          <router-link to="/profesor/buscar-salas"
             class="card hover:border-indigo-500/50 transition-colors group flex items-start gap-3">
             <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0">
               <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -150,8 +150,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-base font-semibold text-white group-hover:text-indigo-400 transition-colors">Perfil de Maestro</h3>
-              <p class="text-gray-400 text-sm mt-1">Registra tu perfil profesional para crear clases.</p>
+              <h3 class="text-base font-semibold text-white group-hover:text-indigo-400 transition-colors">Agenda tu Sala</h3>
+              <p class="text-gray-400 text-sm mt-1">Coordina tus propias clases.</p>
             </div>
           </router-link>
         </div>
@@ -163,7 +163,7 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-base font-semibold text-gray-600">Perfil de Maestro</h3>
+            <h3 class="text-base font-semibold text-gray-600">Agenda tu Sala</h3>
             <p class="text-gray-600 text-sm mt-1">Requiere identidad validada.</p>
           </div>
         </div>

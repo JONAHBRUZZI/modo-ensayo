@@ -35,14 +35,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/auth/**",
-                    "/api/search/**",
-                    "/api/payments/mercadopago/webhook",
-                    "/api/classes",
-                    "/api/venues"
+                    "/api/payments/mercadopago/webhook"
                 ).permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/venues/**", "/api/classes/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/classes", "/api/venues", "/api/venues/**", "/api/classes/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/api/teacher/**").hasAuthority("TEACHER")
+                .requestMatchers("/api/venue-admin/**").hasAuthority("VENUE_ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

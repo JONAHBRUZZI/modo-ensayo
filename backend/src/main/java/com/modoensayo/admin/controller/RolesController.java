@@ -1,5 +1,6 @@
 package com.modoensayo.admin.controller;
 
+import com.modoensayo.admin.dto.UserAdminDto;
 import com.modoensayo.users.domain.Role;
 import com.modoensayo.users.domain.User;
 import com.modoensayo.users.domain.UserRole;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/roles")
@@ -38,8 +40,11 @@ public class RolesController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> listUsers() {
-        return ResponseEntity.ok(userRepository.findAll());
+    public ResponseEntity<List<UserAdminDto>> listUsers() {
+        List<UserAdminDto> users = userRepository.findAll().stream()
+                .map(UserAdminDto::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(users);
     }
 
     @PostMapping("/users/{userId}/assign")

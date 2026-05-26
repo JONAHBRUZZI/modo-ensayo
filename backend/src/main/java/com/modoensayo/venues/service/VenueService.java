@@ -76,9 +76,12 @@ public class VenueService {
     }
 
     @Transactional
-    public VenueResponse updateVenue(UUID venueId, VenueRequest req) {
+    public VenueResponse updateVenue(UUID userId, UUID venueId, VenueRequest req) {
         Venue v = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
+        if (v.getAdminId() == null || !v.getAdminId().equals(userId)) {
+            throw new BusinessException("No tienes permiso para modificar esta sede");
+        }
         if (req.name() != null) v.setName(req.name());
         if (req.city() != null) v.setCity(req.city());
         if (req.address() != null) v.setAddress(req.address());
@@ -94,9 +97,15 @@ public class VenueService {
     }
 
     @Transactional
-    public RoomResponse createRoom(UUID venueId, RoomRequest req) {
+    public RoomResponse createRoom(UUID userId, UUID venueId, RoomRequest req) {
         Venue v = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
+        if (v.getAdminId() == null || !v.getAdminId().equals(userId)) {
+            throw new BusinessException("No tienes permiso para gestionar esta sede");
+        }
+        if (v.getStatus() != EstadoSede.APROBADA) {
+            throw new BusinessException("La sede debe estar aprobada antes de registrar salas");
+        }
         Room r = Room.builder().venue(v).name(req.name()).capacity(req.capacity())
                 .floorType(req.floorType()).type(req.type()).hasMirrors(req.hasMirrors())
                 .hasSound(req.hasSound()).equipment(req.equipment()).build();
@@ -110,16 +119,25 @@ public class VenueService {
     }
 
     @Transactional
-    public RoomAvailabilityResponse createAvailability(UUID roomId, RoomAvailabilityRequest req) {
+    public RoomAvailabilityResponse createAvailability(UUID userId, UUID roomId, RoomAvailabilityRequest req) {
         Room r = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
+        if (r.getVenue() == null || r.getVenue().getAdminId() == null || !r.getVenue().getAdminId().equals(userId)) {
+            throw new BusinessException("No tienes permiso para gestionar la disponibilidad de esta sala");
+        }
         RoomAvailability a = RoomAvailability.builder().room(r).startTime(req.startTime()).endTime(req.endTime()).build();
         a = roomAvailabilityRepository.save(a);
         return new RoomAvailabilityResponse(a.getId().toString(), a.getRoom().getId().toString(), a.getRoom().getName(), a.getStartTime(), a.getEndTime());
     }
 
     @Transactional
-    public void deleteAvailability(UUID availId) {
+    public void deleteAvailability(UUID userId, UUID availId) {
+        RoomAvailability a = roomAvailabilityRepository.findById(availId)
+                .orElseThrow(() -> new ResourceNotFoundException("Availability slot not found"));
+        if (a.getRoom() != null && a.getRoom().getVenue() != null && a.getRoom().getVenue().getAdminId() != null
+                && !a.getRoom().getVenue().getAdminId().equals(userId)) {
+            throw new BusinessException("No tienes permiso para eliminar este bloque horario");
+        }
         roomAvailabilityRepository.deleteById(availId);
     }
 

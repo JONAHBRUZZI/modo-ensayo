@@ -35,8 +35,9 @@ public class VenueAdminController {
     }
 
     @PatchMapping("/venues/{id}")
-    public ResponseEntity<VenueResponse> update(@PathVariable UUID id, @RequestBody VenueRequest req) {
-        return ResponseEntity.ok(venueService.updateVenue(id, req));
+    public ResponseEntity<VenueResponse> update(@AuthenticationPrincipal CustomUserDetails user,
+                                                 @PathVariable UUID id, @RequestBody VenueRequest req) {
+        return ResponseEntity.ok(venueService.updateVenue(user.getUserId(), id, req));
     }
 
     @GetMapping("/venues/{venueId}/rooms")
@@ -45,14 +46,16 @@ public class VenueAdminController {
     }
 
     @PostMapping("/venues/{venueId}/rooms")
-    public ResponseEntity<RoomResponse> createRoom(@PathVariable UUID venueId, @RequestBody RoomRequest req) {
-        return ResponseEntity.ok(venueService.createRoom(venueId, req));
+    public ResponseEntity<RoomResponse> createRoom(@AuthenticationPrincipal CustomUserDetails user,
+                                                    @PathVariable UUID venueId, @RequestBody RoomRequest req) {
+        return ResponseEntity.ok(venueService.createRoom(user.getUserId(), venueId, req));
     }
 
     @PostMapping("/rooms/{roomId}/availability")
-    public ResponseEntity<RoomAvailabilityResponse> createAvailability(@PathVariable UUID roomId,
+    public ResponseEntity<RoomAvailabilityResponse> createAvailability(@AuthenticationPrincipal CustomUserDetails user,
+                                                                        @PathVariable UUID roomId,
                                                                         @RequestBody RoomAvailabilityRequest req) {
-        return ResponseEntity.ok(venueService.createAvailability(roomId, req));
+        return ResponseEntity.ok(venueService.createAvailability(user.getUserId(), roomId, req));
     }
 
     @GetMapping("/rooms/{roomId}/availability")
@@ -61,8 +64,9 @@ public class VenueAdminController {
     }
 
     @PostMapping("/rooms/{roomId}/availability/delete/{slotId}")
-    public ResponseEntity<Void> deleteAvailability(@PathVariable UUID roomId, @PathVariable UUID slotId) {
-        venueService.deleteAvailability(slotId);
+    public ResponseEntity<Void> deleteAvailability(@AuthenticationPrincipal CustomUserDetails user,
+                                                    @PathVariable UUID roomId, @PathVariable UUID slotId) {
+        venueService.deleteAvailability(user.getUserId(), slotId);
         return ResponseEntity.noContent().build();
     }
 

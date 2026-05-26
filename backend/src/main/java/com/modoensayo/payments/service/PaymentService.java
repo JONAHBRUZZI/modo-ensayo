@@ -36,7 +36,12 @@ public class PaymentService {
     }
 
     @Transactional
-    public void removeFromCart(UUID itemId) {
+    public void removeFromCart(UUID ownerId, UUID itemId) {
+        CartItem item = cartItemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
+        if (!item.getOwnerId().equals(ownerId)) {
+            throw new ResourceNotFoundException("Cart item not found");
+        }
         cartItemRepository.deleteById(itemId);
     }
 

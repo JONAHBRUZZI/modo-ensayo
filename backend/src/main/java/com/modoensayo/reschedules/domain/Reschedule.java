@@ -1,5 +1,6 @@
 package com.modoensayo.reschedules.domain;
 
+import com.modoensayo.reschedules.enums.RescheduleStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
@@ -18,8 +19,9 @@ public class Reschedule {
     private Instant proposedTime;
     private String reason;
 
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String status = "PROPOSED";
+    private RescheduleStatus status = RescheduleStatus.PROPOSED;
 
     private Instant responseDeadline;
     private UUID newClassId;

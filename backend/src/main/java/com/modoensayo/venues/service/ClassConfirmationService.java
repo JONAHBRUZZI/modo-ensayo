@@ -3,6 +3,7 @@ package com.modoensayo.venues.service;
 import com.modoensayo.attendance.repository.AttendanceRepository;
 import com.modoensayo.classes.domain.Class;
 import com.modoensayo.classes.enums.ClassStatus;
+import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.payments.domain.Enrollment;
 import com.modoensayo.payments.domain.Payment;
@@ -112,11 +113,20 @@ public class ClassConfirmationService {
         List<Payment> refundPendingPayments = markPaymentsForRefund(classEntity.getId(),
                 "Clase no realizada: confirmada por administrador de sede");
 
-        notifyTeacher(classEntity.getTeacherId(),
-                String.format("La clase '%s' fue marcada como NO REALIZADA. Se solicita reagendamiento.", classEntity.getTitle()));
+        TipoClase tipo = classEntity.getTipoClase() != null ? classEntity.getTipoClase() : TipoClase.PROPIA;
 
-        log.info("Class {} marked as SUSPENDED (not realized) by admin {}. {} payments marked for refund.",
-                classId, venueAdminId, refundPendingPayments.size());
+        if (tipo == TipoClase.PROPIA) {
+            notifyTeacher(classEntity.getTeacherId(),
+                    String.format("Tu Clase Propia '%s' fue marcada como NO REALIZADA. Debes decidir si reagendar o cancelar. Ingresa a la plataforma para gestionar el reagendamiento.", classEntity.getTitle()));
+        } else {
+            notifyUser(UUID.fromString(venueAdminId),
+                    String.format("La Clase Asignada '%s' fue marcada como NO REALIZADA. Como Administrador de Sede, debes gestionar el reagendamiento.", classEntity.getTitle()));
+            notifyTeacher(classEntity.getTeacherId(),
+                    String.format("La clase '%s' fue marcada como NO REALIZADA por la sede. El Administrador de Sede gestionara el reagendamiento. Recibiras una notificacion con el resultado.", classEntity.getTitle()));
+        }
+
+        log.info("Class {} ({}) marked as SUSPENDED (not realized) by admin {}. {} payments marked for refund.",
+                classId, tipo, venueAdminId, refundPendingPayments.size());
 
         return new ClassConfirmationResult(
                 classEntity.getId().toString(),

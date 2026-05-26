@@ -31,8 +31,9 @@ public class AssociateController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        associateService.delete(id);
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal CustomUserDetails user,
+                                        @PathVariable UUID id) {
+        associateService.delete(user.getUserId(), id);
         return ResponseEntity.noContent().build();
     }
 }

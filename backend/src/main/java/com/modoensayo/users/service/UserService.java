@@ -56,8 +56,13 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteRefundMethod(UUID id) {
-        refundMethodRepository.deleteById(id);
+    public void deleteRefundMethod(UUID userId, UUID id) {
+        RefundMethod method = refundMethodRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Refund method not found"));
+        if (!method.getUserId().equals(userId)) {
+            throw new ResourceNotFoundException("Refund method not found");
+        }
+        refundMethodRepository.delete(method);
     }
 
     @Transactional

@@ -78,11 +78,6 @@ public class RescheduleController {
         return ResponseEntity.ok(rescheduleService.getUnreadCount(user.getUserId()));
     }
 
-    @GetMapping("/notifications/unread-count")
-    public ResponseEntity<Long> getUnreadCountLegacy(@AuthenticationPrincipal CustomUserDetails user) {
-        return ResponseEntity.ok(rescheduleService.getUnreadCount(user.getUserId()));
-    }
-
     @PatchMapping("/notifications/{id}/read")
     public ResponseEntity<Void> markRead(@PathVariable UUID id) {
         rescheduleService.markRead(id);

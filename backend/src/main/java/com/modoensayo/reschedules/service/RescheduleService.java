@@ -11,6 +11,7 @@ import com.modoensayo.reschedules.domain.Notification;
 import com.modoensayo.reschedules.domain.Reschedule;
 import com.modoensayo.reschedules.domain.RescheduleResponse;
 import com.modoensayo.reschedules.dto.*;
+import com.modoensayo.reschedules.enums.RescheduleStatus;
 import com.modoensayo.reschedules.enums.ResponseType;
 import com.modoensayo.reschedules.repository.*;
 import com.modoensayo.shared.exceptions.BusinessException;
@@ -64,7 +65,7 @@ public class RescheduleService {
 
         Reschedule r = Reschedule.builder()
                 .classId(req.classId()).proposedTime(req.proposedTime()).reason(req.reason())
-                .status("PROPOSED")
+                .status(RescheduleStatus.PROPOSED)
                 .build();
         return toDto(rescheduleRepository.save(r));
     }
@@ -74,12 +75,12 @@ public class RescheduleService {
         Reschedule r = rescheduleRepository.findById(rescheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reschedule not found"));
 
-        if (!"PROPOSED".equals(r.getStatus())) {
+        if (r.getStatus() != RescheduleStatus.PROPOSED) {
             throw new BusinessException("Este reagendamiento no esta en estado PROPOSED.");
         }
 
         if (accepted) {
-            r.setStatus("TEACHER_ACCEPTED");
+            r.setStatus(RescheduleStatus.TEACHER_ACCEPTED);
             r.setResponseDeadline(Instant.now().plusSeconds(48 * 3600));
             r.setTeacherId(teacherId);
             rescheduleRepository.save(r);
@@ -106,7 +107,7 @@ public class RescheduleService {
 
             log.info("Teacher {} accepted reschedule {}. Deadline: {}", teacherId, rescheduleId, r.getResponseDeadline());
         } else {
-            r.setStatus("TEACHER_REJECTED");
+            r.setStatus(RescheduleStatus.TEACHER_REJECTED);
             r.setTeacherId(teacherId);
             rescheduleRepository.save(r);
 
@@ -179,7 +180,7 @@ public class RescheduleService {
         Reschedule r = rescheduleRepository.findById(rescheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reschedule not found"));
 
-        if (!"TEACHER_ACCEPTED".equals(r.getStatus())) {
+        if (r.getStatus() != RescheduleStatus.TEACHER_ACCEPTED) {
             throw new BusinessException("Este reagendamiento no esta en estado para recibir respuestas de alumnos.");
         }
 
@@ -222,7 +223,7 @@ public class RescheduleService {
 
         long pending = rescheduleResponseRepository.findByRescheduleIdAndResponseTypeIsNull(rescheduleId).size();
         if (pending == 0) {
-            r.setStatus("COMPLETED");
+            r.setStatus(RescheduleStatus.COMPLETED);
             rescheduleRepository.save(r);
             log.info("All students responded to reschedule {}. Marked as COMPLETED.", rescheduleId);
         }
@@ -232,7 +233,7 @@ public class RescheduleService {
     public void processTimeouts() {
         Instant now = Instant.now();
         List<Reschedule> expired = rescheduleRepository.findByStatusAndResponseDeadlineBefore(
-                "TEACHER_ACCEPTED", now);
+                RescheduleStatus.TEACHER_ACCEPTED, now);
 
         if (expired.isEmpty()) return;
 
@@ -262,7 +263,7 @@ public class RescheduleService {
                     }
                 }
 
-                r.setStatus("COMPLETED");
+                r.setStatus(RescheduleStatus.COMPLETED);
                 rescheduleRepository.save(r);
 
                 log.info("Reschedule {} expired. {} students timed out, {} payments marked for refund. Class: {}",
@@ -275,6 +276,8 @@ public class RescheduleService {
 
     private RescheduleResponseDto toDto(Reschedule r) {
         return new RescheduleResponseDto(r.getId(), r.getClassId(), r.getTeacherId(),
-                r.getProposedTime(), r.getReason(), r.getStatus(), r.getCreatedAt());
+                r.getProposedTime(), r.getReason(),
+                r.getStatus() != null ? r.getStatus().name() : null,
+                r.getCreatedAt());
     }
 }

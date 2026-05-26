@@ -4,6 +4,7 @@ import com.modoensayo.associates.domain.Associate;
 import com.modoensayo.associates.dto.AssociateRequest;
 import com.modoensayo.associates.dto.AssociateResponse;
 import com.modoensayo.associates.repository.AssociateRepository;
+import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +33,12 @@ public class AssociateService {
     }
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(UUID ownerId, UUID id) {
+        Associate a = associateRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Associate not found"));
+        if (!a.getOwnerId().equals(ownerId)) {
+            throw new ResourceNotFoundException("Associate not found");
+        }
         associateRepository.deleteById(id);
     }
 }

@@ -33,8 +33,9 @@ public class PaymentController {
     }
 
     @DeleteMapping("/cart/{id}")
-    public ResponseEntity<Void> removeFromCart(@PathVariable UUID id) {
-        paymentService.removeFromCart(id);
+    public ResponseEntity<Void> removeFromCart(@AuthenticationPrincipal CustomUserDetails user,
+                                                @PathVariable UUID id) {
+        paymentService.removeFromCart(user.getUserId(), id);
         return ResponseEntity.noContent().build();
     }
 

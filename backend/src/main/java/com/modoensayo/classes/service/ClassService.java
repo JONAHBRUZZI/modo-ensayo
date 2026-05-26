@@ -8,6 +8,7 @@ import com.modoensayo.classes.enums.Disciplina;
 import com.modoensayo.classes.enums.NivelClase;
 import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.classes.repository.ClassRepository;
+import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.users.domain.IdentityVerification;
@@ -15,10 +16,15 @@ import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.venues.domain.Room;
 import com.modoensayo.venues.enums.EstadoSede;
 import com.modoensayo.venues.repository.RoomRepository;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,9 +36,53 @@ public class ClassService {
     private final ClassRepository classRepository;
     private final RoomRepository roomRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     public List<ClassResponse> listPublished() {
         return classRepository.findByStatusOrderByStartTimeAsc(ClassStatus.PUBLISHED).stream()
+                .map(this::toResponse).collect(Collectors.toList());
+    }
+
+    public ClassResponse getById(UUID id) {
+        Class c = classRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
+        return toResponse(c);
+    }
+
+    public List<ClassResponse> search(String disciplina, String comuna, String fechaDesde,
+                                       String fechaHasta, Double precioMin, Double precioMax,
+                                       String nivel) {
+        Specification<Class> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("status"), ClassStatus.PUBLISHED));
+
+            if (disciplina != null && !disciplina.isBlank()) {
+                predicates.add(cb.equal(root.get("discipline"), Disciplina.valueOf(disciplina)));
+            }
+            if (nivel != null && !nivel.isBlank()) {
+                predicates.add(cb.equal(root.get("level"), NivelClase.valueOf(nivel)));
+            }
+            if (fechaDesde != null && !fechaDesde.isBlank()) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("startTime"), Instant.parse(fechaDesde)));
+            }
+            if (fechaHasta != null && !fechaHasta.isBlank()) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("startTime"), Instant.parse(fechaHasta)));
+            }
+            if (precioMin != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("price"), precioMin));
+            }
+            if (precioMax != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("price"), precioMax));
+            }
+            if (comuna != null && !comuna.isBlank()) {
+                var venueJoin = root.join("room", JoinType.LEFT).join("venue", JoinType.LEFT);
+                predicates.add(cb.equal(cb.lower(venueJoin.get("city")), comuna.toLowerCase()));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return classRepository.findAll(spec).stream()
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
@@ -97,6 +147,7 @@ public class ClassService {
     }
 
     private ClassResponse toResponse(Class c) {
+        long enrolledCount = enrollmentRepository.countByClassId(c.getId());
         return new ClassResponse(c.getId(), c.getTitle(),
                 c.getDiscipline() != null ? c.getDiscipline().name() : null,
                 c.getLevel() != null ? c.getLevel().name() : null,
@@ -108,6 +159,6 @@ public class ClassService {
                 c.getRoom() != null && c.getRoom().getVenue() != null ? c.getRoom().getVenue().getName() : null,
                 c.getTeacherId(), c.getStatus() != null ? c.getStatus().name() : null,
                 c.getTipoClase() != null ? c.getTipoClase().name() : null,
-                0, c.getCreatedAt());
+                (int) enrolledCount, c.getCreatedAt());
     }
 }

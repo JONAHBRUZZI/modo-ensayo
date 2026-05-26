@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/classes")
@@ -19,8 +20,27 @@ public class ClassController {
     private final ClassService classService;
 
     @GetMapping
-    public ResponseEntity<List<ClassResponse>> listPublished() {
+    public ResponseEntity<List<ClassResponse>> listPublished(
+            @RequestParam(required = false) String disciplina,
+            @RequestParam(required = false) String comuna,
+            @RequestParam(required = false) String fechaDesde,
+            @RequestParam(required = false) String fechaHasta,
+            @RequestParam(required = false) Double precioMin,
+            @RequestParam(required = false) Double precioMax,
+            @RequestParam(required = false) String nivel) {
+
+        boolean hasFilters = disciplina != null || comuna != null || fechaDesde != null
+                || fechaHasta != null || precioMin != null || precioMax != null || nivel != null;
+
+        if (hasFilters) {
+            return ResponseEntity.ok(classService.search(disciplina, comuna, fechaDesde, fechaHasta, precioMin, precioMax, nivel));
+        }
         return ResponseEntity.ok(classService.listPublished());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ClassResponse> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(classService.getById(id));
     }
 
     @PostMapping

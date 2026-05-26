@@ -43,8 +43,9 @@ public class UserController {
     }
 
     @DeleteMapping("/me/refund-methods/{id}")
-    public ResponseEntity<Void> deleteRefundMethod(@PathVariable UUID id) {
-        userService.deleteRefundMethod(id);
+    public ResponseEntity<Void> deleteRefundMethod(@AuthenticationPrincipal CustomUserDetails user,
+                                                    @PathVariable UUID id) {
+        userService.deleteRefundMethod(user.getUserId(), id);
         return ResponseEntity.noContent().build();
     }
 

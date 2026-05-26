@@ -81,6 +81,12 @@
                 </button>
               </div>
 
+              <!-- Notification bell -->
+              <router-link to="/notificaciones" class="relative p-2 rounded-lg hover:bg-[#1a1d2e] transition-colors">
+                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <span v-if="notifCount > 0" class="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ notifCount }}</span>
+              </router-link>
+
               <!-- User dropdown -->
               <div class="relative" ref="userMenuRef">
                 <button @click="showUserMenu = !showUserMenu" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-[#1a1d2e] transition-colors">
@@ -160,6 +166,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import paymentService from '@/services/paymentService'
+import rescheduleService from '@/services/rescheduleService'
 
 const router = useRouter()
 const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, modoActual, displayName, setModo, logout } = useAuth()
@@ -167,6 +174,7 @@ const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, pu
 const showUserMenu = ref(false)
 const userMenuRef = ref(null)
 const cartCount = ref(0)
+const notifCount = ref(0)
 
 const availableModes = computed(() => {
   const modes = [{ value: 'alumno', label: 'Alumno' }]
@@ -200,10 +208,20 @@ async function loadCartCount() {
   }
 }
 
+async function loadNotifCount() {
+  try {
+    const data = await rescheduleService.getUnreadCount()
+    notifCount.value = data?.data?.count || data?.count || data || 0
+  } catch {
+    notifCount.value = 0
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   if (isAuthenticated.value) {
     loadCartCount()
+    loadNotifCount()
   }
 })
 

@@ -34,4 +34,7 @@ public class Venue extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private EstadoSede status = EstadoSede.PENDIENTE_APROBACION;
+
+    @Column(length = 1000)
+    private String rejectionReason;
 }

@@ -1,6 +1,7 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <h1 class="text-3xl font-bold text-white mb-8">Clases por Confirmar</h1>
+    <div v-if="feedback.tipo" :class="['mb-4 px-4 py-3 rounded-xl text-sm', feedback.tipo === 'success' ? 'bg-green-500/10 border border-green-500/20 text-green-400' : 'bg-red-500/10 border border-red-500/20 text-red-400']">{{ feedback.mensaje }}</div>
     <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
     <div v-else-if="clases.length === 0" class="card text-center py-12"><p class="text-gray-400">No hay clases pendientes de confirmacion.</p></div>
     <div v-else class="space-y-4">
@@ -40,6 +41,7 @@ import venueService from '@/services/venueService'
 const clases = ref([])
 const loading = ref(true)
 const modal = reactive({ abierto: false, titulo: '', mensaje: '', claseId: null, confirmandoRealizada: false, enviando: false })
+const feedback = ref({ tipo: '', mensaje: '' })
 
 onMounted(async () => {
   try { clases.value = await venueService.getPendingClasses() } catch { clases.value = [] }
@@ -47,6 +49,7 @@ onMounted(async () => {
 })
 
 function abrirConfirmacion(c, realizada) {
+  feedback.value = { tipo: '', mensaje: '' }
   modal.claseId = c.id
   modal.confirmandoRealizada = realizada
   if (realizada) {
@@ -66,7 +69,11 @@ async function ejecutarConfirmacion() {
     else await venueService.confirmClassNotRealized(modal.claseId)
     clases.value = clases.value.filter(c => c.id !== modal.claseId)
     modal.abierto = false
-  } catch {}
+    feedback.value = { tipo: 'success', mensaje: modal.confirmandoRealizada ? 'Clase confirmada como realizada.' : 'Clase marcada como no realizada.' }
+    setTimeout(() => feedback.value = { tipo: '', mensaje: '' }, 4000)
+  } catch (e) {
+    feedback.value = { tipo: 'error', mensaje: e?.response?.data?.message || 'Error al confirmar la clase.' }
+  }
   modal.enviando = false
 }
 

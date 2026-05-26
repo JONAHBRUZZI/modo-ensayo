@@ -2,9 +2,11 @@ package com.modoensayo.venues.service;
 
 import com.modoensayo.attendance.repository.AttendanceRepository;
 import com.modoensayo.classes.domain.Class;
+import com.modoensayo.classes.domain.ClassStatusHistory;
 import com.modoensayo.classes.enums.ClassStatus;
 import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.classes.repository.ClassRepository;
+import com.modoensayo.classes.repository.ClassStatusHistoryRepository;
 import com.modoensayo.payments.domain.Enrollment;
 import com.modoensayo.payments.domain.Payment;
 import com.modoensayo.payments.enums.PaymentStatus;
@@ -37,6 +39,7 @@ public class ClassConfirmationService {
     private final EnrollmentRepository enrollmentRepository;
     private final NotificationRepository notificationRepository;
     private final AttendanceRepository attendanceRepository;
+    private final ClassStatusHistoryRepository classStatusHistoryRepository;
 
     @Transactional(readOnly = true)
     public List<ClassSummaryDto> getClassesPendingConfirmation(String venueAdminId) {
@@ -81,6 +84,10 @@ public class ClassConfirmationService {
         classEntity.setStatus(ClassStatus.COMPLETED);
         classRepository.save(classEntity);
 
+        classStatusHistoryRepository.save(ClassStatusHistory.builder()
+                .classEntity(classEntity).previousStatus("POR_VALIDAR")
+                .newStatus("COMPLETED").changedBy(UUID.fromString(venueAdminId)).build());
+
         List<Payment> releasedPayments = releasePaymentsForClass(classEntity.getId());
 
         notifyTeacher(classEntity.getTeacherId(),
@@ -109,6 +116,10 @@ public class ClassConfirmationService {
 
         classEntity.setStatus(ClassStatus.SUSPENDED);
         classRepository.save(classEntity);
+
+        classStatusHistoryRepository.save(ClassStatusHistory.builder()
+                .classEntity(classEntity).previousStatus("POR_VALIDAR")
+                .newStatus("SUSPENDED").changedBy(UUID.fromString(venueAdminId)).build());
 
         List<Payment> refundPendingPayments = markPaymentsForRefund(classEntity.getId(),
                 "Clase no realizada: confirmada por administrador de sede");

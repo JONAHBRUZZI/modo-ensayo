@@ -26,8 +26,8 @@ export default {
     return res.data
   },
 
-  async rejectVenue(id) {
-    const res = await api.patch(`/admin/venues/${id}/reject`)
+  async rejectVenue(id, motivo) {
+    const res = await api.patch(`/admin/venues/${id}/reject`, { motivo })
     return res.data
   },
 

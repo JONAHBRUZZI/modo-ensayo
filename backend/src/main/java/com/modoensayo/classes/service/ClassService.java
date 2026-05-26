@@ -1,6 +1,7 @@
 package com.modoensayo.classes.service;
 
 import com.modoensayo.classes.domain.Class;
+import com.modoensayo.classes.domain.ClassStatusHistory;
 import com.modoensayo.classes.dto.ClassRequest;
 import com.modoensayo.classes.dto.ClassResponse;
 import com.modoensayo.classes.enums.ClassStatus;
@@ -8,6 +9,7 @@ import com.modoensayo.classes.enums.Disciplina;
 import com.modoensayo.classes.enums.NivelClase;
 import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.classes.repository.ClassRepository;
+import com.modoensayo.classes.repository.ClassStatusHistoryRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
@@ -47,6 +49,7 @@ public class ClassService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final ClassStatusHistoryRepository classStatusHistoryRepository;
 
     public List<ClassResponse> listPublished() {
         return classRepository.findByStatusOrderByStartTimeAsc(ClassStatus.PUBLISHED).stream()
@@ -172,8 +175,19 @@ public class ClassService {
     public ClassResponse updateStatus(UUID classId, ClassStatus status) {
         Class c = classRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
+        ClassStatus previous = c.getStatus();
         c.setStatus(status);
-        return toResponse(classRepository.save(c));
+        c = classRepository.save(c);
+
+        ClassStatusHistory history = ClassStatusHistory.builder()
+                .classEntity(c)
+                .previousStatus(previous != null ? previous.name() : null)
+                .newStatus(status.name())
+                .changedBy(c.getTeacherId())
+                .build();
+        classStatusHistoryRepository.save(history);
+
+        return toResponse(c);
     }
 
     private ClassResponse toResponse(Class c) {

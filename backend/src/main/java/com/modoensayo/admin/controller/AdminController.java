@@ -50,8 +50,9 @@ public class AdminController {
     }
 
     @PatchMapping("/venues/{id}/reject")
-    public ResponseEntity<VenueResponse> rejectVenue(@PathVariable UUID id) {
-        return ResponseEntity.ok(adminService.rejectVenue(id));
+    public ResponseEntity<VenueResponse> rejectVenue(@PathVariable UUID id,
+                                                      @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(adminService.rejectVenue(id, body.get("motivo")));
     }
 
     @GetMapping("/users")

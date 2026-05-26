@@ -85,9 +85,10 @@ public class AdminService {
     }
 
     @Transactional
-    public VenueResponse rejectVenue(UUID id) {
+    public VenueResponse rejectVenue(UUID id, String reason) {
         Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));
         v.setStatus(EstadoSede.RECHAZADA);
+        v.setRejectionReason(reason);
         v = venueRepository.save(v);
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(), v.getCreatedAt());

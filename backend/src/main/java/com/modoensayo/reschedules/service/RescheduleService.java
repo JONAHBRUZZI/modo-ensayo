@@ -99,7 +99,7 @@ public class RescheduleService {
                 }
                 notificationRepository.save(Notification.builder()
                         .userId(e.getBeneficiaryId())
-                        .message("El profesor acepto el reagendamiento propuesto. Tienes 48h para confirmar o rechazar.")
+                        .message("El profesor acepto el reagendamiento para el " + r.getProposedTime() + ". Tienes 48h para confirmar o rechazar.")
                         .read(false)
                         .createdAt(Instant.now())
                         .build());

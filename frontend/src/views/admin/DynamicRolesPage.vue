@@ -94,15 +94,17 @@ function abrirModal(item, accion) {
 async function ejecutarAccion() {
   modal.enviando = true
   try {
-    const { accion, item } = modal
+    const { accion, item, motivo } = modal
     if (accion === 'identity-approve') await adminService.reviewIdentity(item.id, 'approve')
     else if (accion === 'identity-reject') await adminService.reviewIdentity(item.id, 'reject')
     else if (accion === 'venue-approve') await adminService.approveVenue(item.id)
-    else if (accion === 'venue-reject') await adminService.rejectVenue(item.id)
+    else if (accion === 'venue-reject') await adminService.rejectVenue(item.id, motivo)
     verifications.value = verifications.value.filter(v => v.id !== item.id)
     pendingVenues.value = pendingVenues.value.filter(v => v.id !== item.id)
     modal.abierto = false
-  } catch {}
+  } catch (e) {
+    alert(e?.response?.data?.message || 'Error al procesar la accion')
+  }
   modal.enviando = false
 }
 </script>

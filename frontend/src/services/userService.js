@@ -33,5 +33,9 @@ export default {
   async uploadIdentityDocument(documentUrl) {
     const res = await api.post('/users/me/identity-verification', { documentUrl })
     return res.data
+  },
+
+  async deleteIdentityDocument() {
+    await api.delete('/users/me/identity-verification')
   }
 }

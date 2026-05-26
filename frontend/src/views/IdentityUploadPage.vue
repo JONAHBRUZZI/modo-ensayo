@@ -7,6 +7,7 @@
         <div class="flex items-center space-x-2">
           <span class="text-gray-400">Estado:</span>
           <EstadoBadge :status="verification.status" />
+          <button v-if="verification.status === 'APPROVED' || verification.status === 'REJECTED'" @click="deleteDocument" class="text-xs text-red-400 hover:text-red-300 underline ml-4">Eliminar documento</button>
         </div>
       </div>
       <div class="border-2 border-dashed border-gray-700 rounded-xl p-8 text-center">
@@ -58,6 +59,19 @@ async function upload() {
     msgType.value = 'error'
   } finally {
     uploading.value = false
+  }
+}
+
+async function deleteDocument() {
+  if (!confirm('Esto eliminara tu documento de identidad del sistema. La validacion previa se mantiene registrada. Continuar?')) return
+  try {
+    await userService.deleteIdentityDocument()
+    msg.value = 'Documento eliminado. La validacion previa se mantiene.'
+    msgType.value = 'success'
+    verification.value = await userService.getIdentityVerification()
+  } catch (e) {
+    msg.value = e.response?.data?.message || 'Error al eliminar'
+    msgType.value = 'error'
   }
 }
 </script>

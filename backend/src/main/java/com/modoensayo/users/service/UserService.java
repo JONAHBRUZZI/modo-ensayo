@@ -94,6 +94,14 @@ public class UserService {
     }
 
     @Transactional
+    public void deleteIdentityDocument(UUID userId) {
+        IdentityVerification iv = identityVerificationRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("No verification found"));
+        iv.setDocumentUrl(null);
+        identityVerificationRepository.save(iv);
+    }
+
+    @Transactional
     public void changePassword(UUID userId, String currentPassword, String newPassword) {
         if (currentPassword == null || newPassword == null || newPassword.length() < 6) {
             throw new BusinessException("La nueva contrasena debe tener al menos 6 caracteres");

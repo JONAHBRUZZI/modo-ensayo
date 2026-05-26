@@ -89,6 +89,12 @@ public class UserController {
         return ResponseEntity.ok(userService.uploadIdentity(user, body.get("documentUrl")));
     }
 
+    @DeleteMapping("/me/identity-verification")
+    public ResponseEntity<Void> deleteIdentity(@AuthenticationPrincipal CustomUserDetails user) {
+        userService.deleteIdentityDocument(user.getUserId());
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/me/password")
     public ResponseEntity<Void> changePassword(@AuthenticationPrincipal CustomUserDetails user,
                                                 @RequestBody Map<String, String> body) {

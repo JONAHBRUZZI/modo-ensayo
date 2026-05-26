@@ -63,7 +63,7 @@ public class VenueAdminController {
         return ResponseEntity.ok(venueService.getRoomAvailability(roomId));
     }
 
-    @PostMapping("/rooms/{roomId}/availability/delete/{slotId}")
+    @DeleteMapping("/rooms/{roomId}/availability/{slotId}")
     public ResponseEntity<Void> deleteAvailability(@AuthenticationPrincipal CustomUserDetails user,
                                                     @PathVariable UUID roomId, @PathVariable UUID slotId) {
         venueService.deleteAvailability(user.getUserId(), slotId);

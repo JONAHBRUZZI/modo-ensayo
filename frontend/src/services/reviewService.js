@@ -8,12 +8,12 @@ export const reviewService = {
     return api.get('/reviews/eligible/teacher')
   },
   createStudentClassReview(payload) {
-    return api.post('/reviews/student/class', payload)
+    return api.post('/reviews', { ...payload, targetType: 'CLASS' })
   },
   createTeacherVenueReview(payload) {
-    return api.post('/reviews/teacher/venue', payload)
+    return api.post('/reviews', { ...payload, targetType: 'VENUE' })
   },
   createTeacherStudentReview(payload) {
-    return api.post('/reviews/teacher/student', payload)
+    return api.post('/reviews', { ...payload, targetType: 'STUDENT' })
   },
 }

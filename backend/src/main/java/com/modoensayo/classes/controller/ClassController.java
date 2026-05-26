@@ -43,6 +43,11 @@ public class ClassController {
         return ResponseEntity.ok(classService.getById(id));
     }
 
+    @GetMapping("/venue/{venueId}")
+    public ResponseEntity<List<ClassResponse>> getByVenue(@PathVariable UUID venueId) {
+        return ResponseEntity.ok(classService.getByVenue(venueId));
+    }
+
     @PostMapping
     public ResponseEntity<ClassResponse> create(@AuthenticationPrincipal CustomUserDetails user,
                                                  @RequestBody ClassRequest req) {

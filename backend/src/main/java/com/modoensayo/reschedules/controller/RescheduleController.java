@@ -21,7 +21,8 @@ public class RescheduleController {
     private final RescheduleService rescheduleService;
 
     @PostMapping
-    public ResponseEntity<RescheduleResponseDto> propose(@RequestBody RescheduleRequest req) {
+    public ResponseEntity<RescheduleResponseDto> propose(@AuthenticationPrincipal CustomUserDetails user,
+                                                          @RequestBody RescheduleRequest req) {
         return ResponseEntity.ok(rescheduleService.propose(req));
     }
 

@@ -77,6 +77,6 @@ export default {
   },
 
   async deleteRoomAvailability(roomId, slotId) {
-    await api.post(`/venue-admin/rooms/${roomId}/availability/delete/${slotId}`)
+    await api.delete(`/venue-admin/rooms/${roomId}/availability/${slotId}`)
   }
 }

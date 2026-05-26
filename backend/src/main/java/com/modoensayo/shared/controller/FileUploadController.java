@@ -1,6 +1,8 @@
 package com.modoensayo.shared.controller;
 
+import com.modoensayo.auth.service.CustomUserDetails;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,7 +16,8 @@ public class FileUploadController {
     private final Path uploadDir = Paths.get("uploads");
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> upload(@RequestParam("file") MultipartFile file,
+    public ResponseEntity<Map<String, String>> upload(@AuthenticationPrincipal CustomUserDetails user,
+                                                       @RequestParam("file") MultipartFile file,
                                                        @RequestParam(defaultValue = "documents") String type) {
         try {
             Files.createDirectories(uploadDir);

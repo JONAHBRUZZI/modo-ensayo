@@ -31,8 +31,8 @@
           <input v-model="form.fullName" required class="input-field" placeholder="Como aparece en tu documento" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Fecha de nacimiento</label>
-          <input type="date" v-model="form.birthDate" class="input-field" />
+          <label class="block text-sm font-medium text-gray-300 mb-1">Fecha de nacimiento *</label>
+          <input type="date" v-model="form.birthDate" required class="input-field" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Documento (JPG, PNG o PDF, max 5MB) *</label>

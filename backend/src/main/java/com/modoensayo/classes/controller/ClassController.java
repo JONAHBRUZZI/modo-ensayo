@@ -51,6 +51,7 @@ public class ClassController {
     @PostMapping
     public ResponseEntity<ClassResponse> create(@AuthenticationPrincipal CustomUserDetails user,
                                                  @RequestBody ClassRequest req) {
-        return ResponseEntity.ok(classService.createWithTeacher(req, user.getUserId()));
+        UUID teacherId = req.teacherId() != null ? req.teacherId() : user.getUserId();
+        return ResponseEntity.ok(classService.createWithTeacher(req, teacherId));
     }
 }

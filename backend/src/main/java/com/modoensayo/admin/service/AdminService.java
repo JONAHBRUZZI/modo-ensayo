@@ -1,5 +1,7 @@
 package com.modoensayo.admin.service;
 
+import com.modoensayo.classes.enums.ClassStatus;
+import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.users.domain.*;
 import com.modoensayo.users.dto.IdentityVerificationResponse;
@@ -28,6 +30,7 @@ public class AdminService {
     private final IdentityVerificationRepository identityVerificationRepository;
     private final VenueRepository venueRepository;
     private final NotificationRepository notificationRepository;
+    private final ClassRepository classRepository;
 
     public Map<String, Object> getStats() {
         Map<String, Object> stats = new HashMap<>();
@@ -35,6 +38,19 @@ public class AdminService {
         stats.put("sedes", venueRepository.count());
         stats.put("pendientes", identityVerificationRepository.countByStatus("PENDING"));
         stats.put("sedesPendientes", venueRepository.countByStatus(EstadoSede.PENDIENTE_APROBACION));
+
+        long totalClases = classRepository.count();
+        long clasesRealizadas = classRepository.findAll().stream()
+                .filter(c -> c.getStatus() == ClassStatus.COMPLETED).count();
+        double ingresos = classRepository.findAll().stream()
+                .filter(c -> c.getStatus() == ClassStatus.COMPLETED)
+                .mapToDouble(c -> c.getPrice() != null ? c.getPrice() : 0).sum();
+        long tasaOcupacion = totalClases > 0 ? (clasesRealizadas * 100 / totalClases) : 0;
+
+        stats.put("totalClases", totalClases);
+        stats.put("clasesRealizadas", clasesRealizadas);
+        stats.put("tasaOcupacion", tasaOcupacion);
+        stats.put("ingresos", ingresos);
         return stats;
     }
 

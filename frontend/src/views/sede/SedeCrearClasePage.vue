@@ -15,6 +15,7 @@
       </div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Fecha y Hora</label><input type="datetime-local" v-model="form.startTime" required class="input-field" /></div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Sala</label><select v-model="form.roomId" required class="input-field"><option value="">Seleccionar sala</option><option v-for="r in rooms" :key="r.id" :value="r.id">{{ r.name }}</option></select></div>
+      <div><label class="block text-sm font-medium text-gray-300 mb-1">Maestro Dependiente</label><select v-model="form.teacherId" class="input-field"><option :value="null">Sin asignar (clase sin profesor)</option><option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name || t.email }}</option></select></div>
       <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
       <button type="submit" :disabled="creating" class="btn-primary w-full">{{ creating ? 'Creando...' : 'Crear Clase' }}</button>
     </form>
@@ -28,8 +29,9 @@ import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 
 const router = useRouter()
-const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, startTime: '', roomId: '' })
+const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, startTime: '', roomId: '', teacherId: null })
 const rooms = ref([])
+const teachers = ref([])
 const error = ref('')
 const creating = ref(false)
 
@@ -39,6 +41,7 @@ onMounted(async () => {
     const vArr = Array.isArray(venues) ? venues : venues.content || []
     if (vArr.length > 0) rooms.value = await venueService.getVenueRooms(vArr[0].id)
   } catch { rooms.value = [] }
+  try { teachers.value = await venueService.getVenueProfessors() } catch { teachers.value = [] }
 })
 
 async function handleCreate() {

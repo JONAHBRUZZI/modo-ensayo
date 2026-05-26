@@ -5,6 +5,8 @@ import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.users.domain.RefundMethod;
 import com.modoensayo.users.dto.*;
 import com.modoensayo.users.service.UserService;
+import com.modoensayo.users.service.ProfessionalProfileService;
+import com.modoensayo.users.domain.ProfessionalProfile;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.classes.enums.ClassStatus;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final ProfessionalProfileService profileService;
     private final EnrollmentRepository enrollmentRepository;
     private final ClassRepository classRepository;
 
@@ -126,11 +129,16 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/me/professional-profile")
-    public ResponseEntity<Void> saveProfessionalProfile(@AuthenticationPrincipal CustomUserDetails user,
-                                                         @RequestBody Map<String, Object> body) {
-        userService.saveProfessionalProfile(user.getUserId(), body);
-        return ResponseEntity.ok().build();
+    @GetMapping("/me/professional-profile")
+    public ResponseEntity<ProfessionalProfile> getProfessionalProfile(@AuthenticationPrincipal CustomUserDetails user) {
+        ProfessionalProfile profile = profileService.getByUserId(user.getUserId());
+        return profile != null ? ResponseEntity.ok(profile) : ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/me/professional-profile")
+    public ResponseEntity<ProfessionalProfile> saveProfessionalProfile(@AuthenticationPrincipal CustomUserDetails user,
+                                                            @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(profileService.save(user.getUserId(), body));
     }
 
     @PutMapping("/me/password")

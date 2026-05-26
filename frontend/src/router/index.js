@@ -151,6 +151,12 @@ const routes = [
         meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       {
+        path: 'profesor/perfil-profesional',
+        name: 'ProfesionalProfile',
+        component: () => import('@/views/profesor/ProfesionalProfilePage.vue'),
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
+      },
+      {
         path: 'profesor/metricas',
         name: 'ProfesorMetricas',
         component: () => import('@/views/profesor/ProfesorMetricasPage.vue'),

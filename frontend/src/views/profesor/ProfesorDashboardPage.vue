@@ -9,6 +9,10 @@
       <div class="card"><h3 class="text-gray-400 text-sm mb-1">Ganancias</h3><p class="text-3xl font-bold text-yellow-400">${{ stats.ganancias?.toLocaleString() || 0 }}</p></div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <router-link to="/profesor/perfil-profesional" class="card hover:border-primary/50 transition-colors group border-primary/30">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Perfil Profesional</h3>
+        <p class="text-gray-400 text-sm mt-2">Completa tu perfil de maestro: especialidad, experiencia, formacion y redes.</p>
+      </router-link>
       <router-link to="/profesor/clases-propias" class="card hover:border-primary/50 transition-colors group"><h3 class="text-lg font-semibold text-white group-hover:text-primary">Mis Clases</h3><p class="text-gray-400 text-sm mt-2">Gestiona las clases que tu creaste.</p></router-link>
       <router-link to="/profesor/clases-asignadas" class="card hover:border-primary/50 transition-colors group"><h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Asignadas</h3><p class="text-gray-400 text-sm mt-2">Clases donde fuiste asignado como profesor.</p></router-link>
       <router-link to="/profesor/buscar-salas" class="card hover:border-primary/50 transition-colors group"><h3 class="text-lg font-semibold text-white group-hover:text-primary">Agendar Sala</h3><p class="text-gray-400 text-sm mt-2">Reserva una sala en una sede para dictar tu clase.</p></router-link>

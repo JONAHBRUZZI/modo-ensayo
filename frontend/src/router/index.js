@@ -166,7 +166,7 @@ const routes = [
         path: 'profesor/buscar-salas',
         name: 'ProfesorBuscarSalas',
         component: () => import('@/views/profesor/BuscarSalasPage.vue'),
-        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
+        meta: { requiresAuth: true, requiresIdentity: true }
       },
       {
         path: 'profesor/registro',

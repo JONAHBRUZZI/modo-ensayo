@@ -86,13 +86,18 @@ public class UserService {
     }
 
     @Transactional
-    public IdentityVerificationResponse uploadIdentity(CustomUserDetails userDetails, String documentUrl) {
+    public IdentityVerificationResponse uploadIdentity(CustomUserDetails userDetails, String documentUrl, String documentType, String documentNumber, String fullName, java.time.LocalDate birthDate) {
         IdentityVerification iv = identityVerificationRepository.findByUserId(userDetails.getUserId())
                 .orElse(IdentityVerification.builder().userId(userDetails.getUserId()).build());
         iv.setDocumentUrl(documentUrl);
+        iv.setDocumentType(documentType);
+        iv.setDocumentNumber(documentNumber);
+        iv.setFullName(fullName);
+        iv.setBirthDate(birthDate);
         iv.setStatus("PENDING");
         iv = identityVerificationRepository.save(iv);
-        return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt());
+        return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt(),
+                iv.getDocumentType(), iv.getDocumentNumber(), iv.getFullName(), iv.getBirthDate());
     }
 
     @Transactional

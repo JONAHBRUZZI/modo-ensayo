@@ -108,7 +108,16 @@ public class UserController {
     @PostMapping("/me/identity-verification")
     public ResponseEntity<IdentityVerificationResponse> uploadIdentity(@AuthenticationPrincipal CustomUserDetails user,
                                                                         @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(userService.uploadIdentity(user, body.get("documentUrl")));
+        java.time.LocalDate birthDate = null;
+        if (body.get("birthDate") != null && !body.get("birthDate").isBlank()) {
+            birthDate = java.time.LocalDate.parse(body.get("birthDate"));
+        }
+        return ResponseEntity.ok(userService.uploadIdentity(user,
+                body.get("documentUrl"),
+                body.get("documentType"),
+                body.get("documentNumber"),
+                body.get("fullName"),
+                birthDate));
     }
 
     @DeleteMapping("/me/identity-verification")

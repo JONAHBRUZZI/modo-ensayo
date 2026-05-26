@@ -30,8 +30,14 @@ export default {
     return res.data
   },
 
-  async uploadIdentityDocument(documentUrl) {
-    const res = await api.post('/users/me/identity-verification', { documentUrl })
+  async uploadIdentityDocument(documentUrl, formData) {
+    const res = await api.post('/users/me/identity-verification', {
+      documentUrl,
+      documentType: formData?.documentType || '',
+      documentNumber: formData?.documentNumber || '',
+      fullName: formData?.fullName || '',
+      birthDate: formData?.birthDate || ''
+    })
     return res.data
   },
 

@@ -3,6 +3,7 @@ package com.modoensayo.users.domain;
 import com.modoensayo.shared.config.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -15,7 +16,16 @@ public class IdentityVerification extends BaseEntity {
 
     private UUID userId;
 
+    @Column(length = 500)
     private String documentUrl;
+
+    private String documentType;
+
+    private String documentNumber;
+
+    private String fullName;
+
+    private LocalDate birthDate;
 
     @Builder.Default
     private String status = "PENDING";

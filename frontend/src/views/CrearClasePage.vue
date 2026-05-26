@@ -48,6 +48,7 @@ onMounted(async () => {
     form.value.venueId = route.query.venueId
     try { rooms.value = await classService.getVenueRooms(route.query.venueId) } catch { rooms.value = [] }
   }
+  if (route.query.startTime) form.value.startTime = route.query.startTime
 })
 
 watch(() => form.value.venueId, async (id) => {

@@ -81,6 +81,11 @@ export default {
     return res.data
   },
 
+  async getPublicRoomAvailability(roomId) {
+    const res = await api.get(`/venues/rooms/${roomId}/availability`)
+    return res.data
+  },
+
   async deleteRoomAvailability(roomId, slotId) {
     await api.delete(`/venue-admin/rooms/${roomId}/availability/${slotId}`)
   }

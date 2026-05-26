@@ -15,7 +15,7 @@
           <!-- Desktop Nav -->
           <div class="hidden md:flex items-center space-x-1">
             <router-link to="/" class="nav-link">Inicio</router-link>
-            <router-link to="/classes" class="nav-link">Cronograma</router-link>
+            <router-link v-if="!isAuthenticated || modoActual === 'alumno'" to="/classes" class="nav-link">Cronograma</router-link>
 
             <template v-if="isAuthenticated">
               <!-- Profesor mode -->
@@ -48,15 +48,11 @@
                 <router-link to="/alumno/dashboard" class="nav-link">Mi Espacio</router-link>
                 <router-link to="/classes" class="nav-link">Clases</router-link>
                 <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
+                <router-link to="/cart" class="nav-link relative">
+                  Carrito
+                  <span v-if="cartCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ cartCount }}</span>
+                </router-link>
               </template>
-
-              <!-- Cart - always visible -->
-              <router-link to="/cart" class="nav-link relative">
-                Carrito
-                <span v-if="cartCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {{ cartCount }}
-                </span>
-              </router-link>
 
               <!-- Admin quick link always visible if admin -->
               <router-link v-if="isAdmin && modoActual !== 'admin'" to="/admin" class="nav-link text-primary text-xs">Admin</router-link>

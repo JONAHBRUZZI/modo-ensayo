@@ -42,7 +42,7 @@ async function handleLogin() {
   loading.value = true
   try {
     await login(email.value, password.value)
-    router.push('/')
+    router.push('/alumno/dashboard')
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al iniciar sesion'
   } finally {

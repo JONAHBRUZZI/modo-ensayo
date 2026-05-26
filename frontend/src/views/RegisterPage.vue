@@ -73,7 +73,7 @@ async function handleRegister() {
       phone.value,
       null
     )
-    router.push('/')
+    router.push('/alumno/dashboard')
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al crear cuenta'
   } finally {

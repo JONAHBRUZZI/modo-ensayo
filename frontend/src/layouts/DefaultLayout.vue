@@ -162,7 +162,7 @@ import { useAuth } from '@/stores/auth'
 import paymentService from '@/services/paymentService'
 
 const router = useRouter()
-const { user, isAuthenticated, isAdmin, isSede, isTeacher, puedeAlternarModo, modoActual, displayName, setModo, logout } = useAuth()
+const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, modoActual, displayName, setModo, logout } = useAuth()
 
 const showUserMenu = ref(false)
 const userMenuRef = ref(null)
@@ -170,8 +170,8 @@ const cartCount = ref(0)
 
 const availableModes = computed(() => {
   const modes = [{ value: 'alumno', label: 'Alumno' }]
-  if (isTeacher.value) modes.push({ value: 'profesor', label: 'Maestro' })
-  if (isSede.value) modes.push({ value: 'sede', label: 'Mi Sede' })
+  if (isTeacher.value && identidadValidada.value) modes.push({ value: 'profesor', label: 'Maestro' })
+  if (isSede.value && identidadValidada.value) modes.push({ value: 'sede', label: 'Mi Sede' })
   if (isAdmin.value) modes.push({ value: 'admin', label: 'Admin' })
   return modes
 })

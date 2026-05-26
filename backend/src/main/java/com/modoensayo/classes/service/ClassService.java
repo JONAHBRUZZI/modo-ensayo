@@ -12,7 +12,14 @@ import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.users.domain.IdentityVerification;
+import com.modoensayo.users.domain.Role;
+import com.modoensayo.users.domain.User;
+import com.modoensayo.users.domain.UserRole;
+import com.modoensayo.users.domain.UserRoleId;
 import com.modoensayo.users.repository.IdentityVerificationRepository;
+import com.modoensayo.users.repository.RoleRepository;
+import com.modoensayo.users.repository.UserRepository;
+import com.modoensayo.users.repository.UserRoleRepository;
 import com.modoensayo.venues.domain.Room;
 import com.modoensayo.venues.enums.EstadoSede;
 import com.modoensayo.venues.repository.RoomRepository;
@@ -37,6 +44,9 @@ public class ClassService {
     private final RoomRepository roomRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
 
     public List<ClassResponse> listPublished() {
         return classRepository.findByStatusOrderByStartTimeAsc(ClassStatus.PUBLISHED).stream()
@@ -105,6 +115,19 @@ public class ClassService {
             if (iv == null || !"APPROVED".equals(iv.getStatus())) {
                 throw new BusinessException(
                     "Debes validar tu identidad antes de crear clases. Sube tu documento en tu perfil y espera la aprobacion.");
+            }
+
+            Role teacherRole = roleRepository.findByName("TEACHER").orElse(null);
+            if (teacherRole != null) {
+                User user = userRepository.findById(teacherId).orElse(null);
+                if (user != null) {
+                    boolean hasTeacherRole = user.getUserRoles().stream()
+                            .anyMatch(ur -> "TEACHER".equals(ur.getRole().getName()));
+                    if (!hasTeacherRole) {
+                        UserRole userRole = new UserRole(new UserRoleId(user.getId(), teacherRole.getId()), user, teacherRole);
+                        userRoleRepository.save(userRole);
+                    }
+                }
             }
         }
 

@@ -213,6 +213,13 @@ export function useAuth() {
     }
   }
 
+  async function refreshProfile() {
+    try {
+      const res = await api.get('/users/me')
+      if (res.data) store.setUser(res.data)
+    } catch { /* silencioso */ }
+  }
+
   async function updateUserProfile(data) {
     const res = await api.put('/users/me', data)
     store.setUser(res.data)
@@ -264,6 +271,7 @@ export function useAuth() {
     updateUserProfile,
     refreshToken,
     syncIdentityStatus,
-    syncActividadMaestro
+    syncActividadMaestro,
+    refreshProfile
   }
 }

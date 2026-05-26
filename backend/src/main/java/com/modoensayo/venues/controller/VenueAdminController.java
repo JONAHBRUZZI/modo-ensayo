@@ -70,6 +70,13 @@ public class VenueAdminController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/classes")
+    public ResponseEntity<List<ClassSummaryDto>> getVenueClasses(
+            @AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(
+            classConfirmationService.getAllVenueClasses(user.getUserId().toString()));
+    }
+
     @GetMapping("/classes/pending-confirmation")
     public ResponseEntity<List<ClassSummaryDto>> getPendingClasses(
             @AuthenticationPrincipal CustomUserDetails user) {

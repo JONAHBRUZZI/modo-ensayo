@@ -63,7 +63,37 @@ public class ClassConfirmationService {
                         classEntity.getEndTime(),
                         classEntity.getCapacity(),
                         attendanceCount,
-                        classEntity.getPrice() != null ? classEntity.getPrice().intValue() : null
+                        classEntity.getPrice() != null ? classEntity.getPrice().intValue() : null,
+                        classEntity.getStatus().name()
+                ));
+            }
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClassSummaryDto> getAllVenueClasses(String venueAdminId) {
+        List<Venue> venues = venueRepository.findByAdminId(UUID.fromString(venueAdminId));
+        List<ClassSummaryDto> result = new ArrayList<>();
+        for (Venue venue : venues) {
+            List<Class> classes = classRepository.findByRoomVenueId(venue.getId());
+            for (Class classEntity : classes) {
+                long attendanceCount = attendanceRepository.countByClassIdAndPresentTrue(classEntity.getId());
+                result.add(new ClassSummaryDto(
+                        classEntity.getId().toString(),
+                        classEntity.getTitle(),
+                        classEntity.getDiscipline().name(),
+                        classEntity.getRoom().getId().toString(),
+                        classEntity.getRoom().getName(),
+                        venue.getId().toString(),
+                        venue.getName(),
+                        classEntity.getTeacherId().toString(),
+                        classEntity.getStartTime(),
+                        classEntity.getEndTime(),
+                        classEntity.getCapacity(),
+                        attendanceCount,
+                        classEntity.getPrice() != null ? classEntity.getPrice().intValue() : null,
+                        classEntity.getStatus().name()
                 ));
             }
         }
@@ -221,7 +251,8 @@ public class ClassConfirmationService {
             Instant endTime,
             Integer capacity,
             Long attendanceCount,
-            Integer price
+            Integer price,
+            String status
     ) {}
 
     public record ClassConfirmationResult(

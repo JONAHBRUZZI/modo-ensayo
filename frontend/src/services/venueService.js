@@ -51,6 +51,11 @@ export default {
     return res.data
   },
 
+  async getVenueClasses() {
+    const res = await api.get('/venue-admin/classes')
+    return res.data
+  },
+
   async getPendingClasses() {
     const res = await api.get('/venue-admin/classes/pending-confirmation')
     return res.data

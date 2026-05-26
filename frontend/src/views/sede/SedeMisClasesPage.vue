@@ -5,7 +5,7 @@
     <div v-else-if="clases.length === 0" class="card text-center py-12"><p class="text-gray-400">No hay clases programadas.</p></div>
     <div v-else class="space-y-4">
       <div v-for="c in clases" :key="c.id" class="card flex items-center justify-between">
-        <div><h3 class="text-white font-medium">{{ c.title }}</h3><p class="text-gray-400 text-sm">{{ c.discipline }} - {{ c.level }}</p><p class="text-gray-500 text-xs">{{ formatDate(c.startTime) }}</p></div>
+        <div><h3 class="text-white font-medium">{{ c.title }}</h3><p class="text-gray-400 text-sm">{{ c.discipline }} — {{ c.roomName }}</p><p class="text-gray-500 text-xs">{{ formatDate(c.startTime) }}</p></div>
         <EstadoBadge :status="c.status" />
       </div>
     </div>
@@ -14,14 +14,17 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import classService from '@/services/classService'
+import venueService from '@/services/venueService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 
 const clases = ref([])
 const loading = ref(true)
 
 onMounted(async () => {
-  try { clases.value = await classService.getTeacherClasses() } catch { clases.value = [] }
+  try {
+    const data = await venueService.getVenueClasses()
+    clases.value = Array.isArray(data) ? data : []
+  } catch { clases.value = [] }
   loading.value = false
 })
 

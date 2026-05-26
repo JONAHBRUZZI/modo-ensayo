@@ -10,8 +10,32 @@
     <div v-if="showForm" class="card mb-8">
       <form @submit.prevent="createAssociate" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Email del Asociado</label>
-          <input type="email" v-model="newEmail" required class="input-field" placeholder="asociado@email.com" />
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nombre completo *</label>
+          <input type="text" v-model="form.name" required class="input-field" placeholder="Nombre del asociado" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Relacion *</label>
+          <select v-model="form.relationship" required class="input-field">
+            <option value="">Seleccionar</option>
+            <option value="HIJO">Hijo/a</option>
+            <option value="FAMILIAR">Familiar</option>
+            <option value="AMIGO">Amigo/a</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Fecha de nacimiento *</label>
+            <input type="date" v-model="form.birthDate" required class="input-field" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">RUT <span class="text-gray-500">(opcional)</span></label>
+            <input type="text" v-model="form.rut" class="input-field" placeholder="12.345.678-9" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+          <input type="email" v-model="form.email" class="input-field" placeholder="asociado@email.com" />
         </div>
         <button type="submit" :disabled="creating" class="btn-primary">
           {{ creating ? 'Agregando...' : 'Agregar Asociado' }}
@@ -26,8 +50,9 @@
     <div v-else class="space-y-3">
       <div v-for="a in associates" :key="a.id" class="card flex items-center justify-between">
         <div>
-          <p class="text-white font-medium">{{ a.email || a.name }}</p>
-          <p class="text-gray-400 text-sm">{{ a.status || 'Activo' }}</p>
+          <p class="text-white font-medium">{{ a.name || a.email || 'Sin nombre' }}</p>
+          <p class="text-gray-400 text-sm">{{ a.relationship || '' }}<span v-if="a.birthDate"> · {{ formatDate(a.birthDate) }}</span></p>
+          <p v-if="a.rut" class="text-gray-500 text-xs">RUT: {{ a.rut }}</p>
         </div>
         <button @click="confirmDelete(a)" class="text-red-400 hover:text-red-300">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -46,14 +71,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import associateService from '@/services/associateService'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 
 const associates = ref([])
 const loading = ref(true)
 const showForm = ref(false)
-const newEmail = ref('')
+const form = reactive({ name: '', relationship: '', birthDate: '', rut: '', email: '' })
 const creating = ref(false)
 const showConfirm = ref(false)
 const associateToDelete = ref(null)
@@ -77,8 +102,14 @@ async function loadAssociates() {
 async function createAssociate() {
   creating.value = true
   try {
-    await associateService.createAssociate({ email: newEmail.value })
-    newEmail.value = ''
+    await associateService.createAssociate({
+      name: form.name,
+      relationship: form.relationship,
+      birthDate: form.birthDate || null,
+      rut: form.rut || null,
+      email: form.email || null
+    })
+    Object.assign(form, { name: '', relationship: '', birthDate: '', rut: '', email: '' })
     showForm.value = false
     await loadAssociates()
   } catch {} finally {
@@ -97,5 +128,10 @@ async function deleteAssociate() {
     showConfirm.value = false
     await loadAssociates()
   } catch {}
+}
+
+function formatDate(d) {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 </script>

@@ -85,6 +85,9 @@ public class VenueService {
         if (v.getAdminId() == null || !v.getAdminId().equals(userId)) {
             throw new BusinessException("No tienes permiso para modificar esta sede");
         }
+        if (v.getStatus() == EstadoSede.APROBADA) {
+            throw new BusinessException("No se pueden modificar los datos de una sede aprobada. Contacta al Administrador General si necesitas hacer cambios.");
+        }
         if (req.name() != null) v.setName(req.name());
         if (req.city() != null) v.setCity(req.city());
         if (req.address() != null) v.setAddress(req.address());

@@ -6,12 +6,22 @@ export default {
     return res.data
   },
 
+  async getClassById(id) {
+    const res = await api.get(`/classes/${id}`)
+    return res.data
+  },
+
   async createClass(data) {
     const res = await api.post('/classes', data)
     return res.data
   },
 
   async getTeacherClasses() {
+    const res = await api.get('/teacher/classes')
+    return res.data
+  },
+
+  async getMyClasses() {
     const res = await api.get('/teacher/classes')
     return res.data
   },

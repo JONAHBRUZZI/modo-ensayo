@@ -45,12 +45,12 @@ const routes = [
       {
         path: 'quiero-ser-profesor',
         name: 'QuieroSerProfesor',
-        component: () => import('@/views/QuieroSerProfesorPage.vue')
+        component: () => import('@/pages/acceso/QuieroSerProfesorPage.vue')
       },
       {
         path: 'quiero-gestionar-sede',
         name: 'QuieroGestionarSede',
-        component: () => import('@/views/QuieroGestionarSedePage.vue')
+        component: () => import('@/pages/acceso/QuieroGestionarSedePage.vue')
       },
       {
         path: 'cart',

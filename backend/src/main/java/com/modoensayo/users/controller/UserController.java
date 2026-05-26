@@ -48,6 +48,14 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/me/preferred-refund-method")
+    public ResponseEntity<UserProfileResponse> setPreferredRefundMethod(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody Map<String, String> body) {
+        UUID methodId = body.get("methodId") != null ? UUID.fromString(body.get("methodId")) : null;
+        return ResponseEntity.ok(userService.setPreferredRefundMethod(user, methodId));
+    }
+
     @GetMapping("/me/identity-verification")
     public ResponseEntity<IdentityVerificationResponse> getIdentity(@AuthenticationPrincipal CustomUserDetails user) {
         return ResponseEntity.ok(userService.getIdentityVerification(user));

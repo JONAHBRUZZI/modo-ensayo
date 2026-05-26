@@ -48,7 +48,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { classService } from '../../services/classService'
+import classService from '../../services/classService'
+import rescheduleService from '../../services/rescheduleService'
 import ContadorRegresivo from '../../components/ContadorRegresivo.vue'
 
 const route = useRoute()
@@ -72,7 +73,7 @@ const enviar = async () => {
   if (!form.value.newStartTime || !form.value.reason) return
   sending.value = true
   try {
-    await classService.requestReschedule?.(route.params.claseId, form.value)
+    await rescheduleService.propose(route.params.claseId, new Date(form.value.newStartTime).toISOString(), form.value.reason)
     router.push('/profesor/clases-propias')
   } catch (e) {
     alert(e?.response?.data?.message || 'Error al enviar solicitud')

@@ -60,10 +60,19 @@ public class UserService {
         refundMethodRepository.deleteById(id);
     }
 
+    @Transactional
+    public UserProfileResponse setPreferredRefundMethod(CustomUserDetails userDetails, UUID methodId) {
+        User user = getUser(userDetails.getUserId());
+        user.setPreferredRefundMethodId(methodId);
+        user = userRepository.save(user);
+        IdentityVerification iv = identityVerificationRepository.findByUserId(user.getId()).orElse(null);
+        return mapToProfile(user, iv);
+    }
+
     public IdentityVerificationResponse getIdentityVerification(CustomUserDetails userDetails) {
         IdentityVerification iv = identityVerificationRepository.findByUserId(userDetails.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("No verification found"));
-        return new IdentityVerificationResponse(iv.getId(), iv.getUserId(), iv.getDocumentUrl(), iv.getStatus(), iv.getCreatedAt());
+        return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt());
     }
 
     @Transactional
@@ -73,7 +82,7 @@ public class UserService {
         iv.setDocumentUrl(documentUrl);
         iv.setStatus("PENDING");
         iv = identityVerificationRepository.save(iv);
-        return new IdentityVerificationResponse(iv.getId(), iv.getUserId(), iv.getDocumentUrl(), iv.getStatus(), iv.getCreatedAt());
+        return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt());
     }
 
     private User getUser(UUID id) {
@@ -88,6 +97,6 @@ public class UserService {
         boolean identidadEnRevision = iv != null && "PENDING".equals(iv.getStatus());
         return new UserProfileResponse(user.getId(), user.getEmail(), user.getFullName(),
                 user.getSocialName(), user.getPhone(), user.getRut(), roles, user.isEnabled(),
-                identidadValidada, identidadEnRevision);
+                identidadValidada, identidadEnRevision, user.getPreferredRefundMethodId());
     }
 }

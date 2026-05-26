@@ -2,6 +2,9 @@ package com.modoensayo.venues.controller;
 
 import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.venues.dto.*;
+import com.modoensayo.venues.service.ClassConfirmationService;
+import com.modoensayo.venues.service.ClassConfirmationService.ClassConfirmationResult;
+import com.modoensayo.venues.service.ClassConfirmationService.ClassSummaryDto;
 import com.modoensayo.venues.service.VenueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -17,6 +21,7 @@ import java.util.UUID;
 public class VenueAdminController {
 
     private final VenueService venueService;
+    private final ClassConfirmationService classConfirmationService;
 
     @GetMapping("/my-venues")
     public ResponseEntity<List<VenueResponse>> getMyVenues(@AuthenticationPrincipal CustomUserDetails user) {
@@ -59,5 +64,38 @@ public class VenueAdminController {
     public ResponseEntity<Void> deleteAvailability(@PathVariable UUID roomId, @PathVariable UUID slotId) {
         venueService.deleteAvailability(slotId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/classes/pending-confirmation")
+    public ResponseEntity<List<ClassSummaryDto>> getPendingClasses(
+            @AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(
+            classConfirmationService.getClassesPendingConfirmation(user.getUserId().toString()));
+    }
+
+    @PostMapping("/classes/{classId}/confirm-realized")
+    public ResponseEntity<ClassConfirmationResult> confirmRealized(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable String classId,
+            @RequestBody Map<String, Object> body) {
+        Object confirm = body.get("confirmacion");
+        if (confirm == null || !Boolean.TRUE.equals(confirm)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(
+            classConfirmationService.confirmClassRealized(user.getUserId().toString(), classId));
+    }
+
+    @PostMapping("/classes/{classId}/confirm-not-realized")
+    public ResponseEntity<ClassConfirmationResult> confirmNotRealized(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable String classId,
+            @RequestBody Map<String, Object> body) {
+        Object confirm = body.get("confirmacion");
+        if (confirm == null || !Boolean.TRUE.equals(confirm)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(
+            classConfirmationService.confirmClassNotRealized(user.getUserId().toString(), classId));
     }
 }

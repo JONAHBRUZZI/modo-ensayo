@@ -13,10 +13,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import venueService from '@/services/venueService'
+import rescheduleService from '@/services/rescheduleService'
 
+const route = useRoute()
 const newDate = ref('')
 const roomId = ref('')
+const reason = ref('')
 const rooms = ref([])
 const sending = ref(false)
 const msg = ref('')
@@ -31,7 +35,12 @@ onMounted(async () => {
 
 async function submit() {
   sending.value = true
-  msg.value = 'Reagendamiento solicitado'
+  try {
+    await rescheduleService.propose(route.params.claseId, new Date(newDate.value).toISOString(), reason.value || 'Reagendamiento solicitado por administracion de sede')
+    msg.value = 'Reagendamiento solicitado. Los alumnos seran notificados.'
+  } catch (e) {
+    msg.value = e.response?.data?.message || 'Error al solicitar reagendamiento'
+  }
   sending.value = false
 }
 </script>

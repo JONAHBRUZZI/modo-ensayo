@@ -6,9 +6,14 @@ import com.modoensayo.classes.dto.ClassResponse;
 import com.modoensayo.classes.enums.ClassStatus;
 import com.modoensayo.classes.enums.Disciplina;
 import com.modoensayo.classes.enums.NivelClase;
+import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.classes.repository.ClassRepository;
+import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
+import com.modoensayo.users.domain.IdentityVerification;
+import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.venues.domain.Room;
+import com.modoensayo.venues.enums.EstadoSede;
 import com.modoensayo.venues.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +29,7 @@ public class ClassService {
 
     private final ClassRepository classRepository;
     private final RoomRepository roomRepository;
+    private final IdentityVerificationRepository identityVerificationRepository;
 
     public List<ClassResponse> listPublished() {
         return classRepository.findByStatusOrderByStartTimeAsc(ClassStatus.PUBLISHED).stream()
@@ -32,8 +38,25 @@ public class ClassService {
 
     @Transactional
     public ClassResponse create(ClassRequest req) {
+        return createWithTeacher(req, null);
+    }
+
+    @Transactional
+    public ClassResponse createWithTeacher(ClassRequest req, UUID teacherId) {
         Room room = roomRepository.findById(req.roomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
+
+        if (room.getVenue() == null || room.getVenue().getStatus() != EstadoSede.APROBADA) {
+            throw new BusinessException("La sede a la que pertenece esta sala no esta aprobada. Debe ser aprobada por el Administrador General antes de crear clases.");
+        }
+
+        if (teacherId != null) {
+            IdentityVerification iv = identityVerificationRepository.findByUserId(teacherId).orElse(null);
+            if (iv == null || !"APPROVED".equals(iv.getStatus())) {
+                throw new BusinessException(
+                    "Debes validar tu identidad antes de crear clases. Sube tu documento en tu perfil y espera la aprobacion.");
+            }
+        }
 
         Class c = Class.builder()
                 .title(req.title())
@@ -47,6 +70,8 @@ public class ClassService {
                 .maxAge(req.maxAge() != null ? req.maxAge() : 99)
                 .startTime(req.startTime())
                 .room(room)
+                .teacherId(teacherId)
+                .tipoClase(teacherId != null ? TipoClase.PROPIA : TipoClase.ASIGNADA)
                 .status(ClassStatus.PUBLISHED)
                 .build();
 
@@ -82,6 +107,7 @@ public class ClassService {
                 c.getRoom() != null && c.getRoom().getVenue() != null ? c.getRoom().getVenue().getId() : null,
                 c.getRoom() != null && c.getRoom().getVenue() != null ? c.getRoom().getVenue().getName() : null,
                 c.getTeacherId(), c.getStatus() != null ? c.getStatus().name() : null,
+                c.getTipoClase() != null ? c.getTipoClase().name() : null,
                 0, c.getCreatedAt());
     }
 }

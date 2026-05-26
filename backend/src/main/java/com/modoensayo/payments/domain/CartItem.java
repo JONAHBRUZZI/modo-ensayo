@@ -24,4 +24,8 @@ public class CartItem extends BaseEntity {
     private String level;
 
     private Double price;
+
+    private String beneficiaryType;
+
+    private UUID beneficiaryId;
 }

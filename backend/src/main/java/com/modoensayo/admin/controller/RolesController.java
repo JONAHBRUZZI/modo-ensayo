@@ -23,16 +23,16 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admin/roles")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ADMIN')")
 public class RolesController {
 
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final UserRepository userRepository;
 
-    @GetMapping("/roles")
+    @GetMapping
     public ResponseEntity<List<Role>> listRoles() {
         return ResponseEntity.ok(roleRepository.findAll());
     }
@@ -42,7 +42,7 @@ public class RolesController {
         return ResponseEntity.ok(userRepository.findAll());
     }
 
-    @PostMapping("/users/{userId}/roles")
+    @PostMapping("/users/{userId}/assign")
     public ResponseEntity<Void> assignRole(@PathVariable String userId, @RequestBody Map<String, String> body) {
         User user = userRepository.findById(UUID.fromString(userId)).orElseThrow();
         Role role = roleRepository.findByName(body.get("roleName")).orElseThrow();

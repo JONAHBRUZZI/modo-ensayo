@@ -177,6 +177,22 @@ export function useAuth() {
     }
   }
 
+  async function syncIdentityStatus() {
+    try {
+      const res = await api.get('/users/me/identity-verification')
+      if (res.data) {
+        const status = res.data.status
+        updateUserAttributes({
+          identidadValidada: status === 'APPROVED',
+          identidadEnRevision: status === 'PENDING'
+        })
+      }
+    } catch {
+      // No verification found — identity is not validated
+      updateUserAttributes({ identidadValidada: false, identidadEnRevision: false })
+    }
+  }
+
   async function updateUserProfile(data) {
     const res = await api.put('/users/me', data)
     store.setUser(res.data)
@@ -225,6 +241,7 @@ export function useAuth() {
     setModo,
     updateUserAttributes,
     updateUserProfile,
-    refreshToken
+    refreshToken,
+    syncIdentityStatus
   }
 }

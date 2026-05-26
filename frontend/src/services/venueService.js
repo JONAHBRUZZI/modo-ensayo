@@ -52,12 +52,12 @@ export default {
   },
 
   async confirmClassRealized(classId) {
-    const res = await api.patch(`/venue-admin/classes/${classId}/confirm-realized`)
+    const res = await api.post(`/venue-admin/classes/${classId}/confirm-realized`, { confirmacion: true })
     return res.data
   },
 
   async confirmClassNotRealized(classId) {
-    const res = await api.patch(`/venue-admin/classes/${classId}/confirm-not-realized`)
+    const res = await api.post(`/venue-admin/classes/${classId}/confirm-not-realized`, { confirmacion: true })
     return res.data
   },
 

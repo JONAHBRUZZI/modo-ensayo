@@ -31,7 +31,7 @@ public class RoomAvailabilityService {
 
     @Transactional
     public RoomAvailabilityResponse createAvailability(String venueAdminId, RoomAvailabilityRequest request) {
-        Room room = roomRepository.findById(UUID.fromString(request.roomId()))
+        Room room = roomRepository.findById(request.roomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
 
         if (!room.getVenue().getAdminId().equals(UUID.fromString(venueAdminId))) {

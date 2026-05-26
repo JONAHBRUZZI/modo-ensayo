@@ -88,10 +88,14 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useAuth } from '../../hooks/useAuth'
+import { computed, onMounted } from 'vue'
+import { useAuth } from '@/stores/auth'
 
-const { isAuthenticated, identidadValidada, identidadEnRevision } = useAuth()
+const { isAuthenticated, identidadValidada, identidadEnRevision, syncIdentityStatus } = useAuth()
+
+onMounted(() => {
+  if (isAuthenticated.value) syncIdentityStatus()
+})
 
 const estadoConfig = computed(() => {
   if (!isAuthenticated.value) return {

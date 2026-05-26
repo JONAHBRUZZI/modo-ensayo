@@ -49,7 +49,7 @@ public class ClassConfirmationService {
                 result.add(new ClassSummaryDto(
                         classEntity.getId().toString(),
                         classEntity.getTitle(),
-                        classEntity.getDiscipline(),
+                        classEntity.getDiscipline().name(),
                         classEntity.getRoom().getId().toString(),
                         classEntity.getRoom().getName(),
                         venue.getId().toString(),
@@ -59,7 +59,7 @@ public class ClassConfirmationService {
                         classEntity.getEndTime(),
                         classEntity.getCapacity(),
                         attendanceCount,
-                        classEntity.getPrice()
+                        classEntity.getPrice() != null ? classEntity.getPrice().intValue() : null
                 ));
             }
         }

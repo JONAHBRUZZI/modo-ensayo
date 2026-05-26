@@ -2,4 +2,6 @@ package com.modoensayo.venues.dto;
 
 import java.time.Instant;
 
-public record RoomAvailabilityRequest(Instant startTime, Instant endTime) {}
+import java.util.UUID;
+
+public record RoomAvailabilityRequest(UUID roomId, Instant startTime, Instant endTime) {}

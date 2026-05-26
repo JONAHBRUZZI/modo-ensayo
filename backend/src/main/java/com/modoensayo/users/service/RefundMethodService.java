@@ -21,8 +21,11 @@ public class RefundMethodService {
     public RefundMethod create(String userId, RefundMethodRequest request) {
         RefundMethod method = RefundMethod.builder()
                 .userId(UUID.fromString(userId))
-                .method(request.method())
-                .details(request.details())
+                .bank(request.bank())
+                .accountType(request.accountType())
+                .accountNumber(request.accountNumber())
+                .accountHolder(request.accountHolder())
+                .rut(request.rut())
                 .build();
         return refundMethodRepository.save(method);
     }

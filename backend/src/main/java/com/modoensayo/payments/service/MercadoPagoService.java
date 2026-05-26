@@ -14,6 +14,7 @@ import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
 import com.modoensayo.classes.domain.Class;
 import com.modoensayo.classes.repository.ClassRepository;
+import com.modoensayo.associates.repository.AssociateRepository;
 import com.modoensayo.payments.domain.CartItem;
 import com.modoensayo.payments.domain.Enrollment;
 import com.modoensayo.payments.domain.PaymentSession;
@@ -49,6 +50,7 @@ public class MercadoPagoService {
     private final EnrollmentRepository enrollmentRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentSessionRepository paymentSessionRepository;
+    private final AssociateRepository associateRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${app.frontend-url:http://localhost:3000}")
@@ -157,6 +159,48 @@ public class MercadoPagoService {
             }
 
             List<CartSnapshotItem> snapshot = readSnapshot(session.getCartSnapshot());
+            List<String> failedItems = new ArrayList<>();
+
+            // Validate all items first (R5: report which items fail)
+            for (CartSnapshotItem item : snapshot) {
+                Class classEntity = classRepository.findById(item.classId())
+                        .orElse(null);
+                if (classEntity == null) {
+                    failedItems.add(item.classTitle() + ": clase no encontrada");
+                    continue;
+                }
+
+                UUID beneficiaryId = item.beneficiaryId();
+                UUID ownerId = session.getOwnerId();
+
+                if (beneficiaryId != null && !beneficiaryId.equals(ownerId)) {
+                    boolean isAssociate = associateRepository.findByOwnerId(ownerId).stream()
+                            .anyMatch(a -> a.getId().equals(beneficiaryId));
+                    if (!isAssociate) {
+                        failedItems.add(item.classTitle() + ": beneficiario no vinculado a tu cuenta");
+                        continue;
+                    }
+                }
+
+                boolean exists = enrollmentRepository.existsByClassIdAndBeneficiaryTypeAndBeneficiaryId(
+                        classEntity.getId(), item.beneficiaryType(), beneficiaryId);
+                if (exists) {
+                    failedItems.add(item.classTitle() + ": ya inscrito en esta clase");
+                    continue;
+                }
+
+                long current = enrollmentRepository.countByClassId(classEntity.getId());
+                if (classEntity.getCapacity() != null && current >= classEntity.getCapacity()) {
+                    failedItems.add(item.classTitle() + ": sin cupos disponibles");
+                    continue;
+                }
+            }
+
+            if (!failedItems.isEmpty()) {
+                throw new BusinessException("No se pudo procesar el pago. Items fallidos: " + String.join(" | ", failedItems));
+            }
+
+            // Process all items atomically (R6)
             for (CartSnapshotItem item : snapshot) {
                 Class classEntity = classRepository.findWithLockById(item.classId())
                         .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
@@ -164,14 +208,7 @@ public class MercadoPagoService {
                 UUID beneficiaryId = item.beneficiaryId();
                 boolean exists = enrollmentRepository.existsByClassIdAndBeneficiaryTypeAndBeneficiaryId(
                         classEntity.getId(), item.beneficiaryType(), beneficiaryId);
-                if (exists) {
-                    continue;
-                }
-
-                long current = enrollmentRepository.countByClassId(classEntity.getId());
-                if (classEntity.getCapacity() != null && current >= classEntity.getCapacity()) {
-                    throw new BusinessException("La clase ya no tiene cupos disponibles");
-                }
+                if (exists) continue;
 
                 Enrollment enrollment = Enrollment.builder()
                         .classId(classEntity.getId())
@@ -183,7 +220,7 @@ public class MercadoPagoService {
 
                 com.modoensayo.payments.domain.Payment payment = com.modoensayo.payments.domain.Payment.builder()
                         .enrollment(enrollment)
-                        .amount(item.price())
+                        .amount(item.price() != null ? item.price().intValue() : null)
                         .status(PaymentStatus.RETAINED)
                         .build();
                 paymentRepository.save(payment);
@@ -233,7 +270,7 @@ public class MercadoPagoService {
             UUID classId,
             String beneficiaryType,
             UUID beneficiaryId,
-            Integer price,
+            Double price,
             String classTitle
     ) {}
 }

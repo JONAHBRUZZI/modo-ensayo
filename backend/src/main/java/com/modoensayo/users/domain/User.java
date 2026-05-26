@@ -35,6 +35,8 @@ public class User extends BaseEntity {
     @Builder.Default
     private boolean enabled = true;
 
+    private UUID preferredRefundMethodId;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Builder.Default
     private Set<UserRole> userRoles = new HashSet<>();

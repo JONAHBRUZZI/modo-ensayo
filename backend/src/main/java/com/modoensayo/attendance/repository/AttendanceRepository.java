@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
     List<Attendance> findByClassId(UUID classId);
     boolean existsByClassIdAndBeneficiaryId(UUID classId, UUID beneficiaryId);
+    long countByClassIdAndPresentTrue(UUID classId);
 }

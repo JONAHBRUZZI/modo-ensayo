@@ -1,6 +1,9 @@
 package com.modoensayo.venues.service;
 
+import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
+import com.modoensayo.users.domain.IdentityVerification;
+import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.venues.domain.*;
 import com.modoensayo.venues.dto.*;
 import com.modoensayo.venues.enums.EstadoSede;
@@ -20,15 +23,27 @@ public class VenueService {
     private final VenueRepository venueRepository;
     private final RoomRepository roomRepository;
     private final RoomAvailabilityRepository roomAvailabilityRepository;
+    private final IdentityVerificationRepository identityVerificationRepository;
 
     public List<VenueResponse> listApproved() {
-        return venueRepository.findByStatusOrderByCreatedAtDesc("APROBADA").stream()
+        return venueRepository.findByStatusOrderByCreatedAtDesc(EstadoSede.APROBADA).stream()
                 .map(this::toVenueResponse).collect(Collectors.toList());
     }
 
     @Transactional
     public VenueResponse create(VenueRequest req) {
         Venue v = Venue.builder()
+                .name(req.name()).city(req.city()).address(req.address())
+                .description(req.description()).phone(req.phone()).email(req.email())
+                .status(EstadoSede.PENDIENTE_APROBACION).build();
+        return toVenueResponse(venueRepository.save(v));
+    }
+
+    @Transactional
+    public VenueResponse createVenueWithIdentityValidation(UUID userId, VenueRequest req) {
+        validateIdentityVerified(userId);
+        Venue v = Venue.builder()
+                .adminId(userId)
                 .name(req.name()).city(req.city()).address(req.address())
                 .description(req.description()).phone(req.phone()).email(req.email())
                 .status(EstadoSede.PENDIENTE_APROBACION).build();
@@ -42,11 +57,22 @@ public class VenueService {
 
     @Transactional
     public VenueResponse createVenueAdmin(UUID adminId, VenueRequest req) {
+        validateIdentityVerified(adminId);
         Venue v = Venue.builder()
                 .adminId(adminId).name(req.name()).city(req.city()).address(req.address())
                 .description(req.description()).phone(req.phone()).email(req.email())
                 .status(EstadoSede.APROBADA).build();
         return toVenueResponse(venueRepository.save(v));
+    }
+
+    private void validateIdentityVerified(UUID userId) {
+        IdentityVerification iv = identityVerificationRepository.findByUserId(userId).orElse(null);
+        if (iv == null || !"APPROVED".equals(iv.getStatus())) {
+            throw new BusinessException(
+                "Debes validar tu identidad antes de registrar una sede. " +
+                "Sube tu documento de identidad en tu perfil y espera la aprobacion del Administrador General."
+            );
+        }
     }
 
     @Transactional
@@ -79,7 +105,7 @@ public class VenueService {
 
     public List<RoomAvailabilityResponse> getRoomAvailability(UUID roomId) {
         return roomAvailabilityRepository.findByRoomId(roomId).stream()
-                .map(a -> new RoomAvailabilityResponse(a.getId(), a.getRoom().getId(), a.getStartTime(), a.getEndTime()))
+                .map(a -> new RoomAvailabilityResponse(a.getId().toString(), a.getRoom().getId().toString(), a.getRoom().getName(), a.getStartTime(), a.getEndTime()))
                 .collect(Collectors.toList());
     }
 
@@ -89,7 +115,7 @@ public class VenueService {
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
         RoomAvailability a = RoomAvailability.builder().room(r).startTime(req.startTime()).endTime(req.endTime()).build();
         a = roomAvailabilityRepository.save(a);
-        return new RoomAvailabilityResponse(a.getId(), a.getRoom().getId(), a.getStartTime(), a.getEndTime());
+        return new RoomAvailabilityResponse(a.getId().toString(), a.getRoom().getId().toString(), a.getRoom().getName(), a.getStartTime(), a.getEndTime());
     }
 
     @Transactional

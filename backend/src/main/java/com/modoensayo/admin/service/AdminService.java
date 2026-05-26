@@ -30,14 +30,14 @@ public class AdminService {
         stats.put("usuarios", userRepository.count());
         stats.put("sedes", venueRepository.count());
         stats.put("pendientes", identityVerificationRepository.countByStatus("PENDING"));
-        stats.put("sedesPendientes", venueRepository.countByStatus("PENDIENTE_APROBACION"));
+        stats.put("sedesPendientes", venueRepository.countByStatus(EstadoSede.PENDIENTE_APROBACION));
         return stats;
     }
 
     public List<IdentityVerificationResponse> getIdentityVerifications() {
         return identityVerificationRepository.findByStatus("PENDING").stream()
-                .map(iv -> new IdentityVerificationResponse(iv.getId(), iv.getUserId(),
-                        iv.getDocumentUrl(), iv.getStatus(), iv.getCreatedAt()))
+                .map(iv -> new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(),
+                        iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 
@@ -57,18 +57,19 @@ public class AdminService {
                     boolean hasRole = user.getUserRoles().stream()
                             .anyMatch(ur -> ur.getRole().getName().equals("TEACHER"));
                     if (!hasRole) {
-                        UserRole ur = UserRole.builder().user(user).role(teachRole).build();
+                        UserRoleId uriId = new UserRoleId(user.getId(), teachRole.getId());
+                        UserRole ur = new UserRole(uriId, user, teachRole);
                         userRoleRepository.save(ur);
                     }
                 }
             }
         }
 
-        return new IdentityVerificationResponse(iv.getId(), iv.getUserId(), iv.getDocumentUrl(), iv.getStatus(), iv.getCreatedAt());
+        return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt());
     }
 
     public List<VenueResponse> getPendingVenues() {
-        return venueRepository.findByStatusOrderByCreatedAtDesc("PENDIENTE_APROBACION").stream()
+        return venueRepository.findByStatusOrderByCreatedAtDesc(EstadoSede.PENDIENTE_APROBACION).stream()
                 .map(v -> new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
                         v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(), v.getCreatedAt()))
                 .collect(Collectors.toList());

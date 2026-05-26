@@ -81,7 +81,8 @@ public class IdentityVerificationService {
                 v.getUserId().toString(),
                 v.getDocumentUrl(),
                 v.getStatus(),
-                v.getReviewedBy() != null ? v.getReviewedBy().toString() : null
+                v.getReviewedBy() != null ? v.getReviewedBy().toString() : null,
+                v.getCreatedAt()
         );
     }
 }

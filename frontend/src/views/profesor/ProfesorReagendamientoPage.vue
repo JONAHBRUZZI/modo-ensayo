@@ -14,6 +14,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
+import rescheduleService from '@/services/rescheduleService'
 
 const route = useRoute()
 const newDate = ref('')
@@ -23,7 +24,12 @@ const msg = ref('')
 
 async function submit() {
   sending.value = true
-  try { msg.value = 'Solicitud enviada correctamente' } catch {}
+  try {
+    await rescheduleService.propose(route.params.claseId, new Date(newDate.value).toISOString(), reason.value)
+    msg.value = 'Reagendamiento solicitado correctamente. Los alumnos seran notificados.'
+  } catch (e) {
+    msg.value = e.response?.data?.message || 'Error al solicitar reagendamiento'
+  }
   sending.value = false
 }
 </script>

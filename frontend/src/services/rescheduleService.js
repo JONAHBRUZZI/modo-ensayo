@@ -6,19 +6,27 @@ export default {
   },
 
   teacherDecision(rescheduleId, accepted) {
-    return api.post('/reschedules/teacher-decision', { rescheduleId, accepted })
+    return api.post('/reschedules/teacher-decision', { rescheduleId, accepted, confirmacion: true })
   },
 
   studentDecision(rescheduleId, accepted) {
-    return api.post('/reschedules/student-decision', { rescheduleId, accepted })
+    return api.post('/reschedules/student-decision', { rescheduleId, accepted, confirmacion: true })
   },
 
   getReschedule(rescheduleId) {
     return api.get(`/reschedules/${rescheduleId}`)
   },
 
+  getStudentResponses(rescheduleId) {
+    return api.get(`/reschedules/${rescheduleId}/responses`)
+  },
+
   getByClass(classId) {
     return api.get(`/reschedules/class/${classId}`)
+  },
+
+  getAvailableSlots(classId) {
+    return api.get(`/reschedules/class/${classId}/available-slots`)
   },
 
   getNotifications() {

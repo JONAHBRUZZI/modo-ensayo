@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -32,8 +33,14 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/classes", "/api/venues", "/api/search/**").permitAll()
-                .requestMatchers("/api/payments/mercadopago/webhook").permitAll()
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/api/search/**",
+                    "/api/payments/mercadopago/webhook",
+                    "/api/classes",
+                    "/api/venues"
+                ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/venues/**", "/api/classes/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/api/teacher/**").hasAuthority("TEACHER")
                 .anyRequest().authenticated()

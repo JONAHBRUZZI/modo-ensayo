@@ -3,6 +3,7 @@ package com.modoensayo.classes.domain;
 import com.modoensayo.classes.enums.ClassStatus;
 import com.modoensayo.classes.enums.Disciplina;
 import com.modoensayo.classes.enums.NivelClase;
+import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.shared.config.BaseEntity;
 import com.modoensayo.venues.domain.Room;
 import jakarta.persistence.*;
@@ -41,6 +42,8 @@ public class Class extends BaseEntity {
 
     private Instant startTime;
 
+    private Instant endTime;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
     private Room room;
@@ -50,4 +53,7 @@ public class Class extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private ClassStatus status = ClassStatus.DRAFT;
+
+    @Enumerated(EnumType.STRING)
+    private TipoClase tipoClase;
 }

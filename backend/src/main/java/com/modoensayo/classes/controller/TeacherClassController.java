@@ -21,4 +21,14 @@ public class TeacherClassController {
     public ResponseEntity<List<ClassResponse>> getMyClasses(@AuthenticationPrincipal CustomUserDetails user) {
         return ResponseEntity.ok(classService.getTeacherClasses(user.getUserId()));
     }
+
+    @GetMapping("/classes/propias")
+    public ResponseEntity<List<ClassResponse>> getPropias(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(classService.getTeacherPropias(user.getUserId()));
+    }
+
+    @GetMapping("/classes/asignadas")
+    public ResponseEntity<List<ClassResponse>> getAsignadas(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(classService.getTeacherAsignadas(user.getUserId()));
+    }
 }

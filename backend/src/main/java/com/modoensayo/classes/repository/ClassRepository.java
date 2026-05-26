@@ -2,6 +2,7 @@ package com.modoensayo.classes.repository;
 
 import com.modoensayo.classes.domain.Class;
 import com.modoensayo.classes.enums.ClassStatus;
+import com.modoensayo.classes.enums.TipoClase;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -28,4 +29,6 @@ public interface ClassRepository extends JpaRepository<Class, UUID>, JpaSpecific
 
     @Query("SELECT c FROM Class c WHERE c.room.id = :roomId AND c.status != 'CANCELLED' AND c.status != 'SUSPENDED' AND c.startTime < :endTime AND c.endTime > :startTime")
     List<Class> findConflictingClasses(@Param("roomId") UUID roomId, @Param("startTime") Instant startTime, @Param("endTime") Instant endTime);
+
+    List<Class> findByTeacherIdAndTipoClase(UUID teacherId, TipoClase tipoClase);
 }

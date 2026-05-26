@@ -2,6 +2,7 @@ package com.modoensayo.venues.domain;
 
 import com.modoensayo.shared.config.BaseEntity;
 import com.modoensayo.venues.enums.EstadoSede;
+import com.modoensayo.venues.enums.TipoSede;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.UUID;
@@ -34,6 +35,9 @@ public class Venue extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private EstadoSede status = EstadoSede.PENDIENTE_APROBACION;
+
+    @Enumerated(EnumType.STRING)
+    private TipoSede tipo;
 
     @Column(length = 1000)
     private String rejectionReason;

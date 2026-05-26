@@ -14,6 +14,19 @@
     </div>
 
     <form v-else @submit.prevent="submit" class="card space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-2">Tipo de espacio</label>
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" @click="form.tipo = 'SEDE'" :class="['p-4 rounded-xl border-2 text-left transition-all', form.tipo === 'SEDE' ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/20']">
+            <div class="text-white font-medium">Sede</div>
+            <div class="text-gray-400 text-xs mt-1">Empresa o academia</div>
+          </button>
+          <button type="button" @click="form.tipo = 'HOME_STUDIO'" :class="['p-4 rounded-xl border-2 text-left transition-all', form.tipo === 'HOME_STUDIO' ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/20']">
+            <div class="text-white font-medium">HomeStudio</div>
+            <div class="text-gray-400 text-xs mt-1">Espacio personal</div>
+          </button>
+        </div>
+      </div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Nombre de la Sede</label><input v-model="form.name" required class="input-field" /></div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Ciudad</label><input v-model="form.city" required class="input-field" /></div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Direccion</label><input v-model="form.address" required class="input-field" /></div>
@@ -33,7 +46,7 @@ import venueService from '@/services/venueService'
 const router = useRouter()
 const { isAuthenticated, identidadValidada, syncIdentityStatus } = useAuth()
 const disciplinas = ['Guitarra', 'Bateria', 'Bajo', 'Canto', 'Piano', 'Violin', 'Saxofon', 'Otro']
-const form = reactive({ name: '', city: '', address: '', disciplines: [] })
+const form = reactive({ name: '', city: '', address: '', disciplines: [], tipo: 'SEDE' })
 const sending = ref(false)
 const msg = ref('')
 const msgType = ref('')

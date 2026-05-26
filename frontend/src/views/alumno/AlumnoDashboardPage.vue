@@ -40,21 +40,26 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import api from '@/services/api'
 
 const { displayName, identidadValidada, identidadEnRevision, identidadRechazada } = useAuth()
+
+const stats = ref({ totalClases: 0, proximas: 0 })
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/users/me/stats')
+    stats.value = res.data
+  } catch {}
+})
 
 const identidadEstado = computed(() => {
   if (identidadValidada.value) return 'APPROVED'
   if (identidadEnRevision.value) return 'PENDING'
   if (identidadRechazada.value) return 'REJECTED'
   return 'NO_SOLICITADA'
-})
-
-const stats = ref({
-  totalClases: 0,
-  proximas: 0
 })
 </script>

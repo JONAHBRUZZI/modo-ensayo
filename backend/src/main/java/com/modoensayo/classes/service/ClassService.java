@@ -166,6 +166,16 @@ public class ClassService {
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
+    public List<ClassResponse> getTeacherPropias(UUID teacherId) {
+        return classRepository.findByTeacherIdAndTipoClase(teacherId, TipoClase.PROPIA).stream()
+                .map(this::toResponse).collect(Collectors.toList());
+    }
+
+    public List<ClassResponse> getTeacherAsignadas(UUID teacherId) {
+        return classRepository.findByTeacherIdAndTipoClase(teacherId, TipoClase.ASIGNADA).stream()
+                .map(this::toResponse).collect(Collectors.toList());
+    }
+
     public List<ClassResponse> getByVenue(UUID venueId) {
         return classRepository.findByRoomVenueId(venueId).stream()
                 .map(this::toResponse).collect(Collectors.toList());

@@ -4,11 +4,16 @@ import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.users.domain.RefundMethod;
 import com.modoensayo.users.dto.*;
 import com.modoensayo.users.service.UserService;
+import com.modoensayo.payments.repository.EnrollmentRepository;
+import com.modoensayo.classes.repository.ClassRepository;
+import com.modoensayo.classes.enums.ClassStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,6 +24,22 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final EnrollmentRepository enrollmentRepository;
+    private final ClassRepository classRepository;
+
+    @GetMapping("/me/stats")
+    public ResponseEntity<Map<String, Object>> getStats(@AuthenticationPrincipal CustomUserDetails user) {
+        var enrollments = enrollmentRepository.findByBeneficiaryId(user.getUserId());
+        long total = enrollments.size();
+        long proximas = enrollments.stream()
+                .map(e -> classRepository.findById(e.getClassId()).orElse(null))
+                .filter(c -> c != null && c.getStatus() == ClassStatus.PUBLISHED && c.getStartTime() != null && c.getStartTime().isAfter(Instant.now()))
+                .count();
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalClases", total);
+        stats.put("proximas", proximas);
+        return ResponseEntity.ok(stats);
+    }
 
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getProfile(@AuthenticationPrincipal CustomUserDetails user) {

@@ -21,6 +21,16 @@ export default {
     return res.data
   },
 
+  async getTeacherPropias() {
+    const res = await api.get('/teacher/classes/propias')
+    return res.data
+  },
+
+  async getTeacherAsignadas() {
+    const res = await api.get('/teacher/classes/asignadas')
+    return res.data
+  },
+
   async getMyClasses() {
     const res = await api.get('/teacher/classes')
     return res.data

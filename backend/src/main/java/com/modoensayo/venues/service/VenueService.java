@@ -7,6 +7,7 @@ import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.venues.domain.*;
 import com.modoensayo.venues.dto.*;
 import com.modoensayo.venues.enums.EstadoSede;
+import com.modoensayo.venues.enums.TipoSede;
 import com.modoensayo.venues.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ public class VenueService {
                 .adminId(userId)
                 .name(req.name()).city(req.city()).address(req.address())
                 .description(req.description()).phone(req.phone()).email(req.email())
+                .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
                 .status(EstadoSede.PENDIENTE_APROBACION).build();
         return toVenueResponse(venueRepository.save(v));
     }
@@ -61,6 +63,7 @@ public class VenueService {
         Venue v = Venue.builder()
                 .adminId(adminId).name(req.name()).city(req.city()).address(req.address())
                 .description(req.description()).phone(req.phone()).email(req.email())
+                .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
                 .status(EstadoSede.APROBADA).build();
         return toVenueResponse(venueRepository.save(v));
     }
@@ -143,7 +146,8 @@ public class VenueService {
 
     private VenueResponse toVenueResponse(Venue v) {
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
-                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(), v.getCreatedAt());
+                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
+                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt());
     }
 
     private RoomResponse toRoomResponse(Room r) {

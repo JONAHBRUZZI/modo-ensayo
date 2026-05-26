@@ -19,9 +19,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useAuth } from '@/stores/auth'
+import { ref, onMounted } from 'vue'
+import classService from '@/services/classService'
 
-const { displayName } = useAuth()
 const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, ganancias: 0 })
+
+onMounted(async () => {
+  try {
+    const [propias, asignadas, todas] = await Promise.allSettled([
+      classService.getTeacherPropias(),
+      classService.getTeacherAsignadas(),
+      classService.getTeacherClasses()
+    ])
+    if (propias.status === 'fulfilled') stats.value.propias = Array.isArray(propias.value) ? propias.value.length : 0
+    if (asignadas.status === 'fulfilled') stats.value.asignadas = Array.isArray(asignadas.value) ? asignadas.value.length : 0
+    if (todas.status === 'fulfilled' && Array.isArray(todas.value)) {
+      stats.value.alumnos = todas.value.reduce((s, c) => s + (c.enrolledCount || 0), 0)
+      stats.value.ganancias = todas.value.reduce((s, c) => s + ((c.price || 0) * (c.enrolledCount || 0)), 0)
+    }
+  } catch {}
+})
 </script>

@@ -71,7 +71,8 @@ public class AdminService {
     public List<VenueResponse> getPendingVenues() {
         return venueRepository.findByStatusOrderByCreatedAtDesc(EstadoSede.PENDIENTE_APROBACION).stream()
                 .map(v -> new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
-                        v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(), v.getCreatedAt()))
+                        v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
+                        v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 
@@ -81,7 +82,8 @@ public class AdminService {
         v.setStatus(EstadoSede.APROBADA);
         v = venueRepository.save(v);
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
-                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(), v.getCreatedAt());
+                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
+                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt());
     }
 
     @Transactional
@@ -91,7 +93,8 @@ public class AdminService {
         v.setRejectionReason(reason);
         v = venueRepository.save(v);
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
-                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(), v.getCreatedAt());
+                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
+                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt());
     }
 
     public List<Map<String, Object>> getUsers() {

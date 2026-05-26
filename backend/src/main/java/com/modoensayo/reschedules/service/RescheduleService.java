@@ -85,6 +85,15 @@ public class RescheduleService {
             r.setTeacherId(teacherId);
             rescheduleRepository.save(r);
 
+            Class classEntity = classRepository.findById(r.getClassId()).orElse(null);
+            if (classEntity != null && r.getProposedTime() != null) {
+                classEntity.setStartTime(r.getProposedTime());
+                if (classEntity.getDuration() != null) {
+                    classEntity.setEndTime(r.getProposedTime().plusSeconds(classEntity.getDuration() * 60L));
+                }
+                classRepository.save(classEntity);
+            }
+
             List<Enrollment> enrollments = enrollmentRepository.findByClassId(r.getClassId());
             for (Enrollment e : enrollments) {
                 RescheduleResponse existing = rescheduleResponseRepository

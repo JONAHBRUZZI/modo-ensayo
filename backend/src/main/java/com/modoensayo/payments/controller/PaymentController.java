@@ -21,8 +21,11 @@ public class PaymentController {
 
     @PostMapping("/cart")
     public ResponseEntity<Void> addToCart(@AuthenticationPrincipal CustomUserDetails user,
-                                           @RequestBody Map<String, UUID> body) {
-        paymentService.addToCart(user.getUserId(), body.get("classId"));
+                                           @RequestBody Map<String, Object> body) {
+        UUID classId = UUID.fromString(body.get("classId").toString());
+        String beneficiaryType = body.get("beneficiaryType") != null ? body.get("beneficiaryType").toString() : "USER";
+        UUID beneficiaryId = body.get("beneficiaryId") != null ? UUID.fromString(body.get("beneficiaryId").toString()) : null;
+        paymentService.addToCart(user.getUserId(), classId, beneficiaryType, beneficiaryId);
         return ResponseEntity.ok().build();
     }
 

@@ -19,7 +19,7 @@ public class PaymentService {
     private final ClassRepository classRepository;
 
     @Transactional
-    public void addToCart(UUID ownerId, UUID classId) {
+    public void addToCart(UUID ownerId, UUID classId, String beneficiaryType, UUID beneficiaryId) {
         Class c = classRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
@@ -27,6 +27,8 @@ public class PaymentService {
                 .ownerId(ownerId).classId(classId)
                 .classTitle(c.getTitle()).discipline(c.getDiscipline() != null ? c.getDiscipline().name() : null)
                 .level(c.getLevel() != null ? c.getLevel().name() : null).price(c.getPrice())
+                .beneficiaryType(beneficiaryType != null ? beneficiaryType : "USER")
+                .beneficiaryId(beneficiaryId)
                 .build();
         cartItemRepository.save(item);
     }

@@ -1,11 +1,13 @@
 package com.modoensayo.users.service;
 
 import com.modoensayo.auth.service.CustomUserDetails;
+import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.users.domain.*;
 import com.modoensayo.users.dto.*;
 import com.modoensayo.users.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final RefundMethodRepository refundMethodRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserProfileResponse getProfile(CustomUserDetails userDetails) {
         User user = getUser(userDetails.getUserId());
@@ -88,6 +91,19 @@ public class UserService {
         iv.setStatus("PENDING");
         iv = identityVerificationRepository.save(iv);
         return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt());
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        if (currentPassword == null || newPassword == null || newPassword.length() < 6) {
+            throw new BusinessException("La nueva contrasena debe tener al menos 6 caracteres");
+        }
+        User user = getUser(userId);
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new BusinessException("La contrasena actual es incorrecta");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
     private User getUser(UUID id) {

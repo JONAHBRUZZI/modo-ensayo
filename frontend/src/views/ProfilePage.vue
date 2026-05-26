@@ -13,6 +13,13 @@
       <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? 'Guardando...' : 'Guardar Cambios' }}</button>
     </form>
     <div class="mt-6 space-y-3">
+      <div class="card space-y-3">
+        <h3 class="text-white font-medium">Cambiar Contrasena</h3>
+        <input v-model="pw.current" type="password" class="input-field" placeholder="Contrasena actual" />
+        <input v-model="pw.new" type="password" class="input-field" placeholder="Nueva contrasena (min 6 caracteres)" />
+        <p v-if="pwMsg" :class="pwOk ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ pwMsg }}</p>
+        <button @click="changePw" :disabled="pwSaving" class="btn-primary text-sm">{{ pwSaving ? 'Cambiando...' : 'Cambiar Contrasena' }}</button>
+      </div>
       <router-link to="/profile/identity" class="card flex items-center justify-between hover:border-primary/50 transition-colors"><span class="text-white">Verificacion de Identidad</span><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></router-link>
       <router-link to="/profile/refund-method" class="card flex items-center justify-between hover:border-primary/50 transition-colors"><span class="text-white">Metodos de Devolucion</span><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></router-link>
     </div>
@@ -22,12 +29,17 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useAuth } from '@/stores/auth'
+import api from '@/services/api'
 
 const { user, displayName, updateUserProfile } = useAuth()
 const form = reactive({ socialName: user.value?.socialName || '', phone: user.value?.phone || '' })
 const saving = ref(false)
 const success = ref('')
 const error = ref('')
+const pw = reactive({ current: '', new: '' })
+const pwSaving = ref(false)
+const pwMsg = ref('')
+const pwOk = ref(false)
 
 async function handleUpdate() {
   saving.value = true
@@ -40,6 +52,24 @@ async function handleUpdate() {
     error.value = e.response?.data?.message || 'Error al actualizar'
   } finally {
     saving.value = false
+  }
+}
+
+async function changePw() {
+  if (!pw.current || !pw.new) { pwMsg.value = 'Ambos campos son requeridos'; pwOk.value = false; return }
+  pwSaving.value = true
+  pwMsg.value = ''
+  try {
+    await api.put('/users/me/password', { currentPassword: pw.current, newPassword: pw.new })
+    pwMsg.value = 'Contrasena cambiada exitosamente'
+    pwOk.value = true
+    pw.current = ''
+    pw.new = ''
+  } catch (e) {
+    pwMsg.value = e.response?.data?.message || 'Error al cambiar contrasena'
+    pwOk.value = false
+  } finally {
+    pwSaving.value = false
   }
 }
 </script>

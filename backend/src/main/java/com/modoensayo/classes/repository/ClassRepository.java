@@ -25,4 +25,7 @@ public interface ClassRepository extends JpaRepository<Class, UUID>, JpaSpecific
     List<Class> findByStatusAndEndTimeBefore(ClassStatus status, Instant endTime);
 
     List<Class> findByStatusAndRoomVenueId(ClassStatus status, UUID venueId);
+
+    @Query("SELECT c FROM Class c WHERE c.room.id = :roomId AND c.status != 'CANCELLED' AND c.status != 'SUSPENDED' AND c.startTime < :endTime AND c.endTime > :startTime")
+    List<Class> findConflictingClasses(@Param("roomId") UUID roomId, @Param("startTime") Instant startTime, @Param("endTime") Instant endTime);
 }

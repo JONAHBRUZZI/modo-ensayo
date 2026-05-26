@@ -111,7 +111,21 @@ public class RescheduleService {
             r.setTeacherId(teacherId);
             rescheduleRepository.save(r);
 
-            log.info("Teacher {} rejected reschedule {}", teacherId, rescheduleId);
+            List<Enrollment> enrollments = enrollmentRepository.findByClassId(r.getClassId());
+            int refunds = 0;
+            for (Enrollment e : enrollments) {
+                List<Payment> payments = paymentRepository.findByEnrollmentId(e.getId());
+                for (Payment p : payments) {
+                    if (p.getStatus() == PaymentStatus.RETAINED) {
+                        p.setStatus(PaymentStatus.REFUND_PENDING);
+                        paymentRepository.save(p);
+                        refunds++;
+                    }
+                }
+            }
+
+            log.info("Teacher {} rejected reschedule {}. {} payments marked for refund. Class: {}",
+                    teacherId, rescheduleId, refunds, r.getClassId());
         }
 
         return toDto(r);

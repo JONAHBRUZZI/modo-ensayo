@@ -1,8 +1,8 @@
 import api from './api'
 
 export default {
-  async addToCart(classId) {
-    const res = await api.post('/payments/cart', { classId })
+  async addToCart(classId, beneficiaryType, beneficiaryId) {
+    const res = await api.post('/payments/cart', { classId, beneficiaryType, beneficiaryId })
     return res.data
   },
 

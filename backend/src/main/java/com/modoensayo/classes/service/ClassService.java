@@ -110,6 +110,12 @@ public class ClassService {
             throw new BusinessException("La sede a la que pertenece esta sala no esta aprobada. Debe ser aprobada por el Administrador General antes de crear clases.");
         }
 
+        Instant endTime = req.startTime().plusSeconds(req.duration() != null ? req.duration() * 60L : 3600L);
+        List<Class> conflicts = classRepository.findConflictingClasses(req.roomId(), req.startTime(), endTime);
+        if (!conflicts.isEmpty()) {
+            throw new BusinessException("La sala ya esta reservada en ese horario. Elige otro horario disponible.");
+        }
+
         if (teacherId != null) {
             IdentityVerification iv = identityVerificationRepository.findByUserId(teacherId).orElse(null);
             if (iv == null || !"APPROVED".equals(iv.getStatus())) {
@@ -142,6 +148,7 @@ public class ClassService {
                 .minAge(req.minAge() != null ? req.minAge() : 0)
                 .maxAge(req.maxAge() != null ? req.maxAge() : 99)
                 .startTime(req.startTime())
+                .endTime(endTime)
                 .room(room)
                 .teacherId(teacherId)
                 .tipoClase(teacherId != null ? TipoClase.PROPIA : TipoClase.ASIGNADA)

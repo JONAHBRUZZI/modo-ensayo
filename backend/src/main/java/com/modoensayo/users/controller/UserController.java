@@ -67,4 +67,11 @@ public class UserController {
                                                                         @RequestBody Map<String, String> body) {
         return ResponseEntity.ok(userService.uploadIdentity(user, body.get("documentUrl")));
     }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> changePassword(@AuthenticationPrincipal CustomUserDetails user,
+                                                @RequestBody Map<String, String> body) {
+        userService.changePassword(user.getUserId(), body.get("currentPassword"), body.get("newPassword"));
+        return ResponseEntity.ok().build();
+    }
 }

@@ -17,9 +17,18 @@
         <div><span class="text-gray-400">Capacidad:</span> <span class="text-white">{{ clase.capacity }} personas</span></div>
         <div><span class="text-gray-400">Precio:</span> <span class="text-primary font-semibold">${{ clase.price?.toLocaleString() }}</span></div>
       </div>
-      <button @click="addToCart" :disabled="adding" class="btn-primary w-full">
-        {{ adding ? 'Agregando...' : 'Agregar al Carrito' }}
-      </button>
+      <div class="space-y-3 pt-2">
+        <div v-if="beneficiaries.length > 0">
+          <label class="block text-sm font-medium text-gray-300 mb-1">Inscribir a:</label>
+          <select v-model="selectedBeneficiary" class="input-field">
+            <option :value="null">Yo ({{ user?.fullName }})</option>
+            <option v-for="b in beneficiaries" :key="b.id" :value="b">{{ b.email || b.name || 'Asociado' }}</option>
+          </select>
+        </div>
+        <button @click="addToCart" :disabled="adding" class="btn-primary w-full">
+          {{ adding ? 'Agregando...' : 'Agregar al Carrito' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -29,18 +38,25 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import classService from '@/services/classService'
 import paymentService from '@/services/paymentService'
+import associateService from '@/services/associateService'
+import { useAuth } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const { user } = useAuth()
 const clase = ref(null)
 const loading = ref(true)
 const adding = ref(false)
+const beneficiaries = ref([])
+const selectedBeneficiary = ref(null)
 
 onMounted(async () => {
   try {
     const data = await classService.getClasses()
     const list = Array.isArray(data) ? data : data.content || []
     clase.value = list.find(c => c.id == route.params.claseId)
+    const assoc = await associateService.getAssociates()
+    beneficiaries.value = Array.isArray(assoc) ? assoc : assoc?.content || []
   } catch {} finally {
     loading.value = false
   }
@@ -49,7 +65,9 @@ onMounted(async () => {
 async function addToCart() {
   adding.value = true
   try {
-    await paymentService.addToCart(clase.value.id)
+    const beneficiaryType = selectedBeneficiary.value ? 'ASSOCIATE' : 'USER'
+    const beneficiaryId = selectedBeneficiary.value?.id || null
+    await paymentService.addToCart(clase.value.id, beneficiaryType, beneficiaryId)
     router.push('/cart')
   } catch {} finally {
     adding.value = false

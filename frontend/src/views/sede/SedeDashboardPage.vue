@@ -21,7 +21,35 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import venueService from '@/services/venueService'
 
 const stats = ref({ salas: 0, clasesHoy: 0, porConfirmar: 0, ingresos: 0 })
+
+onMounted(async () => {
+  try {
+    const [metrics, pendingProm] = await Promise.allSettled([
+      venueService.getVenueMetrics(),
+      venueService.getPendingClasses()
+    ])
+    if (metrics.status === 'fulfilled' && metrics.value) {
+      stats.value.ingresos = metrics.value.ingresos || 0
+      stats.value.clasesHoy = metrics.value.totalClases || 0
+    }
+    if (pendingProm.status === 'fulfilled' && pendingProm.value) {
+      stats.value.porConfirmar = pendingProm.value.length || 0
+    }
+
+    const myVenues = await venueService.getMyVenues()
+    const vArr = Array.isArray(myVenues) ? myVenues : myVenues?.content || []
+    let totalSalas = 0
+    for (const v of vArr) {
+      try {
+        const rooms = await venueService.getVenueRooms(v.id)
+        totalSalas += Array.isArray(rooms) ? rooms.length : 0
+      } catch {}
+    }
+    stats.value.salas = totalSalas
+  } catch {}
+})
 </script>

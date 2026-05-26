@@ -37,18 +37,27 @@ public class MetricsService {
         }).collect(java.util.stream.Collectors.toList());
     }
 
-    public Map<String, Object> getVenueMetrics(java.util.UUID venueId) {
+    public Map<String, Object> getVenueMetrics(java.util.UUID adminId) {
         Map<String, Object> m = new HashMap<>();
-        var classes = classRepository.findByRoomVenueId(venueId);
-        m.put("totalClases", classes.size());
-        m.put("ocupacion", 0);
-        m.put("alumnos", 0);
-        m.put("ingresos", classes.stream().mapToDouble(c -> c.getPrice() != null ? c.getPrice() : 0).sum());
+        var venues = venueRepository.findByAdminId(adminId);
+        int totalClases = 0;
+        double ingresos = 0;
+        for (var venue : venues) {
+            var classes = classRepository.findByRoomVenueId(venue.getId());
+            totalClases += classes.size();
+            ingresos += classes.stream().mapToDouble(c -> c.getPrice() != null ? c.getPrice() : 0).sum();
+        }
+        m.put("totalClases", totalClases);
+        m.put("salas", 0);
+        m.put("porConfirmar", 0);
+        m.put("ingresos", ingresos);
         return m;
     }
 
-    public List<Map<String, Object>> getVenueProfessors(java.util.UUID venueId) {
-        return classRepository.findByRoomVenueId(venueId).stream()
+    public List<Map<String, Object>> getVenueProfessors(java.util.UUID adminId) {
+        var venues = venueRepository.findByAdminId(adminId);
+        return venues.stream().flatMap(venue ->
+            classRepository.findByRoomVenueId(venue.getId()).stream()
                 .filter(c -> c.getTeacherId() != null)
                 .map(c -> {
                     Map<String, Object> m = new HashMap<>();
@@ -58,7 +67,6 @@ public class MetricsService {
                     m.put("status", "ACTIVE");
                     return m;
                 })
-                .distinct()
-                .collect(java.util.stream.Collectors.toList());
+        ).distinct().collect(java.util.stream.Collectors.toList());
     }
 }

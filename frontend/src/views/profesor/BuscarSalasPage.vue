@@ -22,12 +22,25 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
+import venueService from '@/services/venueService'
 
 const venues = ref([])
 const loading = ref(true)
 
 onMounted(async () => {
-  try { venues.value = await classService.getVenues() } catch { venues.value = [] }
+  try {
+    const data = await classService.getVenues()
+    const list = Array.isArray(data) ? data : data?.content || []
+    const venuesWithRooms = await Promise.all(list.map(async (v) => {
+      try {
+        const rooms = await venueService.getRooms(v.id)
+        return { ...v, rooms: Array.isArray(rooms) ? rooms : [] }
+      } catch {
+        return { ...v, rooms: [] }
+      }
+    }))
+    venues.value = venuesWithRooms
+  } catch { venues.value = [] }
   loading.value = false
 })
 </script>

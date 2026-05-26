@@ -41,6 +41,11 @@ export default {
     return res.data
   },
 
+  async getRooms(venueId) {
+    const res = await api.get(`/venues/${venueId}/rooms`)
+    return res.data
+  },
+
   async createRoom(venueId, data) {
     const res = await api.post(`/venue-admin/venues/${venueId}/rooms`, data)
     return res.data

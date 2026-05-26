@@ -19,7 +19,7 @@
 
             <template v-if="isAuthenticated">
               <!-- Profesor mode -->
-              <template v-if="isTeacher && modoActual === 'profesor'">
+              <template v-if="puedeVerContextoProfesor && modoActual === 'profesor'">
                 <router-link to="/profesor/dashboard" class="nav-link">Dashboard</router-link>
                 <router-link to="/profesor/clases-propias" class="nav-link">Clases Propias</router-link>
                 <router-link to="/profesor/clases-asignadas" class="nav-link">Clases Asignadas</router-link>
@@ -28,7 +28,7 @@
               </template>
 
               <!-- Sede mode -->
-              <template v-if="isSede && modoActual === 'sede'">
+              <template v-if="puedeVerContextoSede && modoActual === 'sede'">
                 <router-link to="/sede/dashboard" class="nav-link">Panel</router-link>
                 <router-link to="/sede/salas" class="nav-link">Salas</router-link>
                 <router-link to="/sede/mis-clases" class="nav-link">Clases</router-link>
@@ -165,7 +165,7 @@ import paymentService from '@/services/paymentService'
 import rescheduleService from '@/services/rescheduleService'
 
 const router = useRouter()
-const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, modoActual, displayName, setModo, logout } = useAuth()
+const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, displayName, setModo, logout, syncActividadMaestro } = useAuth()
 
 const showUserMenu = ref(false)
 const userMenuRef = ref(null)
@@ -174,8 +174,8 @@ const notifCount = ref(0)
 
 const availableModes = computed(() => {
   const modes = [{ value: 'alumno', label: 'Alumno' }]
-  if (isTeacher.value && identidadValidada.value) modes.push({ value: 'profesor', label: 'Maestro' })
-  if (isSede.value && identidadValidada.value) modes.push({ value: 'sede', label: 'Mi Sede' })
+  if (puedeVerContextoProfesor.value) modes.push({ value: 'profesor', label: 'Maestro' })
+  if (puedeVerContextoSede.value) modes.push({ value: 'sede', label: 'Mi Sede' })
   if (isAdmin.value) modes.push({ value: 'admin', label: 'Admin' })
   return modes
 })
@@ -230,6 +230,7 @@ onMounted(() => {
   if (isAuthenticated.value) {
     loadCartCount()
     loadNotifCount()
+    syncActividadMaestro()
   }
 })
 

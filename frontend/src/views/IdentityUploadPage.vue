@@ -24,7 +24,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Numero de documento *</label>
-          <input v-model="form.documentNumber" required class="input-field" :placeholder="form.documentType === 'RUT' ? '12.345.678-9' : 'Numero de pasaporte'" @blur="validarRut" />
+          <input v-model="form.documentNumber" required class="input-field" :placeholder="form.documentType === 'RUT' ? '12.345.678-9' : 'Numero de pasaporte'" @input="formatearRut" @blur="validarRut" />
           <p v-if="rutError" class="text-xs text-red-400 mt-1">{{ rutError }}</p>
         </div>
         <div>
@@ -84,6 +84,16 @@ onMounted(async () => {
 })
 
 function handleFile(e) { file.value = e.target.files[0] }
+
+function formatearRut() {
+  if (form.documentType !== 'RUT' || !form.documentNumber) return
+  let valor = form.documentNumber.replace(/[^0-9kK]/g, '')
+  if (valor.length < 2) { form.documentNumber = valor; return }
+  const dv = valor.slice(-1)
+  let cuerpo = valor.slice(0, -1)
+  cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  form.documentNumber = cuerpo + '-' + dv
+}
 
 function validarRut() {
   rutError.value = ''

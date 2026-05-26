@@ -216,7 +216,24 @@ export function useAuth() {
   async function refreshProfile() {
     try {
       const res = await api.get('/users/me')
-      if (res.data) store.setUser(res.data)
+      if (res.data) {
+        const d = res.data
+        const merged = {
+          id: d.id,
+          email: d.email,
+          fullName: d.fullName,
+          socialName: d.socialName,
+          phone: d.phone,
+          roles: d.roles || ['USER'],
+          enabled: d.enabled !== false,
+          atributosActivos: {
+            ...(user.value?.atributosActivos || {}),
+            identidadValidada: d.identidadValidada || false,
+            identidadEnRevision: d.identidadEnRevision || false
+          }
+        }
+        store.setUser(merged)
+      }
     } catch { /* silencioso */ }
   }
 

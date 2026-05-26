@@ -27,10 +27,6 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Historial de Pagos</h3>
         <p class="text-gray-400 text-sm mt-2">Revisa tu historial de pagos y comprobantes.</p>
       </router-link>
-      <router-link to="/alumno/crear-clase" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Crear Clase</h3>
-        <p class="text-gray-400 text-sm mt-2">Organiza una nueva clase con un profesor.</p>
-      </router-link>
       <router-link to="/alumno/asociados" class="card hover:border-primary/50 transition-colors group">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Asociados</h3>
         <p class="text-gray-400 text-sm mt-2">Gestiona tus asociados para clases grupales.</p>

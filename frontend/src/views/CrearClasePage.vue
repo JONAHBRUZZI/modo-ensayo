@@ -4,7 +4,7 @@
     <form @submit.prevent="handleCreate" class="card space-y-4">
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Titulo</label><input v-model="form.title" required class="input-field" /></div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="block text-sm font-medium text-gray-300 mb-1">Disciplina</label><select v-model="form.discipline" required class="input-field"><option value="">Seleccionar</option><option>Guitarra</option><option>Bateria</option><option>Bajo</option><option>Canto</option><option>Piano</option><option>Violin</option><option>Saxofon</option><option>Otro</option></select></div>
+        <div><label class="block text-sm font-medium text-gray-300 mb-1">Disciplina</label><select v-model="form.discipline" required class="input-field"><option value="">Seleccionar</option><option>CUECA</option><option>BALLET</option><option>DANZA</option><option>TEATRO</option><option>CANTO</option><option>GUITARRA</option><option>BATERIA</option><option>BAJO</option><option>PIANO</option><option>VIOLIN</option><option>SAXOFON</option><option>OTRO</option></select></div>
         <div><label class="block text-sm font-medium text-gray-300 mb-1">Nivel</label><select v-model="form.level" required class="input-field"><option value="">Seleccionar</option><option>BASICO</option><option>INTERMEDIO</option><option>AVANZADO</option></select></div>
       </div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Descripcion</label><textarea v-model="form.description" rows="3" class="input-field"></textarea></div>
@@ -28,10 +28,11 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
 
 const router = useRouter()
+const route = useRoute()
 const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, minAge: 0, maxAge: 99, startTime: '', venueId: '', roomId: '' })
 const venues = ref([])
 const rooms = ref([])
@@ -40,6 +41,11 @@ const creating = ref(false)
 
 onMounted(async () => {
   try { venues.value = await classService.getVenues() } catch { venues.value = [] }
+  if (route.query.roomId) form.value.roomId = route.query.roomId
+  if (route.query.venueId) {
+    form.value.venueId = route.query.venueId
+    try { rooms.value = await classService.getVenueRooms(route.query.venueId) } catch { rooms.value = [] }
+  }
 })
 
 watch(() => form.value.venueId, async (id) => {

@@ -10,7 +10,10 @@
         <div v-if="venue.rooms?.length" class="space-y-3">
           <div v-for="room in venue.rooms" :key="room.id" class="bg-[#1a1d2e] rounded-xl p-4 flex items-center justify-between">
             <div><p class="text-white font-medium">{{ room.name }}</p><p class="text-gray-400 text-sm">Capacidad: {{ room.capacity }} | {{ room.equipment || '' }}</p></div>
-            <span class="badge badge-green">Disponible</span>
+            <div class="flex items-center space-x-2">
+              <span class="badge badge-green">Disponible</span>
+              <router-link :to="'/alumno/crear-clase?roomId=' + room.id + '&venueId=' + venue.id" class="btn-primary text-xs !py-1.5 !px-3">Crear clase</router-link>
+            </div>
           </div>
         </div>
         <p v-else class="text-gray-500 text-sm">No hay salas registradas</p>

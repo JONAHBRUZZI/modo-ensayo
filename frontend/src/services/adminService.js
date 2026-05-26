@@ -44,5 +44,10 @@ export default {
   async revokeRole(userId, roleName) {
     const res = await api.delete(`/admin/users/${userId}/roles/${roleName}`)
     return res.data
+  },
+
+  async toggleUser(userId, motivo) {
+    const res = await api.patch(`/admin/users/${userId}/toggle`, { motivo })
+    return res.data
   }
 }

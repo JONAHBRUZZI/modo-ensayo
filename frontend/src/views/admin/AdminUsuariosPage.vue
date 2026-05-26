@@ -17,6 +17,7 @@
             <option value="ADMIN">ADMIN</option>
           </select>
           <EstadoBadge :status="u.enabled ? 'ENABLED' : 'DISABLED'" />
+          <button @click="toggleUser(u)" :class="['text-xs px-3 py-1.5 rounded-lg transition-colors', u.enabled ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-green-500/20 text-green-400 hover:bg-green-500/30']">{{ u.enabled ? 'Suspender' : 'Activar' }}</button>
         </div>
       </div>
     </div>
@@ -42,5 +43,13 @@ onMounted(async () => {
 async function assignRole(userId, role) {
   if (!role) return
   try { await adminService.assignRole(userId, role) } catch {}
+}
+
+async function toggleUser(u) {
+  const motivo = u.enabled ? prompt('Motivo de suspension:') : null
+  try {
+    await adminService.toggleUser(u.id, motivo || '')
+    u.enabled = !u.enabled
+  } catch {}
 }
 </script>

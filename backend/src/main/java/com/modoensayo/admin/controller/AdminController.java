@@ -71,4 +71,10 @@ public class AdminController {
         adminService.revokeRole(id, roleName);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/users/{id}/toggle")
+    public ResponseEntity<Void> toggleUser(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        adminService.toggleUser(id, body.get("motivo"));
+        return ResponseEntity.ok().build();
+    }
 }

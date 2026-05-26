@@ -160,4 +160,18 @@ public class AdminService {
                 .findFirst()
                 .ifPresent(userRoleRepository::delete);
     }
+
+    @Transactional
+    public void toggleUser(UUID userId, String motivo) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setEnabled(!user.isEnabled());
+        userRepository.save(user);
+
+        String msg = user.isEnabled()
+                ? "Tu cuenta ha sido REACTIVADA."
+                : "Tu cuenta ha sido SUSPENDIDA. Motivo: " + (motivo != null ? motivo : "No especificado") + ". Contacta al administrador.";
+        notificationRepository.save(Notification.builder()
+                .userId(userId).message(msg).read(false).createdAt(Instant.now()).build());
+    }
 }

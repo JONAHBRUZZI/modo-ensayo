@@ -6,7 +6,7 @@
     <div v-else class="space-y-4">
       <div v-for="c in clases" :key="c.id" class="card flex items-center justify-between">
         <div><h3 class="text-white font-medium">{{ c.title }}</h3><p class="text-gray-400 text-sm">{{ c.discipline }} - {{ c.level }}</p><p class="text-gray-500 text-xs">{{ formatDate(c.startTime) }}</p></div>
-        <div class="flex items-center space-x-4"><span class="text-primary font-semibold">${{ c.price?.toLocaleString() }}</span><EstadoBadge :status="c.status" /></div>
+        <div class="flex items-center space-x-4"><span class="text-primary font-semibold">${{ c.price?.toLocaleString() }}</span><router-link :to="'/profesor/asistencia/' + c.id" class="btn-primary text-xs !py-1.5 !px-3">Asistencia</router-link><EstadoBadge :status="c.status" /></div>
       </div>
     </div>
   </div>

@@ -110,8 +110,8 @@ public class ClassService {
     }
 
     @Transactional
-    public ClassResponse createDraft(ClassRequest req, UUID teacherId) {
-        return createClassInternal(req, teacherId, true);
+    public ClassResponse createWithTeacher(ClassRequest req, UUID teacherId, boolean draft) {
+        return createClassInternal(req, teacherId, draft);
     }
 
     @Transactional

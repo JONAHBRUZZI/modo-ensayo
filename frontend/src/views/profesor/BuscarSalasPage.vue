@@ -200,7 +200,7 @@ function confirmarAgendamiento(room, venue, slot) {
 async function pagar(metodo) {
   modal.value.procesando = true
   try {
-    await api.post('/classes/draft', {
+    await api.post('/classes?draft=true', {
       title: 'Reserva - ' + modal.value.room.name,
       discipline: 'OTRO',
       level: 'BASICO',
@@ -211,7 +211,7 @@ async function pagar(metodo) {
       roomId: modal.value.room.id
     })
     modal.value.abierto = false
-    alert('Reserva confirmada. Ahora tienes acceso al panel de Maestro para crear tu clase.')
+    alert('Reserva confirmada. Paga la sala para activar tu perfil de Maestro.')
     window.location.href = '/profesor/dashboard'
   } catch (e) {
     alert(e?.response?.data?.message || 'Error al procesar la reserva')

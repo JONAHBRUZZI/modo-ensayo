@@ -13,7 +13,7 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Perfil Profesional</h3>
         <p class="text-gray-400 text-sm mt-2">Completa tu perfil de maestro: especialidad, experiencia, formacion y redes.</p>
       </router-link>
-      <router-link to="/profesor/clases-propias" class="card hover:border-primary/50 transition-colors group"><h3 class="text-lg font-semibold text-white group-hover:text-primary">Mis Clases</h3><p class="text-gray-400 text-sm mt-2">Gestiona las clases que tu creaste.</p></router-link>
+      <router-link to="/profesor/clases-propias" class="card hover:border-primary/50 transition-colors group"><h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Agendadas</h3><p class="text-gray-400 text-sm mt-2">Salas reservadas. Completa los datos de tu clase.</p></router-link>
       <router-link to="/profesor/clases-asignadas" class="card hover:border-primary/50 transition-colors group"><h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Asignadas</h3><p class="text-gray-400 text-sm mt-2">Clases donde fuiste asignado como profesor.</p></router-link>
       <router-link to="/profesor/buscar-salas" class="card hover:border-primary/50 transition-colors group"><h3 class="text-lg font-semibold text-white group-hover:text-primary">Agendar Sala</h3><p class="text-gray-400 text-sm mt-2">Reserva una sala en una sede para dictar tu clase.</p></router-link>
       <router-link to="/profesor/metricas" class="card hover:border-primary/50 transition-colors group"><h3 class="text-lg font-semibold text-white group-hover:text-primary">Metricas</h3><p class="text-gray-400 text-sm mt-2">Estadisticas de rendimiento y asistencia.</p></router-link>

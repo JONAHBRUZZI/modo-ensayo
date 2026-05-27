@@ -109,6 +109,7 @@
 import { ref, computed, onMounted } from 'vue'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
+import api from '@/services/api'
 
 const venues = ref([])
 const loading = ref(true)
@@ -199,8 +200,8 @@ function confirmarAgendamiento(room, venue, slot) {
 async function pagar(metodo) {
   modal.value.procesando = true
   try {
-    await classService.createClass({
-      title: 'Clase en ' + modal.value.room.name,
+    await api.post('/classes/draft', {
+      title: 'Reserva - ' + modal.value.room.name,
       discipline: 'OTRO',
       level: 'BASICO',
       capacity: modal.value.room.capacity,
@@ -210,7 +211,7 @@ async function pagar(metodo) {
       roomId: modal.value.room.id
     })
     modal.value.abierto = false
-    alert('Reserva confirmada. Ahora tienes acceso al panel de Maestro para gestionar tu clase.')
+    alert('Reserva confirmada. Ahora tienes acceso al panel de Maestro para crear tu clase.')
     window.location.href = '/profesor/dashboard'
   } catch (e) {
     alert(e?.response?.data?.message || 'Error al procesar la reserva')

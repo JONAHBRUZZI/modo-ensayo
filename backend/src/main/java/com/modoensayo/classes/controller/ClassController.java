@@ -48,10 +48,23 @@ public class ClassController {
         return ResponseEntity.ok(classService.getByVenue(venueId));
     }
 
+    @PostMapping("/draft")
+    public ResponseEntity<ClassResponse> createDraft(@AuthenticationPrincipal CustomUserDetails user,
+                                                      @RequestBody ClassRequest req) {
+        return ResponseEntity.ok(classService.createDraft(req, user.getUserId()));
+    }
+
     @PostMapping
     public ResponseEntity<ClassResponse> create(@AuthenticationPrincipal CustomUserDetails user,
                                                  @RequestBody ClassRequest req) {
         UUID teacherId = req.teacherId() != null ? req.teacherId() : user.getUserId();
         return ResponseEntity.ok(classService.createWithTeacher(req, teacherId));
+    }
+
+    @PutMapping("/{id}/publish")
+    public ResponseEntity<ClassResponse> publishClass(@AuthenticationPrincipal CustomUserDetails user,
+                                                       @PathVariable UUID id,
+                                                       @RequestBody ClassRequest req) {
+        return ResponseEntity.ok(classService.completeClass(id, req, user.getUserId()));
     }
 }

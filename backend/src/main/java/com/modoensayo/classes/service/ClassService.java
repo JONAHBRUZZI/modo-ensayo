@@ -106,6 +106,35 @@ public class ClassService {
 
     @Transactional
     public ClassResponse createWithTeacher(ClassRequest req, UUID teacherId) {
+        return createClassInternal(req, teacherId, false);
+    }
+
+    @Transactional
+    public ClassResponse createDraft(ClassRequest req, UUID teacherId) {
+        return createClassInternal(req, teacherId, true);
+    }
+
+    @Transactional
+    public ClassResponse completeClass(UUID classId, ClassRequest req, UUID teacherId) {
+        Class c = classRepository.findById(classId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
+        if (c.getTeacherId() != null && !c.getTeacherId().equals(teacherId)) {
+            throw new BusinessException("No tienes permiso para editar esta clase");
+        }
+        if (req.title() != null) c.setTitle(req.title());
+        if (req.discipline() != null) c.setDiscipline(Disciplina.valueOf(req.discipline()));
+        if (req.level() != null) c.setLevel(NivelClase.valueOf(req.level()));
+        if (req.description() != null) c.setDescription(req.description());
+        if (req.capacity() != null) c.setCapacity(req.capacity());
+        if (req.duration() != null) c.setDuration(req.duration());
+        if (req.price() != null) c.setPrice(req.price());
+        if (req.minAge() != null) c.setMinAge(req.minAge());
+        if (req.maxAge() != null) c.setMaxAge(req.maxAge());
+        c.setStatus(ClassStatus.PUBLISHED);
+        return toResponse(classRepository.save(c));
+    }
+
+    private ClassResponse createClassInternal(ClassRequest req, UUID teacherId, boolean draft) {
         Room room = roomRepository.findById(req.roomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
 
@@ -155,7 +184,7 @@ public class ClassService {
                 .room(room)
                 .teacherId(teacherId)
                 .tipoClase(teacherId != null ? TipoClase.PROPIA : TipoClase.ASIGNADA)
-                .status(ClassStatus.PUBLISHED)
+                .status(draft ? ClassStatus.DRAFT : ClassStatus.PUBLISHED)
                 .build();
 
         return toResponse(classRepository.save(c));

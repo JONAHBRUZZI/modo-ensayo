@@ -21,7 +21,7 @@
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Sede</label><select v-model="form.venueId" required class="input-field"><option value="">Seleccionar sede</option><option v-for="v in venues" :key="v.id" :value="v.id">{{ v.name }}</option></select></div>
       <div v-if="form.venueId"><label class="block text-sm font-medium text-gray-300 mb-1">Sala</label><select v-model="form.roomId" required class="input-field"><option value="">Seleccionar sala</option><option v-for="r in rooms" :key="r.id" :value="r.id">{{ r.name }} (cap: {{ r.capacity }})</option></select></div>
       <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
-      <button type="submit" :disabled="creating" class="btn-primary w-full">{{ creating ? 'Creando...' : 'Agendar Sala y Crear Clase' }}</button>
+      <button type="submit" :disabled="creating" class="btn-primary w-full">{{ creating ? 'Guardando...' : isEditing ? 'Publicar Clase' : 'Agendar Sala y Crear Clase' }}</button>
     </form>
   </div>
 </template>
@@ -30,6 +30,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
+import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
@@ -40,15 +41,42 @@ const venues = ref([])
 const rooms = ref([])
 const error = ref('')
 const creating = ref(false)
+const isEditing = ref(false)
+const editingClassId = ref(null)
 
 onMounted(async () => {
   try { venues.value = await classService.getVenues() } catch { venues.value = [] }
-  if (route.query.roomId) form.value.roomId = route.query.roomId
-  if (route.query.venueId) {
-    form.value.venueId = route.query.venueId
-    try { rooms.value = await classService.getVenueRooms(route.query.venueId) } catch { rooms.value = [] }
+  if (route.query.edit) {
+    try {
+      const cls = await classService.getClassById(route.query.edit)
+      if (cls) {
+        form.value.title = cls.title || ''
+        form.value.discipline = cls.discipline || ''
+        form.value.level = cls.level || ''
+        form.value.description = cls.description || ''
+        form.value.capacity = cls.capacity || 10
+        form.value.duration = cls.duration || 60
+        form.value.price = cls.price || 0
+        form.value.minAge = cls.minAge || 0
+        form.value.maxAge = cls.maxAge || 99
+        form.value.startTime = cls.startTime || ''
+        form.value.venueId = cls.venueId || ''
+        form.value.roomId = cls.roomId || ''
+        isEditing.value = true
+        editingClassId.value = route.query.edit
+        if (cls.venueId) {
+          try { rooms.value = await classService.getVenueRooms(cls.venueId) } catch { rooms.value = [] }
+        }
+      }
+    } catch {}
+  } else {
+    if (route.query.roomId) form.value.roomId = route.query.roomId
+    if (route.query.venueId) {
+      form.value.venueId = route.query.venueId
+      try { rooms.value = await classService.getVenueRooms(route.query.venueId) } catch { rooms.value = [] }
+    }
+    if (route.query.startTime) form.value.startTime = route.query.startTime
   }
-  if (route.query.startTime) form.value.startTime = route.query.startTime
 })
 
 watch(() => form.value.venueId, async (id) => {
@@ -60,12 +88,14 @@ async function handleCreate() {
   error.value = ''
   creating.value = true
   try {
-    await classService.createClass(form.value)
-    await refreshProfile()
-    await syncActividadMaestro()
+    if (isEditing.value) {
+      await api.put('/classes/' + editingClassId.value + '/publish', form.value)
+    } else {
+      await classService.createClass(form.value)
+    }
     router.push('/profesor/clases-propias')
   } catch (e) {
-    error.value = e.response?.data?.message || 'Error al crear clase'
+    error.value = e.response?.data?.message || 'Error al ' + (isEditing.value ? 'publicar' : 'crear') + ' clase'
   } finally {
     creating.value = false
   }

@@ -114,7 +114,7 @@ public class VenueService {
         }
         Room r = Room.builder().venue(v).name(req.name()).capacity(req.capacity())
                 .floorType(req.floorType()).type(req.type()).hasMirrors(req.hasMirrors())
-                .hasSound(req.hasSound()).equipment(req.equipment()).build();
+                .hasSound(req.hasSound()).equipment(req.equipment()).pricePerHour(req.pricePerHour()).build();
         return toRoomResponse(roomRepository.save(r));
     }
 
@@ -155,6 +155,7 @@ public class VenueService {
 
     private RoomResponse toRoomResponse(Room r) {
         return new RoomResponse(r.getId(), r.getVenue().getId(), r.getVenue().getName(),
-                r.getName(), r.getCapacity(), r.getFloorType(), r.getType(), r.getEquipment(), r.getCreatedAt());
+                r.getName(), r.getCapacity(), r.getFloorType(), r.getType(), r.getEquipment(),
+                r.getPricePerHour(), r.getCreatedAt());
     }
 }

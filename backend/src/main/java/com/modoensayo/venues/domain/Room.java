@@ -32,4 +32,6 @@ public class Room extends BaseEntity {
     private String imageUrl;
 
     private String type;
+
+    private Double pricePerHour;
 }

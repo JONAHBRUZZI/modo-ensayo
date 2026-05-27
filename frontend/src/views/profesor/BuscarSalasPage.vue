@@ -22,6 +22,7 @@
                 <div class="flex-1">
                   <p class="text-white font-medium">{{ room.name }}</p>
                   <p class="text-gray-400 text-sm">Capacidad: {{ room.capacity }} | Piso: {{ room.floorType || 'N/A' }} | {{ room.equipment || '' }}</p>
+                  <p v-if="room.pricePerHour" class="text-primary text-sm font-medium">${{ room.pricePerHour?.toLocaleString() }} / hora</p>
                   <div class="flex flex-wrap gap-1 mt-1">
                     <span v-if="room.hasMirrors" class="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">Espejos</span>
                     <span v-if="room.hasSound" class="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">Sonido</span>

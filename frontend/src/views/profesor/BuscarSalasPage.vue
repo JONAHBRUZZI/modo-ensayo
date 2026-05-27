@@ -110,6 +110,9 @@ import { ref, computed, onMounted } from 'vue'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 import api from '@/services/api'
+import { useAuth } from '@/stores/auth'
+
+const auth = useAuth()
 
 const venues = ref([])
 const loading = ref(true)
@@ -211,8 +214,10 @@ async function pagar(metodo) {
       roomId: modal.value.room.id
     })
     modal.value.abierto = false
-    alert('Reserva confirmada. Paga la sala para activar tu perfil de Maestro.')
-    window.location.href = '/profesor/dashboard'
+    alert('Reserva confirmada. Se activo tu perfil de Maestro.')
+    // Refrescar perfil para obtener rol TEACHER
+    try { await auth.refreshProfile() } catch {}
+    window.location.href = '/alumno/dashboard'
   } catch (e) {
     alert(e?.response?.data?.message || 'Error al procesar la reserva')
   }

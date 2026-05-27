@@ -213,6 +213,31 @@ export function useAuth() {
     }
   }
 
+  async function syncAtributos() {
+    try {
+      const res = await api.get('/users/me/atributos')
+      if (res.data) {
+        updateUserAttributes({
+          identidadValidada: res.data.identidadValidada,
+          identidadEnRevision: res.data.identidadEstado === 'PENDING',
+          identidadRechazada: res.data.identidadEstado === 'REJECTED',
+          tieneReservasActivas: res.data.tieneReservasActivas,
+          tieneAsignacionesActivas: res.data.tieneAsignacionesActivas,
+          tieneSedeAprobada: res.data.tieneSedeAprobada,
+          reservasSinClase: res.data.reservasSinClase
+        })
+        if (res.data.hasRoleTeacher && user.value && !user.value.roles.includes('TEACHER')) {
+          user.value.roles.push('TEACHER')
+          localStorage.setItem('auth_user', JSON.stringify(user.value))
+        }
+        if (res.data.tieneSedeAprobada && user.value && !user.value.roles.includes('VENUE_ADMIN')) {
+          user.value.roles.push('VENUE_ADMIN')
+          localStorage.setItem('auth_user', JSON.stringify(user.value))
+        }
+      }
+    } catch {}
+  }
+
   async function refreshProfile() {
     try {
       const res = await api.get('/users/me')
@@ -288,6 +313,7 @@ export function useAuth() {
     updateUserProfile,
     refreshToken,
     syncIdentityStatus,
+    syncAtributos,
     syncActividadMaestro,
     refreshProfile
   }

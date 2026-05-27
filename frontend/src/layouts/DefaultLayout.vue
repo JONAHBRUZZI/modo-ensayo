@@ -170,7 +170,7 @@ import paymentService from '@/services/paymentService'
 import rescheduleService from '@/services/rescheduleService'
 
 const router = useRouter()
-const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, displayName, setModo, logout, syncActividadMaestro } = useAuth()
+const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, displayName, setModo, logout, syncActividadMaestro, syncAtributos } = useAuth()
 
 const showUserMenu = ref(false)
 const userMenuRef = ref(null)
@@ -236,6 +236,7 @@ onMounted(() => {
     loadCartCount()
     loadNotifCount()
     syncActividadMaestro()
+    syncAtributos()
   }
 })
 

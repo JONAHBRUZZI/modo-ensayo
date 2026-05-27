@@ -3,10 +3,12 @@ package com.modoensayo.users.controller;
 import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.users.domain.RefundMethod;
+import com.modoensayo.users.domain.IdentityVerification;
 import com.modoensayo.users.dto.*;
 import com.modoensayo.users.service.UserService;
 import com.modoensayo.users.service.ProfessionalProfileService;
 import com.modoensayo.users.domain.ProfessionalProfile;
+import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.classes.enums.ClassStatus;
@@ -30,6 +32,7 @@ public class UserController {
     private final ProfessionalProfileService profileService;
     private final EnrollmentRepository enrollmentRepository;
     private final ClassRepository classRepository;
+    private final IdentityVerificationRepository identityVerificationRepository;
 
     /**
      * Retorna si el usuario tiene clases propias activas (futuras/en curso) o clases asignadas activas.
@@ -64,6 +67,39 @@ public class UserController {
         stats.put("totalClases", total);
         stats.put("proximas", proximas);
         return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/me/atributos")
+    public ResponseEntity<Map<String, Object>> getAtributos(@AuthenticationPrincipal CustomUserDetails user) {
+        Map<String, Object> attrs = new HashMap<>();
+        UUID userId = user.getUserId();
+
+        IdentityVerification iv = identityVerificationRepository.findByUserId(userId).orElse(null);
+        attrs.put("identidadValidada", iv != null && "APPROVED".equals(iv.getStatus()));
+        attrs.put("identidadEstado", iv != null ? iv.getStatus() : "SIN_VALIDAR");
+
+        boolean hasRoleTeacher = user.getRoles().contains("TEACHER");
+        boolean hasRoleVenueAdmin = user.getRoles().contains("VENUE_ADMIN");
+        attrs.put("hasRoleTeacher", hasRoleTeacher);
+        attrs.put("tieneSedeAprobada", hasRoleVenueAdmin);
+
+        Instant ahora = Instant.now();
+        boolean tieneReservasActivas = classRepository.findByTeacherId(userId).stream()
+                .anyMatch(c -> c.getTipoClase() == TipoClase.PROPIA
+                        && c.getStatus() != ClassStatus.DRAFT
+                        && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
+        boolean tieneAsignacionesActivas = classRepository.findByTeacherId(userId).stream()
+                .anyMatch(c -> c.getTipoClase() == TipoClase.ASIGNADA
+                        && c.getStatus() != ClassStatus.DRAFT
+                        && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
+        boolean reservasSinClase = classRepository.findByTeacherId(userId).stream()
+                .anyMatch(c -> c.getTipoClase() == TipoClase.PROPIA
+                        && c.getStatus() == ClassStatus.DRAFT);
+        attrs.put("tieneReservasActivas", tieneReservasActivas);
+        attrs.put("tieneAsignacionesActivas", tieneAsignacionesActivas);
+        attrs.put("reservasSinClase", reservasSinClase);
+
+        return ResponseEntity.ok(attrs);
     }
 
     @GetMapping("/me")

@@ -4,7 +4,7 @@
     <p class="text-gray-400 mb-6">Encuentra la sala perfecta para tu clase.</p>
 
     <!-- Filtros -->
-    <div class="card mb-6 grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div class="card mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       <select v-model="filtros.comuna" class="input-field text-sm py-2" @change="buscar">
         <option value="">TODAS las comunas</option>
         <option v-for="c in comunas" :key="c" :value="c">{{ c }}</option>
@@ -14,8 +14,14 @@
         <option value="DANZA">Danza</option>
         <option value="MUSICA">Musica</option>
       </select>
-      <input v-model="filtros.fechaDesde" type="date" class="input-field text-sm py-2" @change="buscar" />
-      <input v-model="filtros.fechaHasta" type="date" class="input-field text-sm py-2" @change="buscar" />
+      <div>
+        <label class="text-xs text-gray-500 mb-0.5 block">Desde</label>
+        <input v-model="filtros.fechaDesde" type="date" class="input-field text-sm py-2" @change="buscar" />
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-0.5 block">Hasta</label>
+        <input v-model="filtros.fechaHasta" type="date" class="input-field text-sm py-2" @change="buscar" />
+      </div>
       <button @click="buscar" class="btn-primary text-sm">Buscar Salas</button>
     </div>
 

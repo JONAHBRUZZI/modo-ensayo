@@ -5,9 +5,9 @@
 
     <!-- Filtros -->
     <div class="card mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      <select v-model="filtros.comuna" class="input-field text-sm py-2" @change="buscar">
-        <option value="">TODAS las comunas</option>
-        <option v-for="c in comunas" :key="c" :value="c">{{ c }}</option>
+      <select v-model="filtros.region" class="input-field text-sm py-2" @change="buscar">
+        <option value="">TODAS las regiones</option>
+        <option v-for="r in regiones" :key="r" :value="r">{{ r }}</option>
       </select>
       <select v-model="filtros.tipo" class="input-field text-sm py-2" @change="buscar">
         <option value="">TODOS los tipos</option>
@@ -90,7 +90,13 @@ const expandedRoom = ref(null)
 const roomSlots = ref({})
 const loadingSlots = ref(null)
 const comunas = ref([])
-const filtros = ref({ comuna: '', tipo: '', fechaDesde: '', fechaHasta: '' })
+const filtros = ref({ region: '', comuna: '', tipo: '', fechaDesde: '', fechaHasta: '' })
+const regiones = [
+  'XV - Arica y Parinacota', 'I - Tarapaca', 'II - Antofagasta', 'III - Atacama',
+  'IV - Coquimbo', 'V - Valparaiso', 'RM - Metropolitana', "VI - O'Higgins",
+  'VII - Maule', 'XVI - Ñuble', 'VIII - Biobio', 'IX - La Araucania',
+  'XIV - Los Rios', 'X - Los Lagos', 'XI - Aysen', 'XII - Magallanes'
+]
 
 onMounted(async () => {
   await cargarComunas()

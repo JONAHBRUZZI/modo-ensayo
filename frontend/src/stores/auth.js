@@ -117,11 +117,9 @@ export function useAuth() {
     return roles.includes('TEACHER') || roles.includes('VENUE_ADMIN') || roles.includes('ADMIN')
   })
 
-  // Botón Maestro visible solo si tiene rol Y tiene actividad vigente (clases propias o asignadas activas)
+  // Botón Maestro: permanente una vez que el usuario tiene rol TEACHER (spec Sección 8)
   const puedeVerContextoProfesor = computed(() => {
-    if (!user.value?.roles?.includes('TEACHER')) return false
-    return (user.value?.atributosActivos?.tieneReservasActivas || false) ||
-           (user.value?.atributosActivos?.tieneAsignacionesActivas || false)
+    return user.value?.roles?.includes('TEACHER') || false
   })
   const puedeVerContextoSede = computed(() => user.value?.roles?.includes('VENUE_ADMIN') || false)
 

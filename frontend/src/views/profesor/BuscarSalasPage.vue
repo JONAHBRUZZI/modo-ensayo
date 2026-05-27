@@ -5,9 +5,13 @@
 
     <!-- Filtros -->
     <div class="card mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      <select v-model="filtros.region" class="input-field text-sm py-2" @change="buscar">
+      <select v-model="filtros.region" class="input-field text-sm py-2" @change="onRegionChange">
         <option value="">TODAS las regiones</option>
         <option v-for="r in regiones" :key="r" :value="r">{{ r }}</option>
+      </select>
+      <select v-model="filtros.comuna" class="input-field text-sm py-2" @change="buscar">
+        <option value="">TODAS las comunas</option>
+        <option v-for="c in comunasFiltradas" :key="c" :value="c">{{ c }}</option>
       </select>
       <select v-model="filtros.tipo" class="input-field text-sm py-2" @change="buscar">
         <option value="">TODOS los tipos</option>
@@ -79,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 
@@ -97,6 +101,32 @@ const regiones = [
   'VII - Maule', 'XVI - Ñuble', 'VIII - Biobio', 'IX - La Araucania',
   'XIV - Los Rios', 'X - Los Lagos', 'XI - Aysen', 'XII - Magallanes'
 ]
+
+const comunasPorRegion = {
+  'XV - Arica y Parinacota': ['Arica', 'Camarones', 'Putre', 'General Lagos'],
+  'I - Tarapaca': ['Iquique', 'Alto Hospicio', 'Pozo Almonte', 'Camina', 'Colchane', 'Huara', 'Pica'],
+  'II - Antofagasta': ['Antofagasta', 'Mejillones', 'Sierra Gorda', 'Taltal', 'Calama', 'Ollague', 'San Pedro de Atacama', 'Tocopilla', 'Maria Elena'],
+  'III - Atacama': ['Copiapo', 'Caldera', 'Tierra Amarilla', 'Chanaral', 'Diego de Almagro', 'Vallenar', 'Alto del Carmen', 'Freirina', 'Huasco'],
+  'IV - Coquimbo': ['La Serena', 'Coquimbo', 'Andacollo', 'La Higuera', 'Paiguano', 'Vicuna', 'Illapel', 'Canela', 'Los Vilos', 'Salamanca', 'Ovalle', 'Combarbala', 'Monte Patria', 'Punitaqui', 'Rio Hurtado'],
+  'V - Valparaiso': ['Valparaiso', 'Vina del Mar', 'Concon', 'Quintero', 'Puchuncavi', 'Quilpue', 'Villa Alemana', 'Limache', 'Olmue', 'San Antonio', 'Cartagena', 'El Quisco', 'El Tabo', 'Algarrobo', 'Santo Domingo', 'San Felipe', 'Los Andes', 'Catemu', 'Llay-Llay', 'Panquehue', 'Putaendo', 'Santa Maria', 'Quillota', 'La Calera', 'Hijuelas', 'La Cruz', 'Nogales', 'Petorca', 'Cabildo', 'Papudo', 'La Ligua', 'Zapallar', 'Isla de Pascua', 'Juan Fernandez'],
+  'RM - Metropolitana': ['Santiago', 'Cerrillos', 'Cerro Navia', 'Conchali', 'El Bosque', 'Estacion Central', 'Huechuraba', 'Independencia', 'La Cisterna', 'La Florida', 'La Granja', 'La Pintana', 'La Reina', 'Las Condes', 'Lo Barnechea', 'Lo Espejo', 'Lo Prado', 'Macul', 'Maipu', 'Nuñoa', 'Pedro Aguirre Cerda', 'Peñalolen', 'Providencia', 'Pudahuel', 'Quilicura', 'Quinta Normal', 'Recoleta', 'Renca', 'San Joaquin', 'San Miguel', 'San Ramon', 'Vitacura', 'Puente Alto', 'Pirque', 'San Jose de Maipo', 'Colina', 'Lampa', 'Tiltil', 'San Bernardo', 'Buin', 'Calera de Tango', 'Paine', 'Melipilla', 'Alhue', 'Curacavi', 'Maria Pinto', 'San Pedro', 'Talagante', 'El Monte', 'Isla de Maipo', 'Padre Hurtado', 'Peñaflor'],
+  "VI - O'Higgins": ['Rancagua', 'Codegua', 'Coinco', 'Coltauco', 'Doñihue', 'Graneros', 'Las Cabras', 'Machali', 'Malloa', 'Mostazal', 'Olivar', 'Peumo', 'Pichidegua', 'Quinta de Tilcoco', 'Rengo', 'Requinoa', 'San Vicente', 'Pichilemu', 'La Estrella', 'Litueche', 'Marchihue', 'Navidad', 'Paredones', 'San Fernando', 'Chepica', 'Chimbarongo', 'Lolol', 'Nancagua', 'Placilla', 'Pumanque', 'Santa Cruz'],
+  'VII - Maule': ['Talca', 'Constitucion', 'Curepto', 'Empedrado', 'Maule', 'Pelarco', 'Pencahue', 'Rio Claro', 'San Clemente', 'San Rafael', 'Cauquenes', 'Chanco', 'Pelluhue', 'Curico', 'Hualañe', 'Licanten', 'Molina', 'Rauco', 'Romeral', 'Sagrada Familia', 'Teno', 'Vichuquen', 'Linares', 'Colbun', 'Longavi', 'Parral', 'Retiro', 'San Javier', 'Villa Alegre', 'Yerbas Buenas'],
+  'XVI - Ñuble': ['Chillan', 'Bulnes', 'Cobquecura', 'Coelemu', 'Coihueco', 'Chillan Viejo', 'El Carmen', 'Ninhue', 'Ñiquen', 'Pemuco', 'Pinto', 'Portezuelo', 'Quillon', 'Quirihue', 'Ranquil', 'San Carlos', 'San Fabian', 'San Ignacio', 'San Nicolas', 'Trehuaco', 'Yungay'],
+  'VIII - Biobio': ['Concepcion', 'Coronel', 'Chiguayante', 'Florida', 'Hualqui', 'Lota', 'Penco', 'San Pedro de la Paz', 'Santa Juana', 'Talcahuano', 'Tome', 'Hualpen', 'Lebu', 'Arauco', 'Cañete', 'Contulmo', 'Curanilahue', 'Los Alamos', 'Tirua', 'Los Angeles', 'Antuco', 'Cabrero', 'Laja', 'Mulchen', 'Nacimiento', 'Negrete', 'Quilaco', 'Quilleco', 'San Rosendo', 'Santa Barbara', 'Tucapel', 'Yumbel', 'Alto Biobio'],
+  'IX - La Araucania': ['Temuco', 'Carahue', 'Cunco', 'Curarrehue', 'Freire', 'Galvarino', 'Gorbea', 'Lautaro', 'Loncoche', 'Melipeuco', 'Nueva Imperial', 'Padre Las Casas', 'Perquenco', 'Pitrufquen', 'Pucon', 'Saavedra', 'Teodoro Schmidt', 'Tolten', 'Vilcun', 'Villarrica', 'Cholchol', 'Angol', 'Collipulli', 'Curacautin', 'Ercilla', 'Lonquimay', 'Los Sauces', 'Lumaco', 'Puren', 'Renaico', 'Traiguen', 'Victoria'],
+  'XIV - Los Rios': ['Valdivia', 'Corral', 'Lanco', 'Los Lagos', 'Mafil', 'Mariquina', 'Paillaco', 'Panguipulli', 'La Union', 'Futrono', 'Lago Ranco', 'Rio Bueno'],
+  'X - Los Lagos': ['Puerto Montt', 'Calbuco', 'Cochamo', 'Fresia', 'Frutillar', 'Los Muermos', 'Llanquihue', 'Maullin', 'Puerto Varas', 'Castro', 'Ancud', 'Chonchi', 'Curaco de Velez', 'Dalcahue', 'Puqueldon', 'Queilen', 'Quellon', 'Quemchi', 'Quinchao', 'Osorno', 'Puerto Octay', 'Purranque', 'Puyehue', 'Rio Negro', 'San Juan de la Costa', 'San Pablo', 'Chaiten', 'Futaleufu', 'Hualaihue', 'Palena'],
+  'XI - Aysen': ['Coyhaique', 'Lago Verde', 'Aysen', 'Cisnes', 'Guaitecas', 'Cochrane', 'O\'Higgins', 'Tortel', 'Chile Chico', 'Rio Ibañez'],
+  'XII - Magallanes': ['Punta Arenas', 'Laguna Blanca', 'Rio Verde', 'San Gregorio', 'Cabo de Hornos', 'Antartica', 'Porvenir', 'Primavera', 'Timaukel', 'Natales', 'Torres del Paine']
+}
+
+const comunasFiltradas = computed(() => {
+  if (filtros.value.region && comunasPorRegion[filtros.value.region]) {
+    return comunasPorRegion[filtros.value.region]
+  }
+  return comunas.value
+})
 
 onMounted(async () => {
   await cargarComunas()
@@ -131,6 +161,11 @@ async function buscar() {
     venues.value = venuesWithRooms
   } catch { venues.value = [] }
   loading.value = false
+}
+
+function onRegionChange() {
+  filtros.value.comuna = ''
+  buscar()
 }
 
 function toggleVenue(id) {

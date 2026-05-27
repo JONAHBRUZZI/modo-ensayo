@@ -67,8 +67,7 @@
                       <p class="text-white text-sm">{{ formatDate(slot.startTime) }}</p>
                       <p class="text-gray-400 text-xs">{{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}</p>
                     </div>
-                    <router-link :to="'/alumno/crear-clase?roomId=' + room.id + '&venueId=' + venue.id + '&startTime=' + slot.startTime"
-                      class="btn-primary text-xs !py-1.5 !px-3">Agendar</router-link>
+                    <button @click="confirmarAgendamiento(room, venue, slot)" class="btn-primary text-xs !py-1.5 !px-3">Agendar</button>
                   </div>
                 </div>
                 <div v-else class="text-gray-500 text-sm py-2">Sin horarios disponibles en este rango</div>
@@ -76,6 +75,30 @@
             </div>
           </div>
           <p v-else class="text-gray-500 text-sm">No hay salas en esta sede</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de confirmacion -->
+    <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
+      <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold text-white mb-2">Confirmar Reserva</h3>
+        <div class="text-gray-400 text-sm space-y-2 mb-6">
+          <p><span class="text-gray-500">Sede:</span> {{ modal.venue?.name }}</p>
+          <p><span class="text-gray-500">Sala:</span> {{ modal.room?.name }} ({{ modal.room?.capacity }} personas)</p>
+          <p><span class="text-gray-500">Fecha:</span> {{ modal.slot ? formatDate(modal.slot.startTime) : '' }}</p>
+          <p><span class="text-gray-500">Horario:</span> {{ modal.slot ? formatTime(modal.slot.startTime) + ' - ' + formatTime(modal.slot.endTime) : '' }}</p>
+          <p class="text-primary font-semibold"><span class="text-gray-500">Precio:</span> ${{ modal.room?.pricePerHour?.toLocaleString() }} / hora</p>
+        </div>
+        <p class="text-white text-sm mb-6">Selecciona tu metodo de pago para confirmar la reserva:</p>
+        <div class="space-y-2 mb-6">
+          <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[#0d0f1a] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
+            <span class="text-white text-sm font-medium">Transferencia Bancaria</span>
+            <p class="text-gray-500 text-xs">Pago simulado - se registrara la reserva</p>
+          </button>
+        </div>
+        <div class="flex space-x-3 justify-end">
+          <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
         </div>
       </div>
     </div>
@@ -94,6 +117,7 @@ const expandedRoom = ref(null)
 const roomSlots = ref({})
 const loadingSlots = ref(null)
 const comunas = ref([])
+const modal = ref({ abierto: false, venue: null, room: null, slot: null, procesando: false })
 const filtros = ref({ region: '', comuna: '', tipo: '', fechaDesde: '', fechaHasta: '' })
 const regiones = [
   'XV - Arica y Parinacota', 'I - Tarapaca', 'II - Antofagasta', 'III - Atacama',
@@ -166,6 +190,32 @@ async function buscar() {
 function onRegionChange() {
   filtros.value.comuna = ''
   buscar()
+}
+
+function confirmarAgendamiento(room, venue, slot) {
+  modal.value = { abierto: true, venue, room, slot, procesando: false }
+}
+
+async function pagar(metodo) {
+  modal.value.procesando = true
+  try {
+    await classService.createClass({
+      title: 'Clase en ' + modal.value.room.name,
+      discipline: 'OTRO',
+      level: 'BASICO',
+      capacity: modal.value.room.capacity,
+      duration: 60,
+      price: modal.value.room.pricePerHour || 0,
+      startTime: modal.value.slot.startTime,
+      roomId: modal.value.room.id
+    })
+    modal.value.abierto = false
+    alert('Reserva confirmada. Ahora tienes acceso al panel de Maestro para gestionar tu clase.')
+    window.location.href = '/profesor/dashboard'
+  } catch (e) {
+    alert(e?.response?.data?.message || 'Error al procesar la reserva')
+  }
+  modal.value.procesando = false
 }
 
 function toggleVenue(id) {

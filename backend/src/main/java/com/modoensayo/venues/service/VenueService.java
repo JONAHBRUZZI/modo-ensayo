@@ -78,6 +78,9 @@ public class VenueService {
         }
     }
 
+    /**
+     * Actualiza datos estructurales de la sede (solo si no esta APROBADA).
+     */
     @Transactional
     public VenueResponse updateVenue(UUID userId, UUID venueId, VenueRequest req) {
         Venue v = venueRepository.findById(venueId)
@@ -91,6 +94,27 @@ public class VenueService {
         if (req.name() != null) v.setName(req.name());
         if (req.city() != null) v.setCity(req.city());
         if (req.address() != null) v.setAddress(req.address());
+        if (req.description() != null) v.setDescription(req.description());
+        if (req.phone() != null) v.setPhone(req.phone());
+        if (req.email() != null) v.setEmail(req.email());
+        return toVenueResponse(venueRepository.save(v));
+    }
+
+    /**
+     * Actualiza redes sociales / contacto web de la sede (siempre editable, incluso si APROBADA).
+     */
+    @Transactional
+    public VenueResponse updateVenueSocial(UUID userId, UUID venueId, VenueRequest req) {
+        Venue v = venueRepository.findById(venueId)
+                .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
+        if (v.getAdminId() == null || !v.getAdminId().equals(userId)) {
+            throw new BusinessException("No tienes permiso para modificar esta sede");
+        }
+        if (req.instagram() != null) v.setInstagram(req.instagram());
+        if (req.youtube() != null)   v.setYoutube(req.youtube());
+        if (req.sitioWeb() != null)  v.setSitioWeb(req.sitioWeb());
+        if (req.facebook() != null)  v.setFacebook(req.facebook());
+        // También permite actualizar descripción, teléfono y email sin re-aprobación
         if (req.description() != null) v.setDescription(req.description());
         if (req.phone() != null) v.setPhone(req.phone());
         if (req.email() != null) v.setEmail(req.email());
@@ -112,15 +136,77 @@ public class VenueService {
         if (v.getStatus() != EstadoSede.APROBADA) {
             throw new BusinessException("La sede debe estar aprobada antes de registrar salas");
         }
-        Room r = Room.builder().venue(v).name(req.name()).capacity(req.capacity())
-                .floorType(req.floorType()).type(req.type()).hasMirrors(req.hasMirrors())
-                .hasSound(req.hasSound()).equipment(req.equipment()).pricePerHour(req.pricePerHour()).build();
+        Room r = Room.builder()
+                .venue(v)
+                .name(req.name())
+                .capacity(req.capacity())
+                .tamanoM2(req.tamanoM2())
+                .floorType(req.floorType())
+                .type(req.type())
+                .pricePerHour(req.pricePerHour())
+                .activa(req.activa() != null ? req.activa() : true)
+                // Equipamiento — espacio
+                .hasMirrors(req.hasMirrors())
+                .tieneBarraBallet(req.tieneBarraBallet())
+                .tieneAireAcondicionado(req.tieneAireAcondicionado())
+                .tieneCalefaccion(req.tieneCalefaccion())
+                .tieneInsonorizacion(req.tieneInsonorizacion())
+                // Equipamiento — audio/video
+                .hasSound(req.hasSound())
+                .tieneAmplificacion(req.tieneAmplificacion())
+                .tieneEntradaAuxiliar(req.tieneEntradaAuxiliar())
+                .tieneMicrofono(req.tieneMicrofono())
+                .tieneEquipoGrabacion(req.tieneEquipoGrabacion())
+                // Instrumentos
+                .tienePiano(req.tienePiano())
+                .tieneGuitarra(req.tieneGuitarra())
+                .tieneBateria(req.tieneBateria())
+                // Legacy
+                .equipment(req.equipment())
+                .build();
+        return toRoomResponse(roomRepository.save(r));
+    }
+
+    /**
+     * Actualiza los datos de una sala existente.
+     */
+    @Transactional
+    public RoomResponse updateRoom(UUID userId, UUID roomId, RoomRequest req) {
+        Room r = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sala no encontrada"));
+        if (r.getVenue() == null || r.getVenue().getAdminId() == null
+                || !r.getVenue().getAdminId().equals(userId)) {
+            throw new BusinessException("No tienes permiso para modificar esta sala");
+        }
+        if (req.name() != null)         r.setName(req.name());
+        if (req.capacity() != null)     r.setCapacity(req.capacity());
+        if (req.tamanoM2() != null)     r.setTamanoM2(req.tamanoM2());
+        if (req.floorType() != null)    r.setFloorType(req.floorType());
+        if (req.type() != null)         r.setType(req.type());
+        if (req.pricePerHour() != null) r.setPricePerHour(req.pricePerHour());
+        if (req.activa() != null)       r.setActiva(req.activa());
+        if (req.hasMirrors() != null)             r.setHasMirrors(req.hasMirrors());
+        if (req.tieneBarraBallet() != null)       r.setTieneBarraBallet(req.tieneBarraBallet());
+        if (req.tieneAireAcondicionado() != null) r.setTieneAireAcondicionado(req.tieneAireAcondicionado());
+        if (req.tieneCalefaccion() != null)       r.setTieneCalefaccion(req.tieneCalefaccion());
+        if (req.tieneInsonorizacion() != null)    r.setTieneInsonorizacion(req.tieneInsonorizacion());
+        if (req.hasSound() != null)               r.setHasSound(req.hasSound());
+        if (req.tieneAmplificacion() != null)     r.setTieneAmplificacion(req.tieneAmplificacion());
+        if (req.tieneEntradaAuxiliar() != null)   r.setTieneEntradaAuxiliar(req.tieneEntradaAuxiliar());
+        if (req.tieneMicrofono() != null)         r.setTieneMicrofono(req.tieneMicrofono());
+        if (req.tieneEquipoGrabacion() != null)   r.setTieneEquipoGrabacion(req.tieneEquipoGrabacion());
+        if (req.tienePiano() != null)             r.setTienePiano(req.tienePiano());
+        if (req.tieneGuitarra() != null)          r.setTieneGuitarra(req.tieneGuitarra());
+        if (req.tieneBateria() != null)           r.setTieneBateria(req.tieneBateria());
+        if (req.equipment() != null)              r.setEquipment(req.equipment());
         return toRoomResponse(roomRepository.save(r));
     }
 
     public List<RoomAvailabilityResponse> getRoomAvailability(UUID roomId) {
         return roomAvailabilityRepository.findByRoomId(roomId).stream()
-                .map(a -> new RoomAvailabilityResponse(a.getId().toString(), a.getRoom().getId().toString(), a.getRoom().getName(), a.getStartTime(), a.getEndTime()))
+                .map(a -> new RoomAvailabilityResponse(
+                        a.getId().toString(), a.getRoom().getId().toString(),
+                        a.getRoom().getName(), a.getStartTime(), a.getEndTime()))
                 .collect(Collectors.toList());
     }
 
@@ -128,19 +214,24 @@ public class VenueService {
     public RoomAvailabilityResponse createAvailability(UUID userId, UUID roomId, RoomAvailabilityRequest req) {
         Room r = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
-        if (r.getVenue() == null || r.getVenue().getAdminId() == null || !r.getVenue().getAdminId().equals(userId)) {
+        if (r.getVenue() == null || r.getVenue().getAdminId() == null
+                || !r.getVenue().getAdminId().equals(userId)) {
             throw new BusinessException("No tienes permiso para gestionar la disponibilidad de esta sala");
         }
-        RoomAvailability a = RoomAvailability.builder().room(r).startTime(req.startTime()).endTime(req.endTime()).build();
+        RoomAvailability a = RoomAvailability.builder()
+                .room(r).startTime(req.startTime()).endTime(req.endTime()).build();
         a = roomAvailabilityRepository.save(a);
-        return new RoomAvailabilityResponse(a.getId().toString(), a.getRoom().getId().toString(), a.getRoom().getName(), a.getStartTime(), a.getEndTime());
+        return new RoomAvailabilityResponse(
+                a.getId().toString(), a.getRoom().getId().toString(),
+                a.getRoom().getName(), a.getStartTime(), a.getEndTime());
     }
 
     @Transactional
     public void deleteAvailability(UUID userId, UUID availId) {
         RoomAvailability a = roomAvailabilityRepository.findById(availId)
                 .orElseThrow(() -> new ResourceNotFoundException("Availability slot not found"));
-        if (a.getRoom() != null && a.getRoom().getVenue() != null && a.getRoom().getVenue().getAdminId() != null
+        if (a.getRoom() != null && a.getRoom().getVenue() != null
+                && a.getRoom().getVenue().getAdminId() != null
                 && !a.getRoom().getVenue().getAdminId().equals(userId)) {
             throw new BusinessException("No tienes permiso para eliminar este bloque horario");
         }
@@ -148,14 +239,27 @@ public class VenueService {
     }
 
     private VenueResponse toVenueResponse(Venue v) {
-        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
-                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
-                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt());
+        return new VenueResponse(
+                v.getId(), v.getName(), v.getCity(), v.getAddress(),
+                v.getDescription(), v.getPhone(), v.getEmail(),
+                v.getStatus().name(),
+                v.getTipo() != null ? v.getTipo().name() : null,
+                v.getCreatedAt(),
+                v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());
     }
 
     private RoomResponse toRoomResponse(Room r) {
-        return new RoomResponse(r.getId(), r.getVenue().getId(), r.getVenue().getName(),
-                r.getName(), r.getCapacity(), r.getFloorType(), r.getType(), r.getEquipment(),
-                r.getPricePerHour(), r.getCreatedAt());
+        return new RoomResponse(
+                r.getId(),
+                r.getVenue().getId(), r.getVenue().getName(),
+                r.getName(), r.getCapacity(), r.getTamanoM2(),
+                r.getFloorType(), r.getType(), r.getPricePerHour(), r.isActiva(),
+                r.getHasMirrors(), r.getTieneBarraBallet(),
+                r.getTieneAireAcondicionado(), r.getTieneCalefaccion(), r.getTieneInsonorizacion(),
+                r.getHasSound(), r.getTieneAmplificacion(), r.getTieneEntradaAuxiliar(),
+                r.getTieneMicrofono(), r.getTieneEquipoGrabacion(),
+                r.getTienePiano(), r.getTieneGuitarra(), r.getTieneBateria(),
+                r.getEquipment(), r.getImageUrl(),
+                r.getCreatedAt());
     }
 }

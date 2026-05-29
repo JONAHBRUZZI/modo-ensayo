@@ -55,11 +55,26 @@
               <div @click="toggleRoom(room.id)" class="cursor-pointer flex items-center justify-between">
                 <div class="flex-1">
                   <p class="text-white font-medium">{{ room.name }}</p>
-                  <p class="text-gray-400 text-sm">Cap: {{ room.capacity }} | Piso: {{ room.floorType || 'N/A' }}</p>
+                  <p class="text-gray-400 text-sm">
+                    Cap: {{ room.capacity }} pers.
+                    <span v-if="room.tamanoM2"> · {{ room.tamanoM2 }} m²</span>
+                    <span v-if="room.floorType"> · Piso {{ room.floorType }}</span>
+                  </p>
                   <p v-if="room.pricePerHour" class="text-primary text-sm font-medium mt-0.5">${{ room.pricePerHour?.toLocaleString() }} / hora</p>
-                  <div class="flex flex-wrap gap-1 mt-1">
-                    <span v-if="room.hasMirrors" class="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">Espejos</span>
-                    <span v-if="room.hasSound" class="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">Sonido</span>
+                  <div class="flex flex-wrap gap-1 mt-1.5">
+                    <span v-if="room.hasMirrors" class="equip-tag">Espejos</span>
+                    <span v-if="room.tieneBarraBallet" class="equip-tag">Barra ballet</span>
+                    <span v-if="room.tieneAireAcondicionado" class="equip-tag">Aire AC</span>
+                    <span v-if="room.tieneCalefaccion" class="equip-tag">Calefaccion</span>
+                    <span v-if="room.tieneInsonorizacion" class="equip-tag">Insonorizado</span>
+                    <span v-if="room.hasSound" class="equip-tag">Sonido</span>
+                    <span v-if="room.tieneAmplificacion" class="equip-tag">Amplificacion</span>
+                    <span v-if="room.tieneEntradaAuxiliar" class="equip-tag">AUX</span>
+                    <span v-if="room.tieneMicrofono" class="equip-tag">Microfono</span>
+                    <span v-if="room.tieneEquipoGrabacion" class="equip-tag">Grabacion</span>
+                    <span v-if="room.tienePiano" class="equip-tag">Piano</span>
+                    <span v-if="room.tieneGuitarra" class="equip-tag">Guitarra</span>
+                    <span v-if="room.tieneBateria" class="equip-tag">Bateria</span>
                   </div>
                 </div>
                 <svg :class="['w-4 h-4 text-gray-500 ml-3 transition-transform', expandedRoom === room.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -313,3 +328,9 @@ function formatTime(d) {
   return d ? new Date(d).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
 }
 </script>
+
+<style scoped>
+.equip-tag {
+  @apply text-xs text-gray-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded;
+}
+</style>

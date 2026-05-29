@@ -88,7 +88,8 @@ public class AdminService {
         return venueRepository.findByStatusOrderByCreatedAtDesc(EstadoSede.PENDIENTE_APROBACION).stream()
                 .map(v -> new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
                         v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
-                        v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt()))
+                        v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
+                        v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook()))
                 .collect(Collectors.toList());
     }
 
@@ -122,7 +123,8 @@ public class AdminService {
 
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
-                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt());
+                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
+                v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());
     }
 
     @Transactional
@@ -141,7 +143,8 @@ public class AdminService {
 
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
-                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt());
+                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
+                v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());
     }
 
     public List<Map<String, Object>> getUsers() {

@@ -40,6 +40,21 @@ public class VenueAdminController {
         return ResponseEntity.ok(venueService.updateVenue(user.getUserId(), id, req));
     }
 
+    /** Actualiza redes sociales y contacto web (siempre editable, incluso si la sede esta APROBADA). */
+    @PatchMapping("/venues/{id}/social")
+    public ResponseEntity<VenueResponse> updateSocial(@AuthenticationPrincipal CustomUserDetails user,
+                                                       @PathVariable UUID id, @RequestBody VenueRequest req) {
+        return ResponseEntity.ok(venueService.updateVenueSocial(user.getUserId(), id, req));
+    }
+
+    /** Actualiza los datos de una sala existente. */
+    @PatchMapping("/rooms/{roomId}")
+    public ResponseEntity<RoomResponse> updateRoom(@AuthenticationPrincipal CustomUserDetails user,
+                                                    @PathVariable UUID roomId,
+                                                    @RequestBody RoomRequest req) {
+        return ResponseEntity.ok(venueService.updateRoom(user.getUserId(), roomId, req));
+    }
+
     @GetMapping("/venues/{venueId}/rooms")
     public ResponseEntity<List<RoomResponse>> getRooms(@PathVariable UUID venueId) {
         return ResponseEntity.ok(venueService.getRooms(venueId));

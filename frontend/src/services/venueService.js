@@ -88,5 +88,15 @@ export default {
 
   async deleteRoomAvailability(roomId, slotId) {
     await api.delete(`/venue-admin/rooms/${roomId}/availability/${slotId}`)
+  },
+
+  async updateVenueSocial(id, data) {
+    const res = await api.patch(`/venue-admin/venues/${id}/social`, data)
+    return res.data
+  },
+
+  async updateRoom(roomId, data) {
+    const res = await api.patch(`/venue-admin/rooms/${roomId}`, data)
+    return res.data
   }
 }

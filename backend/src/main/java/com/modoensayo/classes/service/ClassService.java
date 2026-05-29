@@ -130,7 +130,13 @@ public class ClassService {
         if (req.level() != null) c.setLevel(NivelClase.valueOf(req.level()));
         if (req.description() != null) c.setDescription(req.description());
         if (req.capacity() != null) c.setCapacity(req.capacity());
-        if (req.duration() != null) c.setDuration(req.duration());
+        if (req.duration() != null) {
+            c.setDuration(req.duration());
+            // Recalcular endTime cuando cambia la duracion (startTime queda fijo de la reserva)
+            if (c.getStartTime() != null) {
+                c.setEndTime(c.getStartTime().plusSeconds(req.duration() * 60L));
+            }
+        }
         if (req.price() != null) c.setPrice(req.price());
         if (req.minAge() != null) c.setMinAge(req.minAge());
         if (req.maxAge() != null) c.setMaxAge(req.maxAge());

@@ -113,6 +113,7 @@ import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 
 const auth = useAuth()
+const { refreshProfile, syncActividadMaestro } = auth
 
 const venues = ref([])
 const loading = ref(true)
@@ -214,10 +215,13 @@ async function pagar(metodo) {
       roomId: modal.value.room.id
     })
     modal.value.abierto = false
-    alert('Reserva confirmada. Se activo tu perfil de Maestro.')
-    // Refrescar perfil para obtener rol TEACHER
-    try { await auth.refreshProfile() } catch {}
-    window.location.href = '/alumno/dashboard'
+    // Refrescar perfil y atributos para obtener rol TEACHER si es primera clase
+    try {
+      await refreshProfile()
+      await syncActividadMaestro()
+    } catch {}
+    // Ir a borradores donde puede completar los datos de la clase
+    window.location.href = '/profesor/borradores'
   } catch (e) {
     alert(e?.response?.data?.message || 'Error al procesar la reserva')
   }

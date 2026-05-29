@@ -25,24 +25,39 @@ public class ProfessionalProfileService {
 
     @Transactional
     public ProfessionalProfile save(UUID userId, Map<String, String> data) {
+        Map<String, Object> objData = new java.util.HashMap<>(data);
+        return saveFromObject(userId, objData);
+    }
+
+    @Transactional
+    public ProfessionalProfile saveFromObject(UUID userId, Map<String, Object> data) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         ProfessionalProfile profile = profileRepository.findByUser_Id(userId)
                 .orElse(ProfessionalProfile.builder().user(user).build());
 
-        if (data.containsKey("description")) profile.setDescription(data.get("description"));
-        if (data.containsKey("especialidad")) profile.setEspecialidad(data.get("especialidad"));
-        if (data.containsKey("nivelEnsenanza")) profile.setNivelEnsenanza(data.get("nivelEnsenanza"));
-        if (data.containsKey("formacion")) profile.setFormacion(data.get("formacion"));
-        if (data.containsKey("experienceYears")) {
-            try { profile.setExperienceYears(Integer.parseInt(data.get("experienceYears"))); } catch (NumberFormatException e) {}
+        if (data.containsKey("description")) profile.setDescription(str(data.get("description")));
+        if (data.containsKey("especialidad")) profile.setEspecialidad(str(data.get("especialidad")));
+        if (data.containsKey("nivelEnsenanza")) profile.setNivelEnsenanza(str(data.get("nivelEnsenanza")));
+        if (data.containsKey("formacion")) profile.setFormacion(str(data.get("formacion")));
+        if (data.containsKey("experienceYears") && data.get("experienceYears") != null) {
+            try {
+                profile.setExperienceYears(((Number) data.get("experienceYears")).intValue());
+            } catch (ClassCastException e) {
+                try { profile.setExperienceYears(Integer.parseInt(str(data.get("experienceYears")))); } catch (NumberFormatException ignored) {}
+            }
         }
-        if (data.containsKey("instagram")) profile.setInstagram(data.get("instagram"));
-        if (data.containsKey("youtube")) profile.setYoutube(data.get("youtube"));
-        if (data.containsKey("sitioWeb")) profile.setSitioWeb(data.get("sitioWeb"));
-        if (data.containsKey("linkedin")) profile.setLinkedin(data.get("linkedin"));
+        if (data.containsKey("instagram")) profile.setInstagram(str(data.get("instagram")));
+        if (data.containsKey("youtube")) profile.setYoutube(str(data.get("youtube")));
+        if (data.containsKey("sitioWeb")) profile.setSitioWeb(str(data.get("sitioWeb")));
+        if (data.containsKey("linkedin")) profile.setLinkedin(str(data.get("linkedin")));
+        if (data.containsKey("photoUrl")) profile.setPhotoUrl(str(data.get("photoUrl")));
 
         return profileRepository.save(profile);
+    }
+
+    private String str(Object val) {
+        return val != null ? val.toString() : null;
     }
 }

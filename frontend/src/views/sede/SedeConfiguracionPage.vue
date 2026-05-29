@@ -88,6 +88,58 @@
         </div>
       </div>
 
+      <!-- Documentos de la sede -->
+      <div class="card space-y-4">
+        <h3 class="text-white font-medium">Documentos de la sede</h3>
+        <p class="text-gray-500 text-xs">Sube permisos, certificados o documentos requeridos para la aprobación. El Admin General los revisará.</p>
+
+        <!-- Lista de documentos existentes -->
+        <div v-if="documentos.length > 0" class="space-y-2">
+          <div v-for="doc in documentos" :key="doc.id"
+               class="flex items-center justify-between p-3 bg-dark-bg rounded-lg border border-dark-border">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <div>
+                <p class="text-sm text-white">{{ doc.nombre || 'Documento' }}</p>
+                <span :class="{
+                  'text-yellow-400': doc.estado === 'PENDIENTE',
+                  'text-green-400': doc.estado === 'APROBADO',
+                  'text-red-400': doc.estado === 'RECHAZADO'
+                }" class="text-xs">{{ doc.estado }}</span>
+                <span v-if="doc.motivoRechazo" class="text-xs text-red-400 ml-2">— {{ doc.motivoRechazo }}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <a :href="doc.fileUrl" target="_blank" class="text-primary text-xs hover:underline">Ver</a>
+              <button @click="eliminarDocumento(doc.id)" class="text-red-400 text-xs hover:underline">Eliminar</button>
+            </div>
+          </div>
+        </div>
+        <p v-else class="text-gray-500 text-sm">No hay documentos subidos aún.</p>
+
+        <!-- Subir nuevo documento -->
+        <div class="border border-dark-border rounded-lg p-4 space-y-3">
+          <p class="text-sm text-gray-300 font-medium">Subir documento</p>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Nombre / Descripción</label>
+            <input v-model="nuevoDoc.nombre" class="input-field" placeholder="Ej: Permiso Municipal" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Archivo (PDF, imagen, máx 5MB)</label>
+            <input type="file" @change="onDocFileChange" accept=".pdf,image/*"
+                   class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-primary/80" />
+            <p v-if="uploadingDoc" class="text-xs text-gray-400 mt-1">Subiendo...</p>
+          </div>
+          <button @click="subirDocumento" :disabled="uploadingDoc || !nuevoDoc.fileUrl || !nuevoDoc.nombre"
+                  class="btn-primary text-sm px-4 py-2">
+            Agregar Documento
+          </button>
+          <p v-if="msgDoc" :class="msgDocType === 'error' ? 'text-red-400' : 'text-green-400'" class="text-xs">{{ msgDoc }}</p>
+        </div>
+      </div>
+
       <!-- Redes sociales y contacto web (siempre editable) -->
       <form @submit.prevent="saveSocial" class="card space-y-4">
         <h3 class="text-white font-medium">Redes sociales y contacto web</h3>
@@ -146,6 +198,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import venueService from '@/services/venueService'
+import api from '@/services/api'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 
 const venue = ref(null)
@@ -162,6 +215,13 @@ const formSocial = reactive({ instagram: '', facebook: '', youtube: '', sitioWeb
 const savingSocial = ref(false)
 const msgSocial = ref('')
 const msgSocialType = ref('')
+
+// Documentos de sede
+const documentos = ref([])
+const nuevoDoc = reactive({ nombre: '', fileUrl: '' })
+const uploadingDoc = ref(false)
+const msgDoc = ref('')
+const msgDocType = ref('')
 
 onMounted(async () => {
   try {
@@ -185,6 +245,10 @@ onMounted(async () => {
       formSocial.description = v.description || ''
       formSocial.phone = v.phone || ''
       formSocial.email = v.email || ''
+      // Cargar documentos
+      try {
+        documentos.value = await venueService.getVenueDocuments(v.id)
+      } catch { documentos.value = [] }
     }
   } catch {}
   loading.value = false
@@ -218,5 +282,52 @@ async function saveSocial() {
     msgSocialType.value = 'error'
   }
   savingSocial.value = false
+}
+
+async function onDocFileChange(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  uploadingDoc.value = true
+  nuevoDoc.fileUrl = ''
+  msgDoc.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', 'documents')
+    const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+    nuevoDoc.fileUrl = res.data.fileUrl || res.data.url
+    nuevoDoc.tipoArchivo = file.type
+  } catch (e) {
+    msgDoc.value = e?.response?.data?.error || 'Error al subir el archivo'
+    msgDocType.value = 'error'
+  }
+  uploadingDoc.value = false
+}
+
+async function subirDocumento() {
+  if (!nuevoDoc.fileUrl || !nuevoDoc.nombre) return
+  msgDoc.value = ''
+  try {
+    const doc = await venueService.addVenueDocument(venue.value.id, {
+      fileUrl: nuevoDoc.fileUrl,
+      nombre: nuevoDoc.nombre,
+      tipoArchivo: nuevoDoc.tipoArchivo || ''
+    })
+    documentos.value.unshift(doc)
+    nuevoDoc.nombre = ''
+    nuevoDoc.fileUrl = ''
+    msgDoc.value = 'Documento subido correctamente.'
+    msgDocType.value = 'success'
+  } catch (e) {
+    msgDoc.value = e?.response?.data?.message || 'Error al guardar el documento'
+    msgDocType.value = 'error'
+  }
+}
+
+async function eliminarDocumento(docId) {
+  try {
+    await venueService.deleteVenueDocument(docId)
+    documentos.value = documentos.value.filter(d => d.id !== docId)
+  } catch {}
 }
 </script>

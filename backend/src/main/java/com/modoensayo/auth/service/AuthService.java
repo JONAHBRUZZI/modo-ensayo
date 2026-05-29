@@ -28,7 +28,10 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest req) {
         if (userRepository.existsByEmail(req.email())) {
-            throw new BusinessException("Email already registered");
+            throw new BusinessException("Este correo ya está registrado. ¿Quieres iniciar sesión o recuperar tu contraseña?");
+        }
+        if (req.rut() != null && !req.rut().isBlank() && userRepository.existsByRut(req.rut())) {
+            throw new BusinessException("Este RUT ya está registrado. Si es tu cuenta, recupera tu contraseña.");
         }
 
         User user = User.builder()

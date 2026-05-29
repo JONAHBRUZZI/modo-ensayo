@@ -111,6 +111,8 @@ public class AdminService {
                         userRoleRepository.save(new UserRole(uriId, owner, venueAdminRole));
                     }
                 }
+                owner.setTieneSedeAprobada(true);
+                userRepository.save(owner);
             }
             notificationRepository.save(Notification.builder()
                     .userId(v.getAdminId())

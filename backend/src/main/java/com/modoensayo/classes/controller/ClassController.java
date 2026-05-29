@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -61,5 +62,14 @@ public class ClassController {
                                                        @PathVariable UUID id,
                                                        @RequestBody ClassRequest req) {
         return ResponseEntity.ok(classService.completeClass(id, req, user.getUserId()));
+    }
+
+    /**
+     * Perfil público del profesor de una clase (sin autenticación).
+     * GET /api/classes/{id}/profesor
+     */
+    @GetMapping("/{id}/profesor")
+    public ResponseEntity<Map<String, Object>> getProfesor(@PathVariable UUID id) {
+        return ResponseEntity.ok(classService.getTeacherProfileForClass(id));
     }
 }

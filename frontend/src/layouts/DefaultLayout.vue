@@ -23,6 +23,7 @@
                 <router-link to="/profesor/dashboard" class="nav-link">Dashboard</router-link>
                 <router-link to="/profesor/clases-propias" class="nav-link">Clases Agendadas</router-link>
                 <router-link to="/profesor/clases-asignadas" class="nav-link">Clases Asignadas</router-link>
+                <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
                 <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
                 <router-link to="/profesor/metricas" class="nav-link">Metricas</router-link>
                 <router-link to="/profesor/pagos" class="nav-link">Pagos</router-link>

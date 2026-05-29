@@ -18,7 +18,9 @@ import com.modoensayo.users.domain.Role;
 import com.modoensayo.users.domain.User;
 import com.modoensayo.users.domain.UserRole;
 import com.modoensayo.users.domain.UserRoleId;
+import com.modoensayo.users.domain.ProfessionalProfile;
 import com.modoensayo.users.repository.IdentityVerificationRepository;
+import com.modoensayo.users.repository.ProfessionalProfileRepository;
 import com.modoensayo.users.repository.RoleRepository;
 import com.modoensayo.users.repository.UserRepository;
 import com.modoensayo.users.repository.UserRoleRepository;
@@ -54,6 +56,7 @@ public class ClassService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final ClassStatusHistoryRepository classStatusHistoryRepository;
+    private final ProfessionalProfileRepository profileRepository;
 
     public List<ClassResponse> listPublished() {
         return classRepository.findByStatusOrderByStartTimeAsc(ClassStatus.PUBLISHED).stream()
@@ -116,6 +119,95 @@ public class ClassService {
     @Transactional
     public ClassResponse createWithTeacher(ClassRequest req, UUID teacherId, boolean draft) {
         return createClassInternal(req, teacherId, draft);
+    }
+
+    /**
+     * Crea un borrador de clase SIN sala asignada.
+     * El rol TEACHER se asigna cuando se publica la clase (asignarReserva).
+     */
+    @Transactional
+    public ClassResponse createBorrador(ClassRequest req, UUID teacherId) {
+        if (teacherId != null) {
+            IdentityVerification iv = identityVerificationRepository.findByUserId(teacherId).orElse(null);
+            if (iv == null || !"APPROVED".equals(iv.getStatus())) {
+                throw new BusinessException(
+                        "Debes validar tu identidad antes de crear clases. Sube tu documento en tu perfil y espera la aprobacion.");
+            }
+        }
+
+        Class c = Class.builder()
+                .title(req.title())
+                .discipline(req.discipline() != null ? Disciplina.valueOf(req.discipline()) : Disciplina.OTRO)
+                .level(req.level() != null ? NivelClase.valueOf(req.level()) : NivelClase.BASICO)
+                .description(req.description())
+                .capacity(req.capacity())
+                .duration(req.duration())
+                .price(req.price())
+                .minAge(req.minAge() != null ? req.minAge() : 0)
+                .maxAge(req.maxAge() != null ? req.maxAge() : 99)
+                .teacherId(teacherId)
+                .tipoClase(TipoClase.PROPIA)
+                .status(ClassStatus.DRAFT)
+                .build();
+
+        return toResponse(classRepository.save(c));
+    }
+
+    /**
+     * Asigna una sala y horario a un borrador existente, luego lo publica.
+     * Es en este paso donde se asigna el rol TEACHER (primera clase activa).
+     */
+    @Transactional
+    public ClassResponse asignarReserva(UUID classId, UUID roomId, Instant startTime,
+                                         Integer duration, UUID teacherId) {
+        Class c = classRepository.findById(classId)
+                .orElseThrow(() -> new ResourceNotFoundException("Clase no encontrada"));
+
+        if (c.getTeacherId() != null && !c.getTeacherId().equals(teacherId)) {
+            throw new BusinessException("No tienes permiso para modificar esta clase");
+        }
+        if (c.getStatus() != ClassStatus.DRAFT) {
+            throw new BusinessException("Solo se puede asignar sala a clases en borrador");
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sala no encontrada"));
+        if (room.getVenue() == null || room.getVenue().getStatus() != EstadoSede.APROBADA) {
+            throw new BusinessException("La sede de esta sala no esta aprobada.");
+        }
+
+        int dur = duration != null ? duration : (c.getDuration() != null ? c.getDuration() : 60);
+        Instant endTime = startTime.plusSeconds(dur * 60L);
+
+        List<Class> conflicts = classRepository.findConflictingClasses(roomId, startTime, endTime);
+        if (!conflicts.isEmpty()) {
+            throw new BusinessException("La sala ya esta reservada en ese horario. Elige otro horario disponible.");
+        }
+
+        c.setRoom(room);
+        c.setStartTime(startTime);
+        c.setEndTime(endTime);
+        c.setDuration(dur);
+        c.setStatus(ClassStatus.PUBLISHED);
+
+        // Asignar rol TEACHER al publicar la primera clase activa
+        if (teacherId != null) {
+            Role teacherRole = roleRepository.findByName("TEACHER").orElse(null);
+            if (teacherRole != null) {
+                User user = userRepository.findById(teacherId).orElse(null);
+                if (user != null) {
+                    boolean hasTeacherRole = user.getUserRoles().stream()
+                            .anyMatch(ur -> "TEACHER".equals(ur.getRole().getName()));
+                    if (!hasTeacherRole) {
+                        UserRole userRole = new UserRole(
+                                new UserRoleId(user.getId(), teacherRole.getId()), user, teacherRole);
+                        userRoleRepository.save(userRole);
+                    }
+                }
+            }
+        }
+
+        return toResponse(classRepository.save(c));
     }
 
     @Transactional
@@ -270,6 +362,45 @@ public class ClassService {
         classStatusHistoryRepository.save(history);
 
         return toResponse(c);
+    }
+
+    /**
+     * Retorna el perfil público del profesor para una clase dada.
+     * Usado en la vista de detalle de clase para alumnos.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getTeacherProfileForClass(UUID classId) {
+        Class c = classRepository.findById(classId)
+                .orElseThrow(() -> new ResourceNotFoundException("Clase no encontrada"));
+
+        Map<String, Object> result = new HashMap<>();
+        if (c.getTeacherId() == null) {
+            return result;
+        }
+
+        User teacher = userRepository.findById(c.getTeacherId()).orElse(null);
+        if (teacher != null) {
+            result.put("id", teacher.getId());
+            result.put("fullName", teacher.getFullName());
+            result.put("socialName", teacher.getSocialName());
+        }
+
+        ProfessionalProfile profile = profileRepository.findByUser_Id(c.getTeacherId()).orElse(null);
+        if (profile != null) {
+            result.put("description", profile.getDescription());
+            result.put("especialidad", profile.getEspecialidad());
+            result.put("nivelEnsenanza", profile.getNivelEnsenanza());
+            result.put("formacion", profile.getFormacion());
+            result.put("experienceYears", profile.getExperienceYears());
+            result.put("averageRating", profile.getAverageRating());
+            result.put("photoUrl", profile.getPhotoUrl());
+            result.put("instagram", profile.getInstagram());
+            result.put("youtube", profile.getYoutube());
+            result.put("sitioWeb", profile.getSitioWeb());
+            result.put("linkedin", profile.getLinkedin());
+        }
+
+        return result;
     }
 
     private ClassResponse toResponse(Class c) {

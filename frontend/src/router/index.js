@@ -191,7 +191,14 @@ const routes = [
         path: 'profesor/borradores',
         name: 'ProfesorBorradores',
         component: () => import('@/views/profesor/ProfesorBorradoresPage.vue'),
-        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
+        // Sin roles: un usuario con identidad validada puede tener borradores antes de tener rol TEACHER
+        meta: { requiresAuth: true, requiresIdentity: true }
+      },
+      {
+        path: 'profesor/crear-borrador',
+        name: 'ProfesorCrearBorrador',
+        component: () => import('@/views/profesor/ProfesorCrearBorradorPage.vue'),
+        meta: { requiresAuth: true, requiresIdentity: true }
       },
       // Sede routes
       {

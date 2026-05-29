@@ -32,7 +32,8 @@ export default {
   },
 
   async getTeacherDrafts() {
-    const res = await api.get('/teacher/classes/borradores')
+    // Usa /profesor/clases/borradores (accessible sin rol TEACHER, para usuarios que aun no publicaron)
+    const res = await api.get('/profesor/clases/borradores')
     return res.data
   },
 
@@ -76,5 +77,15 @@ export default {
   async getTeacherEarnings() {
     const res = await api.get('/teacher/earnings')
     return res.data  // { resumen: { totalRetenido, totalLiberadoMes, totalLiberadoAcumulado }, pagos: [...] }
+  },
+
+  async createBorrador(data) {
+    const res = await api.post('/profesor/clases/borrador', data)
+    return res.data
+  },
+
+  async getProfesorClase(classId) {
+    const res = await api.get(`/classes/${classId}/profesor`)
+    return res.data
   }
 }

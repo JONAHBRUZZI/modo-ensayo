@@ -9,6 +9,7 @@ import com.modoensayo.users.service.UserService;
 import com.modoensayo.users.service.ProfessionalProfileService;
 import com.modoensayo.users.domain.ProfessionalProfile;
 import com.modoensayo.users.repository.IdentityVerificationRepository;
+import com.modoensayo.users.repository.UserRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.classes.enums.ClassStatus;
@@ -33,6 +34,7 @@ public class UserController {
     private final EnrollmentRepository enrollmentRepository;
     private final ClassRepository classRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
+    private final UserRepository userRepository;
 
     /**
      * Retorna si el usuario tiene clases propias activas (futuras/en curso) o clases asignadas activas.
@@ -79,9 +81,12 @@ public class UserController {
         attrs.put("identidadEstado", iv != null ? iv.getStatus() : "SIN_VALIDAR");
 
         boolean hasRoleTeacher = user.getRoles().contains("TEACHER");
-        boolean hasRoleVenueAdmin = user.getRoles().contains("VENUE_ADMIN");
         attrs.put("hasRoleTeacher", hasRoleTeacher);
-        attrs.put("tieneSedeAprobada", hasRoleVenueAdmin);
+        // tieneSedeAprobada: persiste en User desde approveVenue(), fallback a rol VENUE_ADMIN
+        com.modoensayo.users.domain.User userEntity = userRepository.findById(userId).orElse(null);
+        boolean tieneSedeAprobada = (userEntity != null && userEntity.isTieneSedeAprobada())
+                || user.getRoles().contains("VENUE_ADMIN");
+        attrs.put("tieneSedeAprobada", tieneSedeAprobada);
 
         Instant ahora = Instant.now();
         boolean tieneReservasActivas = classRepository.findByTeacherId(userId).stream()

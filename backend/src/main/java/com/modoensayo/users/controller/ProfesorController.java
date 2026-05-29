@@ -1,6 +1,9 @@
 package com.modoensayo.users.controller;
 
 import com.modoensayo.auth.service.CustomUserDetails;
+import com.modoensayo.classes.dto.ClassRequest;
+import com.modoensayo.classes.dto.ClassResponse;
+import com.modoensayo.classes.service.ClassService;
 import com.modoensayo.users.domain.ProfessionalProfile;
 import com.modoensayo.users.dto.UserProfileResponse;
 import com.modoensayo.users.service.ProfessionalProfileService;
@@ -10,8 +13,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Endpoints dedicados al contexto Maestro.
@@ -25,6 +30,7 @@ public class ProfesorController {
 
     private final ProfessionalProfileService profileService;
     private final UserService userService;
+    private final ClassService classService;
 
     @GetMapping("/perfil")
     public ResponseEntity<Map<String, Object>> getPerfil(@AuthenticationPrincipal CustomUserDetails user) {
@@ -83,5 +89,42 @@ public class ProfesorController {
         response.put("averageRating", saved.getAverageRating());
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lista los borradores del profesor autenticado.
+     * GET /api/profesor/clases/borradores
+     */
+    @GetMapping("/clases/borradores")
+    public ResponseEntity<java.util.List<ClassResponse>> getBorradores(
+            @AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(classService.getTeacherDrafts(user.getUserId()));
+    }
+
+    /**
+     * Crea un borrador de clase sin sala asignada.
+     * POST /api/profesor/clases/borrador
+     */
+    @PostMapping("/clases/borrador")
+    public ResponseEntity<ClassResponse> crearBorrador(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody ClassRequest req) {
+        return ResponseEntity.ok(classService.createBorrador(req, user.getUserId()));
+    }
+
+    /**
+     * Asigna una sala y horario a un borrador y lo publica.
+     * POST /api/profesor/clases/{id}/asignar-reserva
+     * Body: { "roomId": "...", "startTime": "...", "duration": 90 }
+     */
+    @PostMapping("/clases/{id}/asignar-reserva")
+    public ResponseEntity<ClassResponse> asignarReserva(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID id,
+            @RequestBody Map<String, Object> body) {
+        UUID roomId = UUID.fromString((String) body.get("roomId"));
+        Instant startTime = Instant.parse((String) body.get("startTime"));
+        Integer duration = body.get("duration") != null ? ((Number) body.get("duration")).intValue() : null;
+        return ResponseEntity.ok(classService.asignarReserva(id, roomId, startTime, duration, user.getUserId()));
     }
 }

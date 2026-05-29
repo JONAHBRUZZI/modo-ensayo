@@ -1,7 +1,14 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <h1 class="text-3xl font-bold text-white mb-4">Agendar Sala</h1>
-    <p class="text-gray-400 mb-6">Encuentra la sala perfecta para tu clase.</p>
+    <p class="text-gray-400 mb-3">Encuentra la sala perfecta para tu clase.</p>
+    <!-- Banner cuando asignamos sala a un borrador existente -->
+    <div v-if="borradorId" class="bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+      <svg class="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p class="text-blue-300 text-sm">Selecciona un horario para asignarlo a tu clase y publicarla.</p>
+    </div>
 
     <!-- Filtros -->
     <div class="card mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -79,6 +86,25 @@
       </div>
     </div>
 
+    <!-- Alerta identidad no validada -->
+    <div v-if="alertaIdentidad" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-[#1a1d2e] rounded-2xl border border-yellow-500/30 p-6 max-w-sm w-full mx-4">
+        <div class="flex items-start gap-3 mb-4">
+          <svg class="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <div>
+            <h3 class="text-white font-semibold mb-1">Identidad no validada</h3>
+            <p class="text-gray-400 text-sm">Debes validar tu identidad antes de reservar una sala y crear clases.</p>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button @click="alertaIdentidad = false" class="flex-1 px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cerrar</button>
+          <router-link to="/alumno/validacion-identidad" class="flex-1 text-center px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/80">Validar identidad</router-link>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal de confirmacion -->
     <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
       <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
@@ -107,13 +133,21 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 
+const route = useRoute()
 const auth = useAuth()
 const { refreshProfile, syncActividadMaestro } = auth
+
+// Si venimos desde ProfesorBorradoresPage con "Asignar sala", tenemos el id del borrador
+const borradorId = computed(() => route.query.borradorId || null)
+
+const identidadValidada = computed(() => auth.user?.atributosActivos?.identidadValidada === true)
+const alertaIdentidad = ref(false)
 
 const venues = ref([])
 const loading = ref(true)
@@ -198,29 +232,42 @@ function onRegionChange() {
 }
 
 function confirmarAgendamiento(room, venue, slot) {
+  if (!identidadValidada.value) {
+    alertaIdentidad.value = true
+    return
+  }
   modal.value = { abierto: true, venue, room, slot, procesando: false }
 }
 
 async function pagar(metodo) {
   modal.value.procesando = true
   try {
-    await api.post('/classes?draft=true', {
-      title: 'Reserva - ' + modal.value.room.name,
-      discipline: 'OTRO',
-      level: 'BASICO',
-      capacity: modal.value.room.capacity,
-      duration: 60,
-      price: modal.value.room.pricePerHour || 0,
-      startTime: modal.value.slot.startTime,
-      roomId: modal.value.room.id
-    })
+    if (borradorId.value) {
+      // Flujo: asignar sala a un borrador existente (y publicarlo)
+      await api.post(`/profesor/clases/${borradorId.value}/asignar-reserva`, {
+        roomId: modal.value.room.id,
+        startTime: modal.value.slot.startTime,
+        duration: 60
+      })
+    } else {
+      // Flujo clásico: crear un borrador nuevo con la sala ya asignada
+      await api.post('/classes?draft=true', {
+        title: 'Reserva - ' + modal.value.room.name,
+        discipline: 'OTRO',
+        level: 'BASICO',
+        capacity: modal.value.room.capacity,
+        duration: 60,
+        price: modal.value.room.pricePerHour || 0,
+        startTime: modal.value.slot.startTime,
+        roomId: modal.value.room.id
+      })
+    }
     modal.value.abierto = false
-    // Refrescar perfil y atributos para obtener rol TEACHER si es primera clase
+    // Refrescar perfil y atributos para obtener rol TEACHER si es la primera clase
     try {
       await refreshProfile()
       await syncActividadMaestro()
     } catch {}
-    // Ir a borradores donde puede completar los datos de la clase
     window.location.href = '/profesor/borradores'
   } catch (e) {
     alert(e?.response?.data?.message || 'Error al procesar la reserva')

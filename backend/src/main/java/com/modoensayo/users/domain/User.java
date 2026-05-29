@@ -30,7 +30,11 @@ public class User extends BaseEntity {
 
     private String phone;
 
+    @Column(unique = true)
     private String rut;
+
+    @Builder.Default
+    private boolean tieneSedeAprobada = false;
 
     @Builder.Default
     private boolean enabled = true;

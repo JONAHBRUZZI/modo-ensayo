@@ -41,4 +41,10 @@ public class Venue extends BaseEntity {
 
     @Column(length = 1000)
     private String rejectionReason;
+
+    // Redes sociales y contacto web
+    private String instagram;
+    private String youtube;
+    private String sitioWeb;
+    private String facebook;
 }

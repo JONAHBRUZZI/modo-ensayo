@@ -33,5 +33,10 @@ export default {
   async getMyPaymentHistory() {
     const res = await api.get('/payments/my-history')
     return res.data
+  },
+
+  async cancelEnrollment(enrollmentId) {
+    const res = await api.post(`/payments/enrollments/${enrollmentId}/cancel`)
+    return res.data
   }
 }

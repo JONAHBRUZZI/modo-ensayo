@@ -80,6 +80,7 @@ public class PaymentService {
         for (Enrollment e : enrollments) {
             classRepository.findById(e.getClassId()).ifPresent(c -> {
                 Map<String, Object> item = new HashMap<>();
+                item.put("enrollmentId", e.getId().toString());
                 item.put("classId", c.getId().toString());
                 item.put("title", c.getTitle());
                 item.put("discipline", c.getDiscipline() != null ? c.getDiscipline().name() : null);
@@ -169,6 +170,52 @@ public class PaymentService {
         Map<String, Object> result = new HashMap<>();
         result.put("resumen", resumen);
         result.put("pagos", pagos);
+        return result;
+    }
+
+    /**
+     * Cancela la inscripción de un alumno a una clase.
+     * - Marca la inscripción como CANCELLED.
+     * - Cambia los pagos en estado RETAINED a REFUND_PENDING.
+     * - Si la clase ya inició (startTime en el pasado), lanza BusinessException.
+     */
+    @Transactional
+    public Map<String, Object> cancelEnrollment(UUID enrollmentId, UUID userId) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new com.modoensayo.shared.exceptions.ResourceNotFoundException("Inscripcion no encontrada"));
+        if (!userId.equals(enrollment.getBeneficiaryId())) {
+            throw new com.modoensayo.shared.exceptions.BusinessException("No tienes permiso para cancelar esta inscripcion");
+        }
+        if ("CANCELLED".equals(enrollment.getStatus())) {
+            throw new com.modoensayo.shared.exceptions.BusinessException("La inscripcion ya esta cancelada");
+        }
+        // Verificar que la clase no haya iniciado
+        Class c = classRepository.findById(enrollment.getClassId()).orElse(null);
+        if (c != null && c.getStartTime() != null && c.getStartTime().isBefore(Instant.now())) {
+            throw new com.modoensayo.shared.exceptions.BusinessException("No se puede cancelar una inscripcion cuando la clase ya inicio");
+        }
+
+        enrollment.setStatus("CANCELLED");
+        enrollmentRepository.save(enrollment);
+
+        // Marcar pagos como REFUND_PENDING
+        List<Payment> payments = paymentRepository.findByEnrollmentId(enrollmentId);
+        long montoReembolso = 0;
+        for (Payment p : payments) {
+            if (p.getStatus() == PaymentStatus.RETAINED) {
+                p.setStatus(PaymentStatus.REFUND_PENDING);
+                paymentRepository.save(p);
+                montoReembolso += p.getAmount();
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("enrollmentId", enrollmentId.toString());
+        result.put("status", "CANCELLED");
+        result.put("montoReembolso", montoReembolso);
+        result.put("message", montoReembolso > 0
+                ? "Inscripcion cancelada. El reembolso de $" + montoReembolso + " sera procesado manualmente."
+                : "Inscripcion cancelada.");
         return result;
     }
 

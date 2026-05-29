@@ -1,31 +1,129 @@
 <template>
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-3xl font-bold text-white mb-8">Resenas</h1>
+    <h1 class="text-3xl font-bold text-white mb-2">Resenas Pendientes</h1>
+    <p class="text-gray-400 text-sm mb-8">Clases completadas que aun no has evaluado.</p>
+
     <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
-    <div v-else-if="reviews.length === 0" class="card text-center py-12"><p class="text-gray-400">No hay resenas disponibles.</p></div>
+
+    <div v-else-if="elegibles.length === 0" class="card text-center py-12">
+      <p class="text-gray-400">No tienes clases pendientes de resena.</p>
+      <router-link to="/classes" class="btn-primary mt-4 inline-block">Buscar Clases</router-link>
+    </div>
+
     <div v-else class="space-y-4">
-      <div v-for="r in reviews" :key="r.id" class="card">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-white font-medium">{{ r.authorName || 'Usuario' }}</h3>
-          <div class="flex text-yellow-400">
-            <svg v-for="i in 5" :key="i" class="w-4 h-4" :class="i <= r.rating ? 'text-yellow-400' : 'text-gray-600'" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+      <div v-for="item in elegibles" :key="item.classId" class="card space-y-4">
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="text-white font-semibold">{{ item.classTitle }}</h3>
+            <p class="text-gray-400 text-sm">{{ item.targetLabel || item.targetType }}</p>
+            <p class="text-gray-500 text-xs mt-1">{{ formatDate(item.classEndTime) }}</p>
+          </div>
+          <span class="text-xs text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full flex-shrink-0">
+            Sin resena
+          </span>
+        </div>
+
+        <!-- Formulario de reseña -->
+        <div v-if="formActivo === item.classId" class="space-y-3 border-t border-dark-border pt-4">
+          <!-- Estrellas -->
+          <div>
+            <p class="text-sm text-gray-300 mb-2">Calificacion</p>
+            <div class="flex gap-1">
+              <button v-for="n in 5" :key="n"
+                      @click="formData[item.classId] = { ...formData[item.classId], rating: n }"
+                      class="text-2xl transition-colors"
+                      :class="(formData[item.classId]?.rating || 0) >= n ? 'text-yellow-400' : 'text-gray-600'">
+                ★
+              </button>
+            </div>
+          </div>
+
+          <!-- Comentario -->
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Comentario (opcional)</label>
+            <textarea
+              v-model="formData[item.classId].comment"
+              rows="3"
+              class="input-field"
+              placeholder="Cuéntanos tu experiencia..."
+            ></textarea>
+          </div>
+
+          <p v-if="errores[item.classId]" class="text-red-400 text-sm">{{ errores[item.classId] }}</p>
+
+          <div class="flex gap-3">
+            <button @click="enviarResena(item)"
+                    :disabled="!formData[item.classId]?.rating || enviando[item.classId]"
+                    class="btn-primary flex-1 text-sm">
+              {{ enviando[item.classId] ? 'Enviando...' : 'Publicar resena' }}
+            </button>
+            <button @click="formActivo = null" class="btn-secondary text-sm px-4">
+              Cancelar
+            </button>
           </div>
         </div>
-        <p class="text-gray-300 text-sm">{{ r.comment }}</p>
-        <p class="text-gray-500 text-xs mt-2">{{ formatDate(r.createdAt) }}</p>
+
+        <button v-else @click="abrirForm(item)" class="btn-secondary text-sm w-full">
+          Dejar resena
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import api from '@/services/api'
 
-const reviews = ref([])
-const loading = ref(false)
+const elegibles = ref([])
+const loading = ref(true)
+const formActivo = ref(null)
+const formData = reactive({})
+const enviando = reactive({})
+const errores = reactive({})
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/reviews/eligible/student')
+    elegibles.value = Array.isArray(res.data) ? res.data : []
+  } catch {
+    elegibles.value = []
+  } finally {
+    loading.value = false
+  }
+})
+
+function abrirForm(item) {
+  formActivo.value = item.classId
+  if (!formData[item.classId]) {
+    formData[item.classId] = { rating: 0, comment: '' }
+  }
+}
+
+async function enviarResena(item) {
+  const data = formData[item.classId]
+  if (!data?.rating) return
+  enviando[item.classId] = true
+  errores[item.classId] = ''
+  try {
+    await api.post('/reviews', {
+      classId: item.classId,
+      targetId: item.targetId,
+      targetType: item.targetType || 'CLASS',
+      score: data.rating,
+      comment: data.comment || null
+    })
+    elegibles.value = elegibles.value.filter(e => e.classId !== item.classId)
+    formActivo.value = null
+  } catch (e) {
+    errores[item.classId] = e.response?.data?.message || 'Error al enviar la resena'
+  } finally {
+    enviando[item.classId] = false
+  }
+}
 
 function formatDate(d) {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 </script>

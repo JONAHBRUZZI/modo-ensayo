@@ -54,6 +54,7 @@
                 <router-link to="/alumno/mis-clases" class="nav-link">Mis Clases</router-link>
                 <router-link to="/alumno/asociados" class="nav-link">Asociados</router-link>
                 <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
+                <router-link to="/reviews" class="nav-link">Resenas</router-link>
                 <router-link to="/cart" class="nav-link relative">
                   Carrito
                   <span v-if="cartCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ cartCount }}</span>

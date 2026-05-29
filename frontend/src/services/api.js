@@ -18,7 +18,20 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Fix #8: si el backend indica que los atributos del usuario cambiaron,
+    // sincronizamos automáticamente para reflejar nuevos roles/estado.
+    if (response.data?.atributosActualizados === true) {
+      // Importación dinámica para evitar dependencia circular
+      import('@/stores/auth').then(({ useAuth }) => {
+        try {
+          const auth = useAuth()
+          auth.syncAtributos()
+        } catch { /* silencioso */ }
+      })
+    }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token')

@@ -139,15 +139,21 @@ public class ProfesorController {
      * Asigna una sala y horario a un borrador y lo publica.
      * POST /api/profesor/clases/{id}/asignar-reserva
      * Body: { "roomId": "...", "startTime": "...", "duration": 90 }
+     * Response incluye atributosActualizados: true si el usuario acaba de obtener rol TEACHER.
      */
     @PostMapping("/clases/{id}/asignar-reserva")
-    public ResponseEntity<ClassResponse> asignarReserva(
+    public ResponseEntity<Map<String, Object>> asignarReserva(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID id,
             @RequestBody Map<String, Object> body) {
         UUID roomId = UUID.fromString((String) body.get("roomId"));
         Instant startTime = Instant.parse((String) body.get("startTime"));
         Integer duration = body.get("duration") != null ? ((Number) body.get("duration")).intValue() : null;
-        return ResponseEntity.ok(classService.asignarReserva(id, roomId, startTime, duration, user.getUserId()));
+        ClassResponse clase = classService.asignarReserva(id, roomId, startTime, duration, user.getUserId());
+        boolean rolAsignado = classService.wasTeacherRoleJustAssigned();
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("clase", clase);
+        if (rolAsignado) response.put("atributosActualizados", true);
+        return ResponseEntity.ok(response);
     }
 }

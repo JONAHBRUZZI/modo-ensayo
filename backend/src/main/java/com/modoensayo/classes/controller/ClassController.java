@@ -58,10 +58,15 @@ public class ClassController {
     }
 
     @PutMapping("/{id}/publish")
-    public ResponseEntity<ClassResponse> publishClass(@AuthenticationPrincipal CustomUserDetails user,
+    public ResponseEntity<Map<String, Object>> publishClass(@AuthenticationPrincipal CustomUserDetails user,
                                                        @PathVariable UUID id,
                                                        @RequestBody ClassRequest req) {
-        return ResponseEntity.ok(classService.completeClass(id, req, user.getUserId()));
+        ClassResponse clase = classService.completeClass(id, req, user.getUserId());
+        boolean rolAsignado = classService.wasTeacherRoleJustAssigned();
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("clase", clase);
+        if (rolAsignado) response.put("atributosActualizados", true);
+        return ResponseEntity.ok(response);
     }
 
     /**

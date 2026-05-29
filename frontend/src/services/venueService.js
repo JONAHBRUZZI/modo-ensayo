@@ -98,5 +98,45 @@ export default {
   async updateRoom(roomId, data) {
     const res = await api.patch(`/venue-admin/rooms/${roomId}`, data)
     return res.data
+  },
+
+  // ── Documentos de sede ──────────────────────────────────────────────────
+  async getVenueDocuments(venueId) {
+    const res = await api.get(`/venue-admin/venues/${venueId}/documentos`)
+    return res.data
+  },
+
+  async addVenueDocument(venueId, data) {
+    const res = await api.post(`/venue-admin/venues/${venueId}/documentos`, data)
+    return res.data
+  },
+
+  async deleteVenueDocument(docId) {
+    await api.delete(`/venue-admin/documentos/${docId}`)
+  },
+
+  // ── Fotos de sede y sala ────────────────────────────────────────────────
+  async getVenuePhotos(venueId) {
+    const res = await api.get(`/venues/${venueId}/fotos`)
+    return res.data
+  },
+
+  async addVenuePhoto(venueId, data) {
+    const res = await api.post(`/venue-admin/venues/${venueId}/fotos`, data)
+    return res.data
+  },
+
+  async getRoomPhotos(roomId) {
+    const res = await api.get(`/venues/rooms/${roomId}/fotos`)
+    return res.data
+  },
+
+  async addRoomPhoto(roomId, data) {
+    const res = await api.post(`/venue-admin/rooms/${roomId}/fotos`, data)
+    return res.data
+  },
+
+  async deletePhoto(photoId) {
+    await api.delete(`/venue-admin/fotos/${photoId}`)
   }
 }

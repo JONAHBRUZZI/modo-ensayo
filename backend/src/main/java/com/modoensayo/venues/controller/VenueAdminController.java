@@ -1,11 +1,17 @@
 package com.modoensayo.venues.controller;
 
 import com.modoensayo.auth.service.CustomUserDetails;
+import com.modoensayo.venues.domain.VenueDocument;
+import com.modoensayo.venues.domain.VenuePhoto;
 import com.modoensayo.venues.dto.*;
+import com.modoensayo.venues.repository.VenuePhotoRepository;
+import com.modoensayo.venues.repository.VenueDocumentRepository;
+import com.modoensayo.venues.repository.VenueRepository;
 import com.modoensayo.venues.service.ClassConfirmationService;
 import com.modoensayo.venues.service.ClassConfirmationService.ClassConfirmationResult;
 import com.modoensayo.venues.service.ClassConfirmationService.ClassSummaryDto;
 import com.modoensayo.venues.service.VenueService;
+import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +28,9 @@ public class VenueAdminController {
 
     private final VenueService venueService;
     private final ClassConfirmationService classConfirmationService;
+    private final VenueDocumentRepository venueDocumentRepository;
+    private final VenueRepository venueRepository;
+    private final VenuePhotoRepository venuePhotoRepository;
 
     @GetMapping("/my-venues")
     public ResponseEntity<List<VenueResponse>> getMyVenues(@AuthenticationPrincipal CustomUserDetails user) {
@@ -84,6 +93,144 @@ public class VenueAdminController {
         venueService.deleteAvailability(user.getUserId(), slotId);
         return ResponseEntity.noContent().build();
     }
+
+    // ── Documentos de sede ──────────────────────────────────────────────────
+
+    /**
+     * Lista los documentos subidos para una sede.
+     * GET /api/venue-admin/venues/{venueId}/documentos
+     */
+    @GetMapping("/venues/{venueId}/documentos")
+    public ResponseEntity<List<VenueDocument>> getDocuments(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID venueId) {
+        // Verificar que el usuario sea el admin de la sede
+        venueRepository.findById(venueId)
+                .filter(v -> user.getUserId().equals(v.getAdminId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Sede no encontrada"));
+        return ResponseEntity.ok(venueDocumentRepository.findByVenueIdOrderByCreatedAtDesc(venueId));
+    }
+
+    /**
+     * Sube un documento para la sede.
+     * POST /api/venue-admin/venues/{venueId}/documentos
+     * Body: { fileUrl, nombre, tipoArchivo }
+     */
+    @PostMapping("/venues/{venueId}/documentos")
+    public ResponseEntity<VenueDocument> addDocument(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID venueId,
+            @RequestBody Map<String, String> body) {
+        venueRepository.findById(venueId)
+                .filter(v -> user.getUserId().equals(v.getAdminId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Sede no encontrada"));
+        VenueDocument doc = VenueDocument.builder()
+                .venueId(venueId)
+                .fileUrl(body.get("fileUrl"))
+                .nombre(body.get("nombre"))
+                .tipoArchivo(body.get("tipoArchivo"))
+                .build();
+        return ResponseEntity.ok(venueDocumentRepository.save(doc));
+    }
+
+    /**
+     * Elimina un documento de la sede.
+     * DELETE /api/venue-admin/documentos/{docId}
+     */
+    @DeleteMapping("/documentos/{docId}")
+    public ResponseEntity<Void> deleteDocument(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID docId) {
+        VenueDocument doc = venueDocumentRepository.findById(docId)
+                .orElseThrow(() -> new ResourceNotFoundException("Documento no encontrado"));
+        venueRepository.findById(doc.getVenueId())
+                .filter(v -> user.getUserId().equals(v.getAdminId()))
+                .orElseThrow(() -> new ResourceNotFoundException("No tienes permiso para eliminar este documento"));
+        venueDocumentRepository.delete(doc);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Fotos de sede y sala ────────────────────────────────────────────────
+
+    /**
+     * Lista las fotos de una sede.
+     * GET /api/venue-admin/venues/{venueId}/fotos
+     */
+    @GetMapping("/venues/{venueId}/fotos")
+    public ResponseEntity<List<VenuePhoto>> getVenuePhotos(@PathVariable UUID venueId) {
+        return ResponseEntity.ok(venuePhotoRepository
+                .findByOwnerIdAndOwnerTypeOrderByDisplayOrderAsc(venueId, "VENUE"));
+    }
+
+    /**
+     * Agrega una foto a una sede.
+     * POST /api/venue-admin/venues/{venueId}/fotos
+     * Body: { photoUrl, altText, displayOrder, principal }
+     */
+    @PostMapping("/venues/{venueId}/fotos")
+    public ResponseEntity<VenuePhoto> addVenuePhoto(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID venueId,
+            @RequestBody Map<String, Object> body) {
+        venueRepository.findById(venueId)
+                .filter(v -> user.getUserId().equals(v.getAdminId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Sede no encontrada"));
+        VenuePhoto photo = VenuePhoto.builder()
+                .ownerId(venueId)
+                .ownerType("VENUE")
+                .photoUrl((String) body.get("photoUrl"))
+                .altText((String) body.get("altText"))
+                .displayOrder(body.get("displayOrder") != null ? ((Number) body.get("displayOrder")).intValue() : 0)
+                .principal(Boolean.TRUE.equals(body.get("principal")))
+                .build();
+        return ResponseEntity.ok(venuePhotoRepository.save(photo));
+    }
+
+    /**
+     * Lista las fotos de una sala.
+     * GET /api/venue-admin/rooms/{roomId}/fotos
+     */
+    @GetMapping("/rooms/{roomId}/fotos")
+    public ResponseEntity<List<VenuePhoto>> getRoomPhotos(@PathVariable UUID roomId) {
+        return ResponseEntity.ok(venuePhotoRepository
+                .findByOwnerIdAndOwnerTypeOrderByDisplayOrderAsc(roomId, "ROOM"));
+    }
+
+    /**
+     * Agrega una foto a una sala.
+     * POST /api/venue-admin/rooms/{roomId}/fotos
+     */
+    @PostMapping("/rooms/{roomId}/fotos")
+    public ResponseEntity<VenuePhoto> addRoomPhoto(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID roomId,
+            @RequestBody Map<String, Object> body) {
+        VenuePhoto photo = VenuePhoto.builder()
+                .ownerId(roomId)
+                .ownerType("ROOM")
+                .photoUrl((String) body.get("photoUrl"))
+                .altText((String) body.get("altText"))
+                .displayOrder(body.get("displayOrder") != null ? ((Number) body.get("displayOrder")).intValue() : 0)
+                .principal(Boolean.TRUE.equals(body.get("principal")))
+                .build();
+        return ResponseEntity.ok(venuePhotoRepository.save(photo));
+    }
+
+    /**
+     * Elimina una foto.
+     * DELETE /api/venue-admin/fotos/{photoId}
+     */
+    @DeleteMapping("/fotos/{photoId}")
+    public ResponseEntity<Void> deletePhoto(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID photoId) {
+        venuePhotoRepository.findById(photoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Foto no encontrada"));
+        venuePhotoRepository.deleteById(photoId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Clases de la sede ───────────────────────────────────────────────────
 
     @GetMapping("/classes")
     public ResponseEntity<List<ClassSummaryDto>> getVenueClasses(

@@ -191,8 +191,14 @@ public class ClassService {
         c.setStatus(ClassStatus.PUBLISHED);
 
         // Asignar rol TEACHER al publicar (BORRADOR sin sala → ACTIVA)
+        boolean rolAsignadoEnReserva = false;
         if (teacherId != null) {
-            asignarRolTeacher(teacherId);
+            rolAsignadoEnReserva = asignarRolTeacher(teacherId);
+        }
+        if (rolAsignadoEnReserva) {
+            lastTeacherRoleAssigned.set(true);
+        } else {
+            lastTeacherRoleAssigned.remove();
         }
 
         return toResponse(classRepository.save(c));
@@ -222,10 +228,30 @@ public class ClassService {
         if (req.maxAge() != null) c.setMaxAge(req.maxAge());
         c.setStatus(ClassStatus.PUBLISHED);
         // Asignar rol TEACHER al publicar (BORRADOR con sala → ACTIVA)
+        boolean rolAsignado = false;
         if (c.getTeacherId() != null) {
-            asignarRolTeacher(c.getTeacherId());
+            rolAsignado = asignarRolTeacher(c.getTeacherId());
         }
-        return toResponse(classRepository.save(c));
+        ClassResponse response = toResponse(classRepository.save(c));
+        // Guardamos la señal para que el controller pueda incluirla en la respuesta
+        if (rolAsignado) {
+            lastTeacherRoleAssigned.set(true);
+        } else {
+            lastTeacherRoleAssigned.remove();
+        }
+        return response;
+    }
+
+    /**
+     * ThreadLocal para señalizar si el rol TEACHER fue recién asignado durante la última operación.
+     * El controller lo consulta para incluir atributosActualizados: true en la respuesta.
+     */
+    private static final ThreadLocal<Boolean> lastTeacherRoleAssigned = new ThreadLocal<>();
+
+    public boolean wasTeacherRoleJustAssigned() {
+        Boolean val = lastTeacherRoleAssigned.get();
+        lastTeacherRoleAssigned.remove();
+        return Boolean.TRUE.equals(val);
     }
 
     private ClassResponse createClassInternal(ClassRequest req, UUID teacherId, boolean draft) {
@@ -352,18 +378,21 @@ public class ClassService {
     /**
      * Asigna el rol TEACHER al usuario si aún no lo tiene.
      * Se llama una única vez: al publicar la primera clase activa del profesor.
+     * @return true si el rol fue recién asignado (primera vez), false si ya lo tenía.
      */
-    private void asignarRolTeacher(UUID teacherId) {
+    public boolean asignarRolTeacher(UUID teacherId) {
         Role teacherRole = roleRepository.findByName("TEACHER").orElse(null);
-        if (teacherRole == null) return;
+        if (teacherRole == null) return false;
         User user = userRepository.findById(teacherId).orElse(null);
-        if (user == null) return;
+        if (user == null) return false;
         boolean hasTeacherRole = user.getUserRoles().stream()
                 .anyMatch(ur -> "TEACHER".equals(ur.getRole().getName()));
         if (!hasTeacherRole) {
             userRoleRepository.save(
                     new UserRole(new UserRoleId(user.getId(), teacherRole.getId()), user, teacherRole));
+            return true;   // rol recién asignado
         }
+        return false;
     }
 
     /**

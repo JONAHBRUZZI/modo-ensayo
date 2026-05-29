@@ -36,6 +36,14 @@ public class User extends BaseEntity {
     @Builder.Default
     private boolean tieneSedeAprobada = false;
 
+    /** Persistido: true cuando el admin aprueba el documento de identidad. */
+    @Builder.Default
+    private boolean identidadValidada = false;
+
+    /** Persistido: SIN_VALIDAR | PENDIENTE | APROBADO | RECHAZADO */
+    @Builder.Default
+    private String identidadEstado = "SIN_VALIDAR";
+
     @Builder.Default
     private boolean enabled = true;
 

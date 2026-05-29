@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -54,7 +56,26 @@ public class ProfessionalProfileService {
         if (data.containsKey("linkedin")) profile.setLinkedin(str(data.get("linkedin")));
         if (data.containsKey("photoUrl")) profile.setPhotoUrl(str(data.get("photoUrl")));
 
+        // Campos nuevos Fix #3
+        if (data.containsKey("biografia")) profile.setBiografia(str(data.get("biografia")));
+        if (data.containsKey("disciplinaPrincipal")) profile.setDisciplinaPrincipal(str(data.get("disciplinaPrincipal")));
+        if (data.containsKey("detalleFormacion")) profile.setDetalleFormacion(str(data.get("detalleFormacion")));
+        if (data.containsKey("disciplinasSecundarias")) profile.setDisciplinasSecundarias(toStringList(data.get("disciplinasSecundarias")));
+        if (data.containsKey("tipoFormacion")) profile.setTipoFormacion(toStringList(data.get("tipoFormacion")));
+
         return profileRepository.save(profile);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> toStringList(Object val) {
+        if (val == null) return Collections.emptyList();
+        if (val instanceof List<?> list) {
+            return list.stream().map(Object::toString).toList();
+        }
+        // Soporte para string separado por comas enviado desde formularios simples
+        String s = val.toString().trim();
+        if (s.isBlank()) return Collections.emptyList();
+        return List.of(s.split(",\\s*"));
     }
 
     private String str(Object val) {

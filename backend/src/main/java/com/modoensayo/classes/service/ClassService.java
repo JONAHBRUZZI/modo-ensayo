@@ -190,21 +190,9 @@ public class ClassService {
         c.setDuration(dur);
         c.setStatus(ClassStatus.PUBLISHED);
 
-        // Asignar rol TEACHER al publicar la primera clase activa
+        // Asignar rol TEACHER al publicar (BORRADOR sin sala → ACTIVA)
         if (teacherId != null) {
-            Role teacherRole = roleRepository.findByName("TEACHER").orElse(null);
-            if (teacherRole != null) {
-                User user = userRepository.findById(teacherId).orElse(null);
-                if (user != null) {
-                    boolean hasTeacherRole = user.getUserRoles().stream()
-                            .anyMatch(ur -> "TEACHER".equals(ur.getRole().getName()));
-                    if (!hasTeacherRole) {
-                        UserRole userRole = new UserRole(
-                                new UserRoleId(user.getId(), teacherRole.getId()), user, teacherRole);
-                        userRoleRepository.save(userRole);
-                    }
-                }
-            }
+            asignarRolTeacher(teacherId);
         }
 
         return toResponse(classRepository.save(c));
@@ -233,6 +221,10 @@ public class ClassService {
         if (req.minAge() != null) c.setMinAge(req.minAge());
         if (req.maxAge() != null) c.setMaxAge(req.maxAge());
         c.setStatus(ClassStatus.PUBLISHED);
+        // Asignar rol TEACHER al publicar (BORRADOR con sala → ACTIVA)
+        if (c.getTeacherId() != null) {
+            asignarRolTeacher(c.getTeacherId());
+        }
         return toResponse(classRepository.save(c));
     }
 
@@ -257,17 +249,10 @@ public class ClassService {
                     "Debes validar tu identidad antes de crear clases. Sube tu documento en tu perfil y espera la aprobacion.");
             }
 
-            Role teacherRole = roleRepository.findByName("TEACHER").orElse(null);
-            if (teacherRole != null) {
-                User user = userRepository.findById(teacherId).orElse(null);
-                if (user != null) {
-                    boolean hasTeacherRole = user.getUserRoles().stream()
-                            .anyMatch(ur -> "TEACHER".equals(ur.getRole().getName()));
-                    if (!hasTeacherRole) {
-                        UserRole userRole = new UserRole(new UserRoleId(user.getId(), teacherRole.getId()), user, teacherRole);
-                        userRoleRepository.save(userRole);
-                    }
-                }
+            // Solo asignar rol TEACHER al publicar directamente (no al crear BORRADOR)
+            // Al crear un borrador el rol se asigna en asignarReserva() o completeClass()
+            if (!draft) {
+                asignarRolTeacher(teacherId);
             }
         }
 
@@ -362,6 +347,23 @@ public class ClassService {
         classStatusHistoryRepository.save(history);
 
         return toResponse(c);
+    }
+
+    /**
+     * Asigna el rol TEACHER al usuario si aún no lo tiene.
+     * Se llama una única vez: al publicar la primera clase activa del profesor.
+     */
+    private void asignarRolTeacher(UUID teacherId) {
+        Role teacherRole = roleRepository.findByName("TEACHER").orElse(null);
+        if (teacherRole == null) return;
+        User user = userRepository.findById(teacherId).orElse(null);
+        if (user == null) return;
+        boolean hasTeacherRole = user.getUserRoles().stream()
+                .anyMatch(ur -> "TEACHER".equals(ur.getRole().getName()));
+        if (!hasTeacherRole) {
+            userRoleRepository.save(
+                    new UserRole(new UserRoleId(user.getId(), teacherRole.getId()), user, teacherRole));
+        }
     }
 
     /**

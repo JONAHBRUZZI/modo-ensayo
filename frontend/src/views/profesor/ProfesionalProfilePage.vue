@@ -18,19 +18,42 @@
     <h2 class="text-xl font-semibold text-white mb-2">Datos Profesionales</h2>
     <p class="text-gray-400 text-sm mb-6">Esta informacion es visible para alumnos y sedes que buscan maestros.</p>
 
-    <form @submit.prevent="save" class="card space-y-5">
-      <!-- Especialidad y nivel -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Especialidad *</label>
-          <select v-model="form.especialidad" required class="input-field">
-            <option value="">Seleccionar</option>
-            <option>CUECA</option><option>BALLET</option><option>DANZA</option>
-            <option>TEATRO</option><option>CANTO</option><option>GUITARRA</option>
-            <option>BATERIA</option><option>BAJO</option><option>PIANO</option>
-            <option>VIOLIN</option><option>SAXOFON</option><option>OTRO</option>
-          </select>
+    <form @submit.prevent="save" class="space-y-6">
+
+      <!-- Sección: Disciplina -->
+      <div class="card space-y-5">
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">Disciplina</h3>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Especialidad Principal *</label>
+            <select v-model="form.especialidad" required class="input-field">
+              <option value="">Seleccionar</option>
+              <option>CUECA</option><option>BALLET</option><option>DANZA</option>
+              <option>TEATRO</option><option>CANTO</option><option>GUITARRA</option>
+              <option>BATERIA</option><option>BAJO</option><option>PIANO</option>
+              <option>VIOLIN</option><option>SAXOFON</option><option>OTRO</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Disciplina Principal (libre)</label>
+            <input v-model="form.disciplinaPrincipal" class="input-field" placeholder="Ej: Danza Contemporánea" />
+          </div>
         </div>
+
+        <!-- Disciplinas secundarias -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Disciplinas Secundarias</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label v-for="d in disciplinasOpciones" :key="d"
+                   class="flex items-center space-x-2 cursor-pointer text-sm text-gray-300">
+              <input type="checkbox" :value="d" v-model="form.disciplinasSecundarias"
+                     class="rounded border-gray-600 bg-dark-card text-primary" />
+              <span>{{ d }}</span>
+            </label>
+          </div>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Nivel de Ensenanza *</label>
           <select v-model="form.nivelEnsenanza" required class="input-field">
@@ -38,29 +61,63 @@
             <option>BASICO</option><option>INTERMEDIO</option><option>AVANZADO</option><option>TODOS</option>
           </select>
         </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Anos de Experiencia</label>
+          <input type="number" v-model.number="form.experienceYears" min="0" max="60" class="input-field" placeholder="Ej: 5" />
+        </div>
       </div>
 
-      <!-- Experiencia -->
-      <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">Anos de Experiencia</label>
-        <input type="number" v-model.number="form.experienceYears" min="0" max="60" class="input-field" placeholder="Ej: 5" />
+      <!-- Sección: Presentación -->
+      <div class="card space-y-5">
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">Presentacion</h3>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Biografia</label>
+          <textarea v-model="form.biografia" rows="4" class="input-field"
+            placeholder="Presentate: quién eres, tu enfoque como maestro, lo que te hace único..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Descripcion Personal (breve)</label>
+          <textarea v-model="form.description" rows="2" class="input-field"
+            placeholder="Resumen corto para listados de búsqueda..."></textarea>
+        </div>
       </div>
 
-      <!-- Formacion -->
-      <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">Formacion Academica</label>
-        <textarea v-model="form.formacion" rows="3" class="input-field" placeholder="Estudios, titulos, certificaciones..."></textarea>
+      <!-- Sección: Formacion -->
+      <div class="card space-y-5">
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">Formacion</h3>
+
+        <!-- Tipo de formación -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Tipo de Formacion</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label v-for="t in tipoFormacionOpciones" :key="t"
+                   class="flex items-center space-x-2 cursor-pointer text-sm text-gray-300">
+              <input type="checkbox" :value="t" v-model="form.tipoFormacion"
+                     class="rounded border-gray-600 bg-dark-card text-primary" />
+              <span>{{ t }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Formacion Academica (resumen)</label>
+          <textarea v-model="form.formacion" rows="2" class="input-field"
+            placeholder="Títulos, instituciones, certificaciones..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Detalle de Formacion</label>
+          <textarea v-model="form.detalleFormacion" rows="3" class="input-field"
+            placeholder="Describe en detalle tu trayectoria académica y profesional..."></textarea>
+        </div>
       </div>
 
-      <!-- Descripcion personal -->
-      <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">Descripcion Personal</label>
-        <textarea v-model="form.description" rows="3" class="input-field" placeholder="Cuentanos sobre ti y tu enfoque como maestro..."></textarea>
-      </div>
-
-      <!-- Redes sociales -->
-      <div>
-        <p class="text-sm font-medium text-gray-300 mb-3">Redes Sociales</p>
+      <!-- Sección: Redes sociales -->
+      <div class="card space-y-4">
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">Redes Sociales</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-xs text-gray-400 mb-1">Instagram</label>
@@ -102,10 +159,23 @@ import api from '@/services/api'
 
 const router = useRouter()
 
+const disciplinasOpciones = [
+  'CUECA', 'BALLET', 'DANZA', 'TEATRO', 'CANTO',
+  'GUITARRA', 'BATERIA', 'BAJO', 'PIANO', 'VIOLIN', 'SAXOFON', 'OTRO'
+]
+
+const tipoFormacionOpciones = [
+  'Autodidacta', 'Taller', 'Curso', 'Tecnico', 'Universitario', 'Posgrado', 'Conservatorio'
+]
+
 const form = reactive({
   fullName: '', socialName: '', email: '',
   especialidad: '', nivelEnsenanza: '', experienceYears: null,
   formacion: '', description: '',
+  biografia: '', disciplinaPrincipal: '',
+  disciplinasSecundarias: [],
+  tipoFormacion: [],
+  detalleFormacion: '',
   instagram: '', youtube: '', sitioWeb: '', linkedin: '',
   photoUrl: null, averageRating: null
 })
@@ -122,7 +192,12 @@ const iniciales = computed(() => {
 onMounted(async () => {
   try {
     const res = await api.get('/profesor/perfil')
-    if (res.data) Object.assign(form, res.data)
+    if (res.data) {
+      Object.assign(form, res.data)
+      // Garantizar que los arrays siempre sean arrays
+      if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
+      if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
+    }
   } catch {}
 })
 
@@ -136,12 +211,19 @@ async function save() {
       experienceYears: form.experienceYears,
       formacion: form.formacion,
       description: form.description,
+      biografia: form.biografia,
+      disciplinaPrincipal: form.disciplinaPrincipal,
+      disciplinasSecundarias: form.disciplinasSecundarias,
+      tipoFormacion: form.tipoFormacion,
+      detalleFormacion: form.detalleFormacion,
       instagram: form.instagram,
       youtube: form.youtube,
       sitioWeb: form.sitioWeb,
       linkedin: form.linkedin
     })
     Object.assign(form, res.data)
+    if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
+    if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
     msg.value = 'Perfil guardado correctamente'
     msgType.value = 'success'
     setTimeout(() => router.push('/profesor/dashboard'), 1500)

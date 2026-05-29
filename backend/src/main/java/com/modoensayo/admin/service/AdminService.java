@@ -65,11 +65,20 @@ public class AdminService {
     public IdentityVerificationResponse reviewIdentity(UUID id, String action, UUID reviewerId) {
         IdentityVerification iv = identityVerificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Not found"));
-        iv.setStatus("approve".equals(action) ? "APPROVED" : "REJECTED");
+        boolean aprobado = "approve".equals(action);
+        iv.setStatus(aprobado ? "APPROVED" : "REJECTED");
         iv.setReviewedBy(reviewerId);
         iv = identityVerificationRepository.save(iv);
 
-        if ("approve".equals(action)) {
+        // Persistir estado en User para acceso rápido sin JOIN
+        User owner = userRepository.findById(iv.getUserId()).orElse(null);
+        if (owner != null) {
+            owner.setIdentidadValidada(aprobado);
+            owner.setIdentidadEstado(aprobado ? "APROBADO" : "RECHAZADO");
+            userRepository.save(owner);
+        }
+
+        if (aprobado) {
             notificationRepository.save(Notification.builder()
                     .userId(iv.getUserId())
                     .message("Tu identidad ha sido VALIDADA. Ahora puedes registrar una sede o reservar salas para crear clases.")

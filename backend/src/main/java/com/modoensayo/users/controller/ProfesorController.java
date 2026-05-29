@@ -4,6 +4,7 @@ import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.classes.dto.ClassRequest;
 import com.modoensayo.classes.dto.ClassResponse;
 import com.modoensayo.classes.service.ClassService;
+import com.modoensayo.payments.service.PaymentService;
 import com.modoensayo.users.domain.ProfessionalProfile;
 import com.modoensayo.users.dto.UserProfileResponse;
 import com.modoensayo.users.service.ProfessionalProfileService;
@@ -31,6 +32,7 @@ public class ProfesorController {
     private final ProfessionalProfileService profileService;
     private final UserService userService;
     private final ClassService classService;
+    private final PaymentService paymentService;
 
     @GetMapping("/perfil")
     public ResponseEntity<Map<String, Object>> getPerfil(@AuthenticationPrincipal CustomUserDetails user) {
@@ -58,6 +60,12 @@ public class ProfesorController {
             response.put("linkedin", profile.getLinkedin());
             response.put("photoUrl", profile.getPhotoUrl());
             response.put("averageRating", profile.getAverageRating());
+            // Campos nuevos (Fix #3)
+            response.put("biografia", profile.getBiografia());
+            response.put("disciplinaPrincipal", profile.getDisciplinaPrincipal());
+            response.put("disciplinasSecundarias", profile.getDisciplinasSecundarias());
+            response.put("tipoFormacion", profile.getTipoFormacion());
+            response.put("detalleFormacion", profile.getDetalleFormacion());
         }
 
         return ResponseEntity.ok(response);
@@ -87,8 +95,23 @@ public class ProfesorController {
         response.put("linkedin", saved.getLinkedin());
         response.put("photoUrl", saved.getPhotoUrl());
         response.put("averageRating", saved.getAverageRating());
+        // Campos nuevos (Fix #3)
+        response.put("biografia", saved.getBiografia());
+        response.put("disciplinaPrincipal", saved.getDisciplinaPrincipal());
+        response.put("disciplinasSecundarias", saved.getDisciplinasSecundarias());
+        response.put("tipoFormacion", saved.getTipoFormacion());
+        response.put("detalleFormacion", saved.getDetalleFormacion());
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Resumen de pagos del profesor autenticado.
+     * GET /api/profesor/pagos  (alias de /api/teacher/earnings)
+     */
+    @GetMapping("/pagos")
+    public ResponseEntity<Map<String, Object>> getPagos(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(paymentService.getTeacherEarnings(user.getUserId()));
     }
 
     /**

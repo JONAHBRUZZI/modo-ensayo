@@ -76,14 +76,17 @@ public class UserController {
         Map<String, Object> attrs = new HashMap<>();
         UUID userId = user.getUserId();
 
-        IdentityVerification iv = identityVerificationRepository.findByUserId(userId).orElse(null);
-        attrs.put("identidadValidada", iv != null && "APPROVED".equals(iv.getStatus()));
-        attrs.put("identidadEstado", iv != null ? iv.getStatus() : "SIN_VALIDAR");
+        // Cargar entidad User una sola vez para todos los campos persistidos
+        com.modoensayo.users.domain.User userEntity = userRepository.findById(userId).orElse(null);
+
+        // Usar campos persistidos en User (sin JOIN a identity_verifications)
+        attrs.put("identidadValidada", userEntity != null && userEntity.isIdentidadValidada());
+        attrs.put("identidadEstado", userEntity != null ? userEntity.getIdentidadEstado() : "SIN_VALIDAR");
 
         boolean hasRoleTeacher = user.getRoles().contains("TEACHER");
         attrs.put("hasRoleTeacher", hasRoleTeacher);
-        // tieneSedeAprobada: persiste en User desde approveVenue(), fallback a rol VENUE_ADMIN
-        com.modoensayo.users.domain.User userEntity = userRepository.findById(userId).orElse(null);
+
+        // tieneSedeAprobada: persistido en User desde approveVenue(), fallback a rol VENUE_ADMIN
         boolean tieneSedeAprobada = (userEntity != null && userEntity.isTieneSedeAprobada())
                 || user.getRoles().contains("VENUE_ADMIN");
         attrs.put("tieneSedeAprobada", tieneSedeAprobada);

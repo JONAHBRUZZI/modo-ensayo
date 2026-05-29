@@ -92,6 +92,14 @@ public class UserService {
                 throw new BusinessException("El RUT ingresado no es valido. Verifica el digito verificador.");
             }
         }
+        // Fix #4: evitar que el mismo documento ya aprobado se registre en otra cuenta
+        if (documentNumber != null && !documentNumber.isBlank()) {
+            boolean aprobadoEnOtraCuenta = identityVerificationRepository
+                    .existsByDocumentNumberAndStatusAndUserIdNot(documentNumber, "APPROVED", userDetails.getUserId());
+            if (aprobadoEnOtraCuenta) {
+                throw new BusinessException("Este documento ya se encuentra verificado en otra cuenta.");
+            }
+        }
         IdentityVerification iv = identityVerificationRepository.findByUserId(userDetails.getUserId())
                 .orElse(IdentityVerification.builder().userId(userDetails.getUserId()).build());
         iv.setDocumentUrl(documentUrl);
@@ -101,6 +109,15 @@ public class UserService {
         iv.setBirthDate(birthDate);
         iv.setStatus("PENDING");
         iv = identityVerificationRepository.save(iv);
+
+        // Persistir estado PENDIENTE en User
+        User user = userRepository.findById(userDetails.getUserId()).orElse(null);
+        if (user != null) {
+            user.setIdentidadEstado("PENDIENTE");
+            user.setIdentidadValidada(false);
+            userRepository.save(user);
+        }
+
         return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt(),
                 iv.getDocumentType(), iv.getDocumentNumber(), iv.getFullName(), iv.getBirthDate());
     }

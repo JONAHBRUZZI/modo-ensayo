@@ -70,6 +70,6 @@ export default {
 
   async getTeacherEarnings() {
     const res = await api.get('/teacher/earnings')
-    return res.data
+    return res.data  // { resumen: { totalRetenido, totalLiberadoMes, totalLiberadoAcumulado }, pagos: [...] }
   }
 }

@@ -33,8 +33,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -203,6 +207,33 @@ public class ClassService {
     public List<ClassResponse> getTeacherAsignadas(UUID teacherId) {
         return classRepository.findByTeacherIdAndTipoClase(teacherId, TipoClase.ASIGNADA).stream()
                 .map(this::toResponse).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getTeacherMetrics(UUID teacherId) {
+        List<Class> clases = classRepository.findByTeacherId(teacherId);
+        Instant primerDiaMes = YearMonth.now().atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+
+        long totalClases = clases.size();
+        long clasesEsteMes = clases.stream()
+                .filter(c -> c.getStartTime() != null && c.getStartTime().isAfter(primerDiaMes))
+                .count();
+        long totalAlumnos = clases.stream()
+                .mapToLong(c -> enrollmentRepository.countByClassId(c.getId()))
+                .sum();
+        long clasesActivas = clases.stream()
+                .filter(c -> c.getStatus() == ClassStatus.PUBLISHED || c.getStatus() == ClassStatus.IN_PROGRESS)
+                .filter(c -> c.getStartTime() != null && c.getStartTime().isAfter(Instant.now()))
+                .count();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalClases", totalClases);
+        result.put("totalAlumnos", totalAlumnos);
+        result.put("clasesEsteMes", clasesEsteMes);
+        result.put("clasesActivas", clasesActivas);
+        result.put("asistenciaPromedio", 0);
+        result.put("rating", 0);
+        return result;
     }
 
     public List<ClassResponse> getByVenue(UUID venueId) {

@@ -5,6 +5,7 @@ import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.payments.domain.CartItem;
 import com.modoensayo.payments.domain.Enrollment;
 import com.modoensayo.payments.domain.Payment;
+import com.modoensayo.payments.enums.PaymentStatus;
 import com.modoensayo.payments.repository.CartItemRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.payments.repository.PaymentRepository;
@@ -13,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -114,6 +118,57 @@ public class PaymentService {
             var db = (java.time.Instant) b.get("createdAt");
             return db.compareTo(da);
         });
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getTeacherEarnings(UUID teacherId) {
+        List<Class> clases = classRepository.findByTeacherId(teacherId);
+        List<Map<String, Object>> pagos = new ArrayList<>();
+        long totalRetenido = 0;
+        long totalLiberado = 0;
+
+        for (Class c : clases) {
+            for (Enrollment e : enrollmentRepository.findByClassId(c.getId())) {
+                for (Payment p : paymentRepository.findByEnrollmentId(e.getId())) {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("id", p.getId().toString());
+                    item.put("classId", c.getId().toString());
+                    item.put("classTitle", c.getTitle());
+                    item.put("amount", p.getAmount());
+                    item.put("status", p.getStatus().name());
+                    item.put("date", p.getCreatedAt());
+                    pagos.add(item);
+                    if (p.getStatus() == PaymentStatus.RETAINED) totalRetenido += p.getAmount();
+                    else if (p.getStatus() == PaymentStatus.RELEASED) totalLiberado += p.getAmount();
+                }
+            }
+        }
+
+        pagos.sort((a, b) -> {
+            Instant da = (Instant) a.get("date");
+            Instant db = (Instant) b.get("date");
+            if (da == null && db == null) return 0;
+            if (da == null) return 1;
+            if (db == null) return -1;
+            return db.compareTo(da);
+        });
+
+        Instant primerDiaMes = YearMonth.now().atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+        long liberadoMes = pagos.stream()
+                .filter(p -> PaymentStatus.RELEASED.name().equals(p.get("status")))
+                .filter(p -> p.get("date") != null && ((Instant) p.get("date")).isAfter(primerDiaMes))
+                .mapToLong(p -> ((Number) p.get("amount")).longValue())
+                .sum();
+
+        Map<String, Object> resumen = new HashMap<>();
+        resumen.put("totalRetenido", totalRetenido);
+        resumen.put("totalLiberadoMes", liberadoMes);
+        resumen.put("totalLiberadoAcumulado", totalLiberado);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("resumen", resumen);
+        result.put("pagos", pagos);
         return result;
     }
 

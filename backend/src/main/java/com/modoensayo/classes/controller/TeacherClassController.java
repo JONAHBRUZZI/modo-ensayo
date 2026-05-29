@@ -35,6 +35,11 @@ public class TeacherClassController {
         return ResponseEntity.ok(classService.getTeacherAsignadas(user.getUserId()));
     }
 
+    @GetMapping("/classes/borradores")
+    public ResponseEntity<List<ClassResponse>> getBorradores(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(classService.getTeacherDrafts(user.getUserId()));
+    }
+
     @GetMapping("/earnings")
     public ResponseEntity<Map<String, Object>> getEarnings(@AuthenticationPrincipal CustomUserDetails user) {
         return ResponseEntity.ok(paymentService.getTeacherEarnings(user.getUserId()));

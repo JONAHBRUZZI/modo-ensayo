@@ -31,6 +31,11 @@ export default {
     return res.data
   },
 
+  async getTeacherDrafts() {
+    const res = await api.get('/teacher/classes/borradores')
+    return res.data
+  },
+
   async getMyClasses() {
     const res = await api.get('/teacher/classes')
     return res.data

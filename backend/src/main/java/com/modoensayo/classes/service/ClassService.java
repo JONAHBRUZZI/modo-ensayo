@@ -204,6 +204,12 @@ public class ClassService {
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
+    public List<ClassResponse> getTeacherDrafts(UUID teacherId) {
+        return classRepository.findByTeacherId(teacherId).stream()
+                .filter(c -> c.getStatus() == ClassStatus.DRAFT)
+                .map(this::toResponse).collect(Collectors.toList());
+    }
+
     public List<ClassResponse> getTeacherAsignadas(UUID teacherId) {
         return classRepository.findByTeacherIdAndTipoClase(teacherId, TipoClase.ASIGNADA).stream()
                 .map(this::toResponse).collect(Collectors.toList());

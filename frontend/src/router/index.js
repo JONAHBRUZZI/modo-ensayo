@@ -186,6 +186,18 @@ const routes = [
         component: () => import('@/views/profesor/AttendancePage.vue'),
         meta: { requiresAuth: true, roles: ['TEACHER'] }
       },
+      {
+        path: 'profesor/crear-clase',
+        name: 'ProfesorCrearClase',
+        component: () => import('@/views/CrearClasePage.vue'),
+        meta: { requiresAuth: true, requiresIdentity: true }
+      },
+      {
+        path: 'profesor/borradores',
+        name: 'ProfesorBorradores',
+        component: () => import('@/views/profesor/ProfesorBorradoresPage.vue'),
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
+      },
       // Sede routes
       {
         path: 'sede/dashboard',

@@ -113,12 +113,7 @@ const routes = [
         component: () => import('@/views/alumno/PagosHistorialPage.vue'),
         meta: { requiresAuth: true }
       },
-      {
-        path: 'alumno/crear-clase',
-        name: 'AlumnoCrearClase',
-        component: () => import('@/views/CrearClasePage.vue'),
-        meta: { requiresAuth: true }
-      },
+      // /alumno/crear-clase eliminado — crear clase es exclusivo del contexto Maestro
       {
         path: 'alumno/asociados',
         name: 'Associates',
@@ -324,6 +319,11 @@ const routes = [
   {
     path: '/alumno/buscar-salas',
     redirect: '/classes'
+  },
+  {
+    // Crear clase es exclusivo del contexto Maestro
+    path: '/alumno/crear-clase',
+    redirect: '/profesor/crear-clase'
   },
   {
     path: '/:pathMatch(.*)*',

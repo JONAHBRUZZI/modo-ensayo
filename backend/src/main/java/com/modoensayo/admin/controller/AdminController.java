@@ -69,6 +69,18 @@ public class AdminController {
         return ResponseEntity.ok(adminService.rejectVenue(id, body.get("motivo")));
     }
 
+    /**
+     * Alterna el estado de una sede entre APROBADA y SUSPENDIDA.
+     * Body: { "motivo": "..." } opcional (se usa al suspender, no al reactivar)
+     * PATCH /api/admin/venues/{id}/toggle
+     */
+    @PatchMapping("/venues/{id}/toggle")
+    public ResponseEntity<VenueResponse> toggleVenue(@PathVariable UUID id,
+                                                      @RequestBody(required = false) Map<String, String> body) {
+        String motivo = body != null ? body.get("motivo") : null;
+        return ResponseEntity.ok(adminService.toggleVenue(id, motivo));
+    }
+
     @GetMapping("/users")
     public ResponseEntity<List<Map<String, Object>>> getUsers() {
         return ResponseEntity.ok(adminService.getUsers());

@@ -37,6 +37,12 @@ export default {
     return res.data
   },
 
+  // Alterna APROBADA <-> SUSPENDIDA. Motivo se usa solo al suspender.
+  async toggleVenue(id, motivo) {
+    const res = await api.patch(`/admin/venues/${id}/toggle`, { motivo: motivo || '' })
+    return res.data
+  },
+
   async getUsers() {
     const res = await api.get('/admin/users')
     return res.data

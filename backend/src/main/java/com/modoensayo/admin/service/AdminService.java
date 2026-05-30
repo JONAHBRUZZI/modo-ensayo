@@ -38,6 +38,7 @@ public class AdminService {
         stats.put("sedes", venueRepository.count());
         stats.put("pendientes", identityVerificationRepository.countByStatus("PENDING"));
         stats.put("sedesPendientes", venueRepository.countByStatus(EstadoSede.PENDIENTE_APROBACION));
+        stats.put("sedesSuspendidas", venueRepository.countByStatus(EstadoSede.SUSPENDIDA));
 
         long totalClases = classRepository.count();
         long clasesRealizadas = classRepository.findAll().stream()
@@ -169,6 +170,52 @@ public class AdminService {
             notificationRepository.save(Notification.builder()
                     .userId(v.getAdminId())
                     .message("Tu sede '" + v.getName() + "' ha sido APROBADA. Ya tienes acceso al panel de gestión de tu sede.")
+                    .read(false).createdAt(Instant.now()).build());
+        }
+
+        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
+                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
+                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
+                v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());
+    }
+
+    /**
+     * Alterna el estado de una sede entre APROBADA y SUSPENDIDA.
+     * - APROBADA -> SUSPENDIDA (con motivo opcional)
+     * - SUSPENDIDA -> APROBADA (reactivacion)
+     * No aplica para sedes en PENDIENTE_APROBACION ni RECHAZADA.
+     */
+    @Transactional
+    public VenueResponse toggleVenue(UUID id, String motivo) {
+        Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));
+
+        if (v.getStatus() == EstadoSede.PENDIENTE_APROBACION) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "No se puede suspender una sede que aun no esta aprobada. Apruebala o rechazala primero.");
+        }
+        if (v.getStatus() == EstadoSede.RECHAZADA) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "No se puede suspender o reactivar una sede rechazada.");
+        }
+
+        boolean suspendiendo = v.getStatus() == EstadoSede.APROBADA;
+        v.setStatus(suspendiendo ? EstadoSede.SUSPENDIDA : EstadoSede.APROBADA);
+        if (suspendiendo) {
+            v.setRejectionReason(motivo);
+        } else {
+            v.setRejectionReason(null);
+        }
+        v = venueRepository.save(v);
+
+        if (v.getAdminId() != null) {
+            String mensaje = suspendiendo
+                    ? "Tu sede '" + v.getName() + "' ha sido SUSPENDIDA por el administrador. Motivo: "
+                            + (motivo != null && !motivo.isBlank() ? motivo : "No especificado")
+                            + ". Tus salas no pueden recibir nuevas reservas. Contacta al administrador para mas detalles."
+                    : "Tu sede '" + v.getName() + "' ha sido REACTIVADA. Ya puedes recibir nuevas reservas.";
+            notificationRepository.save(Notification.builder()
+                    .userId(v.getAdminId())
+                    .message(mensaje)
                     .read(false).createdAt(Instant.now()).build());
         }
 

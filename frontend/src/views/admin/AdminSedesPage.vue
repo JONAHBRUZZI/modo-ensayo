@@ -61,9 +61,13 @@
                class="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded px-3 py-2">
               <span class="font-semibold">Motivo de rechazo:</span> {{ s.rejectionReason }}
             </p>
+            <p v-if="s.status === 'SUSPENDIDA' && s.rejectionReason"
+               class="mt-3 text-xs text-orange-300 bg-orange-500/10 border border-orange-500/30 rounded px-3 py-2">
+              <span class="font-semibold">Motivo de suspension:</span> {{ s.rejectionReason }}
+            </p>
           </div>
 
-          <div class="flex flex-col gap-2 flex-shrink-0">
+          <div class="flex flex-col gap-2 flex-shrink-0 min-w-[110px]">
             <router-link :to="'/admin/sedes/' + s.id + '/documentos'"
                          class="text-xs px-3 py-1.5 rounded-lg bg-[#1a1d2e] border border-white/10 text-gray-300 hover:text-white text-center">
               Documentos
@@ -77,6 +81,18 @@
                     @click="rechazar(s)"
                     class="text-xs px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors">
               Rechazar
+            </button>
+            <!-- Sede APROBADA: se puede SUSPENDER -->
+            <button v-if="s.status === 'APROBADA'"
+                    @click="suspender(s)"
+                    class="text-xs px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 transition-colors">
+              Suspender
+            </button>
+            <!-- Sede SUSPENDIDA: se puede REACTIVAR -->
+            <button v-if="s.status === 'SUSPENDIDA'"
+                    @click="reactivar(s)"
+                    class="text-xs px-3 py-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-colors">
+              Reactivar
             </button>
           </div>
         </div>
@@ -97,6 +113,7 @@ const tabs = [
   { value: 'TODOS', label: 'Todas' },
   { value: 'PENDIENTE_APROBACION', label: 'Pendientes' },
   { value: 'APROBADA', label: 'Aprobadas' },
+  { value: 'SUSPENDIDA', label: 'Suspendidas' },
   { value: 'RECHAZADA', label: 'Rechazadas' }
 ]
 
@@ -148,6 +165,29 @@ async function rechazar(sede) {
   }
 }
 
+// Suspende una sede APROBADA (reversible). Pide motivo opcional.
+async function suspender(sede) {
+  const motivo = prompt(`Motivo de la suspension de "${sede.name}":\n(opcional, pero recomendado para que el Admin de Sede lo entienda)`)
+  if (motivo === null) return  // cancelado
+  try {
+    await adminService.toggleVenue(sede.id, motivo || '')
+    await cargar()
+  } catch (e) {
+    alert(e?.response?.data?.message || 'Error al suspender la sede')
+  }
+}
+
+// Reactiva una sede SUSPENDIDA (vuelve a APROBADA).
+async function reactivar(sede) {
+  if (!confirm(`Reactivar la sede "${sede.name}"? Volvera a poder recibir reservas.`)) return
+  try {
+    await adminService.toggleVenue(sede.id, '')
+    await cargar()
+  } catch (e) {
+    alert(e?.response?.data?.message || 'Error al reactivar la sede')
+  }
+}
+
 function tipoLabel(tipo) {
   if (tipo === 'HOME_STUDIO') return 'Home Studio'
   if (tipo === 'SEDE') return 'Sede'
@@ -158,7 +198,8 @@ function estadoLabel(s) {
   const map = {
     'PENDIENTE_APROBACION': 'Pendiente',
     'APROBADA': 'Aprobada',
-    'RECHAZADA': 'Rechazada'
+    'RECHAZADA': 'Rechazada',
+    'SUSPENDIDA': 'Suspendida'
   }
   return map[s] || s
 }
@@ -167,6 +208,7 @@ function estadoClase(s) {
   if (s === 'APROBADA') return 'bg-green-500/10 text-green-300 border-green-500/30'
   if (s === 'PENDIENTE_APROBACION') return 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30'
   if (s === 'RECHAZADA') return 'bg-red-500/10 text-red-300 border-red-500/30'
+  if (s === 'SUSPENDIDA') return 'bg-orange-500/10 text-orange-300 border-orange-500/30'
   return 'bg-gray-500/10 text-gray-300 border-gray-500/30'
 }
 

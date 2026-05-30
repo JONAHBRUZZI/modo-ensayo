@@ -4,14 +4,23 @@
     <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
     <div v-else-if="verifications.length === 0" class="card text-center py-12"><p class="text-gray-400">No hay verificaciones pendientes.</p></div>
     <div v-else class="space-y-4">
-      <div v-for="v in verifications" :key="v.id" class="card flex items-center justify-between">
-        <div class="flex items-center space-x-4">
-          <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">{{ (v.userName || v.userEmail || 'U').charAt(0).toUpperCase() }}</div>
-          <div><h3 class="text-white font-medium">{{ v.userName || v.userEmail }}</h3><p class="text-gray-400 text-sm">{{ v.documentType || 'RUT' }}: {{ v.documentNumber }}</p></div>
-        </div>
-        <div class="flex items-center space-x-3">
-          <EstadoBadge :status="v.status" />
-          <div class="flex space-x-2">
+      <div v-for="v in verifications" :key="v.id" class="card">
+        <div class="flex items-start justify-between">
+          <div class="flex-1 space-y-2">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">{{ (v.fullName || v.userName || v.userEmail || 'U').charAt(0).toUpperCase() }}</div>
+              <div>
+                <h3 class="text-white font-medium">{{ v.fullName || v.userName || v.userEmail }}</h3>
+                <p class="text-gray-400 text-sm">{{ v.documentType || 'RUT' }}: {{ v.documentNumber || 'No especificado' }}</p>
+                <p v-if="v.birthDate" class="text-gray-500 text-xs">Nacimiento: {{ v.birthDate }}</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3 pl-13">
+              <a v-if="v.documentUrl" :href="v.documentUrl" target="_blank" class="text-xs text-indigo-400 hover:text-indigo-300 underline">Ver documento adjunto</a>
+              <EstadoBadge :status="v.status" />
+            </div>
+          </div>
+          <div class="flex space-x-2 ml-4">
             <button @click="abrirModal(v, 'identity-approve')" class="text-green-400 hover:text-green-300 text-sm font-medium">Aprobar</button>
             <button @click="abrirModal(v, 'identity-reject')" class="text-red-400 hover:text-red-300 text-sm font-medium">Rechazar</button>
           </div>

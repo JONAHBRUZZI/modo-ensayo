@@ -161,7 +161,7 @@ const { refreshProfile, syncActividadMaestro, syncAtributos } = auth
 // Si venimos desde ProfesorBorradoresPage con "Asignar sala", tenemos el id del borrador
 const borradorId = computed(() => route.query.borradorId || null)
 
-const identidadValidada = computed(() => auth.user?.atributosActivos?.identidadValidada === true)
+const identidadValidada = computed(() => auth.user.value?.atributosActivos?.identidadValidada === true)
 const alertaIdentidad = ref(false)
 
 const venues = ref([])

@@ -61,15 +61,4 @@ public class PaymentController {
     public ResponseEntity<List<Map<String, Object>>> getMyPaymentHistory(@AuthenticationPrincipal CustomUserDetails user) {
         return ResponseEntity.ok(paymentService.getMyPaymentHistory(user.getUserId()));
     }
-
-    /**
-     * Cancela la inscripción del alumno autenticado y pone el pago en REFUND_PENDING.
-     * POST /api/payments/enrollments/{enrollmentId}/cancel
-     */
-    @PostMapping("/enrollments/{enrollmentId}/cancel")
-    public ResponseEntity<Map<String, Object>> cancelEnrollment(
-            @AuthenticationPrincipal CustomUserDetails user,
-            @PathVariable UUID enrollmentId) {
-        return ResponseEntity.ok(paymentService.cancelEnrollment(enrollmentId, user.getUserId()));
-    }
 }

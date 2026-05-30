@@ -3,9 +3,11 @@ package com.modoensayo.shared.config;
 import com.modoensayo.users.domain.IdentityVerification;
 import com.modoensayo.users.domain.Role;
 import com.modoensayo.users.domain.User;
+import com.modoensayo.users.domain.UserRole;
 import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.users.repository.RoleRepository;
 import com.modoensayo.users.repository.UserRepository;
+import com.modoensayo.users.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -20,6 +22,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final UserRoleRepository userRoleRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
 
     @Override
@@ -35,12 +38,10 @@ public class DataInitializer implements CommandLineRunner {
                         .anyMatch(ur -> "ADMIN".equals(ur.getRole().getName())))
                 .toList();
         for (User admin : admins) {
+            // Auto-validar identidad
             IdentityVerification iv = identityVerificationRepository.findByUserId(admin.getId()).orElse(null);
             if (iv == null) {
-                iv = IdentityVerification.builder()
-                        .userId(admin.getId())
-                        .status("APPROVED")
-                        .build();
+                iv = IdentityVerification.builder().userId(admin.getId()).status("APPROVED").build();
                 identityVerificationRepository.save(iv);
             } else if (!"APPROVED".equals(iv.getStatus())) {
                 iv.setStatus("APPROVED");
@@ -50,6 +51,19 @@ public class DataInitializer implements CommandLineRunner {
                 admin.setIdentidadValidada(true);
                 admin.setIdentidadEstado("APROBADO");
                 userRepository.save(admin);
+            }
+
+            // Auto-asignar TEACHER y VENUE_ADMIN para acceso completo
+            for (String roleName : List.of("TEACHER", "VENUE_ADMIN")) {
+                Role role = roleRepository.findByName(roleName).orElse(null);
+                if (role != null) {
+                    boolean hasRole = admin.getUserRoles().stream()
+                            .anyMatch(ur -> roleName.equals(ur.getRole().getName()));
+                    if (!hasRole) {
+                        UserRole ur = UserRole.builder().user(admin).role(role).build();
+                        userRoleRepository.save(ur);
+                    }
+                }
             }
         }
     }

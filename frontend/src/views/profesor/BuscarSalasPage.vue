@@ -156,12 +156,11 @@ import { useAuth } from '@/stores/auth'
 
 const route = useRoute()
 const auth = useAuth()
-const { syncAtributos, setModo, puedeVerContextoProfesor, perfilProfesionalCompleto } = auth
+// identidadValidada viene del store (fuente unica), validada al registrarse
+const { syncAtributos, setModo, puedeVerContextoProfesor, perfilProfesionalCompleto, identidadValidada } = auth
 
 // Si venimos desde ProfesorBorradoresPage con "Asignar sala", tenemos el id del borrador
 const borradorId = computed(() => route.query.borradorId || null)
-
-const identidadValidada = computed(() => auth.user.value?.atributosActivos?.identidadValidada === true)
 const alertaIdentidad = ref(false)
 
 const venues = ref([])

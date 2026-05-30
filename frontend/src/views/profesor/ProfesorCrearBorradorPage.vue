@@ -107,15 +107,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '@/services/classService'
 import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
-const auth = useAuth()
-
-const identidadValidada = computed(() => auth.user?.atributosActivos?.identidadValidada === true)
+// identidadValidada se valida UNA sola vez al registrar el usuario.
+// Todos los contextos (profesor, sede, alumno) leen el mismo estado desde el store.
+const { identidadValidada } = useAuth()
 
 const loading = ref(false)
 const error = ref('')

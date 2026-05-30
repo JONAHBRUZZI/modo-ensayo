@@ -111,6 +111,9 @@ public class UserController {
         attrs.put("reservasSinClase", reservasSinClaseCount > 0);
         attrs.put("reservasSinClaseCount", (int) reservasSinClaseCount);
 
+        // Perfil profesional completo: solo aplica si el usuario es TEACHER
+        attrs.put("perfilProfesionalCompleto", profileService.isComplete(userId));
+
         return ResponseEntity.ok(attrs);
     }
 

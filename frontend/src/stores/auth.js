@@ -112,6 +112,7 @@ export function useAuth() {
   const tieneAsignacionesActivas = computed(() => user.value?.atributosActivos?.tieneAsignacionesActivas || false)
   const reservasSinClase = computed(() => user.value?.atributosActivos?.reservasSinClase || false)
   const reservasSinClaseCount = computed(() => user.value?.atributosActivos?.reservasSinClaseCount || 0)
+  const perfilProfesionalCompleto = computed(() => user.value?.atributosActivos?.perfilProfesionalCompleto || false)
 
   const puedeAlternarModo = computed(() => {
     if (!user.value) return false
@@ -227,7 +228,8 @@ export function useAuth() {
           tieneAsignacionesActivas: res.data.tieneAsignacionesActivas,
           tieneSedeAprobada: res.data.tieneSedeAprobada,
           reservasSinClase: res.data.reservasSinClase,
-          reservasSinClaseCount: res.data.reservasSinClaseCount || 0
+          reservasSinClaseCount: res.data.reservasSinClaseCount || 0,
+          perfilProfesionalCompleto: res.data.perfilProfesionalCompleto || false
         })
         if (res.data.hasRoleTeacher && user.value && !user.value.roles.includes('TEACHER')) {
           user.value.roles.push('TEACHER')
@@ -303,6 +305,7 @@ export function useAuth() {
     tieneAsignacionesActivas,
     reservasSinClase,
     reservasSinClaseCount,
+    perfilProfesionalCompleto,
     puedeAlternarModo,
     puedeVerContextoProfesor,
     puedeVerContextoSede,

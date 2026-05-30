@@ -156,7 +156,7 @@ import { useAuth } from '@/stores/auth'
 
 const route = useRoute()
 const auth = useAuth()
-const { syncAtributos, setModo, puedeVerContextoProfesor } = auth
+const { syncAtributos, setModo, puedeVerContextoProfesor, perfilProfesionalCompleto } = auth
 
 // Si venimos desde ProfesorBorradoresPage con "Asignar sala", tenemos el id del borrador
 const borradorId = computed(() => route.query.borradorId || null)
@@ -310,9 +310,16 @@ async function pagar(metodo) {
         setModo('profesor')
       }
     } catch {}
-    // Redirigir: con rol TEACHER → "Clases por Asignar", sin él → borradores (fallback)
+    // Redirigir segun estado:
+    // 1) Con rol TEACHER y perfil incompleto → completar perfil profesional (notificacion)
+    // 2) Con rol TEACHER y perfil completo → clases por asignar
+    // 3) Sin rol TEACHER → borradores (fallback)
     if (puedeVerContextoProfesor.value) {
-      window.location.href = '/profesor/clases-por-asignar'
+      if (!perfilProfesionalCompleto.value) {
+        window.location.href = '/profesor/perfil-profesional?primeraVez=true'
+      } else {
+        window.location.href = '/profesor/clases-por-asignar'
+      }
     } else {
       window.location.href = '/profesor/borradores'
     }

@@ -6,23 +6,21 @@
       <p class="text-gray-400">No tienes clases inscritas.</p>
       <router-link to="/classes" class="btn-primary mt-4 inline-block">Buscar Clases</router-link>
     </div>
-    <div v-else class="space-y-4">
-      <div v-for="c in clases" :key="c.classId" class="card">
-        <div class="flex items-center justify-between">
-          <router-link :to="'/alumno/clases/' + c.classId" class="flex-1 min-w-0 mr-4">
-            <h3 class="text-lg font-semibold text-white hover:text-primary transition-colors">{{ c.title }}</h3>
-            <p class="text-gray-400 text-sm">{{ c.discipline }} {{ c.level ? '— ' + c.level : '' }}</p>
-            <p class="text-gray-500 text-xs mt-1">{{ formatDate(c.startTime) }}</p>
-          </router-link>
-          <div class="flex items-center gap-3 flex-shrink-0">
-            <span class="text-primary font-semibold text-sm">${{ c.price?.toLocaleString('es-CL') }}</span>
-            <EstadoBadge :status="c.enrollmentStatus || c.status" />
-            <!-- Botón cancelar: solo para inscripciones activas en clases futuras -->
-            <button v-if="puedeCanc(c)"
-                    @click.prevent="iniciarCancelacion(c)"
-                    class="text-xs text-red-400 border border-red-400/30 rounded px-2 py-1 hover:bg-red-400/10 transition-colors">
-              Cancelar
-            </button>
+    <div v-else class="space-y-8">
+      <div v-for="(grupo, nombre) in clasesAgrupadas" :key="nombre" class="space-y-3">
+        <h2 class="text-lg font-semibold text-gray-300 border-b border-white/10 pb-2">{{ nombre }}</h2>
+        <div v-for="c in grupo" :key="c.enrollmentId || c.classId" class="card">
+          <div class="flex items-center justify-between">
+            <router-link :to="'/alumno/clases/' + c.classId" class="flex-1 min-w-0 mr-4">
+              <h3 class="text-lg font-semibold text-white hover:text-primary transition-colors">{{ c.title }}</h3>
+              <p class="text-gray-400 text-sm">{{ c.discipline }} {{ c.level ? '— ' + c.level : '' }}</p>
+              <p class="text-gray-500 text-xs mt-1">{{ formatDate(c.startTime) }}</p>
+            </router-link>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <span class="text-primary font-semibold text-sm">${{ c.price?.toLocaleString('es-CL') }}</span>
+              <EstadoBadge :status="c.enrollmentStatus || c.status" />
+              <button v-if="puedeCanc(c)" @click.prevent="iniciarCancelacion(c)" class="text-xs text-red-400 border border-red-400/30 rounded px-2 py-1 hover:bg-red-400/10 transition-colors">Cancelar</button>
+            </div>
           </div>
         </div>
       </div>
@@ -57,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import paymentService from '@/services/paymentService'
 import api from '@/services/api'
 import EstadoBadge from '@/components/EstadoBadge.vue'
@@ -68,6 +66,16 @@ const modalCancelar = ref(false)
 const claseSeleccionada = ref(null)
 const cancelando = ref(false)
 const errorCancelar = ref('')
+
+const clasesAgrupadas = computed(() => {
+  const grupos = {}
+  for (const c of clases.value) {
+    const nombre = c.beneficiaryName || 'Yo'
+    if (!grupos[nombre]) grupos[nombre] = []
+    grupos[nombre].push(c)
+  }
+  return grupos
+})
 
 onMounted(async () => {
   await cargarClases()

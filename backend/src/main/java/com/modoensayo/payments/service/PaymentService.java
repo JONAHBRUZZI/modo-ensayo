@@ -1,5 +1,6 @@
 package com.modoensayo.payments.service;
 
+import com.modoensayo.associates.repository.AssociateRepository;
 import com.modoensayo.classes.domain.Class;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.payments.domain.CartItem;
@@ -28,6 +29,7 @@ public class PaymentService {
     private final ClassRepository classRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final PaymentRepository paymentRepository;
+    private final AssociateRepository associateRepository;
 
     @Transactional
     public void addToCart(UUID ownerId, UUID classId, String beneficiaryType, UUID beneficiaryId) {
@@ -105,9 +107,16 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getMyEnrollments(UUID userId) {
-        List<Enrollment> enrollments = enrollmentRepository.findByBeneficiaryId(userId);
+        List<Enrollment> all = new ArrayList<>(enrollmentRepository.findByBeneficiaryId(userId));
+
+        // Incluir clases de asociados del usuario
+        var associates = associateRepository.findByOwnerId(userId);
+        for (var assoc : associates) {
+            all.addAll(enrollmentRepository.findByBeneficiaryId(assoc.getId()));
+        }
+
         List<Map<String, Object>> result = new ArrayList<>();
-        for (Enrollment e : enrollments) {
+        for (Enrollment e : all) {
             classRepository.findById(e.getClassId()).ifPresent(c -> {
                 Map<String, Object> item = new HashMap<>();
                 item.put("enrollmentId", e.getId().toString());
@@ -120,6 +129,17 @@ public class PaymentService {
                 item.put("status", c.getStatus().name());
                 item.put("price", c.getPrice());
                 item.put("enrollmentStatus", e.getStatus());
+
+                boolean isOwner = userId.equals(e.getBeneficiaryId());
+                item.put("isOwner", isOwner);
+                String beneName = "Yo";
+                if (!isOwner) {
+                    var assoc = associates.stream().filter(a -> a.getId().equals(e.getBeneficiaryId())).findFirst().orElse(null);
+                    beneName = assoc != null && assoc.getName() != null ? assoc.getName() : "Asociado";
+                }
+                item.put("beneficiaryName", beneName);
+                item.put("beneficiaryId", e.getBeneficiaryId() != null ? e.getBeneficiaryId().toString() : null);
+
                 result.add(item);
             });
         }

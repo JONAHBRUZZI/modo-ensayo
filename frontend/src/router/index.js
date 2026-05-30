@@ -195,6 +195,12 @@ const routes = [
         meta: { requiresAuth: true, requiresIdentity: true }
       },
       {
+        path: 'profesor/clases-por-asignar',
+        name: 'ProfesorClasesPorAsignar',
+        component: () => import('@/views/profesor/ProfesorClasesPorAsignarPage.vue'),
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
+      },
+      {
         path: 'profesor/crear-borrador',
         name: 'ProfesorCrearBorrador',
         component: () => import('@/views/profesor/ProfesorCrearBorradorPage.vue'),

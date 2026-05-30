@@ -21,8 +21,12 @@
               <!-- Profesor mode -->
               <template v-if="puedeVerContextoProfesor && modoActual === 'profesor'">
                 <router-link to="/profesor/dashboard" class="nav-link">Dashboard</router-link>
-                <router-link to="/profesor/clases-propias" class="nav-link">Clases Agendadas</router-link>
-                <router-link to="/profesor/clases-asignadas" class="nav-link">Clases Asignadas</router-link>
+                <router-link to="/profesor/clases-por-asignar" class="nav-link relative">
+                  Por Asignar
+                  <span v-if="reservasSinClaseCount > 0" class="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{{ reservasSinClaseCount }}</span>
+                </router-link>
+                <router-link to="/profesor/clases-propias" class="nav-link">Mis Clases</router-link>
+                <router-link to="/profesor/clases-asignadas" class="nav-link">Asignadas</router-link>
                 <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
                 <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
                 <router-link to="/profesor/metricas" class="nav-link">Metricas</router-link>
@@ -169,7 +173,7 @@ import paymentService from '@/services/paymentService'
 import rescheduleService from '@/services/rescheduleService'
 
 const router = useRouter()
-const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, displayName, setModo, logout, syncActividadMaestro, syncAtributos } = useAuth()
+const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, displayName, setModo, logout, syncActividadMaestro, syncAtributos, reservasSinClaseCount } = useAuth()
 
 const showUserMenu = ref(false)
 const userMenuRef = ref(null)

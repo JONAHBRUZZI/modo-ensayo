@@ -156,7 +156,7 @@ import { useAuth } from '@/stores/auth'
 
 const route = useRoute()
 const auth = useAuth()
-const { refreshProfile, syncActividadMaestro, syncAtributos } = auth
+const { syncAtributos, setModo, puedeVerContextoProfesor } = auth
 
 // Si venimos desde ProfesorBorradoresPage con "Asignar sala", tenemos el id del borrador
 const borradorId = computed(() => route.query.borradorId || null)
@@ -290,7 +290,7 @@ async function pagar(metodo) {
         duration: 60
       })
     } else {
-      // Flujo clásico: crear un borrador nuevo con la sala ya asignada
+      // Flujo booking: crear borrador con sala asignada (backend otorga rol TEACHER)
       await api.post('/classes?draft=true', {
         title: 'Reserva - ' + modal.value.room.name,
         discipline: 'OTRO',
@@ -303,12 +303,19 @@ async function pagar(metodo) {
       })
     }
     modal.value.abierto = false
-    // Refrescar perfil y atributos para obtener rol TEACHER si es la primera clase
+    // Sincronizar atributos y roles (el backend puede haber asignado TEACHER en este paso)
     try {
-      await refreshProfile()
-      await syncActividadMaestro()
+      await syncAtributos()
+      if (puedeVerContextoProfesor.value) {
+        setModo('profesor')
+      }
     } catch {}
-    window.location.href = '/profesor/borradores'
+    // Redirigir: con rol TEACHER → "Clases por Asignar", sin él → borradores (fallback)
+    if (puedeVerContextoProfesor.value) {
+      window.location.href = '/profesor/clases-por-asignar'
+    } else {
+      window.location.href = '/profesor/borradores'
+    }
   } catch (e) {
     alert(e?.response?.data?.message || 'Error al procesar la reserva')
   }

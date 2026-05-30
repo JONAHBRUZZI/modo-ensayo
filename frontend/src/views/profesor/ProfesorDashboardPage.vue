@@ -23,6 +23,33 @@
       </div>
     </div>
 
+    <!-- Seccion: Clases por Asignar (salas reservadas sin clase configurada) -->
+    <div v-if="reservasSinClase" class="mb-8">
+      <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-white font-semibold">
+              Clases por Asignar
+              <span class="ml-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">{{ reservasSinClaseCount }}</span>
+            </h2>
+            <p class="text-gray-400 text-sm mt-0.5">
+              Tienes {{ reservasSinClaseCount === 1 ? 'una sala reservada' : reservasSinClaseCount + ' salas reservadas' }}
+              esperando que configures la clase.
+            </p>
+          </div>
+        </div>
+        <router-link to="/profesor/clases-por-asignar" class="btn-primary text-sm flex-shrink-0">
+          Configurar Clases
+        </router-link>
+      </div>
+    </div>
+
     <!-- Seccion A: Clases propias activas -->
     <div v-if="tieneReservasActivas" class="mb-10">
       <div class="flex items-center justify-between mb-4">
@@ -123,7 +150,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 
-const { displayName, tieneReservasActivas, tieneAsignacionesActivas } = useAuth()
+const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount } = useAuth()
 
 const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, totalRetenido: 0 })
 const propiasFuturas = ref([])

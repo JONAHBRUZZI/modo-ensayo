@@ -133,7 +133,13 @@ onMounted(async () => {
 
 async function cargar() {
   loading.value = true
-  try { borradores.value = await classService.getTeacherDrafts() } catch { borradores.value = [] }
+  try {
+    const todos = await classService.getTeacherDrafts()
+    // Solo borradores SIN sala — los que tienen sala van a "Clases por Asignar"
+    borradores.value = (Array.isArray(todos) ? todos : []).filter(c => !c.roomId)
+  } catch {
+    borradores.value = []
+  }
   loading.value = false
 }
 

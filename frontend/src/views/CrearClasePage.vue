@@ -132,7 +132,7 @@ import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
-const { syncActividadMaestro, refreshProfile } = useAuth()
+const { syncAtributos } = useAuth()
 
 const form = ref({
   title: '', discipline: '', level: '', description: '',
@@ -215,8 +215,7 @@ async function handleCreate() {
     } else {
       await classService.createClass(form.value)
     }
-    await refreshProfile()
-    await syncActividadMaestro()
+    await syncAtributos()
     router.push('/profesor/clases-propias')
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al ' + (isEditing.value ? 'publicar' : 'crear') + ' clase'

@@ -275,10 +275,11 @@ public class ClassService {
                     "Debes validar tu identidad antes de crear clases. Sube tu documento en tu perfil y espera la aprobacion.");
             }
 
-            // Solo asignar rol TEACHER al publicar directamente (no al crear BORRADOR)
-            // Al crear un borrador el rol se asigna en asignarReserva() o completeClass()
-            if (!draft) {
-                asignarRolTeacher(teacherId);
+            // Asignar TEACHER: al publicar directamente O al crear BORRADOR con sala (reserva de sala confirmada)
+            if (!draft || req.roomId() != null) {
+                boolean rolAsignado = asignarRolTeacher(teacherId);
+                if (rolAsignado) lastTeacherRoleAssigned.set(true);
+                else lastTeacherRoleAssigned.remove();
             }
         }
 
@@ -322,6 +323,19 @@ public class ClassService {
     public List<ClassResponse> getTeacherAsignadas(UUID teacherId) {
         return classRepository.findByTeacherIdAndTipoClase(teacherId, TipoClase.ASIGNADA).stream()
                 .map(this::toResponse).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteDraft(UUID classId, UUID teacherId) {
+        Class c = classRepository.findById(classId)
+                .orElseThrow(() -> new ResourceNotFoundException("Clase no encontrada"));
+        if (c.getTeacherId() == null || !c.getTeacherId().equals(teacherId)) {
+            throw new BusinessException("No tienes permiso para eliminar esta clase");
+        }
+        if (c.getStatus() != ClassStatus.DRAFT) {
+            throw new BusinessException("Solo puedes eliminar clases en borrador");
+        }
+        classRepository.deleteById(classId);
     }
 
     @Transactional(readOnly = true)

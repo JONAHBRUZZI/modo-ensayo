@@ -228,15 +228,39 @@ async function buscar() {
     const data = await classService.getVenues()
     let list = Array.isArray(data) ? data : data?.content || []
     if (filtros.value.comuna) list = list.filter(v => v.city === filtros.value.comuna)
-    const venuesWithRooms = await Promise.all(list.map(async (v) => {
+
+    const venuesWithAvailableRooms = []
+    for (const v of list) {
       try {
         const rooms = await venueService.getRooms(v.id)
-        return { ...v, rooms: Array.isArray(rooms) ? rooms : [] }
+        const roomsWithSlots = []
+        for (const room of rooms) {
+          try {
+            const slots = await venueService.getPublicRoomAvailability(room.id)
+            const available = Array.isArray(slots) ? slots : []
+            let filtered = available
+            if (filtros.value.fechaDesde) {
+              filtered = filtered.filter(s => new Date(s.startTime) >= new Date(filtros.value.fechaDesde + 'T00:00:00'))
+            }
+            if (filtros.value.fechaHasta) {
+              filtered = filtered.filter(s => new Date(s.endTime) <= new Date(filtros.value.fechaHasta + 'T23:59:59'))
+            }
+            if (filtered.length > 0) {
+              roomsWithSlots.push(room)
+              roomSlots.value[room.id] = filtered
+            }
+          } catch {
+            // room has no availability
+          }
+        }
+        if (roomsWithSlots.length > 0) {
+          venuesWithAvailableRooms.push({ ...v, rooms: roomsWithSlots })
+        }
       } catch {
-        return { ...v, rooms: [] }
+        // venue load error
       }
-    }))
-    venues.value = venuesWithRooms
+    }
+    venues.value = venuesWithAvailableRooms
   } catch { venues.value = [] }
   loading.value = false
 }

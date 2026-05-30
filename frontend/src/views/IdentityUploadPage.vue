@@ -49,8 +49,26 @@
             </div>
           </div>
         </div>
-        <p v-if="msg" :class="msgType === 'success' ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ msg }}</p>
-        <button type="submit" :disabled="uploading" class="btn-primary w-full">{{ uploading ? 'Enviando...' : 'Enviar para validacion' }}</button>
+        <!-- Mensaje de exito -->
+        <p v-if="msg && msgType === 'success'" class="text-sm text-green-400">{{ msg }}</p>
+
+        <!-- Mensaje de error: alert prominente con icono cuando hay conflicto de documento -->
+        <div v-if="msg && msgType === 'error'"
+             class="rounded-xl border border-red-500/40 bg-red-500/10 p-4 flex items-start gap-3">
+          <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <p class="text-red-300 font-semibold text-sm">No se pudo validar el documento</p>
+            <p class="text-red-200/90 text-sm mt-1 whitespace-pre-line">{{ msg }}</p>
+          </div>
+        </div>
+
+        <button type="submit" :disabled="uploading || (msg && msgType === 'error')"
+                class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ uploading ? 'Enviando...' : (msg && msgType === 'error' ? 'Corrige los datos y vuelve a enviar' : 'Enviar para validacion') }}
+        </button>
       </form>
 
       <div v-if="verification?.status === 'APPROVED'" class="card">
@@ -86,6 +104,8 @@ onMounted(async () => {
 function handleFile(e) { file.value = e.target.files[0] }
 
 function formatearRut() {
+  // Cualquier edicion del RUT limpia el error de duplicado para permitir reintentar
+  if (msgType.value === 'error') { msg.value = ''; msgType.value = '' }
   if (form.documentType !== 'RUT' || !form.documentNumber) return
   let valor = form.documentNumber.replace(/[^0-9kK]/g, '')
   if (valor.length < 2) { form.documentNumber = valor; return }

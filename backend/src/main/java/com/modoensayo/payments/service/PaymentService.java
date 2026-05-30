@@ -66,10 +66,40 @@ public class PaymentService {
     @Transactional
     public Map<String, Object> checkout(UUID ownerId) {
         List<CartItem> items = cartItemRepository.findByOwnerId(ownerId);
+        List<Map<String, Object>> processed = new ArrayList<>();
+        double total = 0;
+
+        for (CartItem item : items) {
+            Enrollment enrollment = Enrollment.builder()
+                    .classId(item.getClassId())
+                    .beneficiaryType(item.getBeneficiaryType() != null ? item.getBeneficiaryType() : "USER")
+                    .beneficiaryId(item.getBeneficiaryId() != null ? item.getBeneficiaryId() : ownerId)
+                    .status("ACTIVE")
+                    .build();
+            enrollmentRepository.save(enrollment);
+
+            Payment payment = Payment.builder()
+                    .enrollment(enrollment)
+                    .amount(item.getPrice() != null ? item.getPrice().intValue() : 0)
+                    .status(PaymentStatus.RETAINED)
+                    .build();
+            paymentRepository.save(payment);
+            total += item.getPrice() != null ? item.getPrice() : 0;
+
+            Map<String, Object> detail = new HashMap<>();
+            detail.put("classTitle", item.getClassTitle());
+            detail.put("amount", item.getPrice());
+            detail.put("status", "RETAINED");
+            processed.add(detail);
+        }
+
         cartItemRepository.deleteByOwnerId(ownerId);
+
         Map<String, Object> result = new HashMap<>();
-        result.put("items", items);
-        result.put("total", items.stream().mapToDouble(CartItem::getPrice).sum());
+        result.put("items", processed);
+        result.put("total", total);
+        result.put("count", processed.size());
+        result.put("status", "COMPLETED");
         return result;
     }
 

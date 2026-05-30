@@ -75,14 +75,8 @@ async function handleConfirmedCheckout() {
   showConfirm.value = false
   checkingOut.value = true
   try {
-    const data = await paymentService.createMercadoPagoPreference()
-    if (data?.initPoint) {
-      window.location.href = data.initPoint
-    } else if (data?.sandboxInitPoint) {
-      window.location.href = data.sandboxInitPoint
-    } else {
-      router.push('/payment/pending')
-    }
+    const data = await paymentService.checkout()
+    router.push('/payment/success')
   } catch {
     router.push('/payment/failure')
   } finally {

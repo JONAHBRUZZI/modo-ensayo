@@ -57,7 +57,8 @@ public class AdminService {
     public List<IdentityVerificationResponse> getIdentityVerifications() {
         return identityVerificationRepository.findByStatus("PENDING").stream()
                 .map(iv -> new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(),
-                        iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt()))
+                        iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt(),
+                        iv.getDocumentType(), iv.getDocumentNumber(), iv.getFullName(), iv.getBirthDate()))
                 .collect(Collectors.toList());
     }
 
@@ -90,7 +91,8 @@ public class AdminService {
                     .read(false).createdAt(Instant.now()).build());
         }
 
-        return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt());
+        return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt(),
+                iv.getDocumentType(), iv.getDocumentNumber(), iv.getFullName(), iv.getBirthDate());
     }
 
     public List<VenueResponse> getPendingVenues() {

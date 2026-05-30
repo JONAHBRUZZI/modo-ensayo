@@ -11,7 +11,7 @@
               <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">{{ (v.fullName || v.userName || v.userEmail || 'U').charAt(0).toUpperCase() }}</div>
               <div>
                 <h3 class="text-white font-medium">{{ v.fullName || v.userName || v.userEmail }}</h3>
-                <p class="text-gray-400 text-sm">{{ v.documentType || 'RUT' }}: {{ v.documentNumber || 'No especificado' }}</p>
+                <p class="text-gray-400 text-sm">{{ v.documentType || 'RUT' }}: {{ v.documentNumber || v.userEmail || 'Ver documento adjunto' }}</p>
                 <p v-if="v.birthDate" class="text-gray-500 text-xs">Nacimiento: {{ v.birthDate }}</p>
               </div>
             </div>

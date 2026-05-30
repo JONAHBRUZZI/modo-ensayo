@@ -156,7 +156,7 @@ import { useAuth } from '@/stores/auth'
 
 const route = useRoute()
 const auth = useAuth()
-const { refreshProfile, syncActividadMaestro } = auth
+const { refreshProfile, syncActividadMaestro, syncAtributos } = auth
 
 // Si venimos desde ProfesorBorradoresPage con "Asignar sala", tenemos el id del borrador
 const borradorId = computed(() => route.query.borradorId || null)
@@ -207,6 +207,7 @@ const comunasFiltradas = computed(() => {
 })
 
 onMounted(async () => {
+  await syncAtributos()
   await cargarComunas()
   await buscar()
 })

@@ -48,6 +48,16 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getPendingVenues());
     }
 
+    /**
+     * Lista TODAS las sedes registradas en el sistema (cualquier estado).
+     * Usado por el Admin General desde la pagina /admin/sedes.
+     * GET /api/admin/venues
+     */
+    @GetMapping("/venues")
+    public ResponseEntity<List<Map<String, Object>>> getAllVenues() {
+        return ResponseEntity.ok(adminService.getAllVenues());
+    }
+
     @PatchMapping("/venues/{id}/approve")
     public ResponseEntity<VenueResponse> approveVenue(@PathVariable UUID id) {
         return ResponseEntity.ok(adminService.approveVenue(id));

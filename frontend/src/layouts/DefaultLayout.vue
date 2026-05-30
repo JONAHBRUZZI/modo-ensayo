@@ -50,6 +50,7 @@
                 <router-link to="/admin" class="nav-link">Dashboard</router-link>
                 <router-link to="/admin/roles" class="nav-link">Aprobaciones</router-link>
                 <router-link to="/admin/usuarios" class="nav-link">Usuarios</router-link>
+                <router-link to="/admin/sedes" class="nav-link">Sedes</router-link>
               </template>
 
               <!-- Alumno mode -->

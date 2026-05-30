@@ -21,6 +21,12 @@ export default {
     return res.data
   },
 
+  // Todas las sedes registradas (cualquier estado) para listado del Admin General
+  async getAllVenues() {
+    const res = await api.get('/admin/venues')
+    return res.data
+  },
+
   async approveVenue(id) {
     const res = await api.patch(`/admin/venues/${id}/approve`)
     return res.data

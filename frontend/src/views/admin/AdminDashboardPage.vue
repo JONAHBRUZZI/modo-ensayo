@@ -3,19 +3,23 @@
     <h1 class="text-3xl font-bold text-white mb-8">Panel de Administracion</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+      <!-- Usuarios: lleva al listado completo de usuarios -->
       <router-link to="/admin/usuarios" class="card hover:border-primary/50 transition-colors group cursor-pointer">
         <h3 class="text-gray-400 text-sm mb-1">Usuarios</h3>
         <p class="text-3xl font-bold text-white group-hover:text-primary transition-colors">{{ stats.usuarios || 0 }}</p>
       </router-link>
-      <router-link to="/admin/roles" class="card hover:border-primary/50 transition-colors group cursor-pointer">
+      <!-- Sedes: lleva al listado completo de sedes (todos los estados) -->
+      <router-link to="/admin/sedes" class="card hover:border-primary/50 transition-colors group cursor-pointer">
         <h3 class="text-gray-400 text-sm mb-1">Sedes</h3>
-        <p class="text-3xl font-bold text-primary">{{ stats.sedes || 0 }}</p>
+        <p class="text-3xl font-bold text-primary group-hover:text-primary/80 transition-colors">{{ stats.sedes || 0 }}</p>
       </router-link>
+      <!-- Verif. Pendientes: lleva a aprobaciones de identidad -->
       <router-link to="/admin/roles" class="card hover:border-primary/50 transition-colors group cursor-pointer">
         <h3 class="text-gray-400 text-sm mb-1">Verif. Pendientes</h3>
         <p class="text-3xl font-bold text-yellow-400 group-hover:text-yellow-300 transition-colors">{{ stats.pendientes || 0 }}</p>
       </router-link>
-      <router-link to="/admin/roles" class="card hover:border-primary/50 transition-colors group cursor-pointer">
+      <!-- Sedes Pend.: lleva al listado de sedes filtrado por pendientes -->
+      <router-link to="/admin/sedes" class="card hover:border-primary/50 transition-colors group cursor-pointer">
         <h3 class="text-gray-400 text-sm mb-1">Sedes Pend.</h3>
         <p class="text-3xl font-bold text-red-400 group-hover:text-red-300 transition-colors">{{ stats.sedesPendientes || 0 }}</p>
       </router-link>

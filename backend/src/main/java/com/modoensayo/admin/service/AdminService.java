@@ -104,6 +104,46 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retorna TODAS las sedes registradas en el sistema (cualquier estado).
+     * Cada item incluye el nombre y email del Admin de Sede para que el Admin General
+     * pueda identificar al responsable rapidamente.
+     */
+    public List<Map<String, Object>> getAllVenues() {
+        return venueRepository.findAll().stream()
+                .sorted((a, b) -> {
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .map(v -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", v.getId().toString());
+                    map.put("name", v.getName());
+                    map.put("city", v.getCity());
+                    map.put("address", v.getAddress());
+                    map.put("description", v.getDescription());
+                    map.put("phone", v.getPhone());
+                    map.put("email", v.getEmail());
+                    map.put("status", v.getStatus() != null ? v.getStatus().name() : null);
+                    map.put("tipo", v.getTipo() != null ? v.getTipo().name() : null);
+                    map.put("createdAt", v.getCreatedAt());
+                    map.put("rejectionReason", v.getRejectionReason());
+
+                    // Datos del Admin de Sede para contexto rapido
+                    if (v.getAdminId() != null) {
+                        userRepository.findById(v.getAdminId()).ifPresent(admin -> {
+                            map.put("adminId", admin.getId().toString());
+                            map.put("adminFullName", admin.getFullName());
+                            map.put("adminEmail", admin.getEmail());
+                        });
+                    }
+                    return map;
+                })
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public VenueResponse approveVenue(UUID id) {
         Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));

@@ -100,12 +100,19 @@ public class UserController {
                 .anyMatch(c -> c.getTipoClase() == TipoClase.ASIGNADA
                         && c.getStatus() != ClassStatus.DRAFT
                         && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
-        boolean reservasSinClase = classRepository.findByTeacherId(userId).stream()
-                .anyMatch(c -> c.getTipoClase() == TipoClase.PROPIA
-                        && c.getStatus() == ClassStatus.DRAFT);
+        // reservasSinClase = DRAFTs con sala asignada: sala reservada pero clase aún no configurada
+        long reservasSinClaseCount = classRepository.findByTeacherId(userId).stream()
+                .filter(c -> c.getTipoClase() == TipoClase.PROPIA
+                        && c.getStatus() == ClassStatus.DRAFT
+                        && c.getRoom() != null)
+                .count();
         attrs.put("tieneReservasActivas", tieneReservasActivas);
         attrs.put("tieneAsignacionesActivas", tieneAsignacionesActivas);
-        attrs.put("reservasSinClase", reservasSinClase);
+        attrs.put("reservasSinClase", reservasSinClaseCount > 0);
+        attrs.put("reservasSinClaseCount", (int) reservasSinClaseCount);
+
+        // Perfil profesional completo: solo aplica si el usuario es TEACHER
+        attrs.put("perfilProfesionalCompleto", profileService.isComplete(userId));
 
         return ResponseEntity.ok(attrs);
     }

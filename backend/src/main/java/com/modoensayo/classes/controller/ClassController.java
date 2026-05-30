@@ -50,11 +50,26 @@ public class ClassController {
     }
 
     @PostMapping
-    public ResponseEntity<ClassResponse> create(@AuthenticationPrincipal CustomUserDetails user,
+    public ResponseEntity<?> create(@AuthenticationPrincipal CustomUserDetails user,
                                                  @RequestBody ClassRequest req,
                                                  @RequestParam(defaultValue = "false") boolean draft) {
         UUID teacherId = req.teacherId() != null ? req.teacherId() : user.getUserId();
-        return ResponseEntity.ok(classService.createWithTeacher(req, teacherId, draft));
+        ClassResponse clase = classService.createWithTeacher(req, teacherId, draft);
+        boolean rolAsignado = classService.wasTeacherRoleJustAssigned();
+        if (rolAsignado) {
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("clase", clase);
+            response.put("atributosActualizados", true);
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.ok(clase);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDraft(@AuthenticationPrincipal CustomUserDetails user,
+                                             @PathVariable UUID id) {
+        classService.deleteDraft(id, user.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/publish")

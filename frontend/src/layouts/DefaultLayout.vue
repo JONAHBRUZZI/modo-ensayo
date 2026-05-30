@@ -21,8 +21,12 @@
               <!-- Profesor mode -->
               <template v-if="puedeVerContextoProfesor && modoActual === 'profesor'">
                 <router-link to="/profesor/dashboard" class="nav-link">Dashboard</router-link>
-                <router-link to="/profesor/clases-propias" class="nav-link">Clases Agendadas</router-link>
-                <router-link to="/profesor/clases-asignadas" class="nav-link">Clases Asignadas</router-link>
+                <router-link to="/profesor/clases-por-asignar" class="nav-link relative">
+                  Por Asignar
+                  <span v-if="reservasSinClaseCount > 0" class="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{{ reservasSinClaseCount }}</span>
+                </router-link>
+                <router-link to="/profesor/clases-propias" class="nav-link">Mis Clases</router-link>
+                <router-link to="/profesor/clases-asignadas" class="nav-link">Asignadas</router-link>
                 <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
                 <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
                 <router-link to="/profesor/metricas" class="nav-link">Metricas</router-link>
@@ -46,6 +50,7 @@
                 <router-link to="/admin" class="nav-link">Dashboard</router-link>
                 <router-link to="/admin/roles" class="nav-link">Aprobaciones</router-link>
                 <router-link to="/admin/usuarios" class="nav-link">Usuarios</router-link>
+                <router-link to="/admin/sedes" class="nav-link">Sedes</router-link>
               </template>
 
               <!-- Alumno mode -->
@@ -134,6 +139,30 @@
       </div>
     </nav>
 
+    <!-- Banner: perfil profesional incompleto (contexto Maestro) -->
+    <div v-if="mostrarBannerPerfilIncompleto" class="bg-yellow-500/10 border-b border-yellow-500/30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <div class="flex items-start gap-3 flex-1 min-w-0">
+            <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+            <div class="min-w-0">
+              <p class="text-yellow-200 text-sm font-semibold">Completa tu perfil profesional</p>
+              <p class="text-yellow-100/70 text-xs mt-0.5">
+                Los alumnos necesitan conocer tu biografía y disciplina principal para inscribirse a tus clases.
+              </p>
+            </div>
+          </div>
+          <router-link to="/profesor/perfil-profesional"
+                       class="px-4 py-2 rounded-lg bg-yellow-500 text-black text-sm font-semibold hover:bg-yellow-400 transition-colors whitespace-nowrap flex-shrink-0">
+            Completar Ahora
+          </router-link>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-1">
       <router-view />
@@ -163,13 +192,21 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import paymentService from '@/services/paymentService'
 import rescheduleService from '@/services/rescheduleService'
 
 const router = useRouter()
-const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, displayName, setModo, logout, syncActividadMaestro, syncAtributos } = useAuth()
+const route = useRoute()
+const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, displayName, setModo, logout, syncActividadMaestro, syncAtributos, reservasSinClaseCount, perfilProfesionalCompleto } = useAuth()
+
+const mostrarBannerPerfilIncompleto = computed(() => {
+  return modoActual.value === 'profesor'
+    && puedeVerContextoProfesor.value
+    && !perfilProfesionalCompleto.value
+    && route.path !== '/profesor/perfil-profesional'
+})
 
 const showUserMenu = ref(false)
 const userMenuRef = ref(null)

@@ -156,12 +156,11 @@ import { useAuth } from '@/stores/auth'
 
 const route = useRoute()
 const auth = useAuth()
-const { refreshProfile, syncActividadMaestro, syncAtributos } = auth
+// identidadValidada viene del store (fuente unica), validada al registrarse
+const { syncAtributos, setModo, puedeVerContextoProfesor, perfilProfesionalCompleto, identidadValidada } = auth
 
 // Si venimos desde ProfesorBorradoresPage con "Asignar sala", tenemos el id del borrador
 const borradorId = computed(() => route.query.borradorId || null)
-
-const identidadValidada = computed(() => auth.user.value?.atributosActivos?.identidadValidada === true)
 const alertaIdentidad = ref(false)
 
 const venues = ref([])
@@ -290,7 +289,7 @@ async function pagar(metodo) {
         duration: 60
       })
     } else {
-      // Flujo clásico: crear un borrador nuevo con la sala ya asignada
+      // Flujo booking: crear borrador con sala asignada (backend otorga rol TEACHER)
       await api.post('/classes?draft=true', {
         title: 'Reserva - ' + modal.value.room.name,
         discipline: 'OTRO',
@@ -303,12 +302,26 @@ async function pagar(metodo) {
       })
     }
     modal.value.abierto = false
-    // Refrescar perfil y atributos para obtener rol TEACHER si es la primera clase
+    // Sincronizar atributos y roles (el backend puede haber asignado TEACHER en este paso)
     try {
-      await refreshProfile()
-      await syncActividadMaestro()
+      await syncAtributos()
+      if (puedeVerContextoProfesor.value) {
+        setModo('profesor')
+      }
     } catch {}
-    window.location.href = '/profesor/borradores'
+    // Redirigir segun estado:
+    // 1) Con rol TEACHER y perfil incompleto → completar perfil profesional (notificacion)
+    // 2) Con rol TEACHER y perfil completo → clases por asignar
+    // 3) Sin rol TEACHER → borradores (fallback)
+    if (puedeVerContextoProfesor.value) {
+      if (!perfilProfesionalCompleto.value) {
+        window.location.href = '/profesor/perfil-profesional?primeraVez=true'
+      } else {
+        window.location.href = '/profesor/clases-por-asignar'
+      }
+    } else {
+      window.location.href = '/profesor/borradores'
+    }
   } catch (e) {
     alert(e?.response?.data?.message || 'Error al procesar la reserva')
   }

@@ -92,12 +92,39 @@ public class UserService {
                 throw new BusinessException("El RUT ingresado no es valido. Verifica el digito verificador.");
             }
         }
-        // Fix #4: evitar que el mismo documento ya aprobado se registre en otra cuenta
+        // Fix #4: evitar que el mismo documento ya aprobado se registre en otra cuenta.
+        // Se normaliza el documento (quita puntos, guiones, espacios) antes de comparar
+        // para evitar falsos negativos por diferencias de formato.
         if (documentNumber != null && !documentNumber.isBlank()) {
-            boolean aprobadoEnOtraCuenta = identityVerificationRepository
-                    .existsByDocumentNumberAndStatusAndUserIdNot(documentNumber, "APPROVED", userDetails.getUserId());
-            if (aprobadoEnOtraCuenta) {
-                throw new BusinessException("Este documento ya se encuentra verificado en otra cuenta.");
+            String normalizado = normalizarDocumento(documentNumber);
+
+            // Caso 1: ya APROBADO en otra cuenta -> bloquear con mensaje especifico
+            var aprobado = identityVerificationRepository
+                    .findApprovedByNormalizedDocumentNumberExcludingUser(normalizado, userDetails.getUserId());
+            if (aprobado.isPresent()) {
+                String emailMascarado = userRepository.findById(aprobado.get().getUserId())
+                        .map(u -> mascararEmail(u.getEmail()))
+                        .orElse("otra cuenta");
+                throw new BusinessException(
+                        "Este " + (documentType != null ? documentType : "documento") + " (" + documentNumber + ") " +
+                        "ya se encuentra VALIDADO en la cuenta " + emailMascarado + ". " +
+                        "Si esa cuenta te pertenece, inicia sesion alli. Si crees que es un error, " +
+                        "contacta al administrador para liberar el documento."
+                );
+            }
+
+            // Caso 2: PENDIENTE en otra cuenta -> bloquear con mensaje informativo
+            var pendiente = identityVerificationRepository
+                    .findPendingByNormalizedDocumentNumberExcludingUser(normalizado, userDetails.getUserId());
+            if (pendiente.isPresent()) {
+                String emailMascarado = userRepository.findById(pendiente.get().getUserId())
+                        .map(u -> mascararEmail(u.getEmail()))
+                        .orElse("otra cuenta");
+                throw new BusinessException(
+                        "Este " + (documentType != null ? documentType : "documento") + " (" + documentNumber + ") " +
+                        "esta actualmente EN REVISION en la cuenta " + emailMascarado + ". " +
+                        "Espera a que se resuelva esa solicitud o contacta al administrador."
+                );
             }
         }
         IdentityVerification iv = identityVerificationRepository.findByUserId(userDetails.getUserId())
@@ -120,6 +147,29 @@ public class UserService {
 
         return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt(),
                 iv.getDocumentType(), iv.getDocumentNumber(), iv.getFullName(), iv.getBirthDate());
+    }
+
+    /**
+     * Normaliza un numero de documento para comparacion: quita puntos, guiones,
+     * espacios y deja en minusculas. Ejemplo: "19.831.314-9" -> "198313149".
+     */
+    private String normalizarDocumento(String documento) {
+        if (documento == null) return "";
+        return documento.replaceAll("[.\\s\\-]", "").toLowerCase();
+    }
+
+    /**
+     * Enmascara un email para mostrarlo en mensajes de error sin revelar la
+     * cuenta completa. Ejemplo: "darlette@gmail.com" -> "d******e@gmail.com".
+     */
+    private String mascararEmail(String email) {
+        if (email == null) return "otra cuenta";
+        int at = email.indexOf('@');
+        if (at <= 0) return "***";
+        String local = email.substring(0, at);
+        String domain = email.substring(at);
+        if (local.length() <= 2) return local.charAt(0) + "***" + domain;
+        return local.charAt(0) + "***" + local.charAt(local.length() - 1) + domain;
     }
 
     private boolean validarRutChileno(String rut) {

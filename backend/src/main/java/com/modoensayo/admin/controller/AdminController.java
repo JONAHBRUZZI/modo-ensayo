@@ -48,6 +48,16 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getPendingVenues());
     }
 
+    /**
+     * Lista TODAS las sedes registradas en el sistema (cualquier estado).
+     * Usado por el Admin General desde la pagina /admin/sedes.
+     * GET /api/admin/venues
+     */
+    @GetMapping("/venues")
+    public ResponseEntity<List<Map<String, Object>>> getAllVenues() {
+        return ResponseEntity.ok(adminService.getAllVenues());
+    }
+
     @PatchMapping("/venues/{id}/approve")
     public ResponseEntity<VenueResponse> approveVenue(@PathVariable UUID id) {
         return ResponseEntity.ok(adminService.approveVenue(id));
@@ -57,6 +67,18 @@ public class AdminController {
     public ResponseEntity<VenueResponse> rejectVenue(@PathVariable UUID id,
                                                       @RequestBody Map<String, String> body) {
         return ResponseEntity.ok(adminService.rejectVenue(id, body.get("motivo")));
+    }
+
+    /**
+     * Alterna el estado de una sede entre APROBADA y SUSPENDIDA.
+     * Body: { "motivo": "..." } opcional (se usa al suspender, no al reactivar)
+     * PATCH /api/admin/venues/{id}/toggle
+     */
+    @PatchMapping("/venues/{id}/toggle")
+    public ResponseEntity<VenueResponse> toggleVenue(@PathVariable UUID id,
+                                                      @RequestBody(required = false) Map<String, String> body) {
+        String motivo = body != null ? body.get("motivo") : null;
+        return ResponseEntity.ok(adminService.toggleVenue(id, motivo));
     }
 
     @GetMapping("/users")
@@ -80,6 +102,18 @@ public class AdminController {
     public ResponseEntity<Void> toggleUser(@PathVariable UUID id, @RequestBody Map<String, String> body) {
         adminService.toggleUser(id, body.get("motivo"));
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Elimina permanentemente una cuenta de usuario.
+     * Protege al admin raiz y al propio actor.
+     * DELETE /api/admin/users/{id}
+     */
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID id,
+                                            @AuthenticationPrincipal CustomUserDetails actor) {
+        adminService.deleteUser(id, actor.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     // ── Documentos de sedes ─────────────────────────────────────────────────

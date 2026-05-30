@@ -38,6 +38,7 @@ public class AdminService {
         stats.put("sedes", venueRepository.count());
         stats.put("pendientes", identityVerificationRepository.countByStatus("PENDING"));
         stats.put("sedesPendientes", venueRepository.countByStatus(EstadoSede.PENDIENTE_APROBACION));
+        stats.put("sedesSuspendidas", venueRepository.countByStatus(EstadoSede.SUSPENDIDA));
 
         long totalClases = classRepository.count();
         long clasesRealizadas = classRepository.findAll().stream()
@@ -104,6 +105,46 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retorna TODAS las sedes registradas en el sistema (cualquier estado).
+     * Cada item incluye el nombre y email del Admin de Sede para que el Admin General
+     * pueda identificar al responsable rapidamente.
+     */
+    public List<Map<String, Object>> getAllVenues() {
+        return venueRepository.findAll().stream()
+                .sorted((a, b) -> {
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .map(v -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", v.getId().toString());
+                    map.put("name", v.getName());
+                    map.put("city", v.getCity());
+                    map.put("address", v.getAddress());
+                    map.put("description", v.getDescription());
+                    map.put("phone", v.getPhone());
+                    map.put("email", v.getEmail());
+                    map.put("status", v.getStatus() != null ? v.getStatus().name() : null);
+                    map.put("tipo", v.getTipo() != null ? v.getTipo().name() : null);
+                    map.put("createdAt", v.getCreatedAt());
+                    map.put("rejectionReason", v.getRejectionReason());
+
+                    // Datos del Admin de Sede para contexto rapido
+                    if (v.getAdminId() != null) {
+                        userRepository.findById(v.getAdminId()).ifPresent(admin -> {
+                            map.put("adminId", admin.getId().toString());
+                            map.put("adminFullName", admin.getFullName());
+                            map.put("adminEmail", admin.getEmail());
+                        });
+                    }
+                    return map;
+                })
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public VenueResponse approveVenue(UUID id) {
         Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));
@@ -129,6 +170,52 @@ public class AdminService {
             notificationRepository.save(Notification.builder()
                     .userId(v.getAdminId())
                     .message("Tu sede '" + v.getName() + "' ha sido APROBADA. Ya tienes acceso al panel de gestión de tu sede.")
+                    .read(false).createdAt(Instant.now()).build());
+        }
+
+        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
+                v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
+                v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
+                v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());
+    }
+
+    /**
+     * Alterna el estado de una sede entre APROBADA y SUSPENDIDA.
+     * - APROBADA -> SUSPENDIDA (con motivo opcional)
+     * - SUSPENDIDA -> APROBADA (reactivacion)
+     * No aplica para sedes en PENDIENTE_APROBACION ni RECHAZADA.
+     */
+    @Transactional
+    public VenueResponse toggleVenue(UUID id, String motivo) {
+        Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));
+
+        if (v.getStatus() == EstadoSede.PENDIENTE_APROBACION) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "No se puede suspender una sede que aun no esta aprobada. Apruebala o rechazala primero.");
+        }
+        if (v.getStatus() == EstadoSede.RECHAZADA) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "No se puede suspender o reactivar una sede rechazada.");
+        }
+
+        boolean suspendiendo = v.getStatus() == EstadoSede.APROBADA;
+        v.setStatus(suspendiendo ? EstadoSede.SUSPENDIDA : EstadoSede.APROBADA);
+        if (suspendiendo) {
+            v.setRejectionReason(motivo);
+        } else {
+            v.setRejectionReason(null);
+        }
+        v = venueRepository.save(v);
+
+        if (v.getAdminId() != null) {
+            String mensaje = suspendiendo
+                    ? "Tu sede '" + v.getName() + "' ha sido SUSPENDIDA por el administrador. Motivo: "
+                            + (motivo != null && !motivo.isBlank() ? motivo : "No especificado")
+                            + ". Tus salas no pueden recibir nuevas reservas. Contacta al administrador para mas detalles."
+                    : "Tu sede '" + v.getName() + "' ha sido REACTIVADA. Ya puedes recibir nuevas reservas.";
+            notificationRepository.save(Notification.builder()
+                    .userId(v.getAdminId())
+                    .message(mensaje)
                     .read(false).createdAt(Instant.now()).build());
         }
 
@@ -205,5 +292,37 @@ public class AdminService {
                 : "Tu cuenta ha sido SUSPENDIDA. Motivo: " + (motivo != null ? motivo : "No especificado") + ". Contacta al administrador.";
         notificationRepository.save(Notification.builder()
                 .userId(userId).message(msg).read(false).createdAt(Instant.now()).build());
+    }
+
+    /**
+     * Elimina permanentemente una cuenta de usuario. Protege:
+     * - Al administrador raiz del sistema (admin@modoensayo.com)
+     * - Al propio admin que esta ejecutando la accion
+     * Las dependencias con cascade en la BD se eliminan automaticamente
+     * (user_roles, identity_verifications, associates, professional_profile, refund_methods).
+     * Las referencias sin cascade (venues, classes, enrollments, notifications) se anulan
+     * o eliminan segun corresponda antes de borrar el user.
+     */
+    @Transactional
+    public void deleteUser(UUID targetUserId, UUID actorAdminId) {
+        if (targetUserId.equals(actorAdminId)) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "No puedes eliminar tu propia cuenta de administrador.");
+        }
+        User target = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        if ("admin@modoensayo.com".equalsIgnoreCase(target.getEmail())) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "No se puede eliminar la cuenta raiz del sistema.");
+        }
+
+        // Limpiar notificaciones (sin cascade en BD)
+        notificationRepository.deleteAll(notificationRepository.findByUserIdOrderByCreatedAtDesc(targetUserId));
+
+        // Eliminar al usuario. JPA cascadea user_roles, identity, associates,
+        // professional_profile y refund_methods configurados con CascadeType.ALL
+        // y orphanRemoval = true.
+        userRepository.delete(target);
     }
 }

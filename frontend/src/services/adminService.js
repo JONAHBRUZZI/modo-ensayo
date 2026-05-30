@@ -21,6 +21,12 @@ export default {
     return res.data
   },
 
+  // Todas las sedes registradas (cualquier estado) para listado del Admin General
+  async getAllVenues() {
+    const res = await api.get('/admin/venues')
+    return res.data
+  },
+
   async approveVenue(id) {
     const res = await api.patch(`/admin/venues/${id}/approve`)
     return res.data
@@ -28,6 +34,12 @@ export default {
 
   async rejectVenue(id, motivo) {
     const res = await api.patch(`/admin/venues/${id}/reject`, { motivo })
+    return res.data
+  },
+
+  // Alterna APROBADA <-> SUSPENDIDA. Motivo se usa solo al suspender.
+  async toggleVenue(id, motivo) {
+    const res = await api.patch(`/admin/venues/${id}/toggle`, { motivo: motivo || '' })
     return res.data
   },
 
@@ -49,5 +61,10 @@ export default {
   async toggleUser(userId, motivo) {
     const res = await api.patch(`/admin/users/${userId}/toggle`, { motivo })
     return res.data
+  },
+
+  // Eliminacion permanente de una cuenta de usuario por parte de un Admin
+  async deleteUser(userId) {
+    await api.delete(`/admin/users/${userId}`)
   }
 }

@@ -195,6 +195,12 @@ const routes = [
         meta: { requiresAuth: true, requiresIdentity: true }
       },
       {
+        path: 'profesor/clases-por-asignar',
+        name: 'ProfesorClasesPorAsignar',
+        component: () => import('@/views/profesor/ProfesorClasesPorAsignarPage.vue'),
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
+      },
+      {
         path: 'profesor/crear-borrador',
         name: 'ProfesorCrearBorrador',
         component: () => import('@/views/profesor/ProfesorCrearBorradorPage.vue'),
@@ -284,6 +290,12 @@ const routes = [
         path: 'admin/usuarios',
         name: 'AdminUsuarios',
         component: () => import('@/views/admin/AdminUsuariosPage.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN'] }
+      },
+      {
+        path: 'admin/sedes',
+        name: 'AdminSedes',
+        component: () => import('@/views/admin/AdminSedesPage.vue'),
         meta: { requiresAuth: true, roles: ['ADMIN'] }
       },
       {

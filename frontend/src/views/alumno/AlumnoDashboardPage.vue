@@ -141,8 +141,13 @@
 
         <!-- Crear perfil de maestro / buscar salas -->
         <div v-if="identidadValidada">
-          <router-link to="/profesor/buscar-salas"
-            class="card hover:border-indigo-500/50 transition-colors group flex items-start gap-3">
+          <!--
+            Si el usuario ya tiene rol TEACHER, el click cambia el modo a 'profesor'
+            antes de navegar para que llegue a buscar-salas en su contexto Maestro.
+            Si aun no es Maestro, navega tal cual: la reserva le otorgara el rol.
+          -->
+          <button @click="irABuscarSalas"
+            class="card hover:border-indigo-500/50 transition-colors group flex items-start gap-3 text-left w-full">
             <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0">
               <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -150,10 +155,20 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-base font-semibold text-white group-hover:text-indigo-400 transition-colors">Agenda tu Sala</h3>
-              <p class="text-gray-400 text-sm mt-1">Coordina tus propias clases.</p>
+              <h3 class="text-base font-semibold text-white group-hover:text-indigo-400 transition-colors">
+                Agenda tu Sala
+                <span v-if="puedeVerContextoProfesor"
+                      class="ml-2 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 uppercase tracking-wider align-middle">
+                  Contexto Maestro
+                </span>
+              </h3>
+              <p class="text-gray-400 text-sm mt-1">
+                {{ puedeVerContextoProfesor
+                  ? 'Te llevamos a tu contexto de Maestro para reservar.'
+                  : 'Coordina tus propias clases.' }}
+              </p>
             </div>
-          </router-link>
+          </button>
         </div>
         <div v-else class="card opacity-50 cursor-not-allowed flex items-start gap-3" @click="mostrarBloqueo">
           <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
@@ -185,11 +200,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import api from '@/services/api'
 
-const { displayName, identidadValidada, identidadEnRevision, identidadRechazada, syncIdentityStatus, syncActividadMaestro } = useAuth()
+const router = useRouter()
+const { displayName, identidadValidada, identidadEnRevision, identidadRechazada,
+        puedeVerContextoProfesor, setModo, syncIdentityStatus, syncActividadMaestro } = useAuth()
 
 const stats = ref({ totalClases: 0, proximas: 0 })
 const toastVisible = ref(false)
@@ -213,5 +231,19 @@ const identidadEstado = computed(() => {
 function mostrarBloqueo() {
   toastVisible.value = true
   setTimeout(() => { toastVisible.value = false }, 3000)
+}
+
+/**
+ * Click en "Agenda tu Sala" desde el dashboard de Alumno.
+ * - Si el usuario YA tiene rol TEACHER, cambia el modo activo a 'profesor'
+ *   antes de navegar para que llegue al contexto Maestro con la navbar correcta.
+ * - Si aun no tiene rol TEACHER, navega tal cual: al confirmar la reserva en
+ *   buscar-salas se le otorgara el rol y se cambiara el modo automaticamente.
+ */
+function irABuscarSalas() {
+  if (puedeVerContextoProfesor.value) {
+    setModo('profesor')
+  }
+  router.push('/profesor/buscar-salas')
 }
 </script>

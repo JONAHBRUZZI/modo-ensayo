@@ -25,6 +25,20 @@ public class ProfessionalProfileService {
         return profileRepository.findByUser_Id(userId).orElse(null);
     }
 
+    /**
+     * Verifica si el perfil profesional tiene los datos minimos requeridos para que el
+     * maestro sea visible y atractivo para los alumnos.
+     * Requeridos: biografia + (disciplinaPrincipal o especialidad).
+     */
+    public boolean isComplete(UUID userId) {
+        ProfessionalProfile p = profileRepository.findByUser_Id(userId).orElse(null);
+        if (p == null) return false;
+        boolean tieneBiografia = p.getBiografia() != null && !p.getBiografia().isBlank();
+        boolean tieneDisciplina = (p.getDisciplinaPrincipal() != null && !p.getDisciplinaPrincipal().isBlank())
+                || (p.getEspecialidad() != null && !p.getEspecialidad().isBlank());
+        return tieneBiografia && tieneDisciplina;
+    }
+
     @Transactional
     public ProfessionalProfile save(UUID userId, Map<String, String> data) {
         Map<String, Object> objData = new java.util.HashMap<>(data);

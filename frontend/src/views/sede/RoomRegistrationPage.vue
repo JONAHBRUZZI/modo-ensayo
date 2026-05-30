@@ -147,14 +147,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
 
 const router = useRouter()
-const auth = useAuth()
-const identidadValidada = computed(() => auth.user?.atributosActivos?.identidadValidada === true)
+// identidadValidada se valida UNA sola vez al registrar el usuario.
+// Todos los contextos (profesor, sede, alumno) leen el mismo estado desde el store.
+const { identidadValidada } = useAuth()
 
 const venues = ref([])
 const sending = ref(false)

@@ -30,6 +30,99 @@
       </div>
     </div>
 
+    <!-- Opciones para esta reserva: completar nueva o asignar borrador existente -->
+    <div v-if="isEditing" class="mb-6">
+      <p class="text-sm text-gray-300 mb-3">¿Qué deseas hacer con esta sala reservada?</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Opcion 1: Completar clase nueva (el formulario de abajo) -->
+        <div class="rounded-xl border border-primary/40 bg-primary/5 p-4">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 bg-primary rounded-full"></span>
+            <p class="text-white font-medium text-sm">Completar Clase Nueva</p>
+          </div>
+          <p class="text-gray-400 text-xs">
+            Configura la clase desde cero con el formulario de abajo (titulo, disciplina, precio, etc.).
+          </p>
+        </div>
+
+        <!-- Opcion 2: Asignar un borrador existente -->
+        <button
+          type="button"
+          @click="abrirModalBorrador"
+          class="rounded-xl border border-white/10 bg-[#0d0f1a] hover:border-white/30 hover:bg-[#1a1d2e] p-4 text-left transition-colors"
+        >
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="text-white font-medium text-sm">Asignar Borrador Existente</p>
+          </div>
+          <p class="text-gray-400 text-xs">
+            Usa una clase que ya tienes guardada como borrador y asígnale esta sala/horario.
+          </p>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal: seleccionar borrador existente -->
+    <div v-if="modalBorrador.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
+         @click.self="modalBorrador.abierto = false">
+      <div class="bg-[#161824] border border-gray-700 rounded-xl p-6 max-w-lg w-full">
+        <h3 class="text-white font-semibold text-lg mb-1">Seleccionar Borrador</h3>
+        <p class="text-gray-400 text-sm mb-4">
+          Asigna la sala reservada a un borrador existente y publícalo.
+        </p>
+
+        <div v-if="loadingBorradores" class="text-gray-400 text-sm py-4 text-center">
+          Cargando borradores...
+        </div>
+        <div v-else-if="borradoresDisponibles.length === 0" class="text-center py-4">
+          <p class="text-gray-500 text-sm">No tienes borradores sin sala disponibles.</p>
+          <router-link to="/profesor/crear-borrador" class="text-primary text-sm underline mt-2 inline-block">
+            Crear un borrador
+          </router-link>
+        </div>
+        <div v-else class="space-y-2 max-h-64 overflow-y-auto mb-4">
+          <button
+            v-for="b in borradoresDisponibles"
+            :key="b.id"
+            type="button"
+            @click="borradorSeleccionado = b"
+            :class="[
+              'w-full text-left p-3 rounded-xl border transition-colors',
+              borradorSeleccionado?.id === b.id
+                ? 'border-primary bg-primary/10'
+                : 'border-white/10 hover:border-white/20 bg-[#0d0f1a]'
+            ]"
+          >
+            <p class="text-white text-sm font-medium">{{ b.title }}</p>
+            <p class="text-gray-400 text-xs mt-0.5">
+              {{ b.discipline || 'Sin disciplina' }}
+              <span v-if="b.level"> · {{ b.level }}</span>
+              <span v-if="b.price != null"> · ${{ b.price?.toLocaleString('es-CL') }}</span>
+            </p>
+          </button>
+        </div>
+
+        <p v-if="modalBorrador.error" class="text-red-400 text-sm mb-3">{{ modalBorrador.error }}</p>
+
+        <div class="flex gap-3">
+          <button
+            type="button"
+            @click="usarBorrador"
+            :disabled="!borradorSeleccionado || modalBorrador.procesando"
+            class="btn-primary flex-1 text-sm"
+          >
+            {{ modalBorrador.procesando ? 'Publicando...' : 'Asignar y Publicar' }}
+          </button>
+          <button type="button" @click="modalBorrador.abierto = false" class="btn-secondary text-sm px-4">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <form @submit.prevent="handleCreate" class="card space-y-4">
       <!-- Titulo -->
       <div>
@@ -124,7 +217,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
 import api from '@/services/api'
@@ -132,7 +225,7 @@ import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
-const { syncActividadMaestro, refreshProfile } = useAuth()
+const { syncAtributos } = useAuth()
 
 const form = ref({
   title: '', discipline: '', level: '', description: '',
@@ -146,6 +239,17 @@ const error = ref('')
 const creating = ref(false)
 const isEditing = ref(false)
 const editingClassId = ref(null)
+
+// Estado del modal "Usar Borrador Existente"
+const borradores = ref([])
+const loadingBorradores = ref(false)
+const borradorSeleccionado = ref(null)
+const modalBorrador = ref({ abierto: false, procesando: false, error: '' })
+
+// Solo borradores sin sala y que NO sean la reserva actual
+const borradoresDisponibles = computed(() => {
+  return borradores.value.filter(b => !b.roomId && b.id !== editingClassId.value)
+})
 
 onMounted(async () => {
   try { venues.value = await classService.getVenues() } catch { venues.value = [] }
@@ -215,14 +319,49 @@ async function handleCreate() {
     } else {
       await classService.createClass(form.value)
     }
-    await refreshProfile()
-    await syncActividadMaestro()
+    await syncAtributos()
     router.push('/profesor/clases-propias')
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al ' + (isEditing.value ? 'publicar' : 'crear') + ' clase'
   } finally {
     creating.value = false
   }
+}
+
+async function abrirModalBorrador() {
+  modalBorrador.value = { abierto: true, procesando: false, error: '' }
+  borradorSeleccionado.value = null
+  loadingBorradores.value = true
+  try {
+    const todos = await classService.getTeacherDrafts()
+    borradores.value = Array.isArray(todos) ? todos : []
+  } catch {
+    borradores.value = []
+  }
+  loadingBorradores.value = false
+}
+
+async function usarBorrador() {
+  if (!borradorSeleccionado.value || !editingClassId.value) return
+  modalBorrador.value.procesando = true
+  modalBorrador.value.error = ''
+  try {
+    // 1. Asignar sala/horario de esta reserva al borrador seleccionado (lo publica)
+    await api.post(`/profesor/clases/${borradorSeleccionado.value.id}/asignar-reserva`, {
+      roomId: form.value.roomId,
+      startTime: form.value.startTime,
+      duration: form.value.duration || 60
+    })
+    // 2. Eliminar el draft de la reserva original (placeholder "Reserva - sala")
+    await api.delete(`/classes/${editingClassId.value}`)
+    // 3. Refrescar atributos (puede cambiar tieneReservasActivas / reservasSinClase)
+    try { await syncAtributos() } catch {}
+    modalBorrador.value.abierto = false
+    router.push('/profesor/clases-propias')
+  } catch (e) {
+    modalBorrador.value.error = e?.response?.data?.message || 'Error al asignar el borrador'
+  }
+  modalBorrador.value.procesando = false
 }
 
 function formatDatetime(d) {

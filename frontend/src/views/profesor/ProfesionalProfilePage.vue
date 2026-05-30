@@ -1,6 +1,38 @@
 <template>
   <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
+    <!-- Banner de bienvenida cuando llega desde reserva (primera vez como Maestro) -->
+    <div v-if="primeraVez" class="mb-8 rounded-2xl border border-yellow-500/40 bg-gradient-to-r from-yellow-500/10 to-primary/10 p-6">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h2 class="text-white font-bold text-lg">¡Felicitaciones, ya eres Maestro!</h2>
+          <p class="text-gray-300 text-sm mt-1">
+            Tu sala está reservada. Antes de configurar tu clase, completa tu <strong class="text-white">perfil profesional</strong>
+            para que los alumnos te conozcan y puedan inscribirse.
+          </p>
+          <p class="text-yellow-300 text-xs mt-2 font-medium">
+            Mínimo requerido: tu biografía y disciplina principal.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Banner persistente: perfil incompleto (no es primera vez) -->
+    <div v-else-if="!perfilProfesionalCompleto && hasTeacherRole" class="mb-6 rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex items-start gap-3">
+      <svg class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p class="text-blue-200 text-sm">
+        Tu perfil aún no esta completo. Completa al menos tu biografía y disciplina principal para que tus clases aparezcan a los alumnos.
+      </p>
+    </div>
+
     <!-- Cabecera con nombre del maestro -->
     <div class="flex items-center space-x-4 mb-8">
       <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-2xl font-bold text-white flex-shrink-0">
@@ -154,10 +186,16 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/services/api'
+import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
+const { syncAtributos, perfilProfesionalCompleto, puedeVerContextoProfesor } = useAuth()
+
+const primeraVez = computed(() => route.query.primeraVez === 'true')
+const hasTeacherRole = computed(() => puedeVerContextoProfesor.value)
 
 const disciplinasOpciones = [
   'CUECA', 'BALLET', 'DANZA', 'TEATRO', 'CANTO',
@@ -224,9 +262,15 @@ async function save() {
     Object.assign(form, res.data)
     if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
     if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
-    msg.value = 'Perfil guardado correctamente'
+    // Refrescar atributos (perfilProfesionalCompleto puede haber cambiado)
+    try { await syncAtributos() } catch {}
+    msg.value = primeraVez.value
+      ? 'Perfil guardado. Te llevamos a configurar tu clase...'
+      : 'Perfil guardado correctamente'
     msgType.value = 'success'
-    setTimeout(() => router.push('/profesor/dashboard'), 1500)
+    // Si vino desde la reserva (primera vez), llevarlo a configurar la clase
+    const destino = primeraVez.value ? '/profesor/clases-por-asignar' : '/profesor/dashboard'
+    setTimeout(() => router.push(destino), 1500)
   } catch (e) {
     msg.value = e.response?.data?.message || 'Error al guardar'
     msgType.value = 'error'

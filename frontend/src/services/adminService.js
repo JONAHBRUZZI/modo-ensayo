@@ -61,5 +61,10 @@ export default {
   async toggleUser(userId, motivo) {
     const res = await api.patch(`/admin/users/${userId}/toggle`, { motivo })
     return res.data
+  },
+
+  // Eliminacion permanente de una cuenta de usuario por parte de un Admin
+  async deleteUser(userId) {
+    await api.delete(`/admin/users/${userId}`)
   }
 }

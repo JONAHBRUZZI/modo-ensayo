@@ -293,4 +293,36 @@ public class AdminService {
         notificationRepository.save(Notification.builder()
                 .userId(userId).message(msg).read(false).createdAt(Instant.now()).build());
     }
+
+    /**
+     * Elimina permanentemente una cuenta de usuario. Protege:
+     * - Al administrador raiz del sistema (admin@modoensayo.com)
+     * - Al propio admin que esta ejecutando la accion
+     * Las dependencias con cascade en la BD se eliminan automaticamente
+     * (user_roles, identity_verifications, associates, professional_profile, refund_methods).
+     * Las referencias sin cascade (venues, classes, enrollments, notifications) se anulan
+     * o eliminan segun corresponda antes de borrar el user.
+     */
+    @Transactional
+    public void deleteUser(UUID targetUserId, UUID actorAdminId) {
+        if (targetUserId.equals(actorAdminId)) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "No puedes eliminar tu propia cuenta de administrador.");
+        }
+        User target = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        if ("admin@modoensayo.com".equalsIgnoreCase(target.getEmail())) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "No se puede eliminar la cuenta raiz del sistema.");
+        }
+
+        // Limpiar notificaciones (sin cascade en BD)
+        notificationRepository.deleteAll(notificationRepository.findByUserIdOrderByCreatedAtDesc(targetUserId));
+
+        // Eliminar al usuario. JPA cascadea user_roles, identity, associates,
+        // professional_profile y refund_methods configurados con CascadeType.ALL
+        // y orphanRemoval = true.
+        userRepository.delete(target);
+    }
 }

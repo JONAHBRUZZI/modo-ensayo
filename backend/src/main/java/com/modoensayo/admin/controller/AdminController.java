@@ -104,6 +104,18 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Elimina permanentemente una cuenta de usuario.
+     * Protege al admin raiz y al propio actor.
+     * DELETE /api/admin/users/{id}
+     */
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID id,
+                                            @AuthenticationPrincipal CustomUserDetails actor) {
+        adminService.deleteUser(id, actor.getUserId());
+        return ResponseEntity.noContent().build();
+    }
+
     // ── Documentos de sedes ─────────────────────────────────────────────────
 
     /**

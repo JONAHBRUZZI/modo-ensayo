@@ -75,9 +75,6 @@ public class VenueAdminController {
         VenueRequest req = new VenueRequest(nombre, ciudad, direccion, descripcion,
                 telefono, email, tipo, instagram, youtube, sitioWeb, facebook);
 
-        // Validar que estén los documentos requeridos según tipo antes de guardar
-        venueService.validarDocumentosRequeridos(tipo, tiposDocumento);
-
         VenueResponse venue = venueService.registrarSede(user.getUserId(), req);
 
         // Persistir documentos adjuntos

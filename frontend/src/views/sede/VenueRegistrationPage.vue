@@ -8,39 +8,8 @@
       </p>
     </div>
 
-    <!-- Identidad no validada -->
-    <div v-if="!identidadValidada && !identidadEnRevision" class="card space-y-4 text-center">
-      <div class="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center mx-auto">
-        <svg class="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      </div>
-      <h2 class="text-xl font-semibold text-white">Identidad no validada</h2>
-      <p class="text-gray-400 text-sm">
-        Para registrar una sede debes validar tu identidad subiendo tu cédula o pasaporte.
-      </p>
-      <router-link to="/profile/identity" class="btn-primary inline-block mt-2">
-        Validar mi identidad
-      </router-link>
-    </div>
-
-    <!-- Identidad en revisión -->
-    <div v-else-if="identidadEnRevision" class="card space-y-4 text-center">
-      <div class="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto">
-        <svg class="w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <h2 class="text-xl font-semibold text-white">Verificación en revisión</h2>
-      <p class="text-gray-400 text-sm">
-        Tu documento está siendo revisado. Podrás registrar tu sede una vez aprobada la verificación.
-      </p>
-    </div>
-
     <!-- Solicitud enviada -->
-    <div v-else-if="enviado" class="card space-y-4 text-center">
+    <div v-if="enviado" class="card space-y-4 text-center">
       <div class="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto">
         <svg class="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -204,15 +173,14 @@
       <div class="card space-y-4 border border-primary/20">
         <h2 class="text-lg font-semibold text-white border-b border-white/10 pb-3">Documentacion requerida</h2>
         <p class="text-xs text-gray-400">
-          {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria, permisos municipales y documentos legales.' : 'Para HomeStudio necesitas tu Inicio de Actividades del SII y un comprobante que acredite el domicilio (luz, agua, gas, internet, extracto bancario o ficha de proteccion social). Tu identidad ya fue validada, no es necesario adjuntar la cedula.' }}
+          Adjunta los documentos que tengas disponibles. No es obligatorio subirlos todos ahora — el equipo de Modo Ensayo te contactará si necesita más información para aprobar tu sede.
         </p>
 
         <div v-for="doc in docsRequeridos" :key="doc.tipo" class="space-y-2">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-medium" :class="doc.requerido ? 'text-red-400' : 'text-gray-500'">
+            <span class="text-xs font-medium text-gray-400">
               {{ doc.label }}
-              <span v-if="doc.requerido" class="text-red-400">*</span>
-              <span v-else class="text-gray-600 text-[10px]">(opcional)</span>
+              <span class="text-gray-600 text-[10px]">(opcional)</span>
             </span>
           </div>
           <input type="file"
@@ -243,7 +211,7 @@ import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
 import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
 
-const { isAuthenticated, identidadValidada, identidadEnRevision, syncIdentityStatus } = useAuth()
+const { isAuthenticated } = useAuth()
 const { attachAutocomplete } = usePlacesAutocomplete()
 
 const addressInput = ref(null)
@@ -313,18 +281,18 @@ const docArchivos = reactive({})
 const docsRequeridos = computed(() => {
   if (form.tipo === 'SEDE') {
     return [
-      { tipo: 'RUT_EMPRESA', label: 'RUT de la Empresa', requerido: true },
-      { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (F4415)', requerido: true },
-      { tipo: 'CERTIFICADO_SITUACION_TRIBUTARIA', label: 'Certificado Situacion Tributaria', requerido: true },
-      { tipo: 'PERMISO_MUNICIPAL', label: 'Permiso Municipal', requerido: true },
-      { tipo: 'CONTRATO_ARRIENDO', label: 'Contrato de Arriendo', requerido: false },
-      { tipo: 'OTRO', label: 'Otro documento', requerido: false }
+      { tipo: 'RUT_EMPRESA', label: 'RUT de la Empresa' },
+      { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (F4415)' },
+      { tipo: 'CERTIFICADO_SITUACION_TRIBUTARIA', label: 'Certificado Situacion Tributaria' },
+      { tipo: 'PERMISO_MUNICIPAL', label: 'Permiso Municipal' },
+      { tipo: 'CONTRATO_ARRIENDO', label: 'Contrato de Arriendo' },
+      { tipo: 'OTRO', label: 'Otro documento' }
     ]
   }
   return [
-    { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (SII)', requerido: true },
-    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz, agua, gas, internet, extracto bancario o ficha proteccion social)', requerido: true },
-    { tipo: 'OTRO', label: 'Otro documento', requerido: false }
+    { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (SII)' },
+    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz, agua, gas, internet, extracto bancario o ficha proteccion social)' },
+    { tipo: 'OTRO', label: 'Otro documento' }
   ]
 })
 
@@ -334,7 +302,6 @@ function onDocFile(event, tipo) {
 }
 
 onMounted(() => {
-  if (isAuthenticated.value) syncIdentityStatus()
   attachAutocomplete(addressInput.value, (place) => {
     form.address = place.formatted_address
     if (place.city && !form.city) form.city = place.city
@@ -366,7 +333,10 @@ async function submit() {
     await venueService.registrarVenueConDocumentos(fd)
     enviado.value = true
   } catch (e) {
-    error.value = e.response?.data?.message || 'Error al enviar la solicitud. Intenta nuevamente.'
+    const msg = e.response?.data?.message || e.response?.data?.error || e.message
+    error.value = msg && msg !== 'No message available'
+      ? msg
+      : 'Error al enviar la solicitud. Intenta nuevamente.'
   } finally {
     enviando.value = false
   }

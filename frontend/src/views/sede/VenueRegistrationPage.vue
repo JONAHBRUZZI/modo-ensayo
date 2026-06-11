@@ -322,7 +322,8 @@ const docsRequeridos = computed(() => {
     ]
   }
   return [
-    { tipo: 'CEDULA_IDENTIDAD', label: 'Cedula de Identidad', requerido: true },
+    { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (SII)', requerido: true },
+    { tipo: 'CEDULA_IDENTIDAD', label: 'Cedula de Identidad', requerido: false },
     { tipo: 'OTRO', label: 'Otro documento', requerido: false }
   ]
 })

@@ -49,13 +49,12 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Tipo de piso</label>
-            <select v-model="form.floorType" class="input-field">
+            <select v-model="form.tipoPiso" class="input-field">
               <option value="">Sin especificar</option>
-              <option value="madera">Madera</option>
-              <option value="flotante">Flotante</option>
-              <option value="cemento">Cemento</option>
-              <option value="goma">Goma</option>
-              <option value="alfombra">Alfombra</option>
+              <option value="MADERA">Madera</option>
+              <option value="FLOTANTE">Flotante</option>
+              <option value="CEMENTO">Cemento</option>
+              <option value="ALFOMBRA">Alfombra</option>
             </select>
           </div>
           <div>
@@ -167,7 +166,7 @@ const form = reactive({
   name: '',
   capacity: 10,
   tamanoM2: null,
-  floorType: '',
+  tipoPiso: '',
   type: 'GRUPAL',
   pricePerHour: null,
   // Espacio
@@ -201,7 +200,7 @@ async function submit() {
       name: form.name,
       capacity: form.capacity,
       tamanoM2: form.tamanoM2,
-      floorType: form.floorType || null,
+      tipoPiso: form.tipoPiso || null,
       type: form.type,
       pricePerHour: form.pricePerHour,
       hasMirrors: form.hasMirrors,

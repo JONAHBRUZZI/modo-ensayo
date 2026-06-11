@@ -153,6 +153,9 @@ import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const route = useRoute()
 const auth = useAuth()
@@ -323,7 +326,7 @@ async function pagar(metodo) {
       window.location.href = '/profesor/borradores'
     }
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al procesar la reserva')
+    toast.error(e?.response?.data?.message || 'Error al procesar la reserva')
   }
   modal.value.procesando = false
 }

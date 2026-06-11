@@ -63,6 +63,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const verifications = ref([])
 const pendingVenues = ref([])
@@ -86,7 +89,7 @@ function abrirModal(item, accion) {
   modal.esAprobacion = accion.endsWith('approve')
   if (accion === 'identity-approve') {
     modal.titulo = 'Aprobar identidad'
-    modal.mensaje = `¿Confirma su respuesta? Se aprobara la identidad de ${item.userName || item.userEmail}. El usuario recibira el rol solicitado.`
+    modal.mensaje = `¿Confirma su respuesta? Se aprobara la identidad de ${item.userName || item.userEmail}. El usuario habilitara capacidades de Maestro y registro de sede.`
   } else if (accion === 'identity-reject') {
     modal.titulo = 'Rechazar identidad'
     modal.mensaje = `¿Confirma su respuesta? Se rechazara la identidad de ${item.userName || item.userEmail}. El usuario podra reenviar un nuevo documento.`
@@ -112,7 +115,7 @@ async function ejecutarAccion() {
     pendingVenues.value = pendingVenues.value.filter(v => v.id !== item.id)
     modal.abierto = false
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al procesar la accion')
+    toast.error(e?.response?.data?.message || 'Error al procesar la accion')
   }
   modal.enviando = false
 }

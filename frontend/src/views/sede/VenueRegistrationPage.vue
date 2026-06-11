@@ -201,22 +201,29 @@
       </div>
 
       <!-- Documentación requerida -->
-      <div class="card space-y-3 border border-amber-500/20 bg-amber-500/5">
-        <div class="flex items-start gap-3">
-          <svg class="w-5 h-5 text-amber-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <h3 class="text-sm font-semibold text-amber-300">Documentación requerida para la aprobación</h3>
-            <p class="text-xs text-amber-200/70 mt-1">
-              El equipo de Modo Ensayo revisará tu solicitud y podrá contactarte para solicitar:
-            </p>
-            <ul class="text-xs text-amber-200/70 mt-2 space-y-1 list-disc list-inside">
-              <li>Fotografías del espacio (salas, accesos, equipamiento)</li>
-              <li v-if="form.tipo === 'SEDE'">Documentación legal del local o contrato de arriendo</li>
-              <li>Confirmación de que el espacio cumple condiciones de habitabilidad</li>
-            </ul>
+      <div class="card space-y-4 border border-primary/20">
+        <h2 class="text-lg font-semibold text-white border-b border-white/10 pb-3">Documentacion requerida</h2>
+        <p class="text-xs text-gray-400">
+          {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria y permisos.' : 'Los HomeStudio requieren cedula de identidad del titular.' }}
+        </p>
+
+        <div v-for="doc in docsRequeridos" :key="doc.tipo" class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-medium" :class="doc.requerido ? 'text-red-400' : 'text-gray-500'">
+              {{ doc.label }}
+              <span v-if="doc.requerido" class="text-red-400">*</span>
+              <span v-else class="text-gray-600 text-[10px]">(opcional)</span>
+            </span>
+          </div>
+          <input type="file"
+            :accept="'.pdf,image/*'"
+            @change="(e) => onDocFile(e, doc.tipo)"
+            class="block w-full text-sm text-gray-400
+              file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
+              file:text-sm file:bg-primary file:text-white
+              hover:file:bg-primary/80 file:cursor-pointer file:transition-colors" />
+          <div v-if="docArchivos[doc.tipo]" class="text-xs text-green-400">
+            {{ docArchivos[doc.tipo].name }} — listo
           </div>
         </div>
       </div>
@@ -231,7 +238,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
 
@@ -296,6 +303,31 @@ const form = reactive({
   caracteristicas: [],
 })
 
+const docArchivos = reactive({})
+
+// Documentos requeridos segun tipo de sede
+const docsRequeridos = computed(() => {
+  if (form.tipo === 'SEDE') {
+    return [
+      { tipo: 'RUT_EMPRESA', label: 'RUT de la Empresa', requerido: true },
+      { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (F4415)', requerido: true },
+      { tipo: 'CERTIFICADO_SITUACION_TRIBUTARIA', label: 'Certificado Situacion Tributaria', requerido: true },
+      { tipo: 'PERMISO_MUNICIPAL', label: 'Permiso Municipal', requerido: true },
+      { tipo: 'CONTRATO_ARRIENDO', label: 'Contrato de Arriendo', requerido: false },
+      { tipo: 'OTRO', label: 'Otro documento', requerido: false }
+    ]
+  }
+  return [
+    { tipo: 'CEDULA_IDENTIDAD', label: 'Cedula de Identidad', requerido: true },
+    { tipo: 'OTRO', label: 'Otro documento', requerido: false }
+  ]
+})
+
+function onDocFile(event, tipo) {
+  const file = event.target.files?.[0]
+  if (file) docArchivos[tipo] = file
+}
+
 onMounted(() => {
   if (isAuthenticated.value) syncIdentityStatus()
 })
@@ -304,23 +336,25 @@ async function submit() {
   enviando.value = true
   error.value = ''
   try {
-    await venueService.createVenue({
-      tipo: form.tipo,
-      name: form.name,
-      description: form.description,
-      city: form.city,
-      address: form.address,
-      referencia: form.referencia,
-      phone: form.phone,
-      email: form.email,
-      instagram: form.instagram ? `@${form.instagram}` : null,
-      sitioWeb: form.sitioWeb || null,
-      disciplines: form.disciplines,
-      cantidadSalas: form.cantidadSalas || null,
-      capacidadMaxima: form.capacidadMaxima || null,
-      equipamiento: form.equipamiento,
-      caracteristicas: form.caracteristicas,
-    })
+    const fd = new FormData()
+    fd.append('nombre', form.name)
+    fd.append('ciudad', form.city)
+    fd.append('direccion', form.address)
+    fd.append('descripcion', form.description || '')
+    fd.append('telefono', form.phone || '')
+    fd.append('email', form.email || '')
+    fd.append('tipo', form.tipo)
+    if (form.instagram) fd.append('instagram', form.instagram)
+    if (form.sitioWeb) fd.append('sitioWeb', form.sitioWeb)
+
+    // Adjuntar documentos
+    const docsKeys = Object.keys(docArchivos)
+    for (const tipo of docsKeys) {
+      fd.append('documentos', docArchivos[tipo])
+      fd.append('tiposDocumento', tipo)
+    }
+
+    await venueService.registrarVenueConDocumentos(fd)
     enviado.value = true
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al enviar la solicitud. Intenta nuevamente.'

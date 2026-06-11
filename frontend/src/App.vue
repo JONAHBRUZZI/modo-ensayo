@@ -1,6 +1,12 @@
 <template>
   <router-view />
+  <AppToast />
 </template>
+
+<script setup>
+import { onMounted } from 'vue'
+import { useAuth } from './stores/auth'
+import AppToast from './components/AppToast.vue'
 
 <script setup>
 import { onMounted } from 'vue'

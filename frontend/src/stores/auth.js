@@ -314,6 +314,7 @@ export function useAuth() {
     perfilProfesionalCompleto,
     hasRoleTeacher,
     estadoProfesor,
+    tieneSedeAprobada: computed(() => user.value?.atributosActivos?.tieneSedeAprobada || false),
     puedeAlternarModo,
     puedeVerContextoProfesor,
     puedeVerContextoSede,

@@ -21,6 +21,13 @@ export default {
     return res.data
   },
 
+  async registrarVenueConDocumentos(formData) {
+    const res = await api.post('/venue-admin/venues/registrar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return res.data
+  },
+
   async updateVenue(id, data) {
     const res = await api.patch(`/venue-admin/venues/${id}`, data)
     return res.data

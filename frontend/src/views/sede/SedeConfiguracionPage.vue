@@ -123,6 +123,19 @@
         <div class="border border-dark-border rounded-lg p-4 space-y-3">
           <p class="text-sm text-gray-300 font-medium">Subir documento</p>
           <div>
+            <label class="block text-xs text-gray-400 mb-1">Tipo de documento</label>
+            <select v-model="nuevoDoc.tipo" class="input-field">
+              <option value="">Seleccionar tipo</option>
+              <option value="RUT_EMPRESA">RUT Empresa</option>
+              <option value="CEDULA_IDENTIDAD">Cedula Identidad</option>
+              <option value="INICIO_ACTIVIDADES_F4415">Inicio Actividades F4415</option>
+              <option value="CERTIFICADO_SITUACION_TRIBUTARIA">Cert. Situacion Tributaria</option>
+              <option value="PERMISO_MUNICIPAL">Permiso Municipal</option>
+              <option value="CONTRATO_ARRIENDO">Contrato Arriendo</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </div>
+          <div>
             <label class="block text-xs text-gray-400 mb-1">Nombre / Descripción</label>
             <input v-model="nuevoDoc.nombre" class="input-field" placeholder="Ej: Permiso Municipal" />
           </div>
@@ -218,7 +231,7 @@ const msgSocialType = ref('')
 
 // Documentos de sede
 const documentos = ref([])
-const nuevoDoc = reactive({ nombre: '', fileUrl: '' })
+const nuevoDoc = reactive({ nombre: '', tipo: '', fileUrl: '' })
 const uploadingDoc = ref(false)
 const msgDoc = ref('')
 const msgDocType = ref('')
@@ -311,10 +324,12 @@ async function subirDocumento() {
     const doc = await venueService.addVenueDocument(venue.value.id, {
       fileUrl: nuevoDoc.fileUrl,
       nombre: nuevoDoc.nombre,
+      tipo: nuevoDoc.tipo || null,
       tipoArchivo: nuevoDoc.tipoArchivo || ''
     })
     documentos.value.unshift(doc)
     nuevoDoc.nombre = ''
+    nuevoDoc.tipo = ''
     nuevoDoc.fileUrl = ''
     msgDoc.value = 'Documento subido correctamente.'
     msgDocType.value = 'success'

@@ -12,7 +12,7 @@
     </div>
     <div>
       <label class="block text-sm font-medium text-gray-300 mb-1">Email <span class="text-red-400">*</span></label>
-      <input type="email" v-model="email" required class="input-field" placeholder="tu@email.com"
+      <input type="email" v-model="email" required class="input-field" placeholder="tu@gmail.com"
         :class="errorCampo === 'email' ? 'border-red-500/60' : ''"
         @input="errorCampo = null" />
     </div>
@@ -103,6 +103,12 @@ async function handleRegister() {
 
   if (!email.value.includes('@') || !email.value.includes('.')) {
     error.value = 'Ingresa un correo electronico valido.'
+    errorCampo.value = 'email'
+    return
+  }
+
+  if (!/@gmail\.com$/i.test(email.value.trim()) && !/@duoc\.cl$/i.test(email.value.trim()) && !/@duocuc\.cl$/i.test(email.value.trim())) {
+    error.value = 'Solo se permiten correos @gmail.com o @duoc.cl.'
     errorCampo.value = 'email'
     return
   }

@@ -345,7 +345,6 @@ onMounted(() => {
     if (locality && !form.city) form.city = locality.long_name
   })
 })
-})
 
 async function submit() {
   enviando.value = true

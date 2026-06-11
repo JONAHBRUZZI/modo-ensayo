@@ -186,6 +186,29 @@
       </div>
     </div>
 
+    <!-- CTA Mi Sede (visible solo cuando tieneSedeAprobada) -->
+    <div v-if="tieneSedeAprobada" class="mt-6">
+      <div class="border-t border-white/5 pt-6">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Tu sede</h2>
+        <router-link to="/sede/dashboard" @click="setModo('sede')"
+          class="card hover:border-emerald-500/50 transition-colors group flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-semibold text-white group-hover:text-emerald-400 transition-colors">Ir a Mi Sede</h3>
+            <p class="text-gray-400 text-sm mt-0.5">Gestiona tu sede, salas y clases asignadas.</p>
+          </div>
+          <svg class="w-4 h-4 text-gray-600 group-hover:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </router-link>
+      </div>
+    </div>
+
     <!-- Toast bloqueo -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0 translate-y-2"
       enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150"
@@ -207,14 +230,13 @@ import api from '@/services/api'
 
 const router = useRouter()
 const { displayName, identidadValidada, identidadEnRevision, identidadRechazada,
-        puedeVerContextoProfesor, setModo, syncIdentityStatus, syncActividadMaestro } = useAuth()
+        puedeVerContextoProfesor, tieneSedeAprobada, setModo, syncIdentityStatus, syncAtributos } = useAuth()
 
 const stats = ref({ totalClases: 0, proximas: 0 })
 const toastVisible = ref(false)
 
 onMounted(async () => {
-  syncIdentityStatus()
-  syncActividadMaestro()
+  syncAtributos()
   try {
     const res = await api.get('/users/me/stats')
     stats.value = res.data

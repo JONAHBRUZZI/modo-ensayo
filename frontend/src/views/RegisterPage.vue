@@ -9,7 +9,15 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-          <input type="email" v-model="email" required class="input-field" placeholder="tu@email.com" />
+          <input type="email" v-model="email" required class="input-field" placeholder="tu@email.com"
+            :class="errorCampo === 'email' ? 'border-red-500/60' : ''"
+            @input="errorCampo = null" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">RUT <span class="text-gray-500">(opcional)</span></label>
+          <input type="text" v-model="rut" class="input-field" placeholder="12345678-9"
+            :class="errorCampo === 'rut' ? 'border-red-500/60' : ''"
+            @input="errorCampo = null" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Telefono <span class="text-gray-500">(opcional)</span></label>
@@ -24,7 +32,25 @@
           <input type="checkbox" v-model="aceptoTerminos" id="terminos" class="mt-1 text-primary" />
           <label for="terminos" class="text-xs text-gray-400">Acepto los terminos y condiciones de Modo Ensayo y autorizo el tratamiento de mis datos personales conforme a la Ley 19.628.</label>
         </div>
-        <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
+
+        <!-- Error genérico -->
+        <p v-if="error && !errorCampo" class="text-red-400 text-sm">{{ error }}</p>
+
+        <!-- Error de campo específico (email o RUT duplicado) -->
+        <div v-if="error && errorCampo"
+          class="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5">
+          <svg class="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <div>
+            <p class="text-red-300 text-sm font-medium">
+              {{ errorCampo === 'rut' ? 'RUT ya registrado' : 'Correo ya registrado' }}
+            </p>
+            <p class="text-red-400 text-xs mt-0.5">{{ error }}</p>
+          </div>
+        </div>
+
         <button type="submit" :disabled="loading" class="btn-primary w-full">
           {{ loading ? 'Creando cuenta...' : 'Crear Cuenta' }}
         </button>
@@ -49,12 +75,15 @@ const fullName = ref('')
 const email = ref('')
 const phone = ref('')
 const password = ref('')
+const rut = ref('')
 const aceptoTerminos = ref(false)
 const error = ref('')
+const errorCampo = ref(null)
 const loading = ref(false)
 
 async function handleRegister() {
   error.value = ''
+  errorCampo.value = null
   if (!aceptoTerminos.value) {
     error.value = 'Debes aceptar los terminos y condiciones para registrarte.'
     return
@@ -66,16 +95,17 @@ async function handleRegister() {
   }
   loading.value = true
   try {
-    await register(
-      fullName.value,
-      email.value,
-      password.value,
-      phone.value,
-      null
-    )
+    await register(fullName.value, email.value, password.value, phone.value, rut.value || null)
     router.push('/alumno/dashboard')
   } catch (e) {
-    error.value = e.response?.data?.message || 'Error al crear cuenta'
+    const msg = e.response?.data?.message || 'Error al crear cuenta'
+    const status = e.response?.status
+    if (status === 409) {
+      error.value = msg
+      errorCampo.value = msg.toLowerCase().includes('rut') ? 'rut' : 'email'
+    } else {
+      error.value = msg
+    }
   } finally {
     loading.value = false
   }

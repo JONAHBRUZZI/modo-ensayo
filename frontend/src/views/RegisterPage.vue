@@ -3,31 +3,36 @@
     <div class="card max-w-md w-full">
       <h1 class="text-2xl font-bold text-white text-center mb-8">Crear Cuenta</h1>
       <form @submit.prevent="handleRegister" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Nombre Completo</label>
-          <input type="text" v-model="fullName" required class="input-field" placeholder="Juan Perez" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-          <input type="email" v-model="email" required class="input-field" placeholder="tu@email.com"
-            :class="errorCampo === 'email' ? 'border-red-500/60' : ''"
-            @input="errorCampo = null" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">RUT <span class="text-gray-500">(opcional)</span></label>
-          <input type="text" v-model="rut" class="input-field" placeholder="12345678-9"
-            :class="errorCampo === 'rut' ? 'border-red-500/60' : ''"
-            @input="errorCampo = null" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Telefono <span class="text-gray-500">(opcional)</span></label>
-          <input type="tel" v-model="phone" class="input-field" placeholder="+56912345678" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Contrasena</label>
-          <input type="password" v-model="password" required class="input-field" placeholder="Min 8 caracteres, mayuscula, minuscula, numero" />
-          <p class="text-xs text-gray-500 mt-1">Minimo 8 caracteres, al menos una mayuscula, una minuscula y un numero.</p>
-        </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Nombre Completo <span class="text-red-400">*</span></label>
+      <input type="text" v-model="fullName" required class="input-field" placeholder="Juan Perez"
+        :class="errorCampo === 'fullName' ? 'border-red-500/60' : ''"
+        @input="errorCampo = null" />
+      <p v-if="errorCampo === 'fullName'" class="text-red-400 text-xs mt-1">{{ error }}</p>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Email <span class="text-red-400">*</span></label>
+      <input type="email" v-model="email" required class="input-field" placeholder="tu@email.com"
+        :class="errorCampo === 'email' ? 'border-red-500/60' : ''"
+        @input="errorCampo = null" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">RUT <span class="text-gray-500">(opcional)</span></label>
+      <input type="text" v-model="rut" class="input-field" placeholder="12345678-9"
+        :class="errorCampo === 'rut' ? 'border-red-500/60' : ''"
+        @input="errorCampo = null" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Telefono <span class="text-gray-500">(opcional)</span></label>
+      <input type="tel" v-model="phone" class="input-field" placeholder="+56912345678"
+        :class="errorCampo === 'phone' ? 'border-red-500/60' : ''"
+        @input="errorCampo = null" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Contrasena <span class="text-red-400">*</span></label>
+      <input type="password" v-model="password" required class="input-field" placeholder="Min 8 caracteres, mayuscula, minuscula, numero" />
+      <p class="text-xs text-gray-500 mt-1">Minimo 8 caracteres, al menos una mayuscula, una minuscula y un numero.</p>
+    </div>
         <div class="flex items-start space-x-2">
           <input type="checkbox" v-model="aceptoTerminos" id="terminos" class="mt-1 text-primary" />
           <label for="terminos" class="text-xs text-gray-400">Acepto los terminos y condiciones de Modo Ensayo y autorizo el tratamiento de mis datos personales conforme a la Ley 19.628.</label>
@@ -88,6 +93,32 @@ async function handleRegister() {
     error.value = 'Debes aceptar los terminos y condiciones para registrarte.'
     return
   }
+
+  const trimmed = fullName.value.trim()
+  if (trimmed.split(/\s+/).length < 2) {
+    error.value = 'Ingresa tu nombre completo (nombre y apellido).'
+    errorCampo.value = 'fullName'
+    return
+  }
+
+  if (!email.value.includes('@') || !email.value.includes('.')) {
+    error.value = 'Ingresa un correo electronico valido.'
+    errorCampo.value = 'email'
+    return
+  }
+
+  if (rut.value && !validateRut(rut.value)) {
+    error.value = 'El RUT ingresado no es valido. Usa formato 12345678-9.'
+    errorCampo.value = 'rut'
+    return
+  }
+
+  if (phone.value && !/^\+?[0-9]{8,15}$/.test(phone.value.trim())) {
+    error.value = 'El telefono debe tener entre 8 y 15 digitos numericos.'
+    errorCampo.value = 'phone'
+    return
+  }
+
   const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
   if (!pwRegex.test(password.value)) {
     error.value = 'La contrasena debe tener al menos 8 caracteres, una mayuscula, una minuscula y un numero.'
@@ -95,7 +126,7 @@ async function handleRegister() {
   }
   loading.value = true
   try {
-    await register(fullName.value, email.value, password.value, phone.value, rut.value || null)
+    await register(fullName.value.trim(), email.value.trim(), password.value, phone.value.trim() || null, rut.value.trim() || null)
     router.push('/alumno/dashboard')
   } catch (e) {
     const msg = e.response?.data?.message || 'Error al crear cuenta'
@@ -109,5 +140,21 @@ async function handleRegister() {
   } finally {
     loading.value = false
   }
+}
+
+function validateRut(rut) {
+  const cleaned = rut.replace(/[^0-9kK]/g, '')
+  if (cleaned.length < 2) return false
+  const dv = cleaned.slice(-1).toUpperCase()
+  const body = cleaned.slice(0, -1)
+  let sum = 0
+  let mul = 2
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += parseInt(body[i]) * mul
+    mul = mul === 7 ? 2 : mul + 1
+  }
+  const expected = 11 - (sum % 11)
+  const expectedDv = expected === 11 ? '0' : expected === 10 ? 'K' : String(expected)
+  return dv === expectedDv
 }
 </script>

@@ -60,6 +60,9 @@
           {{ loading ? 'Creando cuenta...' : 'Crear Cuenta' }}
         </button>
       </form>
+
+      <GoogleLoginButton />
+
       <p class="text-center text-gray-400 text-sm mt-6">
         Ya tienes cuenta?
         <router-link to="/login" class="text-primary hover:underline">Inicia sesion</router-link>
@@ -72,6 +75,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import GoogleLoginButton from '@/components/GoogleLoginButton.vue'
 
 const router = useRouter()
 const { register } = useAuth()

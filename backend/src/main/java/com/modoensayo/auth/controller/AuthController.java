@@ -1,6 +1,7 @@
 package com.modoensayo.auth.controller;
 
 import com.modoensayo.auth.dto.AuthResponse;
+import com.modoensayo.auth.dto.GoogleAuthRequest;
 import com.modoensayo.auth.dto.LoginRequest;
 import com.modoensayo.auth.dto.RegisterRequest;
 import com.modoensayo.auth.service.AuthService;
@@ -26,6 +27,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
         return ResponseEntity.ok(authService.login(req));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> google(@Valid @RequestBody GoogleAuthRequest req) {
+        return ResponseEntity.ok(authService.googleAuth(req));
     }
 
     @PostMapping("/logout")

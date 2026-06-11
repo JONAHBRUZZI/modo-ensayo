@@ -148,6 +148,15 @@ export function useAuth() {
     return u
   }
 
+  async function googleLogin(credential) {
+    const res = await api.post('/auth/google', { credential })
+    const { token: t, refreshToken: rt, user: u } = res.data
+    store.setToken(t, rt)
+    store.setUser(u)
+    setModo('alumno')
+    return u
+  }
+
   async function register(fullName, email, password, phone, rut) {
     const res = await api.post('/auth/register', {
       fullName,
@@ -323,6 +332,7 @@ export function useAuth() {
     isTeacher,
     displayName,
     login,
+    googleLogin,
     register,
     logout,
     setModo,

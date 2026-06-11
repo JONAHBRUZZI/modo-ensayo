@@ -1,6 +1,7 @@
 package com.modoensayo.auth.service;
 
 import com.modoensayo.auth.dto.AuthResponse;
+import com.modoensayo.auth.dto.GoogleAuthRequest;
 import com.modoensayo.auth.dto.LoginRequest;
 import com.modoensayo.auth.dto.RegisterRequest;
 import com.modoensayo.shared.exceptions.BusinessException;
@@ -8,12 +9,20 @@ import com.modoensayo.shared.exceptions.ConflictException;
 import com.modoensayo.shared.security.JwtUtil;
 import com.modoensayo.users.domain.*;
 import com.modoensayo.users.repository.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,6 +75,49 @@ public class AuthService {
 
         if (!user.isEnabled()) {
             throw new BusinessException("Account is disabled");
+        }
+
+        return buildAuthResponse(user);
+    }
+
+    @Transactional
+    public AuthResponse googleAuth(GoogleAuthRequest req) {
+        // Verificar el token contra Google
+        String email;
+        String fullName;
+        try {
+            var client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + req.credential()))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET().build();
+            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new BusinessException("Token de Google invalido o expirado");
+            }
+            var json = new ObjectMapper().readTree(response.body());
+            email = json.get("email").asText();
+            fullName = json.has("name") ? json.get("name").asText() : email.split("@")[0];
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException("Error al verificar la cuenta de Google");
+        }
+
+        // Buscar usuario existente o crear uno nuevo
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            user = User.builder()
+                    .email(email)
+                    .fullName(fullName)
+                    .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .enabled(true)
+                    .build();
+            user = userRepository.save(user);
+
+            Role userRole = roleRepository.findByName("USER")
+                    .orElseThrow(() -> new BusinessException("Default role not found"));
+            userRoleRepository.save(UserRole.builder().user(user).role(userRole).build());
         }
 
         return buildAuthResponse(user);

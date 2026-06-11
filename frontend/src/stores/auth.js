@@ -235,8 +235,8 @@ export function useAuth() {
       if (res.data) {
         updateUserAttributes({
           identidadValidada: res.data.identidadValidada,
-          identidadEnRevision: res.data.identidadEstado === 'PENDING',
-          identidadRechazada: res.data.identidadEstado === 'REJECTED',
+          identidadEnRevision: res.data.identidadEstado === 'PENDING' || res.data.identidadEstado === 'PENDIENTE',
+          identidadRechazada: res.data.identidadEstado === 'REJECTED' || res.data.identidadEstado === 'RECHAZADA',
           tieneReservasActivas: res.data.tieneReservasActivas,
           tieneAsignacionesActivas: res.data.tieneAsignacionesActivas,
           tieneSedeAprobada: res.data.tieneSedeAprobada,

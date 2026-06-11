@@ -173,14 +173,15 @@
       <div class="card space-y-4 border border-primary/20">
         <h2 class="text-lg font-semibold text-white border-b border-white/10 pb-3">Documentacion requerida</h2>
         <p class="text-xs text-gray-400">
-          Adjunta los documentos que tengas disponibles. No es obligatorio subirlos todos ahora — el equipo de Modo Ensayo te contactará si necesita más información para aprobar tu sede.
+          {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria, permisos municipales y documentos legales.' : 'Para HomeStudio necesitas tu Inicio de Actividades del SII y un comprobante que acredite el domicilio (luz, agua, gas, internet, extracto bancario o ficha de proteccion social).' }}
         </p>
 
         <div v-for="doc in docsRequeridos" :key="doc.tipo" class="space-y-2">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-medium text-gray-400">
+            <span class="text-xs font-medium" :class="doc.requerido ? 'text-red-400' : 'text-gray-500'">
               {{ doc.label }}
-              <span class="text-gray-600 text-[10px]">(opcional)</span>
+              <span v-if="doc.requerido" class="text-red-400">*</span>
+              <span v-else class="text-gray-600 text-[10px]">(opcional)</span>
             </span>
           </div>
           <input type="file"
@@ -281,18 +282,18 @@ const docArchivos = ref({})
 const docsRequeridos = computed(() => {
   if (form.tipo === 'SEDE') {
     return [
-      { tipo: 'RUT_EMPRESA', label: 'RUT de la Empresa' },
-      { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (F4415)' },
-      { tipo: 'CERTIFICADO_SITUACION_TRIBUTARIA', label: 'Certificado Situacion Tributaria' },
-      { tipo: 'PERMISO_MUNICIPAL', label: 'Permiso Municipal' },
-      { tipo: 'CONTRATO_ARRIENDO', label: 'Contrato de Arriendo' },
-      { tipo: 'OTRO', label: 'Otro documento' }
+      { tipo: 'RUT_EMPRESA', label: 'RUT de la Empresa', requerido: true },
+      { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (F4415)', requerido: true },
+      { tipo: 'CERTIFICADO_SITUACION_TRIBUTARIA', label: 'Certificado Situacion Tributaria', requerido: true },
+      { tipo: 'PERMISO_MUNICIPAL', label: 'Permiso Municipal', requerido: true },
+      { tipo: 'CONTRATO_ARRIENDO', label: 'Contrato de Arriendo', requerido: false },
+      { tipo: 'OTRO', label: 'Otro documento', requerido: false }
     ]
   }
   return [
-    { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (SII)' },
-    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz, agua, gas, internet, extracto bancario o ficha proteccion social)' },
-    { tipo: 'OTRO', label: 'Otro documento' }
+    { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (SII)', requerido: true },
+    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz, agua, gas, internet, extracto bancario o ficha proteccion social)', requerido: true },
+    { tipo: 'OTRO', label: 'Otro documento', requerido: false }
   ]
 })
 

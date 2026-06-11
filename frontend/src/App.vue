@@ -8,10 +8,6 @@ import { onMounted } from 'vue'
 import { useAuth } from './stores/auth'
 import AppToast from './components/AppToast.vue'
 
-<script setup>
-import { onMounted } from 'vue'
-import { useAuth } from './stores/auth'
-
 const { token } = useAuth()
 
 onMounted(() => {

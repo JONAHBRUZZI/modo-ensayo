@@ -1,6 +1,7 @@
 package com.modoensayo.venues.domain;
 
 import com.modoensayo.shared.config.BaseEntity;
+import com.modoensayo.venues.enums.TipoDocumentoSede;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,6 +26,10 @@ public class VenueDocument extends BaseEntity {
     /** URL del archivo almacenado (PDF, imagen, etc.). */
     @Column(nullable = false, length = 1000)
     private String fileUrl;
+
+    /** Tipo estructurado del documento según la regla de negocio R22. */
+    @Enumerated(EnumType.STRING)
+    private TipoDocumentoSede tipo;
 
     /** Nombre descriptivo del documento: "Permiso Municipal", "Certificado Sanitario", etc. */
     private String nombre;

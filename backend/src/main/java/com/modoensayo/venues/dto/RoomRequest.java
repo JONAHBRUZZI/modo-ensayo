@@ -5,6 +5,7 @@ public record RoomRequest(
     String name,
     Integer capacity,
     Integer tamanoM2,
+    String tipoPiso,
     String floorType,
     String type,
     Double pricePerHour,

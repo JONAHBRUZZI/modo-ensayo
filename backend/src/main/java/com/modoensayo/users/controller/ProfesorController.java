@@ -71,6 +71,24 @@ public class ProfesorController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Crea el perfil profesional si no existe. Retorna 409 si ya existe (usar PUT para editar).
+     * POST /api/profesor/perfil
+     */
+    @PostMapping("/perfil")
+    public ResponseEntity<Map<String, Object>> crearPerfil(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody Map<String, Object> body) {
+
+        if (profileService.getByUserId(user.getUserId()) != null) {
+            throw new com.modoensayo.shared.exceptions.ConflictException(
+                    "Ya tienes un perfil profesional. Usa PUT /api/profesor/perfil para actualizarlo.");
+        }
+        ProfessionalProfile saved = profileService.saveFromObject(user.getUserId(), body);
+        UserProfileResponse userProfile = userService.getProfile(user);
+        return ResponseEntity.status(201).body(buildPerfilResponse(userProfile, saved));
+    }
+
     @PutMapping("/perfil")
     public ResponseEntity<Map<String, Object>> savePerfil(
             @AuthenticationPrincipal CustomUserDetails user,
@@ -78,31 +96,32 @@ public class ProfesorController {
 
         ProfessionalProfile saved = profileService.saveFromObject(user.getUserId(), body);
         UserProfileResponse userProfile = userService.getProfile(user);
+        return ResponseEntity.ok(buildPerfilResponse(userProfile, saved));
+    }
 
+    private Map<String, Object> buildPerfilResponse(UserProfileResponse userProfile, ProfessionalProfile profile) {
         Map<String, Object> response = new HashMap<>();
         response.put("fullName", userProfile.fullName());
         response.put("socialName", userProfile.socialName());
         response.put("email", userProfile.email());
-        response.put("id", saved.getId());
-        response.put("description", saved.getDescription());
-        response.put("especialidad", saved.getEspecialidad());
-        response.put("nivelEnsenanza", saved.getNivelEnsenanza());
-        response.put("formacion", saved.getFormacion());
-        response.put("experienceYears", saved.getExperienceYears());
-        response.put("instagram", saved.getInstagram());
-        response.put("youtube", saved.getYoutube());
-        response.put("sitioWeb", saved.getSitioWeb());
-        response.put("linkedin", saved.getLinkedin());
-        response.put("photoUrl", saved.getPhotoUrl());
-        response.put("averageRating", saved.getAverageRating());
-        // Campos nuevos (Fix #3)
-        response.put("biografia", saved.getBiografia());
-        response.put("disciplinaPrincipal", saved.getDisciplinaPrincipal());
-        response.put("disciplinasSecundarias", saved.getDisciplinasSecundarias());
-        response.put("tipoFormacion", saved.getTipoFormacion());
-        response.put("detalleFormacion", saved.getDetalleFormacion());
-
-        return ResponseEntity.ok(response);
+        response.put("id", profile.getId());
+        response.put("description", profile.getDescription());
+        response.put("especialidad", profile.getEspecialidad());
+        response.put("nivelEnsenanza", profile.getNivelEnsenanza());
+        response.put("formacion", profile.getFormacion());
+        response.put("experienceYears", profile.getExperienceYears());
+        response.put("instagram", profile.getInstagram());
+        response.put("youtube", profile.getYoutube());
+        response.put("sitioWeb", profile.getSitioWeb());
+        response.put("linkedin", profile.getLinkedin());
+        response.put("photoUrl", profile.getPhotoUrl());
+        response.put("averageRating", profile.getAverageRating());
+        response.put("biografia", profile.getBiografia());
+        response.put("disciplinaPrincipal", profile.getDisciplinaPrincipal());
+        response.put("disciplinasSecundarias", profile.getDisciplinasSecundarias());
+        response.put("tipoFormacion", profile.getTipoFormacion());
+        response.put("detalleFormacion", profile.getDetalleFormacion());
+        return response;
     }
 
     /**

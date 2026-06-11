@@ -16,7 +16,7 @@
               </div>
             </div>
             <div class="flex items-center space-x-3 pl-13">
-              <a v-if="v.documentUrl" :href="v.documentUrl" target="_blank" class="text-xs text-indigo-400 hover:text-indigo-300 underline">Ver documento adjunto</a>
+              <a v-if="v.documentUrl" @click.prevent="verDocumento(v.documentUrl)" href="#" class="text-xs text-indigo-400 hover:text-indigo-300 underline cursor-pointer">Ver documento adjunto</a>
               <EstadoBadge :status="v.status" />
             </div>
           </div>
@@ -64,8 +64,11 @@ import { ref, reactive, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { useToast } from '@/composables/useToast'
+import api from '@/services/api'
+import { useAuth } from '@/stores/auth'
 
 const toast = useToast()
+const { token } = useAuth()
 
 const verifications = ref([])
 const pendingVenues = ref([])
@@ -80,6 +83,21 @@ onMounted(async () => {
   try { pendingVenues.value = await adminService.getPendingVenues() } catch { pendingVenues.value = [] }
   loading.value = false
 })
+
+async function verDocumento(url) {
+  try {
+    const fullUrl = url.startsWith('http') ? url : import.meta.env.VITE_API_BASE_URL + url
+    const res = await fetch(fullUrl, {
+      headers: { Authorization: `Bearer ${token.value}` }
+    })
+    if (!res.ok) throw new Error('No se pudo cargar el documento')
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    window.open(blobUrl, '_blank')
+  } catch {
+    toast.error('No se pudo cargar el documento')
+  }
+}
 
 function abrirModal(item, accion) {
   modal.item = item

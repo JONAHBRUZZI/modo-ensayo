@@ -117,7 +117,7 @@
             <label class="block text-sm font-medium text-gray-300 mb-1">
               Dirección <span class="text-red-400">*</span>
             </label>
-            <input v-model="form.address" required class="input-field" placeholder="ej: Av. Italia 1234" />
+            <input ref="addressInput" v-model="form.address" required class="input-field" placeholder="ej: Av. Italia 1234, Providencia" />
           </div>
         </div>
         <div>
@@ -241,8 +241,12 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
+import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
 
 const { isAuthenticated, identidadValidada, identidadEnRevision, syncIdentityStatus } = useAuth()
+const { attachAutocomplete } = usePlacesAutocomplete()
+
+const addressInput = ref(null)
 
 const enviando = ref(false)
 const enviado = ref(false)
@@ -330,6 +334,12 @@ function onDocFile(event, tipo) {
 
 onMounted(() => {
   if (isAuthenticated.value) syncIdentityStatus()
+  attachAutocomplete(addressInput.value, (place) => {
+    form.address = place.formatted_address
+    // Extraer ciudad de address_components
+    const locality = place.address_components?.find(c => c.types.includes('locality') || c.types.includes('administrative_area_level_2'))
+    if (locality && !form.city) form.city = locality.long_name
+  })
 })
 
 async function submit() {

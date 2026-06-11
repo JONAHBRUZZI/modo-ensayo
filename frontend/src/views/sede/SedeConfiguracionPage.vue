@@ -47,7 +47,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Direccion</label>
-            <input v-model="formDatos.address" required class="input-field" />
+            <input ref="addressInput" v-model="formDatos.address" required class="input-field" placeholder="ej: Av. Italia 1234, Providencia" />
           </div>
         </div>
         <div>
@@ -213,6 +213,10 @@ import { ref, reactive, onMounted } from 'vue'
 import venueService from '@/services/venueService'
 import api from '@/services/api'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
+
+const { attachAutocomplete } = usePlacesAutocomplete()
+const addressInput = ref(null)
 
 const venue = ref(null)
 const loading = ref(true)
@@ -265,6 +269,11 @@ onMounted(async () => {
     }
   } catch {}
   loading.value = false
+  attachAutocomplete(addressInput.value, (place) => {
+    formDatos.address = place.formatted_address
+    const locality = place.address_components?.find(c => c.types.includes('locality') || c.types.includes('administrative_area_level_2'))
+    if (locality && !formDatos.city) formDatos.city = locality.long_name
+  })
 })
 
 async function saveDatos() {

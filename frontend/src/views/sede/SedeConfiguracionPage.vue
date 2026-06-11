@@ -271,8 +271,7 @@ onMounted(async () => {
   loading.value = false
   attachAutocomplete(addressInput.value, (place) => {
     formDatos.address = place.formatted_address
-    const locality = place.address_components?.find(c => c.types.includes('locality') || c.types.includes('administrative_area_level_2'))
-    if (locality && !formDatos.city) formDatos.city = locality.long_name
+    if (place.city && !formDatos.city) formDatos.city = place.city
   })
 })
 

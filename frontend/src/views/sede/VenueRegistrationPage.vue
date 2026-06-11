@@ -117,9 +117,7 @@
             <label class="block text-sm font-medium text-gray-300 mb-1">
               Dirección <span class="text-red-400">*</span>
             </label>
-            <input ref="addressInput" v-model="form.address" required class="input-field" placeholder="ej: Av. Italia 1234, Providencia"
-              :class="mapsError ? 'border-yellow-500/60' : ''" />
-            <p v-if="mapsError" class="text-yellow-400 text-xs mt-1">Google Maps no cargo. La direccion funciona igual de forma manual.</p>
+            <input ref="addressInput" v-model="form.address" required class="input-field" placeholder="ej: Av. Italia 1234, Providencia" />
           </div>
         </div>
         <div>
@@ -249,7 +247,6 @@ const { isAuthenticated, identidadValidada, identidadEnRevision, syncIdentitySta
 const { attachAutocomplete } = usePlacesAutocomplete()
 
 const addressInput = ref(null)
-const mapsError = ref(false)
 
 const enviando = ref(false)
 const enviado = ref(false)
@@ -337,12 +334,9 @@ function onDocFile(event, tipo) {
 
 onMounted(() => {
   if (isAuthenticated.value) syncIdentityStatus()
-  const timeout = setTimeout(() => { mapsError.value = true }, 5000)
   attachAutocomplete(addressInput.value, (place) => {
-    clearTimeout(timeout)
     form.address = place.formatted_address
-    const locality = place.address_components?.find(c => c.types.includes('locality') || c.types.includes('administrative_area_level_2'))
-    if (locality && !form.city) form.city = locality.long_name
+    if (place.city && !form.city) form.city = place.city
   })
 })
 

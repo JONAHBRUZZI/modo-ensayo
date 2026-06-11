@@ -110,8 +110,67 @@
       <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Requieren identidad validada</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        <!-- Registrar sede -->
-        <div v-if="identidadValidada">
+        <!-- Sede: 4 estados -->
+
+        <!-- APROBADA → Mi Sede -->
+        <div v-if="tieneSedeAprobada">
+          <button @click="irAMiSede"
+            class="card hover:border-emerald-500/50 transition-colors group flex items-start gap-3 text-left w-full">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-white group-hover:text-emerald-400 transition-colors">Mi Sede</h3>
+              <p class="text-gray-400 text-sm mt-1">Gestiona tu sede, salas y disponibilidad.</p>
+            </div>
+          </button>
+        </div>
+
+        <!-- PENDIENTE → En revisión -->
+        <div v-else-if="estadoSolicitudSede === 'PENDIENTE_APROBACION'"
+          class="card border border-amber-500/30 bg-amber-500/5 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <h3 class="text-base font-semibold text-white">Solicitud de Sede</h3>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 uppercase tracking-wider">Pendiente</span>
+            </div>
+            <p class="text-gray-400 text-sm">Tu solicitud está siendo revisada. Te notificaremos cuando sea aprobada.</p>
+          </div>
+        </div>
+
+        <!-- RECHAZADA → Puede re-enviar -->
+        <div v-else-if="estadoSolicitudSede === 'RECHAZADA'"
+          class="card border border-red-500/30 bg-red-500/5 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-0.5">
+              <h3 class="text-base font-semibold text-white">Solicitud de Sede</h3>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 uppercase tracking-wider">Rechazada</span>
+            </div>
+            <p class="text-gray-400 text-sm mb-3">Tu solicitud fue rechazada. Puedes corregir la información y volver a enviarla.</p>
+            <router-link to="/sede/registro"
+              class="inline-block text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1.5 rounded-lg transition-colors">
+              Volver a registrar
+            </router-link>
+          </div>
+        </div>
+
+        <!-- Sin solicitud → Registrar -->
+        <div v-else>
           <router-link to="/sede/registro"
             class="card hover:border-emerald-500/50 transition-colors group flex items-start gap-3">
             <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
@@ -125,18 +184,6 @@
               <p class="text-gray-400 text-sm mt-1">Sede o HomeStudio para ofrecer espacios de ensayo.</p>
             </div>
           </router-link>
-        </div>
-        <div v-else class="card opacity-50 cursor-not-allowed flex items-start gap-3" @click="mostrarBloqueo">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5 text-emerald-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="text-base font-semibold text-gray-600">Registrar mi Sede</h3>
-            <p class="text-gray-600 text-sm mt-1">Requiere identidad validada.</p>
-          </div>
         </div>
 
         <!-- Crear perfil de maestro / buscar salas -->
@@ -186,29 +233,6 @@
       </div>
     </div>
 
-    <!-- CTA Mi Sede (visible solo cuando tieneSedeAprobada) -->
-    <div v-if="tieneSedeAprobada" class="mt-6">
-      <div class="border-t border-white/5 pt-6">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Tu sede</h2>
-        <router-link to="/sede/dashboard" @click="setModo('sede')"
-          class="card hover:border-emerald-500/50 transition-colors group flex items-center gap-4">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-          <div class="flex-1">
-            <h3 class="text-base font-semibold text-white group-hover:text-emerald-400 transition-colors">Ir a Mi Sede</h3>
-            <p class="text-gray-400 text-sm mt-0.5">Gestiona tu sede, salas y clases asignadas.</p>
-          </div>
-          <svg class="w-4 h-4 text-gray-600 group-hover:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </router-link>
-      </div>
-    </div>
-
     <!-- Toast bloqueo -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0 translate-y-2"
       enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150"
@@ -230,7 +254,7 @@ import api from '@/services/api'
 
 const router = useRouter()
 const { displayName, identidadValidada, identidadEnRevision, identidadRechazada,
-        puedeVerContextoProfesor, tieneSedeAprobada, setModo, syncIdentityStatus, syncAtributos } = useAuth()
+        puedeVerContextoProfesor, tieneSedeAprobada, estadoSolicitudSede, setModo, syncIdentityStatus, syncAtributos } = useAuth()
 
 const stats = ref({ totalClases: 0, proximas: 0 })
 const toastVisible = ref(false)
@@ -262,6 +286,11 @@ function mostrarBloqueo() {
  * - Si aun no tiene rol TEACHER, navega tal cual: al confirmar la reserva en
  *   buscar-salas se le otorgara el rol y se cambiara el modo automaticamente.
  */
+function irAMiSede() {
+  setModo('sede')
+  router.push('/sede/dashboard')
+}
+
 function irABuscarSalas() {
   if (puedeVerContextoProfesor.value) {
     setModo('profesor')

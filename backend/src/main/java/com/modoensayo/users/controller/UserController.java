@@ -13,6 +13,8 @@ import com.modoensayo.users.repository.UserRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.classes.enums.ClassStatus;
+import com.modoensayo.venues.repository.VenueRepository;
+import com.modoensayo.venues.enums.EstadoSede;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,6 +37,7 @@ public class UserController {
     private final ClassRepository classRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final UserRepository userRepository;
+    private final VenueRepository venueRepository;
 
     /**
      * Retorna si el usuario tiene clases propias activas (futuras/en curso) o clases asignadas activas.
@@ -90,6 +93,13 @@ public class UserController {
         boolean tieneSedeAprobada = (userEntity != null && userEntity.isTieneSedeAprobada())
                 || user.getRoles().contains("VENUE_ADMIN");
         attrs.put("tieneSedeAprobada", tieneSedeAprobada);
+
+        // estadoSolicitudSede: estado de la solicitud de registro más reciente del usuario
+        String estadoSolicitudSede = venueRepository.findByAdminId(userId).stream()
+                .max(java.util.Comparator.comparing(v -> v.getCreatedAt()))
+                .map(v -> v.getStatus().name())
+                .orElse(null);
+        attrs.put("estadoSolicitudSede", estadoSolicitudSede);
 
         Instant ahora = Instant.now();
         boolean tieneReservasActivas = classRepository.findByTeacherId(userId).stream()

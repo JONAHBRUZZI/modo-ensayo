@@ -70,6 +70,23 @@ public class VenueService {
         return toVenueResponse(venueRepository.save(v));
     }
 
+    /**
+     * Registro de sede por el propio usuario — no requiere identidad verificada previa.
+     * La sede queda en PENDIENTE_APROBACION para revisión del administrador.
+     */
+    @Transactional
+    public VenueResponse registrarSede(UUID adminId, VenueRequest req) {
+        Venue v = Venue.builder()
+                .adminId(adminId)
+                .name(req.name()).city(req.city()).address(req.address())
+                .description(req.description()).phone(req.phone()).email(req.email())
+                .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
+                .instagram(req.instagram()).youtube(req.youtube())
+                .sitioWeb(req.sitioWeb()).facebook(req.facebook())
+                .status(EstadoSede.PENDIENTE_APROBACION).build();
+        return toVenueResponse(venueRepository.save(v));
+    }
+
     private void validateIdentityVerified(UUID userId) {
         IdentityVerification iv = identityVerificationRepository.findByUserId(userId).orElse(null);
         if (iv == null || !"APPROVED".equals(iv.getStatus())) {

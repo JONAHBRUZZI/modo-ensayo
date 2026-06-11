@@ -78,7 +78,7 @@ public class VenueAdminController {
         // Validar que estén los documentos requeridos según tipo antes de guardar
         venueService.validarDocumentosRequeridos(tipo, tiposDocumento);
 
-        VenueResponse venue = venueService.createVenueAdmin(user.getUserId(), req);
+        VenueResponse venue = venueService.registrarSede(user.getUserId(), req);
 
         // Persistir documentos adjuntos
         if (documentos != null && !documentos.isEmpty()) {

@@ -275,7 +275,7 @@ const form = reactive({
   caracteristicas: [],
 })
 
-const docArchivos = reactive({})
+const docArchivos = ref({})
 
 // Documentos requeridos segun tipo de sede
 const docsRequeridos = computed(() => {
@@ -298,7 +298,7 @@ const docsRequeridos = computed(() => {
 
 function onDocFile(event, tipo) {
   const file = event.target.files?.[0]
-  if (file) docArchivos[tipo] = file
+  if (file) docArchivos.value[tipo] = file
 }
 
 onMounted(() => {
@@ -324,9 +324,9 @@ async function submit() {
     if (form.sitioWeb) fd.append('sitioWeb', form.sitioWeb)
 
     // Adjuntar documentos
-    const docsKeys = Object.keys(docArchivos)
+    const docsKeys = Object.keys(docArchivos.value)
     for (const tipo of docsKeys) {
-      fd.append('documentos', docArchivos[tipo])
+      fd.append('documentos', docArchivos.value[tipo])
       fd.append('tiposDocumento', tipo)
     }
 

@@ -23,7 +23,8 @@ export default {
 
   async registrarVenueConDocumentos(formData) {
     const token = localStorage.getItem('auth_token')
-    const res = await fetch('http://localhost:8080/api/venue-admin/venues/registrar', {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+    const res = await fetch(`${baseUrl}/api/venue-admin/venues/registrar`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData

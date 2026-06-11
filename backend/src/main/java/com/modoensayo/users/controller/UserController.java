@@ -111,6 +111,17 @@ public class UserController {
         attrs.put("reservasSinClase", reservasSinClaseCount > 0);
         attrs.put("reservasSinClaseCount", (int) reservasSinClaseCount);
 
+        // estadoProfesor: calculado en tiempo real según regla de negocio R20
+        String estadoProfesor;
+        if (!hasRoleTeacher) {
+            estadoProfesor = "INACTIVO";
+        } else if (tieneReservasActivas || tieneAsignacionesActivas) {
+            estadoProfesor = "ACTIVO";
+        } else {
+            estadoProfesor = "DORMIDO";
+        }
+        attrs.put("estadoProfesor", estadoProfesor);
+
         // Perfil profesional completo: solo aplica si el usuario es TEACHER
         attrs.put("perfilProfesionalCompleto", profileService.isComplete(userId));
 

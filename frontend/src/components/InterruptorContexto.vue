@@ -29,27 +29,44 @@
         </span>
       </button>
 
-      <!-- Maestro (condicional) -->
-      <button v-if="puedeVerContextoProfesor" @click="activar('profesor')" type="button"
-        class="group flex flex-col items-center justify-center gap-1 w-14 h-12 rounded-xl border transition-all duration-300"
-        :class="modoActual === 'profesor'
-          ? 'bg-indigo-500/10 border-indigo-400/40 shadow-[0_0_14px_rgba(99,102,241,0.25)]'
-          : 'bg-white/3 border-white/8 hover:border-indigo-500/30 hover:bg-indigo-500/5'">
-        <svg class="w-4 h-4 transition-all duration-300"
-          :class="modoActual === 'profesor'
-            ? 'text-indigo-400 drop-shadow-[0_0_5px_rgba(99,102,241,0.8)]'
-            : 'text-gray-600 group-hover:text-indigo-400'"
-          fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-            d="M12 14l9-5-9-5-9 5 9 5z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-            d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-        </svg>
-        <span class="text-[9px] font-semibold leading-none transition-colors duration-300"
-          :class="modoActual === 'profesor' ? 'text-indigo-300' : 'text-gray-600 group-hover:text-indigo-300'">
-          Maestro
-        </span>
-      </button>
+      <!-- Maestro: ACTIVO (normal), DORMIDO (gris + tooltip), INACTIVO (oculto) -->
+      <div v-if="puedeVerContextoProfesor" class="relative group/dormido">
+        <button
+          @click="estadoProfesor !== 'DORMIDO' && activar('profesor')"
+          type="button"
+          :disabled="estadoProfesor === 'DORMIDO'"
+          class="flex flex-col items-center justify-center gap-1 w-14 h-12 rounded-xl border transition-all duration-300"
+          :class="estadoProfesor === 'DORMIDO'
+            ? 'bg-white/2 border-white/5 cursor-not-allowed opacity-40'
+            : modoActual === 'profesor'
+              ? 'bg-indigo-500/10 border-indigo-400/40 shadow-[0_0_14px_rgba(99,102,241,0.25)]'
+              : 'group bg-white/3 border-white/8 hover:border-indigo-500/30 hover:bg-indigo-500/5'">
+          <svg class="w-4 h-4 transition-all duration-300"
+            :class="estadoProfesor === 'DORMIDO'
+              ? 'text-gray-600'
+              : modoActual === 'profesor'
+                ? 'text-indigo-400 drop-shadow-[0_0_5px_rgba(99,102,241,0.8)]'
+                : 'text-gray-600 group-hover:text-indigo-400'"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M12 14l9-5-9-5-9 5 9 5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+          </svg>
+          <span class="text-[9px] font-semibold leading-none transition-colors duration-300"
+            :class="estadoProfesor === 'DORMIDO'
+              ? 'text-gray-600'
+              : modoActual === 'profesor' ? 'text-indigo-300' : 'text-gray-600 group-hover:text-indigo-300'">
+            Maestro
+          </span>
+        </button>
+        <!-- Tooltip DORMIDO -->
+        <div v-if="estadoProfesor === 'DORMIDO'"
+          class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 px-2 py-1.5 bg-gray-900 border border-white/10 rounded-lg text-[10px] text-gray-300 leading-tight pointer-events-none opacity-0 group-hover/dormido:opacity-100 transition-opacity duration-200 text-center z-50">
+          Sin clases activas. Crea una clase para activar el contexto Maestro.
+          <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></span>
+        </div>
+      </div>
 
       <!-- Mi Sede (condicional) -->
       <button v-if="puedeVerContextoSede" @click="activar('sede')" type="button"
@@ -80,7 +97,17 @@ import { onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
-const { puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, setModo, isAuthenticated, syncActividadMaestro } = useAuth()
+const {
+  puedeAlternarModo,
+  puedeVerContextoProfesor,
+  puedeVerContextoSede,
+  estadoProfesor,
+  modoActual,
+  setModo,
+  isAuthenticated,
+  syncAtributos
+} = useAuth()
+
 const router = useRouter()
 
 const destinos = { alumno: '/alumno/dashboard', profesor: '/profesor/dashboard', sede: '/sede/dashboard' }
@@ -91,6 +118,6 @@ const activar = (modo) => {
 }
 
 onMounted(() => {
-  if (isAuthenticated.value) syncActividadMaestro()
+  if (isAuthenticated.value) syncAtributos()
 })
 </script>

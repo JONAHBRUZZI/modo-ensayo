@@ -91,6 +91,9 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import userService from '@/services/userService'
 import uploadService from '@/services/uploadService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { useAuth } from '@/stores/auth'
+
+const { syncIdentityStatus } = useAuth()
 
 const verification = ref(null)
 const file = ref(null)
@@ -177,6 +180,7 @@ async function upload() {
   try {
     const data = await uploadService.uploadFile(file.value, 'documents')
     await userService.uploadIdentityDocument(data.url || data.fileUrl, form)
+    await syncIdentityStatus()
     msg.value = 'Documento y datos enviados para revision'
     msgType.value = 'success'
     verification.value = await userService.getIdentityVerification()

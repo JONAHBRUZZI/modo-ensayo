@@ -86,7 +86,10 @@ async function verDocumento(url) {
   try {
     const docPath = url.startsWith('/api/') ? url.substring(4) : url
     const res = await api.get(docPath, { responseType: 'blob' })
-    const blobUrl = URL.createObjectURL(res.data)
+    const ext = url.split('.').pop()?.toLowerCase()
+    const mime = ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/*'
+    const blob = new Blob([res.data], { type: mime })
+    const blobUrl = URL.createObjectURL(blob)
     window.open(blobUrl, '_blank')
   } catch {
     toast.error('No se pudo cargar el documento')

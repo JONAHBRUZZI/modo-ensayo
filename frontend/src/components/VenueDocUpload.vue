@@ -75,11 +75,12 @@ const emit = defineEmits(['remove', 'upload', 'skip'])
 
 const tipoLabels = {
   RUT_EMPRESA: 'RUT Empresa',
-  CEDULA_IDENTIDAD: 'Cédula Identidad',
+  CEDULA_IDENTIDAD: 'Cedula Identidad',
   INICIO_ACTIVIDADES_F4415: 'Inicio Actividades F4415',
-  CERTIFICADO_SITUACION_TRIBUTARIA: 'Cert. Situación Tributaria',
+  CERTIFICADO_SITUACION_TRIBUTARIA: 'Cert. Situacion Tributaria',
   PERMISO_MUNICIPAL: 'Permiso Municipal',
   CONTRATO_ARRIENDO: 'Contrato Arriendo',
+  COMPROBANTE_DOMICILIO: 'Comprobante de Domicilio',
   OTRO: 'Otro'
 }
 

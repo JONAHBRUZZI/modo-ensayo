@@ -204,7 +204,7 @@
       <div class="card space-y-4 border border-primary/20">
         <h2 class="text-lg font-semibold text-white border-b border-white/10 pb-3">Documentacion requerida</h2>
         <p class="text-xs text-gray-400">
-          {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria y permisos.' : 'Los HomeStudio requieren cedula de identidad del titular.' }}
+          {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria, permisos municipales y documentos legales.' : 'Para HomeStudio necesitas tu Inicio de Actividades del SII y un comprobante de domicilio. Tu identidad ya fue validada, no es necesario adjuntar la cedula.' }}
         </p>
 
         <div v-for="doc in docsRequeridos" :key="doc.tipo" class="space-y-2">
@@ -323,7 +323,7 @@ const docsRequeridos = computed(() => {
   }
   return [
     { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (SII)', requerido: true },
-    { tipo: 'CEDULA_IDENTIDAD', label: 'Cedula de Identidad', requerido: false },
+    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz o agua)', requerido: false },
     { tipo: 'OTRO', label: 'Otro documento', requerido: false }
   ]
 })

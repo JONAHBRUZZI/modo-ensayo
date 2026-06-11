@@ -65,10 +65,8 @@ import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { useToast } from '@/composables/useToast'
 import api from '@/services/api'
-import { useAuth } from '@/stores/auth'
 
 const toast = useToast()
-const { token } = useAuth()
 
 const verifications = ref([])
 const pendingVenues = ref([])
@@ -86,13 +84,9 @@ onMounted(async () => {
 
 async function verDocumento(url) {
   try {
-    const fullUrl = url.startsWith('http') ? url : import.meta.env.VITE_API_BASE_URL + url
-    const res = await fetch(fullUrl, {
-      headers: { Authorization: `Bearer ${token.value}` }
-    })
-    if (!res.ok) throw new Error('No se pudo cargar el documento')
-    const blob = await res.blob()
-    const blobUrl = URL.createObjectURL(blob)
+    const docPath = url.startsWith('/api/') ? url.substring(4) : url
+    const res = await api.get(docPath, { responseType: 'blob' })
+    const blobUrl = URL.createObjectURL(res.data)
     window.open(blobUrl, '_blank')
   } catch {
     toast.error('No se pudo cargar el documento')

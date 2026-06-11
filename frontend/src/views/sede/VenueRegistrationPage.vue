@@ -204,7 +204,7 @@
       <div class="card space-y-4 border border-primary/20">
         <h2 class="text-lg font-semibold text-white border-b border-white/10 pb-3">Documentacion requerida</h2>
         <p class="text-xs text-gray-400">
-          {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria, permisos municipales y documentos legales.' : 'Para HomeStudio necesitas tu Inicio de Actividades del SII y un comprobante que acredite el domicilio (luz, agua, gas, internet o extracto bancario). Tu identidad ya fue validada, no es necesario adjuntar la cedula.' }}
+          {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria, permisos municipales y documentos legales.' : 'Para HomeStudio necesitas tu Inicio de Actividades del SII y un comprobante que acredite el domicilio (luz, agua, gas, internet, extracto bancario o ficha de proteccion social). Tu identidad ya fue validada, no es necesario adjuntar la cedula.' }}
         </p>
 
         <div v-for="doc in docsRequeridos" :key="doc.tipo" class="space-y-2">
@@ -323,7 +323,7 @@ const docsRequeridos = computed(() => {
   }
   return [
     { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (SII)', requerido: true },
-    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz, agua, gas, internet o extracto bancario)', requerido: true },
+    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz, agua, gas, internet, extracto bancario o ficha proteccion social)', requerido: true },
     { tipo: 'OTRO', label: 'Otro documento', requerido: false }
   ]
 })

@@ -29,11 +29,14 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Nombre completo (segun documento) *</label>
-          <input v-model="form.fullName" required class="input-field" placeholder="Como aparece en tu documento" />
+          <input v-model="form.fullName" required class="input-field" placeholder="Como aparece en tu documento"
+            :class="fullNameError ? 'border-red-500/60' : ''" @input="fullNameError = ''" />
+          <p v-if="fullNameError" class="text-xs text-red-400 mt-1">{{ fullNameError }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Fecha de nacimiento *</label>
-          <input type="date" v-model="form.birthDate" required class="input-field" />
+          <input type="date" v-model="form.birthDate" required class="input-field"
+            :max="maxBirthDate" :min="minBirthDate" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Documento (JPG, PNG o PDF, max 5MB) *</label>
@@ -84,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import userService from '@/services/userService'
 import uploadService from '@/services/uploadService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
@@ -96,6 +99,19 @@ const msg = ref('')
 const msgType = ref('')
 const form = reactive({ documentType: '', documentNumber: '', fullName: '', birthDate: '' })
 const rutError = ref('')
+const fullNameError = ref('')
+
+const maxBirthDate = computed(() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 14)
+  return d.toISOString().split('T')[0]
+})
+
+const minBirthDate = computed(() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 120)
+  return d.toISOString().split('T')[0]
+})
 
 onMounted(async () => {
   try { verification.value = await userService.getIdentityVerification() } catch {}
@@ -135,7 +151,21 @@ function validarRut() {
 
 async function upload() {
   if (!file.value) { msg.value = 'Debes subir un documento'; msgType.value = 'error'; return }
+  if (file.value.size > 5 * 1024 * 1024) { msg.value = 'El archivo no debe superar los 5MB'; msgType.value = 'error'; return }
   if (rutError.value) { msg.value = 'Corrige el RUT antes de enviar'; msgType.value = 'error'; return }
+
+  const fullName = form.fullName.trim()
+  if (fullName.split(/\s+/).length < 2) {
+    fullNameError.value = 'Ingresa tu nombre completo (nombre y apellido)'
+    msg.value = ''; msgType.value = ''
+    return
+  }
+  fullNameError.value = ''
+
+  if (form.documentType === 'PASSPORT' && form.documentNumber.trim().length < 3) {
+    msg.value = 'El numero de pasaporte debe tener al menos 3 caracteres'; msgType.value = 'error'; return
+  }
+
   if (form.birthDate) {
     const birth = new Date(form.birthDate)
     if (birth > new Date()) { msg.value = 'La fecha de nacimiento no puede ser futura'; msgType.value = 'error'; return }

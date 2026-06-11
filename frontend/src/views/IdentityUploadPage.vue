@@ -68,7 +68,7 @@
           </div>
         </div>
 
-        <button type="submit" :disabled="uploading || (msg && msgType === 'error')"
+        <button type="submit" :disabled="uploading"
                 class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
           {{ uploading ? 'Enviando...' : (msg && msgType === 'error' ? 'Corrige los datos y vuelve a enviar' : 'Enviar para validacion') }}
         </button>
@@ -109,7 +109,7 @@ const maxBirthDate = computed(() => {
 
 const minBirthDate = computed(() => {
   const d = new Date()
-  d.setFullYear(d.getFullYear() - 120)
+  d.setFullYear(d.getFullYear() - 100)
   return d.toISOString().split('T')[0]
 })
 

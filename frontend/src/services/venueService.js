@@ -22,8 +22,17 @@ export default {
   },
 
   async registrarVenueConDocumentos(formData) {
-    const res = await api.post('/venue-admin/venues/registrar', formData)
-    return res.data
+    const token = localStorage.getItem('auth_token')
+    const res = await fetch('http://localhost:8080/api/venue-admin/venues/registrar', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw { response: { status: res.status, data } }
+    }
+    return res.json()
   },
 
   async updateVenue(id, data) {

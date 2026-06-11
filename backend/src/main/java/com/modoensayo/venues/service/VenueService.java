@@ -255,7 +255,7 @@ public class VenueService {
     /**
      * Valida que los tipos de documento enviados cubran los requeridos por el tipo de sede.
      * SEDE requiere: RUT_EMPRESA, INICIO_ACTIVIDADES_F4415, CERTIFICADO_SITUACION_TRIBUTARIA, PERMISO_MUNICIPAL.
-     * HOME_STUDIO requiere: INICIO_ACTIVIDADES_F4415.
+     * HOME_STUDIO requiere: INICIO_ACTIVIDADES_F4415, COMPROBANTE_DOMICILIO.
      * Lanza BusinessException si falta alguno requerido.
      */
     public void validarDocumentosRequeridos(String tipoSede, java.util.List<String> tiposDocumento) {
@@ -270,7 +270,9 @@ public class VenueService {
                     TipoDocumentoSede.CERTIFICADO_SITUACION_TRIBUTARIA.name(),
                     TipoDocumentoSede.PERMISO_MUNICIPAL.name());
         } else if ("HOME_STUDIO".equals(tipoSede)) {
-            requeridos = java.util.List.of(TipoDocumentoSede.INICIO_ACTIVIDADES_F4415.name());
+            requeridos = java.util.List.of(
+                    TipoDocumentoSede.INICIO_ACTIVIDADES_F4415.name(),
+                    TipoDocumentoSede.COMPROBANTE_DOMICILIO.name());
         } else {
             return;
         }

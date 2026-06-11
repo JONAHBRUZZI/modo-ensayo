@@ -323,7 +323,7 @@ const docsRequeridos = computed(() => {
   }
   return [
     { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (SII)', requerido: true },
-    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz o agua)', requerido: false },
+    { tipo: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de Domicilio (luz o agua)', requerido: true },
     { tipo: 'OTRO', label: 'Otro documento', requerido: false }
   ]
 })

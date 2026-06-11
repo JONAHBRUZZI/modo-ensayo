@@ -107,8 +107,8 @@ async function handleRegister() {
     return
   }
 
-  if (!/@gmail\.com$/i.test(email.value.trim()) && !/@duoc\.cl$/i.test(email.value.trim()) && !/@duocuc\.cl$/i.test(email.value.trim())) {
-    error.value = 'Solo se permiten correos @gmail.com o @duoc.cl.'
+  if (!/@gmail\.com$/i.test(email.value.trim())) {
+    error.value = 'Solo se permiten correos @gmail.com.'
     errorCampo.value = 'email'
     return
   }

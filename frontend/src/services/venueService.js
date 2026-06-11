@@ -22,9 +22,7 @@ export default {
   },
 
   async registrarVenueConDocumentos(formData) {
-    const res = await api.post('/venue-admin/venues/registrar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    const res = await api.post('/venue-admin/venues/registrar', formData)
     return res.data
   },
 

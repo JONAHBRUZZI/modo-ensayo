@@ -72,18 +72,34 @@ public class VenueService {
 
     /**
      * Registro de sede por el propio usuario — no requiere identidad verificada previa.
+     * Si ya existe una sede RECHAZADA del mismo usuario, la reutiliza actualizando los datos.
      * La sede queda en PENDIENTE_APROBACION para revisión del administrador.
      */
     @Transactional
     public VenueResponse registrarSede(UUID adminId, VenueRequest req) {
-        Venue v = Venue.builder()
-                .adminId(adminId)
-                .name(req.name()).city(req.city()).address(req.address())
-                .description(req.description()).phone(req.phone()).email(req.email())
-                .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
-                .instagram(req.instagram()).youtube(req.youtube())
-                .sitioWeb(req.sitioWeb()).facebook(req.facebook())
-                .status(EstadoSede.PENDIENTE_APROBACION).build();
+        // Reutilizar sede RECHAZADA si existe — evita acumular registros basura
+        Venue v = venueRepository.findByAdminId(adminId).stream()
+                .filter(s -> s.getStatus() == EstadoSede.RECHAZADA)
+                .findFirst()
+                .orElse(null);
+
+        if (v != null) {
+            v.setName(req.name()); v.setCity(req.city()); v.setAddress(req.address());
+            v.setDescription(req.description()); v.setPhone(req.phone()); v.setEmail(req.email());
+            if (req.tipo() != null) v.setTipo(TipoSede.valueOf(req.tipo()));
+            v.setInstagram(req.instagram()); v.setYoutube(req.youtube());
+            v.setSitioWeb(req.sitioWeb()); v.setFacebook(req.facebook());
+            v.setStatus(EstadoSede.PENDIENTE_APROBACION);
+        } else {
+            v = Venue.builder()
+                    .adminId(adminId)
+                    .name(req.name()).city(req.city()).address(req.address())
+                    .description(req.description()).phone(req.phone()).email(req.email())
+                    .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
+                    .instagram(req.instagram()).youtube(req.youtube())
+                    .sitioWeb(req.sitioWeb()).facebook(req.facebook())
+                    .status(EstadoSede.PENDIENTE_APROBACION).build();
+        }
         return toVenueResponse(venueRepository.save(v));
     }
 

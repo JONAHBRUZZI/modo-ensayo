@@ -94,12 +94,16 @@ public class UserController {
                 || user.getRoles().contains("VENUE_ADMIN");
         attrs.put("tieneSedeAprobada", tieneSedeAprobada);
 
-        // estadoSolicitudSede: estado de la solicitud de registro más reciente del usuario
-        String estadoSolicitudSede = venueRepository.findByAdminId(userId).stream()
+        // estadoSolicitudSede + motivoRechazoSede
+        venueRepository.findByAdminId(userId).stream()
                 .max(java.util.Comparator.comparing(v -> v.getCreatedAt()))
-                .map(v -> v.getStatus().name())
-                .orElse(null);
-        attrs.put("estadoSolicitudSede", estadoSolicitudSede);
+                .ifPresentOrElse(v -> {
+                    attrs.put("estadoSolicitudSede", v.getStatus().name());
+                    attrs.put("motivoRechazoSede", v.getRejectionReason());
+                }, () -> {
+                    attrs.put("estadoSolicitudSede", null);
+                    attrs.put("motivoRechazoSede", null);
+                });
 
         Instant ahora = Instant.now();
         boolean tieneReservasActivas = classRepository.findByTeacherId(userId).stream()

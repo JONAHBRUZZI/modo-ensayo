@@ -161,7 +161,9 @@
               <h3 class="text-base font-semibold text-white">Solicitud de Sede</h3>
               <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 uppercase tracking-wider">Rechazada</span>
             </div>
-            <p class="text-gray-400 text-sm mb-3">Tu solicitud fue rechazada. Puedes corregir la información y volver a enviarla.</p>
+            <p class="text-gray-400 text-sm mb-1">Tu solicitud fue rechazada. Puedes corregir la información y volver a enviarla.</p>
+            <p v-if="motivoRechazoSede" class="text-red-300/80 text-xs mb-3 italic">"{{ motivoRechazoSede }}"</p>
+            <p v-else class="text-gray-500 text-xs mb-3">No se especificó un motivo.</p>
             <router-link to="/sede/registro"
               class="inline-block text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1.5 rounded-lg transition-colors">
               Volver a registrar
@@ -254,7 +256,7 @@ import api from '@/services/api'
 
 const router = useRouter()
 const { displayName, identidadValidada, identidadEnRevision, identidadRechazada,
-        puedeVerContextoProfesor, tieneSedeAprobada, estadoSolicitudSede, setModo, syncIdentityStatus, syncAtributos } = useAuth()
+        puedeVerContextoProfesor, tieneSedeAprobada, estadoSolicitudSede, motivoRechazoSede, setModo, syncIdentityStatus, syncAtributos } = useAuth()
 
 const stats = ref({ totalClases: 0, proximas: 0 })
 const toastVisible = ref(false)

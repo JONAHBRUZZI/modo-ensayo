@@ -43,17 +43,30 @@ public class VenueAdminController {
     }
 
     /**
-     * Devuelve la sede PENDIENTE o RECHAZADA del usuario para pre-llenar el formulario de registro.
-     * Accesible a cualquier usuario autenticado (sin rol VENUE_ADMIN).
+     * Devuelve la sede PENDIENTE o RECHAZADA del usuario con sus documentos ya subidos.
+     * Permite pre-llenar el formulario de registro al editar una solicitud.
      * GET /api/venue-admin/venues/mi-solicitud
      */
     @GetMapping("/venues/mi-solicitud")
-    public ResponseEntity<VenueResponse> getMiSolicitud(@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<Map<String, Object>> getMiSolicitud(@AuthenticationPrincipal CustomUserDetails user) {
         return venueRepository.findByAdminId(user.getUserId()).stream()
                 .filter(v -> v.getStatus() == com.modoensayo.venues.enums.EstadoSede.PENDIENTE_APROBACION
                           || v.getStatus() == com.modoensayo.venues.enums.EstadoSede.RECHAZADA)
                 .max(java.util.Comparator.comparing(v -> v.getCreatedAt()))
-                .map(v -> ResponseEntity.ok(venueService.toVenueResponsePublic(v)))
+                .map(v -> {
+                    Map<String, Object> res = new java.util.HashMap<>();
+                    VenueResponse vr = venueService.toVenueResponsePublic(v);
+                    res.put("venue", vr);
+                    // tipos de documento ya guardados para esta sede
+                    List<String> tiposGuardados = venueDocumentRepository
+                            .findByVenueIdOrderByCreatedAtDesc(v.getId()).stream()
+                            .filter(d -> d.getTipo() != null)
+                            .map(d -> d.getTipo().name())
+                            .distinct()
+                            .collect(java.util.stream.Collectors.toList());
+                    res.put("documentosGuardados", tiposGuardados);
+                    return ResponseEntity.ok(res);
+                })
                 .orElse(ResponseEntity.noContent().build());
     }
 

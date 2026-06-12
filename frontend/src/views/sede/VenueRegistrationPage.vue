@@ -176,7 +176,8 @@
           {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria, permisos municipales y documentos legales.' : 'Para HomeStudio necesitas tu Inicio de Actividades del SII y un comprobante que acredite el domicilio (luz, agua, gas, internet, extracto bancario o ficha de proteccion social).' }}
         </p>
 
-        <div v-for="doc in docsRequeridos" :key="doc.tipo" class="space-y-2">
+        <div v-for="doc in docsRequeridos" :key="doc.tipo" class="space-y-1.5">
+          <!-- Label -->
           <div class="flex items-center gap-2">
             <span class="text-xs font-medium" :class="doc.requerido ? 'text-red-400' : 'text-gray-500'">
               {{ doc.label }}
@@ -184,16 +185,36 @@
               <span v-else class="text-gray-600 text-[10px]">(opcional)</span>
             </span>
           </div>
-          <input type="file"
-            :accept="'.pdf,image/*'"
-            @change="(e) => onDocFile(e, doc.tipo)"
-            class="block w-full text-sm text-gray-400
-              file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
-              file:text-sm file:bg-primary file:text-white
-              hover:file:bg-primary/80 file:cursor-pointer file:transition-colors" />
-          <div v-if="docArchivos[doc.tipo]" class="text-xs text-green-400">
-            {{ docArchivos[doc.tipo].name }} — listo
+
+          <!-- Ya guardado desde solicitud anterior -->
+          <div v-if="docGuardados.includes(doc.tipo) && !docArchivos[doc.tipo]"
+            class="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Archivo guardado de solicitud anterior</span>
+            <label class="ml-auto cursor-pointer text-gray-400 hover:text-white underline text-[11px]">
+              Reemplazar
+              <input type="file" :accept="'.pdf,image/*'" @change="(e) => onDocFile(e, doc.tipo)" class="hidden" />
+            </label>
           </div>
+
+          <!-- Subir nuevo archivo -->
+          <template v-else>
+            <input type="file"
+              :accept="'.pdf,image/*'"
+              @change="(e) => onDocFile(e, doc.tipo)"
+              class="block w-full text-sm text-gray-400
+                file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
+                file:text-sm file:bg-primary file:text-white
+                hover:file:bg-primary/80 file:cursor-pointer file:transition-colors" />
+            <div v-if="docArchivos[doc.tipo]" class="text-xs text-green-400 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              {{ docArchivos[doc.tipo].name }}
+            </div>
+          </template>
         </div>
       </div>
 
@@ -277,6 +298,7 @@ const form = reactive({
 })
 
 const docArchivos = ref({})
+const docGuardados = ref([])  // tipos de documento ya guardados en el servidor
 
 // Documentos requeridos segun tipo de sede
 const docsRequeridos = computed(() => {
@@ -303,18 +325,20 @@ function onDocFile(event, tipo) {
 }
 
 onMounted(async () => {
-  // Pre-llenar con datos de solicitud rechazada si existe
+  // Pre-llenar con datos de solicitud rechazada/pendiente si existe
   const solicitud = await venueService.getMiSolicitud()
-  if (solicitud) {
-    form.tipo        = solicitud.tipo        || 'SEDE'
-    form.name        = solicitud.name        || ''
-    form.description = solicitud.description || ''
-    form.city        = solicitud.city        || ''
-    form.address     = solicitud.address     || ''
-    form.phone       = solicitud.phone       || ''
-    form.email       = solicitud.email       || ''
-    form.instagram   = solicitud.instagram   || ''
-    form.sitioWeb    = solicitud.sitioWeb    || ''
+  if (solicitud?.venue) {
+    const v = solicitud.venue
+    form.tipo        = v.tipo        || 'SEDE'
+    form.name        = v.name        || ''
+    form.description = v.description || ''
+    form.city        = v.city        || ''
+    form.address     = v.address     || ''
+    form.phone       = v.phone       || ''
+    form.email       = v.email       || ''
+    form.instagram   = v.instagram   || ''
+    form.sitioWeb    = v.sitioWeb    || ''
+    docGuardados.value = solicitud.documentosGuardados || []
   }
   attachAutocomplete(addressInput.value, (place) => {
     form.address = place.formatted_address

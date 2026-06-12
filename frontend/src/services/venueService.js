@@ -24,7 +24,7 @@ export default {
   async getMiSolicitud() {
     try {
       const res = await api.get('/venue-admin/venues/mi-solicitud')
-      return res.data
+      return res.data  // { venue, documentosGuardados }
     } catch {
       return null
     }

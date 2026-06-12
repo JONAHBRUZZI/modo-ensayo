@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/api/teacher/**").hasAuthority("TEACHER")
                 .requestMatchers(HttpMethod.POST, "/api/venue-admin/venues/registrar").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/venue-admin/venues/mi-solicitud").authenticated()
                 .requestMatchers("/api/venue-admin/**").hasAuthority("VENUE_ADMIN")
                 .anyRequest().authenticated()
             )

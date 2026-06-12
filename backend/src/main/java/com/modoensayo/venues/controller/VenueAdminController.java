@@ -42,6 +42,21 @@ public class VenueAdminController {
         return ResponseEntity.ok(venueService.getMyVenues(user.getUserId()));
     }
 
+    /**
+     * Devuelve la sede PENDIENTE o RECHAZADA del usuario para pre-llenar el formulario de registro.
+     * Accesible a cualquier usuario autenticado (sin rol VENUE_ADMIN).
+     * GET /api/venue-admin/venues/mi-solicitud
+     */
+    @GetMapping("/venues/mi-solicitud")
+    public ResponseEntity<VenueResponse> getMiSolicitud(@AuthenticationPrincipal CustomUserDetails user) {
+        return venueRepository.findByAdminId(user.getUserId()).stream()
+                .filter(v -> v.getStatus() == com.modoensayo.venues.enums.EstadoSede.PENDIENTE_APROBACION
+                          || v.getStatus() == com.modoensayo.venues.enums.EstadoSede.RECHAZADA)
+                .max(java.util.Comparator.comparing(v -> v.getCreatedAt()))
+                .map(v -> ResponseEntity.ok(venueService.toVenueResponsePublic(v)))
+                .orElse(ResponseEntity.noContent().build());
+    }
+
     @PostMapping("/venues")
     public ResponseEntity<VenueResponse> create(@AuthenticationPrincipal CustomUserDetails user,
                                                  @RequestBody VenueRequest req) {

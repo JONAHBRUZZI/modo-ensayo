@@ -275,6 +275,10 @@ public class VenueService {
         roomAvailabilityRepository.deleteById(availId);
     }
 
+    public VenueResponse toVenueResponsePublic(Venue v) {
+        return toVenueResponse(v);
+    }
+
     private VenueResponse toVenueResponse(Venue v) {
         return new VenueResponse(
                 v.getId(), v.getName(), v.getCity(), v.getAddress(),

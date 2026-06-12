@@ -21,6 +21,15 @@ export default {
     return res.data
   },
 
+  async getMiSolicitud() {
+    try {
+      const res = await api.get('/venue-admin/venues/mi-solicitud')
+      return res.data
+    } catch {
+      return null
+    }
+  },
+
   async registrarVenueConDocumentos(formData) {
     const token = localStorage.getItem('auth_token')
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'

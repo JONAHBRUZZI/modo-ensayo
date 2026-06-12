@@ -302,7 +302,20 @@ function onDocFile(event, tipo) {
   if (file) docArchivos.value[tipo] = file
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Pre-llenar con datos de solicitud rechazada si existe
+  const solicitud = await venueService.getMiSolicitud()
+  if (solicitud) {
+    form.tipo        = solicitud.tipo        || 'SEDE'
+    form.name        = solicitud.name        || ''
+    form.description = solicitud.description || ''
+    form.city        = solicitud.city        || ''
+    form.address     = solicitud.address     || ''
+    form.phone       = solicitud.phone       || ''
+    form.email       = solicitud.email       || ''
+    form.instagram   = solicitud.instagram   || ''
+    form.sitioWeb    = solicitud.sitioWeb    || ''
+  }
   attachAutocomplete(addressInput.value, (place) => {
     form.address = place.formatted_address
     if (place.city && !form.city) form.city = place.city

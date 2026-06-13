@@ -75,12 +75,24 @@ async function handleConfirmedCheckout() {
   showConfirm.value = false
   checkingOut.value = true
   try {
-    const data = await paymentService.checkout()
-    router.push('/payment/success')
-  } catch {
-    router.push('/payment/failure')
-  } finally {
-    checkingOut.value = false
+    const data = await paymentService.createMercadoPagoPreference()
+    if (data.initPoint) {
+      window.location.href = data.initPoint
+    } else if (data.init_point) {
+      window.location.href = data.init_point
+    } else {
+      // Fallback al checkout interno
+      const checkoutData = await paymentService.checkout()
+      router.push('/payment/success')
+    }
+  } catch (e) {
+    // Si falla MP, intentar checkout interno
+    try {
+      await paymentService.checkout()
+      router.push('/payment/success')
+    } catch {
+      checkingOut.value = false
+    }
   }
 }
 </script>

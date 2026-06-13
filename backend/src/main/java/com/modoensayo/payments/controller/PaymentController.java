@@ -2,6 +2,7 @@ package com.modoensayo.payments.controller;
 
 import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.payments.domain.CartItem;
+import com.modoensayo.payments.service.MercadoPagoService;
 import com.modoensayo.payments.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final MercadoPagoService mercadoPagoService;
 
     @PostMapping("/cart")
     public ResponseEntity<Void> addToCart(@AuthenticationPrincipal CustomUserDetails user,
@@ -48,8 +50,13 @@ public class PaymentController {
     }
 
     @PostMapping("/mercadopago/create-preference")
-    public ResponseEntity<Map<String, Object>> createPreference(@AuthenticationPrincipal CustomUserDetails user) {
-        return ResponseEntity.ok(paymentService.createMercadoPagoPreference(user.getUserId()));
+    public ResponseEntity<?> createPreference(@AuthenticationPrincipal CustomUserDetails user) {
+        try {
+            var response = mercadoPagoService.createPreference(user.getUserId().toString());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Error al crear preferencia: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/my-enrollments")

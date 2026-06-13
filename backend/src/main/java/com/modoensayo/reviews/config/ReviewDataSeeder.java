@@ -66,55 +66,43 @@ public class ReviewDataSeeder implements CommandLineRunner {
 
         List<User> users = userRepository.findAll();
         List<Venue> venues = venueRepository.findAll();
-        var classes = classRepository.findAll();
 
-        if (users.isEmpty() || venues.isEmpty() || classes.isEmpty()) {
+        if (users.isEmpty() || venues.isEmpty()) {
             log.info("Sin datos suficientes para generar reviews de prueba.");
             return;
         }
 
-        // Generar 55 reviews (algunos se duplicaran en clase pero con distinto reviewer)
         List<Review> reviews = new ArrayList<>();
-        var existingClasses = classes.stream()
+        var existingClasses = classRepository.findAll().stream()
                 .filter(c -> c.getStartTime() != null && c.getStartTime().isBefore(Instant.now()))
                 .toList();
 
-        if (existingClasses.isEmpty()) {
-            log.info("Sin clases pasadas para generar reviews de prueba.");
-            return;
-        }
-
         for (int i = 0; i < 55; i++) {
-            var cls = existingClasses.get(random.nextInt(existingClasses.size()));
             User reviewer = users.get(random.nextInt(users.size()));
-
-            // Evitar auto-reviews (profesor revisando su propia clase)
-            if (cls.getTeacherId() != null && cls.getTeacherId().equals(reviewer.getId())) {
-                continue;
-            }
-
-            // Verificar si ya existe review de este usuario para esta clase
-            boolean existe = reviewRepository.findByClassId(cls.getId()).stream()
-                    .anyMatch(r -> r.getReviewerId().equals(reviewer.getId()));
-            if (existe) continue;
-
-            int score = random.nextInt(3) + 3; // 3-5 estrellas
-            String comentario = COMENTARIOS_POSITIVOS[random.nextInt(COMENTARIOS_POSITIVOS.length)];
-
-            // 60% reviews para profesor (TEACHER), 40% para sede (VENUE)
             String targetType = random.nextDouble() < 0.6 ? "TEACHER" : "VENUE";
             UUID targetId;
-            if ("TEACHER".equals(targetType) && cls.getTeacherId() != null) {
-                targetId = cls.getTeacherId();
+
+            if ("TEACHER".equals(targetType)) {
+                // Usamos un profesor existente o un usuario como target TEACHER
+                var teachers = users.stream()
+                        .filter(u -> u.getUserRoles().stream().anyMatch(ur -> "TEACHER".equals(ur.getRole().getName())))
+                        .toList();
+                if (teachers.isEmpty()) continue;
+                targetId = teachers.get(random.nextInt(teachers.size())).getId();
             } else {
                 targetId = venues.get(random.nextInt(venues.size())).getId();
             }
 
-            Instant createdAt = cls.getStartTime().plus(random.nextInt(14) + 1, ChronoUnit.DAYS);
-            if (createdAt.isAfter(Instant.now())) createdAt = Instant.now().minus(random.nextInt(7) + 1, ChronoUnit.DAYS);
+            int score = random.nextInt(3) + 3;
+            String comentario = COMENTARIOS_POSITIVOS[random.nextInt(COMENTARIOS_POSITIVOS.length)];
+
+            UUID classRef = existingClasses.isEmpty() ? null
+                    : existingClasses.get(random.nextInt(existingClasses.size())).getId();
+
+            Instant createdAt = Instant.now().minus(random.nextInt(30) + 1, ChronoUnit.DAYS);
 
             Review review = Review.builder()
-                    .classId(cls.getId())
+                    .classId(classRef)
                     .reviewerId(reviewer.getId())
                     .targetType(targetType)
                     .targetId(targetId)

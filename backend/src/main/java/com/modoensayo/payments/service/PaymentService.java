@@ -75,10 +75,14 @@ public class PaymentService {
         double total = 0;
 
         for (CartItem item : items) {
+            UUID beneficiaryId = item.getBeneficiaryId() != null ? item.getBeneficiaryId() : ownerId;
+            if (enrollmentRepository.existsByClassIdAndBeneficiaryId(item.getClassId(), beneficiaryId)) {
+                continue;
+            }
             Enrollment enrollment = Enrollment.builder()
                     .classId(item.getClassId())
                     .beneficiaryType(item.getBeneficiaryType() != null ? item.getBeneficiaryType() : "USER")
-                    .beneficiaryId(item.getBeneficiaryId() != null ? item.getBeneficiaryId() : ownerId)
+                    .beneficiaryId(beneficiaryId)
                     .status("ACTIVE")
                     .build();
             enrollmentRepository.save(enrollment);

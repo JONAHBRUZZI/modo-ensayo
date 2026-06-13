@@ -2,6 +2,7 @@ package com.modoensayo.users.service;
 
 import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.shared.exceptions.BusinessException;
+import com.modoensayo.shared.exceptions.ConflictException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.users.domain.*;
 import com.modoensayo.users.dto.*;
@@ -90,6 +91,15 @@ public class UserService {
         if ("RUT".equals(documentType) && documentNumber != null && !documentNumber.isBlank()) {
             if (!validarRutChileno(documentNumber)) {
                 throw new BusinessException("El RUT ingresado no es valido. Verifica el digito verificador.");
+            }
+        }
+        // R21: unicidad de documento entre cuentas — validacion exacta
+        if (documentNumber != null && !documentNumber.isBlank()) {
+            boolean duplicado = identityVerificationRepository
+                    .existsByDocumentNumberAndStatusAndUserIdNot(documentNumber, "APPROVED", userDetails.getUserId());
+            if (duplicado) {
+                throw new ConflictException(
+                        "Este documento ya esta asociado a otra cuenta. Contacta a soporte si crees que es un error.");
             }
         }
         // Fix #4: evitar que el mismo documento ya aprobado se registre en otra cuenta.

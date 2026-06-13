@@ -188,7 +188,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import paymentService from '@/services/paymentService'
@@ -264,6 +264,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+})
+
+watch(() => route.path, () => {
+  if (isAuthenticated.value) loadCartCount()
 })
 </script>
 

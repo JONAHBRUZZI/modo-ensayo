@@ -11,6 +11,8 @@ import com.modoensayo.venues.enums.TipoDocumentoSede;
 import com.modoensayo.venues.enums.TipoPiso;
 import com.modoensayo.venues.enums.TipoSede;
 import com.modoensayo.venues.repository.*;
+import com.modoensayo.reschedules.domain.Notification;
+import com.modoensayo.reschedules.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class VenueService {
     private final RoomRepository roomRepository;
     private final RoomAvailabilityRepository roomAvailabilityRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
+    private final NotificationRepository notificationRepository;
 
     public List<VenueResponse> listApproved() {
         return venueRepository.findByStatusOrderByCreatedAtDesc(EstadoSede.APROBADA).stream()
@@ -100,7 +103,15 @@ public class VenueService {
                     .sitioWeb(req.sitioWeb()).facebook(req.facebook())
                     .status(EstadoSede.PENDIENTE_APROBACION).build();
         }
-        return toVenueResponse(venueRepository.save(v));
+        v = venueRepository.save(v);
+
+        notificationRepository.save(Notification.builder()
+                .userId(adminId)
+                .title("Sede registrada")
+                .message("Tu solicitud de registro para \"" + v.getName() + "\" ha sido recibida. Un administrador la revisara pronto.")
+                .type("VENUE_REGISTERED").build());
+
+        return toVenueResponse(v);
     }
 
     private void validateIdentityVerified(UUID userId) {

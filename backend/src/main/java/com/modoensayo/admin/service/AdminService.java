@@ -52,6 +52,44 @@ public class AdminService {
         stats.put("clasesRealizadas", clasesRealizadas);
         stats.put("tasaOcupacion", tasaOcupacion);
         stats.put("ingresos", ingresos);
+
+        // Datos para graficos
+        // Distribucion de sedes por estado
+        Map<String, Long> sedesPorEstado = new LinkedHashMap<>();
+        for (EstadoSede estado : List.of(EstadoSede.APROBADA, EstadoSede.PENDIENTE_APROBACION,
+                EstadoSede.RECHAZADA, EstadoSede.SUSPENDIDA)) {
+            sedesPorEstado.put(estado.name(), venueRepository.countByStatus(estado));
+        }
+        stats.put("sedesPorEstado", sedesPorEstado);
+
+        // Usuarios por rol
+        Map<String, Long> usuariosPorRol = new LinkedHashMap<>();
+        var roles = roleRepository.findAll();
+        for (Role r : roles) {
+            long count = userRoleRepository.countByRoleId(r.getId());
+            usuariosPorRol.put(r.getName(), count);
+        }
+        stats.put("usuariosPorRol", usuariosPorRol);
+
+        // Ingresos mensuales (ultimos 6 meses)
+        List<Map<String, Object>> ingresosMensuales = new ArrayList<>();
+        var clasesCompletadas = classRepository.findAll().stream()
+                .filter(c -> c.getStatus() == ClassStatus.COMPLETED && c.getEndTime() != null)
+                .toList();
+        Map<String, Double> porMes = new TreeMap<>();
+        for (var c : clasesCompletadas) {
+            String mes = java.time.LocalDate.ofInstant(c.getEndTime(), java.time.ZoneOffset.UTC)
+                    .withDayOfMonth(1).toString();
+            porMes.merge(mes, c.getPrice() != null ? c.getPrice() : 0, Double::sum);
+        }
+        for (var entry : porMes.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("mes", entry.getKey());
+            item.put("ingresos", entry.getValue().intValue());
+            ingresosMensuales.add(item);
+        }
+        stats.put("ingresosMensuales", ingresosMensuales);
+
         return stats;
     }
 

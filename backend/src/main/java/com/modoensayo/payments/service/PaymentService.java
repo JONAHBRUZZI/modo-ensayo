@@ -10,6 +10,8 @@ import com.modoensayo.payments.enums.PaymentStatus;
 import com.modoensayo.payments.repository.CartItemRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.payments.repository.PaymentRepository;
+import com.modoensayo.reschedules.domain.Notification;
+import com.modoensayo.reschedules.repository.NotificationRepository;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class PaymentService {
     private final EnrollmentRepository enrollmentRepository;
     private final PaymentRepository paymentRepository;
     private final AssociateRepository associateRepository;
+    private final NotificationRepository notificationRepository;
 
     @Transactional
     public void addToCart(UUID ownerId, UUID classId, String beneficiaryType, UUID beneficiaryId) {
@@ -96,6 +99,26 @@ public class PaymentService {
         }
 
         cartItemRepository.deleteByOwnerId(ownerId);
+
+        // Notificar al alumno
+        notificationRepository.save(Notification.builder()
+                .userId(ownerId)
+                .title("Pago completado")
+                .message("Se ha completado el pago de " + processed.size() + " clase(s) por $" + (int) total)
+                .type("PAYMENT_COMPLETED").build());
+
+        // Notificar al profesor de cada clase
+        for (CartItem item : items) {
+            classRepository.findById(item.getClassId()).ifPresent(c -> {
+                if (c.getTeacherId() != null) {
+                    notificationRepository.save(Notification.builder()
+                            .userId(c.getTeacherId())
+                            .title("Nuevo alumno inscrito")
+                            .message("Un alumno se ha inscrito a tu clase \"" + c.getTitle() + "\"")
+                            .type("STUDENT_ENROLLED").build());
+                }
+            });
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("items", processed);

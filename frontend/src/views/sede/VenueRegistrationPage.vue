@@ -8,6 +8,12 @@
       </p>
     </div>
 
+    <!-- Carga inicial -->
+    <div v-if="cargando" class="flex flex-col items-center justify-center py-20">
+      <div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+      <p class="text-gray-400 text-sm">Cargando formulario...</p>
+    </div>
+
     <!-- Solicitud enviada -->
     <div v-if="enviado" class="card space-y-4 text-center">
       <div class="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto">
@@ -240,6 +246,7 @@ const addressInput = ref(null)
 
 const enviando = ref(false)
 const enviado = ref(false)
+const cargando = ref(true)
 const error = ref('')
 
 const disciplinas = [
@@ -344,6 +351,7 @@ onMounted(async () => {
     form.address = place.formatted_address
     if (place.city && !form.city) form.city = place.city
   })
+  cargando.value = false
 })
 
 async function submit() {

@@ -24,7 +24,7 @@
         <span class="text-primary font-bold text-xl">${{ total.toLocaleString() }}</span>
       </div>
       <button @click="showConfirm = true" :disabled="checkingOut" class="btn-primary w-full text-lg py-3">
-        {{ checkingOut ? 'Procesando...' : 'Pagar con MercadoPago' }}
+        {{ checkingOut ? 'Procesando...' : 'Confirmar Pago' }}
       </button>
     </div>
   </div>
@@ -75,24 +75,10 @@ async function handleConfirmedCheckout() {
   showConfirm.value = false
   checkingOut.value = true
   try {
-    const data = await paymentService.createMercadoPagoPreference()
-    if (data.initPoint) {
-      window.location.href = data.initPoint
-    } else if (data.init_point) {
-      window.location.href = data.init_point
-    } else {
-      // Fallback al checkout interno
-      const checkoutData = await paymentService.checkout()
-      router.push('/payment/success')
-    }
+    await paymentService.checkout()
+    router.push('/alumno/mis-clases')
   } catch (e) {
-    // Si falla MP, intentar checkout interno
-    try {
-      await paymentService.checkout()
-      router.push('/payment/success')
-    } catch {
-      checkingOut.value = false
-    }
+    checkingOut.value = false
   }
 }
 </script>

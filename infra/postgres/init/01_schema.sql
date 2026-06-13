@@ -181,3 +181,51 @@ create table if not exists attendance (
   created_at timestamptz default now(),
   unique (class_id, beneficiary_id)
 );
+
+-- Tablas nuevas integradas de microservicios (Mayo 2026)
+
+create table if not exists management_attributes (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references users(id) on delete cascade not null,
+  target_id uuid not null,
+  tipo_permiso text not null,
+  tipo_origen text not null,
+  sede_id uuid,
+  fecha_inicio timestamptz not null,
+  fecha_fin timestamptz not null
+);
+
+create table if not exists professional_profiles (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid unique references users(id) on delete cascade not null,
+  descripcion text,
+  foto_perfil_url text,
+  rating_promedio numeric(3,2) default 0.0,
+  especialidad text
+);
+
+create table if not exists venue_staff (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references users(id) on delete cascade not null,
+  venue_id uuid not null,
+  activo boolean default true
+);
+
+create table if not exists equipamientos (
+  id uuid primary key default uuid_generate_v4(),
+  nombre text not null,
+  tipo text,
+  cantidad int,
+  estado text,
+  room_id uuid references rooms(id) on delete cascade not null
+);
+
+create table if not exists agendas (
+  id uuid primary key default uuid_generate_v4(),
+  room_id uuid not null,
+  email_maestro text not null,
+  fecha date not null,
+  hora_inicio time not null,
+  hora_fin time not null,
+  estado text
+);

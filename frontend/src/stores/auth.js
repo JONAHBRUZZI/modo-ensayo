@@ -126,7 +126,7 @@ export function useAuth() {
 
   // Botón Maestro: permanente una vez que el usuario tiene rol TEACHER (spec Sección 8)
   const puedeVerContextoProfesor = computed(() => {
-    return user.value?.roles?.includes('TEACHER') || false
+    return user.value?.atributosActivos?.hasRoleTeacher || false
   })
   const puedeVerContextoSede = computed(() => user.value?.roles?.includes('VENUE_ADMIN') || false)
 

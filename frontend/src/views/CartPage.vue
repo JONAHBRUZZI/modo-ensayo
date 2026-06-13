@@ -23,33 +23,22 @@
         <span class="text-white font-semibold text-lg">Total</span>
         <span class="text-primary font-bold text-xl">${{ total.toLocaleString() }}</span>
       </div>
-      <button @click="showConfirm = true" :disabled="checkingOut" class="btn-primary w-full text-lg py-3">
-        {{ checkingOut ? 'Procesando...' : 'Confirmar Pago' }}
+      <button @click="irAPagar" :disabled="checkingOut" class="btn-primary w-full text-lg py-3">
+        {{ checkingOut ? 'Cargando...' : 'Ir a Pagar' }}
       </button>
     </div>
   </div>
-
-  <ConfirmModal
-    :show="showConfirm"
-    title="¿Confirma su pago?"
-    :message="`Procesarás ${items.length} inscripción(es) por un total de $${total.toLocaleString()}. Esta acción no se puede deshacer.`"
-    confirmText="Sí, pagar"
-    @close="showConfirm = false"
-    @confirm="handleConfirmedCheckout"
-  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import paymentService from '@/services/paymentService'
-import ConfirmModal from '@/components/ConfirmModal.vue'
 
 const router = useRouter()
 const items = ref([])
 const loading = ref(true)
 const checkingOut = ref(false)
-const showConfirm = ref(false)
 
 const total = computed(() => items.value.reduce((sum, i) => sum + (i.price || 0), 0))
 
@@ -71,14 +60,7 @@ async function removeItem(id) {
   } catch {}
 }
 
-async function handleConfirmedCheckout() {
-  showConfirm.value = false
-  checkingOut.value = true
-  try {
-    await paymentService.checkout()
-    router.push('/alumno/mis-clases')
-  } catch (e) {
-    checkingOut.value = false
-  }
+function irAPagar() {
+  router.push('/checkout')
 }
 </script>

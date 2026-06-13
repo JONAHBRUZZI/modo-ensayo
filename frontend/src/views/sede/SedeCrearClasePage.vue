@@ -5,7 +5,7 @@
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Titulo</label><input v-model="form.title" required class="input-field" /></div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="block text-sm font-medium text-gray-300 mb-1">Disciplina</label><select v-model="form.discipline" required class="input-field"><option value="">Seleccionar</option><option>Guitarra</option><option>Bateria</option><option>Bajo</option><option>Canto</option><option>Piano</option><option>Violin</option><option>Otro</option></select></div>
-        <div><label class="block text-sm font-medium text-gray-300 mb-1">Nivel</label><select v-model="form.level" required class="input-field"><option value="">Seleccionar</option><option>BASICO</option><option>INTERMEDIO</option><option>AVANZADO</option></select></div>
+        <div><label class="block text-sm font-medium text-gray-300 mb-1">Nivel</label><select v-model="form.level" required class="input-field"><option value="">Seleccionar</option><option value="BASICO">Básico</option><option value="INTERMEDIO">Intermedio</option><option value="AVANZADO">Avanzado</option></select></div>
       </div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Descripcion</label><textarea v-model="form.description" rows="3" class="input-field"></textarea></div>
       <div class="grid grid-cols-3 gap-4">

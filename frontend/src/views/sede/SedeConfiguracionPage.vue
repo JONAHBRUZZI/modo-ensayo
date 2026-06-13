@@ -56,8 +56,8 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Descripcion</label>
-          <textarea v-model="formDatos.description" rows="3" class="input-field" placeholder="Describe tu sede..."></textarea>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Descripción</label>
+            <textarea v-model="formDatos.description" rows="3" class="input-field" placeholder="Describe tu sede..."></textarea>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -87,7 +87,7 @@
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 text-sm">
-          <div><span class="text-gray-500">Descripcion:</span> <span class="text-gray-300">{{ venue.description || '—' }}</span></div>
+          <div><span class="text-gray-500">Descripción:</span> <span class="text-gray-300">{{ venue.description || '—' }}</span></div>
           <div><span class="text-gray-500">Telefono:</span> <span class="text-gray-300">{{ venue.phone || '—' }}</span></div>
           <div><span class="text-gray-500">Email:</span> <span class="text-gray-300">{{ venue.email || '—' }}</span></div>
         </div>
@@ -134,7 +134,7 @@
               <option value="RUT_EMPRESA">RUT Empresa</option>
               <option value="CEDULA_IDENTIDAD">Cedula Identidad</option>
               <option value="INICIO_ACTIVIDADES_F4415">Inicio Actividades F4415</option>
-              <option value="CERTIFICADO_SITUACION_TRIBUTARIA">Cert. Situacion Tributaria</option>
+              <option value="CERTIFICADO_SITUACION_TRIBUTARIA">Cert. Situación Tributaria</option>
               <option value="PERMISO_MUNICIPAL">Permiso Municipal</option>
               <option value="CONTRATO_ARRIENDO">Contrato Arriendo</option>
               <option value="OTRO">Otro</option>
@@ -165,7 +165,7 @@
 
         <div v-if="venue.status === 'APROBADA'" class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Descripcion</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Descripción</label>
             <textarea v-model="formSocial.description" rows="2" class="input-field" placeholder="Describe tu sede..."></textarea>
           </div>
           <div class="space-y-3">

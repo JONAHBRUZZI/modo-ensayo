@@ -313,7 +313,7 @@ const docsRequeridos = computed(() => {
     return [
       { tipo: 'RUT_EMPRESA', label: 'RUT de la Empresa', requerido: true },
       { tipo: 'INICIO_ACTIVIDADES_F4415', label: 'Inicio de Actividades (F4415)', requerido: true },
-      { tipo: 'CERTIFICADO_SITUACION_TRIBUTARIA', label: 'Certificado Situacion Tributaria', requerido: true },
+      { tipo: 'CERTIFICADO_SITUACION_TRIBUTARIA', label: 'Certificado Situación Tributaria', requerido: true },
       { tipo: 'PERMISO_MUNICIPAL', label: 'Permiso Municipal', requerido: true },
       { tipo: 'CONTRATO_ARRIENDO', label: 'Contrato de Arriendo', requerido: false },
       { tipo: 'OTRO', label: 'Otro documento', requerido: false }

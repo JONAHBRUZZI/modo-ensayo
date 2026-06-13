@@ -112,7 +112,7 @@
         <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
           <p class="text-yellow-300 text-xs">
             Esta accion es <strong>irreversible</strong>. Se eliminaran tambien sus roles asignados,
-            verificacion de identidad, asociados, perfil profesional y notificaciones.
+            verificación de identidad, asociados, perfil profesional y notificaciones.
           </p>
         </div>
 

@@ -61,7 +61,7 @@
             <label class="block text-sm font-medium text-gray-300 mb-1">Especialidad Principal *</label>
             <select v-model="form.especialidad" required class="input-field">
               <option value="">Seleccionar</option>
-              <option>CUECA</option><option>BALLET</option><option>DANZA</option>
+              <option value="CUECA">Cueca</option><option value="BALLET">Ballet</option><option value="DANZA">Danza</option>
               <option>TEATRO</option><option>CANTO</option><option>GUITARRA</option>
               <option>BATERIA</option><option>BAJO</option><option>PIANO</option>
               <option>VIOLIN</option><option>SAXOFON</option><option>OTRO</option>
@@ -90,7 +90,7 @@
           <label class="block text-sm font-medium text-gray-300 mb-1">Nivel de Ensenanza *</label>
           <select v-model="form.nivelEnsenanza" required class="input-field">
             <option value="">Seleccionar</option>
-            <option>BASICO</option><option>INTERMEDIO</option><option>AVANZADO</option><option>TODOS</option>
+            <option value="BASICO">Básico</option><option value="INTERMEDIO">Intermedio</option><option value="AVANZADO">Avanzado</option><option value="TODOS">Todos los niveles</option>
           </select>
         </div>
 
@@ -111,7 +111,7 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Descripcion Personal (breve)</label>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Descripción personal (breve)</label>
           <textarea v-model="form.description" rows="2" class="input-field"
             placeholder="Resumen corto para listados de búsqueda..."></textarea>
         </div>

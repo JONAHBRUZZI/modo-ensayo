@@ -44,7 +44,7 @@
               <span v-if="c.venueName" class="text-gray-500 text-xs">· {{ c.venueName }}</span>
             </div>
             <h3 class="text-white font-semibold text-lg">
-              {{ c.title || 'Sin titulo aun' }}
+              {{ c.title || 'Sin título aún' }}
             </h3>
             <div class="flex flex-wrap gap-3 mt-1">
               <span v-if="c.discipline" class="text-gray-300 text-sm">{{ c.discipline }}</span>

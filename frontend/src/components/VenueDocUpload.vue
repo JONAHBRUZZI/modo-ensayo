@@ -77,7 +77,7 @@ const tipoLabels = {
   RUT_EMPRESA: 'RUT Empresa',
   CEDULA_IDENTIDAD: 'Cedula Identidad',
   INICIO_ACTIVIDADES_F4415: 'Inicio Actividades F4415',
-  CERTIFICADO_SITUACION_TRIBUTARIA: 'Cert. Situacion Tributaria',
+  CERTIFICADO_SITUACION_TRIBUTARIA: 'Cert. Situación Tributaria',
   PERMISO_MUNICIPAL: 'Permiso Municipal',
   CONTRATO_ARRIENDO: 'Contrato Arriendo',
   COMPROBANTE_DOMICILIO: 'Comprobante de Domicilio',

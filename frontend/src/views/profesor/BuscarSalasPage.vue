@@ -23,7 +23,7 @@
       <select v-model="filtros.tipo" class="input-field text-sm py-2" @change="buscar">
         <option value="">TODOS los tipos</option>
         <option value="DANZA">Danza</option>
-        <option value="MUSICA">Musica</option>
+        <option value="MUSICA">Música</option>
       </select>
       <div>
         <label class="text-xs text-gray-500 mb-0.5 block">Desde</label>

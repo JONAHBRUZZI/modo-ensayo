@@ -8,7 +8,7 @@
           <EstadoBadge :status="verification.status" />
           <button v-if="verification.status === 'APPROVED' || verification.status === 'REJECTED'" @click="deleteDocument" class="text-xs text-red-400 hover:text-red-300 underline ml-4">Eliminar documento</button>
         </div>
-        <div v-if="verification.status === 'REJECTED'" class="mt-3 text-sm text-red-400">Tu verificacion fue rechazada. Corrige los datos y vuelve a intentarlo.</div>
+        <div v-if="verification.status === 'REJECTED'" class="mt-3 text-sm text-red-400">Tu verificación fue rechazada. Corrige los datos y vuelve a intentarlo.</div>
         <div v-if="verification.status === 'PENDING'" class="mt-3 text-sm text-yellow-400">Tu documento esta en revision. Espera la aprobacion del Administrador General.</div>
       </div>
 
@@ -70,7 +70,7 @@
 
         <button type="submit" :disabled="uploading"
                 class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
-          {{ uploading ? 'Enviando...' : (msg && msgType === 'error' ? 'Corrige los datos y vuelve a enviar' : 'Enviar para validacion') }}
+          {{ uploading ? 'Enviando...' : (msg && msgType === 'error' ? 'Corrige los datos y vuelve a enviar' : 'Enviar para validación') }}
         </button>
       </form>
 
@@ -194,7 +194,7 @@ async function upload() {
 }
 
 async function deleteDocument() {
-  if (!confirm('Esto eliminara tu documento de identidad del sistema. La validacion previa se mantiene registrada. Continuar?')) return
+  if (!confirm('Esto eliminará tu documento de identidad del sistema. La validación previa se mantiene registrada. ¿Continuar?')) return
   try {
     await userService.deleteIdentityDocument()
     msg.value = 'Documento eliminado.'

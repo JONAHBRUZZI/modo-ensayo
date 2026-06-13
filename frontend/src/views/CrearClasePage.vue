@@ -88,7 +88,7 @@
           <label class="block text-sm font-medium text-gray-300 mb-1">Disciplina *</label>
           <select v-model="form.discipline" required class="input-field">
             <option value="">Seleccionar</option>
-            <option>CUECA</option><option>BALLET</option><option>DANZA</option>
+            <option value="CUECA">Cueca</option><option value="BALLET">Ballet</option><option value="DANZA">Danza</option>
             <option>TEATRO</option><option>CANTO</option><option>GUITARRA</option>
             <option>BATERIA</option><option>BAJO</option><option>PIANO</option>
             <option>VIOLIN</option><option>SAXOFON</option><option>OTRO</option>
@@ -98,14 +98,14 @@
           <label class="block text-sm font-medium text-gray-300 mb-1">Nivel *</label>
           <select v-model="form.level" required class="input-field">
             <option value="">Seleccionar</option>
-            <option>BASICO</option><option>INTERMEDIO</option><option>AVANZADO</option>
+            <option value="BASICO">Básico</option><option value="INTERMEDIO">Intermedio</option><option value="AVANZADO">Avanzado</option>
           </select>
         </div>
       </div>
 
       <!-- Descripcion -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">Descripcion</label>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Descripción</label>
         <textarea v-model="form.description" rows="3" class="input-field" placeholder="Describe tu clase..."></textarea>
       </div>
 

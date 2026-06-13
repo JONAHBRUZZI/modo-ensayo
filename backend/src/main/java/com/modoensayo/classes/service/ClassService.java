@@ -19,6 +19,8 @@ import com.modoensayo.users.domain.User;
 import com.modoensayo.users.domain.UserRole;
 import com.modoensayo.users.domain.UserRoleId;
 import com.modoensayo.users.domain.ProfessionalProfile;
+import com.modoensayo.reschedules.domain.Notification;
+import com.modoensayo.reschedules.repository.NotificationRepository;
 import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.users.repository.ProfessionalProfileRepository;
 import com.modoensayo.users.repository.RoleRepository;
@@ -57,6 +59,7 @@ public class ClassService {
     private final UserRoleRepository userRoleRepository;
     private final ClassStatusHistoryRepository classStatusHistoryRepository;
     private final ProfessionalProfileRepository profileRepository;
+    private final NotificationRepository notificationRepository;
 
     public List<ClassResponse> listPublished() {
         return classRepository.findByStatusOrderByStartTimeAsc(ClassStatus.PUBLISHED).stream()
@@ -404,6 +407,11 @@ public class ClassService {
         if (!hasTeacherRole) {
             userRoleRepository.save(
                     new UserRole(new UserRoleId(user.getId(), teacherRole.getId()), user, teacherRole));
+            notificationRepository.save(Notification.builder()
+                    .userId(teacherId)
+                    .type("CONTEXTO_PROFESOR_ACTIVADO")
+                    .message("Tu contexto Maestro está activo. Ya puedes acceder al panel de profesor desde el menú superior.")
+                    .read(false).createdAt(Instant.now()).build());
             return true;   // rol recién asignado
         }
         return false;

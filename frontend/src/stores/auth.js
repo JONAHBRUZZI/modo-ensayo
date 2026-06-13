@@ -89,7 +89,9 @@ function parseUser() {
         identidadValidada: false,
         identidadEnRevision: false,
         tieneReservasActivas: false,
-        tieneAsignacionesActivas: false
+        tieneAsignacionesActivas: false,
+        hasRoleTeacher: false,
+        estadoProfesor: 'INACTIVO'
       }
     }
   } catch {
@@ -113,6 +115,8 @@ export function useAuth() {
   const reservasSinClase = computed(() => user.value?.atributosActivos?.reservasSinClase || false)
   const reservasSinClaseCount = computed(() => user.value?.atributosActivos?.reservasSinClaseCount || 0)
   const perfilProfesionalCompleto = computed(() => user.value?.atributosActivos?.perfilProfesionalCompleto || false)
+  const hasRoleTeacher = computed(() => user.value?.atributosActivos?.hasRoleTeacher || user.value?.roles?.includes('TEACHER') || false)
+  const estadoProfesor = computed(() => user.value?.atributosActivos?.estadoProfesor || 'INACTIVO')
 
   const puedeAlternarModo = computed(() => {
     if (!user.value) return false
@@ -137,6 +141,15 @@ export function useAuth() {
 
   async function login(email, password) {
     const res = await api.post('/auth/login', { email, password })
+    const { token: t, refreshToken: rt, user: u } = res.data
+    store.setToken(t, rt)
+    store.setUser(u)
+    setModo('alumno')
+    return u
+  }
+
+  async function googleLogin(credential) {
+    const res = await api.post('/auth/google', { credential })
     const { token: t, refreshToken: rt, user: u } = res.data
     store.setToken(t, rt)
     store.setUser(u)
@@ -222,14 +235,18 @@ export function useAuth() {
       if (res.data) {
         updateUserAttributes({
           identidadValidada: res.data.identidadValidada,
-          identidadEnRevision: res.data.identidadEstado === 'PENDING',
-          identidadRechazada: res.data.identidadEstado === 'REJECTED',
+          identidadEnRevision: res.data.identidadEstado === 'PENDING' || res.data.identidadEstado === 'PENDIENTE',
+          identidadRechazada: res.data.identidadEstado === 'REJECTED' || res.data.identidadEstado === 'RECHAZADA',
           tieneReservasActivas: res.data.tieneReservasActivas,
           tieneAsignacionesActivas: res.data.tieneAsignacionesActivas,
           tieneSedeAprobada: res.data.tieneSedeAprobada,
+          estadoSolicitudSede: res.data.estadoSolicitudSede || null,
+          motivoRechazoSede: res.data.motivoRechazoSede || null,
           reservasSinClase: res.data.reservasSinClase,
           reservasSinClaseCount: res.data.reservasSinClaseCount || 0,
-          perfilProfesionalCompleto: res.data.perfilProfesionalCompleto || false
+          perfilProfesionalCompleto: res.data.perfilProfesionalCompleto || false,
+          hasRoleTeacher: res.data.hasRoleTeacher || false,
+          estadoProfesor: res.data.estadoProfesor || 'INACTIVO'
         })
         if (res.data.hasRoleTeacher && user.value && !user.value.roles.includes('TEACHER')) {
           user.value.roles.push('TEACHER')
@@ -306,6 +323,11 @@ export function useAuth() {
     reservasSinClase,
     reservasSinClaseCount,
     perfilProfesionalCompleto,
+    hasRoleTeacher,
+    estadoProfesor,
+    tieneSedeAprobada: computed(() => user.value?.atributosActivos?.tieneSedeAprobada || false),
+    estadoSolicitudSede: computed(() => user.value?.atributosActivos?.estadoSolicitudSede || null),
+    motivoRechazoSede: computed(() => user.value?.atributosActivos?.motivoRechazoSede || null),
     puedeAlternarModo,
     puedeVerContextoProfesor,
     puedeVerContextoSede,
@@ -314,6 +336,7 @@ export function useAuth() {
     isTeacher,
     displayName,
     login,
+    googleLogin,
     register,
     logout,
     setModo,

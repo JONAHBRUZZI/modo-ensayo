@@ -1,6 +1,7 @@
 package com.modoensayo.venues.domain;
 
 import com.modoensayo.shared.config.BaseEntity;
+import com.modoensayo.venues.enums.TipoPiso;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.UUID;
@@ -24,7 +25,11 @@ public class Room extends BaseEntity {
 
     private Integer tamanoM2;
 
-    private String floorType;        // mantiene compatibilidad con datos existentes
+    /** Tipo de piso (enum). floorType se mantiene para compatibilidad con registros previos. */
+    @Enumerated(EnumType.STRING)
+    private TipoPiso tipoPiso;
+
+    private String floorType;        // legacy — usar tipoPiso para nuevos registros
 
     private String type;
 

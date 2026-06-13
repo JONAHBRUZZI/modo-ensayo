@@ -26,13 +26,20 @@
             <span class="text-primary font-semibold">${{ c.price?.toLocaleString('es-CL') }}</span>
             <span class="text-gray-400 text-sm">{{ c.enrolledCount || 0 }}/{{ c.capacity }} alumnos</span>
             <!-- DRAFT: pendiente de completar -->
-            <router-link
-              v-if="c.status === 'DRAFT'"
-              :to="'/profesor/crear-clase?edit=' + c.id"
-              class="btn-primary text-xs !py-1.5 !px-3"
-            >
-              Completar Clase
-            </router-link>
+            <div v-if="c.status === 'DRAFT'" class="flex items-center gap-2">
+              <router-link
+                :to="'/profesor/crear-clase?edit=' + c.id"
+                class="btn-primary text-xs !py-1.5 !px-3"
+              >
+                Completar Clase
+              </router-link>
+              <button
+                @click="abrirBorradorSelector(c)"
+                class="btn-secondary text-xs !py-1.5 !px-3"
+              >
+                Asignar Clase
+              </button>
+            </div>
             <!-- PUBLISHED: ir a asistencia -->
             <router-link
               v-else
@@ -45,6 +52,15 @@
         </div>
       </div>
     </div>
+
+    <BorradorSelector
+      :abierto="borradorAbierto"
+      :reservation-id="reservaSeleccionada?.id || null"
+      :room-id="reservaSeleccionada?.roomId || null"
+      :start-time="reservaSeleccionada?.startTime || null"
+      :duration="reservaSeleccionada?.duration || 60"
+      @close="borradorAbierto = false"
+      @applied="cargar" />
   </div>
 </template>
 
@@ -52,14 +68,26 @@
 import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import BorradorSelector from '@/components/BorradorSelector.vue'
 
 const clases = ref([])
 const loading = ref(true)
 
-onMounted(async () => {
+const borradorAbierto = ref(false)
+const reservaSeleccionada = ref(null)
+
+function abrirBorradorSelector(c) {
+  reservaSeleccionada.value = c
+  borradorAbierto.value = true
+}
+
+async function cargar() {
+  loading.value = true
   try { clases.value = await classService.getTeacherPropias() } catch { clases.value = [] }
   loading.value = false
-})
+}
+
+onMounted(() => { cargar() })
 
 function formatDate(d) {
   return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''

@@ -7,6 +7,8 @@ import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.venues.domain.*;
 import com.modoensayo.venues.dto.*;
 import com.modoensayo.venues.enums.EstadoSede;
+import com.modoensayo.venues.enums.TipoDocumentoSede;
+import com.modoensayo.venues.enums.TipoPiso;
 import com.modoensayo.venues.enums.TipoSede;
 import com.modoensayo.venues.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +67,39 @@ public class VenueService {
                 .description(req.description()).phone(req.phone()).email(req.email())
                 .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
                 .status(EstadoSede.APROBADA).build();
+        return toVenueResponse(venueRepository.save(v));
+    }
+
+    /**
+     * Registro de sede por el propio usuario — no requiere identidad verificada previa.
+     * Si ya existe una sede RECHAZADA del mismo usuario, la reutiliza actualizando los datos.
+     * La sede queda en PENDIENTE_APROBACION para revisión del administrador.
+     */
+    @Transactional
+    public VenueResponse registrarSede(UUID adminId, VenueRequest req) {
+        // Reutilizar sede RECHAZADA si existe — evita acumular registros basura
+        Venue v = venueRepository.findByAdminId(adminId).stream()
+                .filter(s -> s.getStatus() == EstadoSede.RECHAZADA)
+                .findFirst()
+                .orElse(null);
+
+        if (v != null) {
+            v.setName(req.name()); v.setCity(req.city()); v.setAddress(req.address());
+            v.setDescription(req.description()); v.setPhone(req.phone()); v.setEmail(req.email());
+            if (req.tipo() != null) v.setTipo(TipoSede.valueOf(req.tipo()));
+            v.setInstagram(req.instagram()); v.setYoutube(req.youtube());
+            v.setSitioWeb(req.sitioWeb()); v.setFacebook(req.facebook());
+            v.setStatus(EstadoSede.PENDIENTE_APROBACION);
+        } else {
+            v = Venue.builder()
+                    .adminId(adminId)
+                    .name(req.name()).city(req.city()).address(req.address())
+                    .description(req.description()).phone(req.phone()).email(req.email())
+                    .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
+                    .instagram(req.instagram()).youtube(req.youtube())
+                    .sitioWeb(req.sitioWeb()).facebook(req.facebook())
+                    .status(EstadoSede.PENDIENTE_APROBACION).build();
+        }
         return toVenueResponse(venueRepository.save(v));
     }
 
@@ -141,6 +176,7 @@ public class VenueService {
                 .name(req.name())
                 .capacity(req.capacity())
                 .tamanoM2(req.tamanoM2())
+                .tipoPiso(req.tipoPiso() != null ? TipoPiso.valueOf(req.tipoPiso()) : null)
                 .floorType(req.floorType())
                 .type(req.type())
                 .pricePerHour(req.pricePerHour())
@@ -181,6 +217,7 @@ public class VenueService {
         if (req.name() != null)         r.setName(req.name());
         if (req.capacity() != null)     r.setCapacity(req.capacity());
         if (req.tamanoM2() != null)     r.setTamanoM2(req.tamanoM2());
+        if (req.tipoPiso() != null)      r.setTipoPiso(TipoPiso.valueOf(req.tipoPiso()));
         if (req.floorType() != null)    r.setFloorType(req.floorType());
         if (req.type() != null)         r.setType(req.type());
         if (req.pricePerHour() != null) r.setPricePerHour(req.pricePerHour());
@@ -238,6 +275,10 @@ public class VenueService {
         roomAvailabilityRepository.deleteById(availId);
     }
 
+    public VenueResponse toVenueResponsePublic(Venue v) {
+        return toVenueResponse(v);
+    }
+
     private VenueResponse toVenueResponse(Venue v) {
         return new VenueResponse(
                 v.getId(), v.getName(), v.getCity(), v.getAddress(),
@@ -248,11 +289,46 @@ public class VenueService {
                 v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());
     }
 
+    /**
+     * Valida que los tipos de documento enviados cubran los requeridos por el tipo de sede.
+     * SEDE requiere: RUT_EMPRESA, INICIO_ACTIVIDADES_F4415, CERTIFICADO_SITUACION_TRIBUTARIA, PERMISO_MUNICIPAL.
+     * HOME_STUDIO requiere: INICIO_ACTIVIDADES_F4415, COMPROBANTE_DOMICILIO.
+     * Lanza BusinessException si falta alguno requerido.
+     */
+    public void validarDocumentosRequeridos(String tipoSede, java.util.List<String> tiposDocumento) {
+        java.util.Set<String> presentes = tiposDocumento != null
+                ? new java.util.HashSet<>(tiposDocumento) : java.util.Collections.emptySet();
+
+        java.util.List<String> requeridos;
+        if ("SEDE".equals(tipoSede)) {
+            requeridos = java.util.List.of(
+                    TipoDocumentoSede.RUT_EMPRESA.name(),
+                    TipoDocumentoSede.INICIO_ACTIVIDADES_F4415.name(),
+                    TipoDocumentoSede.CERTIFICADO_SITUACION_TRIBUTARIA.name(),
+                    TipoDocumentoSede.PERMISO_MUNICIPAL.name());
+        } else if ("HOME_STUDIO".equals(tipoSede)) {
+            requeridos = java.util.List.of(
+                    TipoDocumentoSede.INICIO_ACTIVIDADES_F4415.name(),
+                    TipoDocumentoSede.COMPROBANTE_DOMICILIO.name());
+        } else {
+            return;
+        }
+
+        java.util.List<String> faltantes = requeridos.stream()
+                .filter(r -> !presentes.contains(r))
+                .collect(java.util.stream.Collectors.toList());
+        if (!faltantes.isEmpty()) {
+            throw new BusinessException("Faltan documentos requeridos: " +
+                    String.join(", ", faltantes).replace('_', ' ').toLowerCase());
+        }
+    }
+
     private RoomResponse toRoomResponse(Room r) {
         return new RoomResponse(
                 r.getId(),
                 r.getVenue().getId(), r.getVenue().getName(),
                 r.getName(), r.getCapacity(), r.getTamanoM2(),
+                r.getTipoPiso() != null ? r.getTipoPiso().name() : r.getFloorType(),
                 r.getFloorType(), r.getType(), r.getPricePerHour(), r.isActiva(),
                 r.getHasMirrors(), r.getTieneBarraBallet(),
                 r.getTieneAireAcondicionado(), r.getTieneCalefaccion(), r.getTieneInsonorizacion(),

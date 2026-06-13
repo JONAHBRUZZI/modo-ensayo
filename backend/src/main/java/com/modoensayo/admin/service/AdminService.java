@@ -169,6 +169,7 @@ public class AdminService {
             }
             notificationRepository.save(Notification.builder()
                     .userId(v.getAdminId())
+                    .type("CONTEXTO_SEDE_ACTIVADO")
                     .message("Tu sede '" + v.getName() + "' ha sido APROBADA. Ya tienes acceso al panel de gestión de tu sede.")
                     .read(false).createdAt(Instant.now()).build());
         }
@@ -284,7 +285,14 @@ public class AdminService {
     public void toggleUser(UUID userId, String motivo) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        user.setEnabled(!user.isEnabled());
+
+        boolean suspendiendo = user.isEnabled();
+        if (suspendiendo && (motivo == null || motivo.isBlank())) {
+            throw new com.modoensayo.shared.exceptions.BusinessException(
+                    "Debes indicar un motivo para suspender la cuenta.");
+        }
+
+        user.setEnabled(!suspendiendo);
         userRepository.save(user);
 
         String msg = user.isEnabled()

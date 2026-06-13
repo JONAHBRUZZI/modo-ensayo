@@ -1,10 +1,13 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <h1 class="text-3xl font-bold text-white mb-2">Panel de Maestro</h1>
-    <p class="text-gray-400 mb-8">Bienvenido, {{ displayName }}</p>
+    <div class="flex items-center gap-3 mb-8">
+      <p class="text-gray-400">Bienvenido, {{ displayName }}</p>
+      <EstadoProfesorBadge :estado="estadoProfesor" />
+    </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-10">
       <div class="card">
         <h3 class="text-gray-400 text-sm mb-1">Clases Propias</h3>
         <p class="text-3xl font-bold text-white">{{ stats.propias || 0 }}</p>
@@ -20,6 +23,10 @@
       <div class="card">
         <h3 class="text-gray-400 text-sm mb-1">Retenido</h3>
         <p class="text-3xl font-bold text-yellow-400">${{ stats.totalRetenido?.toLocaleString('es-CL') || 0 }}</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-400 text-sm mb-1">Liberado</h3>
+        <p class="text-3xl font-bold text-green-400">${{ stats.totalLiberado?.toLocaleString('es-CL') || 0 }}</p>
       </div>
     </div>
 
@@ -149,10 +156,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
+import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
 
-const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount } = useAuth()
+const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
 
-const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, totalRetenido: 0 })
+const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, totalRetenido: 0, totalLiberado: 0 })
 const propiasFuturas = ref([])
 const asignadasActivas = ref([])
 const loadingPropias = ref(false)
@@ -176,6 +184,7 @@ onMounted(async () => {
   stats.value.alumnos = [...propiasData, ...asignadasData].reduce((s, c) => s + (c.enrolledCount || 0), 0)
   if (earnings.status === 'fulfilled') {
     stats.value.totalRetenido = earnings.value?.resumen?.totalRetenido || 0
+    stats.value.totalLiberado = earnings.value?.resumen?.totalLiberado || 0
   }
 
   // Seccion A: propias futuras

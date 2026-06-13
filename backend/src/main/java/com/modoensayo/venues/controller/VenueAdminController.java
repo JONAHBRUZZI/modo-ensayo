@@ -4,6 +4,7 @@ import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.venues.domain.VenueDocument;
 import com.modoensayo.venues.domain.VenuePhoto;
 import com.modoensayo.venues.dto.*;
+import com.modoensayo.venues.enums.TipoDocumentoSede;
 import com.modoensayo.venues.repository.VenuePhotoRepository;
 import com.modoensayo.venues.repository.VenueDocumentRepository;
 import com.modoensayo.venues.repository.VenueRepository;
@@ -12,10 +13,13 @@ import com.modoensayo.venues.service.ClassConfirmationService.ClassConfirmationR
 import com.modoensayo.venues.service.ClassConfirmationService.ClassSummaryDto;
 import com.modoensayo.venues.service.VenueService;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
+import com.modoensayo.shared.storage.UnifiedStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -31,16 +35,99 @@ public class VenueAdminController {
     private final VenueDocumentRepository venueDocumentRepository;
     private final VenueRepository venueRepository;
     private final VenuePhotoRepository venuePhotoRepository;
+    private final UnifiedStorageService storageService;
 
     @GetMapping("/my-venues")
     public ResponseEntity<List<VenueResponse>> getMyVenues(@AuthenticationPrincipal CustomUserDetails user) {
         return ResponseEntity.ok(venueService.getMyVenues(user.getUserId()));
     }
 
+    /**
+     * Devuelve la sede PENDIENTE o RECHAZADA del usuario con sus documentos ya subidos.
+     * Permite pre-llenar el formulario de registro al editar una solicitud.
+     * GET /api/venue-admin/venues/mi-solicitud
+     */
+    @GetMapping("/venues/mi-solicitud")
+    public ResponseEntity<Map<String, Object>> getMiSolicitud(@AuthenticationPrincipal CustomUserDetails user) {
+        return venueRepository.findByAdminId(user.getUserId()).stream()
+                .filter(v -> v.getStatus() == com.modoensayo.venues.enums.EstadoSede.PENDIENTE_APROBACION
+                          || v.getStatus() == com.modoensayo.venues.enums.EstadoSede.RECHAZADA)
+                .max(java.util.Comparator.comparing(v -> v.getCreatedAt()))
+                .map(v -> {
+                    Map<String, Object> res = new java.util.HashMap<>();
+                    VenueResponse vr = venueService.toVenueResponsePublic(v);
+                    res.put("venue", vr);
+                    // tipos de documento ya guardados para esta sede
+                    List<String> tiposGuardados = venueDocumentRepository
+                            .findByVenueIdOrderByCreatedAtDesc(v.getId()).stream()
+                            .filter(d -> d.getTipo() != null)
+                            .map(d -> d.getTipo().name())
+                            .distinct()
+                            .collect(java.util.stream.Collectors.toList());
+                    res.put("documentosGuardados", tiposGuardados);
+                    return ResponseEntity.ok(res);
+                })
+                .orElse(ResponseEntity.noContent().build());
+    }
+
     @PostMapping("/venues")
     public ResponseEntity<VenueResponse> create(@AuthenticationPrincipal CustomUserDetails user,
                                                  @RequestBody VenueRequest req) {
         return ResponseEntity.ok(venueService.createVenueAdmin(user.getUserId(), req));
+    }
+
+    /**
+     * Registro de sede con documentos adjuntos en un solo paso.
+     * POST /api/venue-admin/venues/registrar  (multipart/form-data)
+     * Partes: nombre, ciudad, direccion, descripcion, telefono, email, tipo (SEDE|HOME_STUDIO),
+     *         instagram?, youtube?, sitioWeb?, facebook?,
+     *         documentos[] (archivos), tiposDocumento[] (enum TipoDocumentoSede por índice)
+     */
+    @PostMapping(value = "/venues/registrar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<VenueResponse> registrarConDocumentos(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestParam String nombre,
+            @RequestParam String ciudad,
+            @RequestParam String direccion,
+            @RequestParam(required = false) String descripcion,
+            @RequestParam(required = false) String telefono,
+            @RequestParam(required = false) String email,
+            @RequestParam String tipo,
+            @RequestParam(required = false) String instagram,
+            @RequestParam(required = false) String youtube,
+            @RequestParam(required = false) String sitioWeb,
+            @RequestParam(required = false) String facebook,
+            @RequestParam(value = "documentos", required = false) List<MultipartFile> documentos,
+            @RequestParam(value = "tiposDocumento", required = false) List<String> tiposDocumento) throws java.io.IOException {
+
+        VenueRequest req = new VenueRequest(nombre, ciudad, direccion, descripcion,
+                telefono, email, tipo, instagram, youtube, sitioWeb, facebook);
+
+        VenueResponse venue = venueService.registrarSede(user.getUserId(), req);
+
+        // Persistir documentos adjuntos
+        if (documentos != null && !documentos.isEmpty()) {
+            for (int i = 0; i < documentos.size(); i++) {
+                MultipartFile archivo = documentos.get(i);
+                if (archivo == null || archivo.isEmpty()) continue;
+                String fileUrl = storageService.upload(archivo, "venue-docs");
+                String tipoDoc = (tiposDocumento != null && i < tiposDocumento.size())
+                        ? tiposDocumento.get(i) : null;
+                TipoDocumentoSede tipoEnum = null;
+                try {
+                    if (tipoDoc != null) tipoEnum = TipoDocumentoSede.valueOf(tipoDoc);
+                } catch (IllegalArgumentException ignored) {}
+                venueDocumentRepository.save(VenueDocument.builder()
+                        .venueId(venue.id())
+                        .fileUrl(fileUrl)
+                        .tipo(tipoEnum)
+                        .nombre(tipoDoc != null ? tipoDoc.replace('_', ' ') : archivo.getOriginalFilename())
+                        .tipoArchivo(archivo.getContentType())
+                        .build());
+            }
+        }
+
+        return ResponseEntity.ok(venue);
     }
 
     @PatchMapping("/venues/{id}")

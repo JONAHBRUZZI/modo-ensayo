@@ -47,7 +47,48 @@
       </div>
     </div>
 
-    <!-- Modal de confirmacion de eliminacion -->
+    <!-- Modal de confirmacion de suspension con motivo -->
+    <div v-if="suspendTarget"
+         class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+         @click.self="cerrarSuspender">
+      <div class="bg-[#161824] border border-yellow-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 4l8 14H4l8-14z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-white font-bold text-lg">Suspender usuario</h3>
+            <p class="text-gray-300 text-sm mt-1">
+              Suspenderas la cuenta de <span class="text-white font-medium">{{ suspendTarget.email }}</span>.
+              Perdera acceso a la plataforma hasta que sea reactivado.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">
+            Motivo de suspension <span class="text-red-400">*</span>
+          </label>
+          <textarea v-model="suspendMotivo" rows="3" class="input-field"
+            placeholder="Describe el motivo de la suspension..."
+            :class="suspendMotivoError ? 'border-red-500/50' : ''" />
+          <p v-if="suspendMotivoError" class="text-red-400 text-xs mt-1">{{ suspendMotivoError }}</p>
+        </div>
+
+        <div class="flex gap-3">
+          <button @click="confirmarSuspension" :disabled="suspendiendo"
+                  class="flex-1 px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ suspendiendo ? 'Suspendiendo...' : 'Suspender' }}
+          </button>
+          <button @click="cerrarSuspender" :disabled="suspendiendo"
+                  class="flex-1 px-4 py-2 rounded-lg bg-[#1a1d2e] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
     <div v-if="usuarioAEliminar"
          class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
          @click.self="cerrarModal">
@@ -96,7 +137,9 @@
 import { ref, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { useToast } from '@/composables/useToast'
 
+const toast = useToast()
 const users = ref([])
 const loading = ref(true)
 
@@ -104,6 +147,12 @@ const loading = ref(true)
 const usuarioAEliminar = ref(null)
 const eliminando = ref(false)
 const errorEliminar = ref('')
+
+// Estado de suspension con motivo
+const suspendTarget = ref(null)
+const suspendMotivo = ref('')
+const suspendMotivoError = ref('')
+const suspendiendo = ref(false)
 
 onMounted(async () => {
   await cargar()
@@ -126,19 +175,51 @@ async function assignRole(userId, role) {
     await adminService.assignRole(userId, role)
     await cargar()
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al asignar rol')
+    toast.error(e?.response?.data?.message || 'Error al asignar rol')
   }
 }
 
+function abrirSuspender(u) {
+  suspendTarget.value = u
+  suspendMotivo.value = ''
+  suspendMotivoError.value = ''
+}
+
+function cerrarSuspender() {
+  if (suspendiendo.value) return
+  suspendTarget.value = null
+  suspendMotivo.value = ''
+  suspendMotivoError.value = ''
+}
+
 async function toggleUser(u) {
-  const motivo = u.enabled ? prompt('Motivo de suspension:') : null
-  if (u.enabled && motivo === null) return
+  if (u.enabled) {
+    abrirSuspender(u)
+    return
+  }
+  // Reactivar no requiere motivo
   try {
-    await adminService.toggleUser(u.id, motivo || '')
+    await adminService.toggleUser(u.id, '')
     u.enabled = !u.enabled
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al cambiar estado del usuario')
+    toast.error(e?.response?.data?.message || 'Error al cambiar estado del usuario')
   }
+}
+
+async function confirmarSuspension() {
+  if (!suspendMotivo.value.trim()) {
+    suspendMotivoError.value = 'El motivo de suspension es obligatorio'
+    return
+  }
+  suspendiendo.value = true
+  try {
+    await adminService.toggleUser(suspendTarget.value.id, suspendMotivo.value)
+    suspendTarget.value.enabled = !suspendTarget.value.enabled
+    cerrarSuspender()
+  } catch (e) {
+    toast.error(e?.response?.data?.message || 'Error al suspender el usuario')
+  }
+  suspendiendo.value = false
 }
 
 function abrirModalEliminar(u) {

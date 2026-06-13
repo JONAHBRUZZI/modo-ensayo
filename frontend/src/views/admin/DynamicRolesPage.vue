@@ -16,7 +16,7 @@
               </div>
             </div>
             <div class="flex items-center space-x-3 pl-13">
-              <a v-if="v.documentUrl" :href="v.documentUrl" target="_blank" class="text-xs text-indigo-400 hover:text-indigo-300 underline">Ver documento adjunto</a>
+              <a v-if="v.documentUrl" @click.prevent="verDocumento(v.documentUrl)" href="#" class="text-xs text-indigo-400 hover:text-indigo-300 underline cursor-pointer">Ver documento adjunto</a>
               <EstadoBadge :status="v.status" />
             </div>
           </div>
@@ -63,6 +63,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { useToast } from '@/composables/useToast'
+import api from '@/services/api'
+
+const toast = useToast()
 
 const verifications = ref([])
 const pendingVenues = ref([])
@@ -78,6 +82,20 @@ onMounted(async () => {
   loading.value = false
 })
 
+async function verDocumento(url) {
+  try {
+    const docPath = url.startsWith('/api/') ? url.substring(4) : url
+    const res = await api.get(docPath, { responseType: 'blob' })
+    const ext = url.split('.').pop()?.toLowerCase()
+    const mime = ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/*'
+    const blob = new Blob([res.data], { type: mime })
+    const blobUrl = URL.createObjectURL(blob)
+    window.open(blobUrl, '_blank')
+  } catch {
+    toast.error('No se pudo cargar el documento')
+  }
+}
+
 function abrirModal(item, accion) {
   modal.item = item
   modal.accion = accion
@@ -86,7 +104,7 @@ function abrirModal(item, accion) {
   modal.esAprobacion = accion.endsWith('approve')
   if (accion === 'identity-approve') {
     modal.titulo = 'Aprobar identidad'
-    modal.mensaje = `¿Confirma su respuesta? Se aprobara la identidad de ${item.userName || item.userEmail}. El usuario recibira el rol solicitado.`
+    modal.mensaje = `¿Confirma su respuesta? Se aprobara la identidad de ${item.userName || item.userEmail}. El usuario habilitara capacidades de Maestro y registro de sede.`
   } else if (accion === 'identity-reject') {
     modal.titulo = 'Rechazar identidad'
     modal.mensaje = `¿Confirma su respuesta? Se rechazara la identidad de ${item.userName || item.userEmail}. El usuario podra reenviar un nuevo documento.`
@@ -112,7 +130,7 @@ async function ejecutarAccion() {
     pendingVenues.value = pendingVenues.value.filter(v => v.id !== item.id)
     modal.abierto = false
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al procesar la accion')
+    toast.error(e?.response?.data?.message || 'Error al procesar la accion')
   }
   modal.enviando = false
 }

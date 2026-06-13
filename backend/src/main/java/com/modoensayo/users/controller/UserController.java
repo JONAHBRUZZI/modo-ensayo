@@ -13,6 +13,8 @@ import com.modoensayo.users.repository.UserRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.classes.enums.ClassStatus;
+import com.modoensayo.venues.repository.VenueRepository;
+import com.modoensayo.venues.enums.EstadoSede;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,6 +37,7 @@ public class UserController {
     private final ClassRepository classRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final UserRepository userRepository;
+    private final VenueRepository venueRepository;
 
     /**
      * Retorna si el usuario tiene clases propias activas (futuras/en curso) o clases asignadas activas.
@@ -91,6 +94,17 @@ public class UserController {
                 || user.getRoles().contains("VENUE_ADMIN");
         attrs.put("tieneSedeAprobada", tieneSedeAprobada);
 
+        // estadoSolicitudSede + motivoRechazoSede
+        venueRepository.findByAdminId(userId).stream()
+                .max(java.util.Comparator.comparing(v -> v.getCreatedAt()))
+                .ifPresentOrElse(v -> {
+                    attrs.put("estadoSolicitudSede", v.getStatus().name());
+                    attrs.put("motivoRechazoSede", v.getRejectionReason());
+                }, () -> {
+                    attrs.put("estadoSolicitudSede", null);
+                    attrs.put("motivoRechazoSede", null);
+                });
+
         Instant ahora = Instant.now();
         boolean tieneReservasActivas = classRepository.findByTeacherId(userId).stream()
                 .anyMatch(c -> c.getTipoClase() == TipoClase.PROPIA
@@ -110,6 +124,17 @@ public class UserController {
         attrs.put("tieneAsignacionesActivas", tieneAsignacionesActivas);
         attrs.put("reservasSinClase", reservasSinClaseCount > 0);
         attrs.put("reservasSinClaseCount", (int) reservasSinClaseCount);
+
+        // estadoProfesor: calculado en tiempo real según regla de negocio R20
+        String estadoProfesor;
+        if (!hasRoleTeacher) {
+            estadoProfesor = "INACTIVO";
+        } else if (tieneReservasActivas || tieneAsignacionesActivas) {
+            estadoProfesor = "ACTIVO";
+        } else {
+            estadoProfesor = "DORMIDO";
+        }
+        attrs.put("estadoProfesor", estadoProfesor);
 
         // Perfil profesional completo: solo aplica si el usuario es TEACHER
         attrs.put("perfilProfesionalCompleto", profileService.isComplete(userId));

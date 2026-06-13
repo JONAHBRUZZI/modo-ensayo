@@ -47,7 +47,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Direccion</label>
-            <input v-model="formDatos.address" required class="input-field" />
+            <input ref="addressInput" v-model="formDatos.address" required class="input-field" placeholder="ej: Av. Italia 1234, Providencia" />
           </div>
         </div>
         <div>
@@ -122,6 +122,19 @@
         <!-- Subir nuevo documento -->
         <div class="border border-dark-border rounded-lg p-4 space-y-3">
           <p class="text-sm text-gray-300 font-medium">Subir documento</p>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Tipo de documento</label>
+            <select v-model="nuevoDoc.tipo" class="input-field">
+              <option value="">Seleccionar tipo</option>
+              <option value="RUT_EMPRESA">RUT Empresa</option>
+              <option value="CEDULA_IDENTIDAD">Cedula Identidad</option>
+              <option value="INICIO_ACTIVIDADES_F4415">Inicio Actividades F4415</option>
+              <option value="CERTIFICADO_SITUACION_TRIBUTARIA">Cert. Situacion Tributaria</option>
+              <option value="PERMISO_MUNICIPAL">Permiso Municipal</option>
+              <option value="CONTRATO_ARRIENDO">Contrato Arriendo</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </div>
           <div>
             <label class="block text-xs text-gray-400 mb-1">Nombre / Descripción</label>
             <input v-model="nuevoDoc.nombre" class="input-field" placeholder="Ej: Permiso Municipal" />
@@ -200,6 +213,10 @@ import { ref, reactive, onMounted } from 'vue'
 import venueService from '@/services/venueService'
 import api from '@/services/api'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
+
+const { attachAutocomplete } = usePlacesAutocomplete()
+const addressInput = ref(null)
 
 const venue = ref(null)
 const loading = ref(true)
@@ -218,7 +235,7 @@ const msgSocialType = ref('')
 
 // Documentos de sede
 const documentos = ref([])
-const nuevoDoc = reactive({ nombre: '', fileUrl: '' })
+const nuevoDoc = reactive({ nombre: '', tipo: '', fileUrl: '' })
 const uploadingDoc = ref(false)
 const msgDoc = ref('')
 const msgDocType = ref('')
@@ -252,6 +269,10 @@ onMounted(async () => {
     }
   } catch {}
   loading.value = false
+  attachAutocomplete(addressInput.value, (place) => {
+    formDatos.address = place.formatted_address
+    if (place.city && !formDatos.city) formDatos.city = place.city
+  })
 })
 
 async function saveDatos() {
@@ -311,10 +332,12 @@ async function subirDocumento() {
     const doc = await venueService.addVenueDocument(venue.value.id, {
       fileUrl: nuevoDoc.fileUrl,
       nombre: nuevoDoc.nombre,
+      tipo: nuevoDoc.tipo || null,
       tipoArchivo: nuevoDoc.tipoArchivo || ''
     })
     documentos.value.unshift(doc)
     nuevoDoc.nombre = ''
+    nuevoDoc.tipo = ''
     nuevoDoc.fileUrl = ''
     msgDoc.value = 'Documento subido correctamente.'
     msgDocType.value = 'success'

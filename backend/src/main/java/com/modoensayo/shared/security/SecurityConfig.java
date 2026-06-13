@@ -33,6 +33,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/payments/mercadopago/webhook"
@@ -40,6 +41,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/classes", "/api/venues", "/api/venues/**", "/api/classes/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/api/teacher/**").hasAuthority("TEACHER")
+                .requestMatchers(HttpMethod.POST, "/api/venue-admin/venues/registrar").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/venue-admin/venues/mi-solicitud").authenticated()
                 .requestMatchers("/api/venue-admin/**").hasAuthority("VENUE_ADMIN")
                 .anyRequest().authenticated()
             )

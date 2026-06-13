@@ -4,7 +4,7 @@
     <p class="text-gray-400 mb-8">Bienvenido, {{ displayName }}</p>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
       <div class="card">
         <h3 class="text-gray-400 text-sm mb-1">Clases Tomadas</h3>
         <p class="text-3xl font-bold text-white">{{ stats.totalClases || 0 }}</p>
@@ -13,35 +13,11 @@
         <h3 class="text-gray-400 text-sm mb-1">Próximas Clases</h3>
         <p class="text-3xl font-bold text-primary">{{ stats.proximas || 0 }}</p>
       </div>
-      <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Identidad</h3>
-        <EstadoBadge :status="identidadEstado" />
-      </div>
-    </div>
-
-    <!-- Banner identidad no validada -->
-    <div v-if="!identidadValidada && !identidadEnRevision"
-      class="mb-8 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-3">
-      <svg class="w-5 h-5 text-amber-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <div class="flex-1">
-        <p class="text-amber-300 text-sm font-medium">Valida tu identidad para desbloquear más funciones</p>
-        <p class="text-amber-200/70 text-xs mt-1">
-          Con identidad validada podrás registrar una sede, reservar salas y crear clases como maestro.
-        </p>
-      </div>
-      <router-link to="/profile/identity"
-        class="shrink-0 text-xs font-semibold text-amber-300 hover:text-amber-200 border border-amber-500/40 rounded-lg px-3 py-1.5 transition-colors">
-        Validar ahora
-      </router-link>
     </div>
 
     <!-- Acciones principales -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      <router-link to="/alumno/mis-clases"
-        class="card hover:border-primary/50 transition-colors group">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <router-link to="/alumno/mis-clases" class="card hover:border-primary/50 transition-colors group">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -56,8 +32,7 @@
         </div>
       </router-link>
 
-      <router-link to="/classes"
-        class="card hover:border-primary/50 transition-colors group">
+      <router-link to="/classes" class="card hover:border-primary/50 transition-colors group">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -72,8 +47,7 @@
         </div>
       </router-link>
 
-      <router-link to="/alumno/pagos"
-        class="card hover:border-primary/50 transition-colors group">
+      <router-link to="/alumno/pagos" class="card hover:border-primary/50 transition-colors group">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -88,8 +62,7 @@
         </div>
       </router-link>
 
-      <router-link to="/alumno/asociados"
-        class="card hover:border-primary/50 transition-colors group">
+      <router-link to="/alumno/asociados" class="card hover:border-primary/50 transition-colors group">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,13 +78,153 @@
       </router-link>
     </div>
 
-    <!-- Acciones bloqueadas hasta validar identidad -->
+    <!-- Sección de estados: Identidad + Sede/HomeStudio + Maestro -->
     <div class="border-t border-white/5 pt-6">
-      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Requieren identidad validada</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Mi perfil en Modo Ensayo</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-        <!-- Registrar sede -->
-        <div v-if="identidadValidada">
+        <!-- ── IDENTIDAD ── -->
+
+        <!-- Aprobada -->
+        <div v-if="identidadValidada"
+          class="card border border-green-500/30 bg-green-500/5 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <h3 class="text-base font-semibold text-white">Identidad</h3>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 uppercase tracking-wider">Verificada</span>
+            </div>
+            <p class="text-gray-400 text-sm">Tu identidad ha sido validada correctamente.</p>
+          </div>
+        </div>
+
+        <!-- En revisión -->
+        <div v-else-if="identidadEnRevision"
+          class="card border border-amber-500/30 bg-amber-500/5 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <h3 class="text-base font-semibold text-white">Identidad</h3>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 uppercase tracking-wider">Pendiente</span>
+            </div>
+            <p class="text-gray-400 text-sm">Tu documento está siendo revisado. Te notificaremos cuando sea aprobado.</p>
+          </div>
+        </div>
+
+        <!-- Rechazada -->
+        <div v-else-if="identidadRechazada"
+          class="card border border-red-500/30 bg-red-500/5 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-0.5">
+              <h3 class="text-base font-semibold text-white">Identidad</h3>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 uppercase tracking-wider">Rechazada</span>
+            </div>
+            <p class="text-gray-400 text-sm mb-3">Tu documento fue rechazado. Súbelo nuevamente con una imagen clara.</p>
+            <router-link to="/profile/identity"
+              class="inline-block text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1.5 rounded-lg transition-colors">
+              Volver a validar
+            </router-link>
+          </div>
+        </div>
+
+        <!-- Sin validar -->
+        <div v-else>
+          <router-link to="/profile/identity"
+            class="card hover:border-amber-500/50 transition-colors group flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-white group-hover:text-amber-400 transition-colors">Validar Identidad</h3>
+              <p class="text-gray-400 text-sm mt-1">Sube tu cédula o pasaporte para desbloquear más funciones.</p>
+            </div>
+          </router-link>
+        </div>
+
+        <!-- ── SEDE / HOMESTUDIO ── -->
+
+        <!-- Aprobada -->
+        <div v-if="tieneSedeAprobada">
+          <button @click="irAMiSede"
+            class="card hover:border-emerald-500/50 transition-colors group flex items-start gap-3 text-left w-full">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 mb-0.5">
+                <h3 class="text-base font-semibold text-white group-hover:text-emerald-400 transition-colors">Mi Sede</h3>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 uppercase tracking-wider">Aprobada</span>
+              </div>
+              <p class="text-gray-400 text-sm mt-1">Gestiona tu sede, salas y disponibilidad.</p>
+            </div>
+          </button>
+        </div>
+
+        <!-- Pendiente -->
+        <div v-else-if="estadoSolicitudSede === 'PENDIENTE_APROBACION'"
+          class="card border border-amber-500/30 bg-amber-500/5 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <h3 class="text-base font-semibold text-white">Sede / HomeStudio</h3>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 uppercase tracking-wider">Pendiente</span>
+            </div>
+            <p class="text-gray-400 text-sm">Tu solicitud está siendo revisada. Te notificaremos cuando sea aprobada.</p>
+          </div>
+        </div>
+
+        <!-- Rechazada -->
+        <div v-else-if="estadoSolicitudSede === 'RECHAZADA'"
+          class="card border border-red-500/30 bg-red-500/5 flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-0.5">
+              <h3 class="text-base font-semibold text-white">Sede / HomeStudio</h3>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 uppercase tracking-wider">Rechazada</span>
+            </div>
+            <p class="text-gray-400 text-sm mb-1">Tu solicitud fue rechazada. Corrige la información y vuelve a enviarla.</p>
+            <p v-if="motivoRechazoSede" class="text-red-300/80 text-xs mb-3 italic">"{{ motivoRechazoSede }}"</p>
+            <p v-else class="text-gray-500 text-xs mb-3">No se especificó un motivo.</p>
+            <router-link to="/sede/registro"
+              class="inline-block text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1.5 rounded-lg transition-colors">
+              Volver a registrar
+            </router-link>
+          </div>
+        </div>
+
+        <!-- Sin solicitud -->
+        <div v-else>
           <router-link to="/sede/registro"
             class="card hover:border-emerald-500/50 transition-colors group flex items-start gap-3">
             <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
@@ -121,31 +234,14 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-base font-semibold text-white group-hover:text-emerald-400 transition-colors">Registrar mi Sede</h3>
-              <p class="text-gray-400 text-sm mt-1">Sede o HomeStudio para ofrecer espacios de ensayo.</p>
+              <h3 class="text-base font-semibold text-white group-hover:text-emerald-400 transition-colors">Registrar Sede / HomeStudio</h3>
+              <p class="text-gray-400 text-sm mt-1">Ofrece tu espacio para ensayos y clases.</p>
             </div>
           </router-link>
         </div>
-        <div v-else class="card opacity-50 cursor-not-allowed flex items-start gap-3" @click="mostrarBloqueo">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5 text-emerald-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="text-base font-semibold text-gray-600">Registrar mi Sede</h3>
-            <p class="text-gray-600 text-sm mt-1">Requiere identidad validada.</p>
-          </div>
-        </div>
 
-        <!-- Crear perfil de maestro / buscar salas -->
+        <!-- ── MAESTRO / BUSCAR SALAS ── -->
         <div v-if="identidadValidada">
-          <!--
-            Si el usuario ya tiene rol TEACHER, el click cambia el modo a 'profesor'
-            antes de navegar para que llegue a buscar-salas en su contexto Maestro.
-            Si aun no es Maestro, navega tal cual: la reserva le otorgara el rol.
-          -->
           <button @click="irABuscarSalas"
             class="card hover:border-indigo-500/50 transition-colors group flex items-start gap-3 text-left w-full">
             <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0">
@@ -158,19 +254,18 @@
               <h3 class="text-base font-semibold text-white group-hover:text-indigo-400 transition-colors">
                 Agenda tu Sala
                 <span v-if="puedeVerContextoProfesor"
-                      class="ml-2 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 uppercase tracking-wider align-middle">
-                  Contexto Maestro
+                  class="ml-2 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 uppercase tracking-wider align-middle">
+                  Maestro
                 </span>
               </h3>
               <p class="text-gray-400 text-sm mt-1">
-                {{ puedeVerContextoProfesor
-                  ? 'Te llevamos a tu contexto de Maestro para reservar.'
-                  : 'Coordina tus propias clases.' }}
+                {{ puedeVerContextoProfesor ? 'Reserva en tu contexto de Maestro.' : 'Coordina tus propias clases.' }}
               </p>
             </div>
           </button>
         </div>
-        <div v-else class="card opacity-50 cursor-not-allowed flex items-start gap-3" @click="mostrarBloqueo">
+        <div v-else
+          class="card opacity-40 cursor-not-allowed flex items-start gap-3">
           <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 text-indigo-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -185,65 +280,37 @@
 
       </div>
     </div>
-
-    <!-- Toast bloqueo -->
-    <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0 translate-y-2"
-      enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150"
-      leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="toastVisible"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-amber-500/40 text-amber-300 text-sm px-5 py-3 rounded-xl shadow-xl z-50">
-        Debes validar tu identidad para acceder a esta función.
-      </div>
-    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
-import EstadoBadge from '@/components/EstadoBadge.vue'
 import api from '@/services/api'
 
 const router = useRouter()
 const { displayName, identidadValidada, identidadEnRevision, identidadRechazada,
-        puedeVerContextoProfesor, setModo, syncIdentityStatus, syncActividadMaestro } = useAuth()
+        puedeVerContextoProfesor, tieneSedeAprobada, estadoSolicitudSede, motivoRechazoSede,
+        setModo, syncAtributos } = useAuth()
 
 const stats = ref({ totalClases: 0, proximas: 0 })
-const toastVisible = ref(false)
 
 onMounted(async () => {
-  syncIdentityStatus()
-  syncActividadMaestro()
+  syncAtributos()
   try {
     const res = await api.get('/users/me/stats')
     stats.value = res.data
   } catch {}
 })
 
-const identidadEstado = computed(() => {
-  if (identidadValidada.value) return 'APPROVED'
-  if (identidadEnRevision.value) return 'PENDING'
-  if (identidadRechazada.value) return 'REJECTED'
-  return 'NO_SOLICITADA'
-})
-
-function mostrarBloqueo() {
-  toastVisible.value = true
-  setTimeout(() => { toastVisible.value = false }, 3000)
+function irAMiSede() {
+  setModo('sede')
+  router.push('/sede/dashboard')
 }
 
-/**
- * Click en "Agenda tu Sala" desde el dashboard de Alumno.
- * - Si el usuario YA tiene rol TEACHER, cambia el modo activo a 'profesor'
- *   antes de navegar para que llegue al contexto Maestro con la navbar correcta.
- * - Si aun no tiene rol TEACHER, navega tal cual: al confirmar la reserva en
- *   buscar-salas se le otorgara el rol y se cambiara el modo automaticamente.
- */
 function irABuscarSalas() {
-  if (puedeVerContextoProfesor.value) {
-    setModo('profesor')
-  }
+  if (puedeVerContextoProfesor.value) setModo('profesor')
   router.push('/profesor/buscar-salas')
 }
 </script>

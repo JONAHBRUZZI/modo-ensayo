@@ -104,6 +104,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const sedes = ref([])
 const loading = ref(true)
@@ -150,7 +153,7 @@ async function aprobar(sede) {
     await adminService.approveVenue(sede.id)
     await cargar()
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al aprobar la sede')
+    toast.error(e?.response?.data?.message || 'Error al aprobar la sede')
   }
 }
 
@@ -161,7 +164,7 @@ async function rechazar(sede) {
     await adminService.rejectVenue(sede.id, motivo || 'No especificado')
     await cargar()
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al rechazar la sede')
+    toast.error(e?.response?.data?.message || 'Error al rechazar la sede')
   }
 }
 
@@ -173,7 +176,7 @@ async function suspender(sede) {
     await adminService.toggleVenue(sede.id, motivo || '')
     await cargar()
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al suspender la sede')
+    toast.error(e?.response?.data?.message || 'Error al suspender la sede')
   }
 }
 
@@ -184,7 +187,7 @@ async function reactivar(sede) {
     await adminService.toggleVenue(sede.id, '')
     await cargar()
   } catch (e) {
-    alert(e?.response?.data?.message || 'Error al reactivar la sede')
+    toast.error(e?.response?.data?.message || 'Error al reactivar la sede')
   }
 }
 

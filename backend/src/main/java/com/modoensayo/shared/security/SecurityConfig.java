@@ -39,6 +39,7 @@ public class SecurityConfig {
                     "/api/payments/mercadopago/webhook"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/classes", "/api/venues", "/api/venues/**", "/api/classes/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/api/teacher/**").hasAuthority("TEACHER")
                 .requestMatchers(HttpMethod.POST, "/api/venue-admin/venues/registrar").authenticated()

@@ -58,6 +58,58 @@
       </div>
     </div>
 
+    <!-- Métricas del docente -->
+    <h2 class="text-lg font-semibold text-white mb-4 mt-6">Metricas de Rendimiento</h2>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+
+      <div class="card text-center">
+        <h3 class="text-gray-400 text-xs mb-1">M1 · Tasa Ocupacion</h3>
+        <p class="text-3xl font-bold mt-1"
+           :class="(stats.tasaOcupacion||0) >= 80 ? 'text-green-400' : 'text-yellow-400'">
+          {{ stats.tasaOcupacion || 0 }}%
+        </p>
+        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 80%</p>
+      </div>
+
+      <div class="card text-center">
+        <h3 class="text-gray-400 text-xs mb-1">M2 · Conversion a Pago</h3>
+        <p class="text-3xl font-bold mt-1"
+           :class="(stats.conversionPago||0) >= 70 ? 'text-green-400' : 'text-red-400'">
+          {{ stats.conversionPago || 0 }}%
+        </p>
+        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 70%</p>
+      </div>
+
+      <div class="card text-center">
+        <h3 class="text-gray-400 text-xs mb-1">M3 · Tasa Asistencia</h3>
+        <p class="text-3xl font-bold mt-1"
+           :class="(stats.tasaAsistencia||0) >= 90 ? 'text-green-400' : 'text-yellow-400'">
+          {{ stats.tasaAsistencia || 0 }}%
+        </p>
+        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 90%</p>
+      </div>
+
+      <div class="card text-center">
+        <h3 class="text-gray-400 text-xs mb-1">M4 · Disponibilidad</h3>
+        <a href="https://uptimerobot.com/dashboard"
+           target="_blank"
+           class="text-xl font-bold text-green-400 hover:underline block mt-1">
+          Ver reporte ↗
+        </a>
+        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 95%</p>
+      </div>
+
+      <div class="card text-center">
+        <h3 class="text-gray-400 text-xs mb-1">M5 · Pagos Exitosos</h3>
+        <p class="text-3xl font-bold mt-1"
+           :class="(stats.tasaPagosExitosos||100) >= 98 ? 'text-green-400' : 'text-yellow-400'">
+          {{ stats.tasaPagosExitosos || 100 }}%
+        </p>
+        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 98%</p>
+      </div>
+
+    </div>
+
     <!-- Bottom stats -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
       <div class="card"><h3 class="text-gray-400 text-sm mb-1">Total Clases</h3><p class="text-3xl font-bold text-white">{{ stats.totalClases || 0 }}</p></div>

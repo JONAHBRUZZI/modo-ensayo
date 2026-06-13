@@ -2,6 +2,12 @@ package com.modoensayo.admin.service;
 
 import com.modoensayo.classes.enums.ClassStatus;
 import com.modoensayo.classes.repository.ClassRepository;
+import com.modoensayo.payments.enums.PaymentStatus;
+import com.modoensayo.payments.enums.PaymentSessionStatus;
+import com.modoensayo.payments.repository.EnrollmentRepository;
+import com.modoensayo.payments.repository.PaymentRepository;
+import com.modoensayo.payments.repository.PaymentSessionRepository;
+import com.modoensayo.attendance.repository.AttendanceRepository;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.users.domain.*;
 import com.modoensayo.users.dto.IdentityVerificationResponse;
@@ -31,6 +37,10 @@ public class AdminService {
     private final VenueRepository venueRepository;
     private final NotificationRepository notificationRepository;
     private final ClassRepository classRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentSessionRepository paymentSessionRepository;
+    private final AttendanceRepository attendanceRepository;
 
     public Map<String, Object> getStats() {
         Map<String, Object> stats = new HashMap<>();
@@ -40,21 +50,61 @@ public class AdminService {
         stats.put("sedesPendientes", venueRepository.countByStatus(EstadoSede.PENDIENTE_APROBACION));
         stats.put("sedesSuspendidas", venueRepository.countByStatus(EstadoSede.SUSPENDIDA));
 
-        long totalClases = classRepository.count();
-        long clasesRealizadas = classRepository.findAll().stream()
+        var todasLasClases = classRepository.findAll();
+        long totalClases = todasLasClases.size();
+        long clasesRealizadas = todasLasClases.stream()
                 .filter(c -> c.getStatus() == ClassStatus.COMPLETED).count();
-        double ingresos = classRepository.findAll().stream()
+        double ingresos = todasLasClases.stream()
                 .filter(c -> c.getStatus() == ClassStatus.COMPLETED)
                 .mapToDouble(c -> c.getPrice() != null ? c.getPrice() : 0).sum();
-        long tasaOcupacion = totalClases > 0 ? (clasesRealizadas * 100 / totalClases) : 0;
-
         stats.put("totalClases", totalClases);
         stats.put("clasesRealizadas", clasesRealizadas);
-        stats.put("tasaOcupacion", tasaOcupacion);
         stats.put("ingresos", ingresos);
 
+        // M1: Tasa de ocupacion CORRECTA (inscritos / capacidad)
+        long sumInscritos = 0, sumCapacidad = 0;
+        for (var c : todasLasClases) {
+            if (c.getCapacity() != null && c.getCapacity() > 0) {
+                sumInscritos += enrollmentRepository.countByClassId(c.getId());
+                sumCapacidad += c.getCapacity();
+            }
+        }
+        long tasaOcupacion = sumCapacidad > 0
+                ? Math.round((double) sumInscritos / sumCapacidad * 100) : 0;
+        stats.put("tasaOcupacion", tasaOcupacion);
+
+        // M2: Conversion reserva a pago (PaymentSession)
+        long sesAprobadas = paymentSessionRepository.countByStatus(PaymentSessionStatus.APPROVED);
+        long sesFallidas  = paymentSessionRepository.countByStatus(PaymentSessionStatus.FAILED);
+        long totalSes = sesAprobadas + sesFallidas;
+        long conversionPago = totalSes > 0
+                ? Math.round((double) sesAprobadas / totalSes * 100) : 100;
+        stats.put("conversionPago", conversionPago);
+        stats.put("sesionesAprobadas", sesAprobadas);
+        stats.put("sesionesFallidas", sesFallidas);
+
+        // M3: Tasa de asistencia
+        long totalPresentes = 0, totalInscritos = 0;
+        var clasesCompletadas = todasLasClases.stream()
+                .filter(c -> c.getStatus() == ClassStatus.COMPLETED).toList();
+        for (var c : clasesCompletadas) {
+            totalPresentes += attendanceRepository.countByClassIdAndPresentTrue(c.getId());
+            totalInscritos  += enrollmentRepository.countByClassId(c.getId());
+        }
+        long tasaAsistencia = totalInscritos > 0
+                ? Math.round((double) totalPresentes / totalInscritos * 100) : 0;
+        stats.put("tasaAsistencia", tasaAsistencia);
+
+        // M5: Pagos exitosos
+        long totalPagos  = paymentRepository.count();
+        long pagosFailed = paymentRepository.countByStatus(PaymentStatus.FAILED);
+        long tasaPagosExitosos = totalPagos > 0
+                ? Math.round((double)(totalPagos - pagosFailed) / totalPagos * 100) : 100;
+        stats.put("tasaPagosExitosos", tasaPagosExitosos);
+        stats.put("totalPagos", totalPagos);
+        stats.put("pagosFailed", pagosFailed);
+
         // Datos para graficos
-        // Distribucion de sedes por estado
         Map<String, Long> sedesPorEstado = new LinkedHashMap<>();
         for (EstadoSede estado : List.of(EstadoSede.APROBADA, EstadoSede.PENDIENTE_APROBACION,
                 EstadoSede.RECHAZADA, EstadoSede.SUSPENDIDA)) {
@@ -62,25 +112,21 @@ public class AdminService {
         }
         stats.put("sedesPorEstado", sedesPorEstado);
 
-        // Usuarios por rol
         Map<String, Long> usuariosPorRol = new LinkedHashMap<>();
         var roles = roleRepository.findAll();
         for (Role r : roles) {
-            long count = userRoleRepository.countByRoleId(r.getId());
-            usuariosPorRol.put(r.getName(), count);
+            usuariosPorRol.put(r.getName(), userRoleRepository.countByRoleId(r.getId()));
         }
         stats.put("usuariosPorRol", usuariosPorRol);
 
-        // Ingresos mensuales (ultimos 6 meses)
         List<Map<String, Object>> ingresosMensuales = new ArrayList<>();
-        var clasesCompletadas = classRepository.findAll().stream()
-                .filter(c -> c.getStatus() == ClassStatus.COMPLETED && c.getEndTime() != null)
-                .toList();
         Map<String, Double> porMes = new TreeMap<>();
         for (var c : clasesCompletadas) {
-            String mes = java.time.LocalDate.ofInstant(c.getEndTime(), java.time.ZoneOffset.UTC)
-                    .withDayOfMonth(1).toString();
-            porMes.merge(mes, c.getPrice() != null ? c.getPrice() : 0, Double::sum);
+            if (c.getEndTime() != null) {
+                String mes = java.time.LocalDate.ofInstant(c.getEndTime(), java.time.ZoneOffset.UTC)
+                        .withDayOfMonth(1).toString();
+                porMes.merge(mes, c.getPrice() != null ? c.getPrice() : 0, Double::sum);
+            }
         }
         for (var entry : porMes.entrySet()) {
             Map<String, Object> item = new HashMap<>();

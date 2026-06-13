@@ -103,7 +103,7 @@
         </div>
       </div>
 
-      <!-- Descripcion -->
+      <!-- Descripción -->
       <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Descripción</label>
         <textarea v-model="form.description" rows="3" class="input-field" placeholder="Describe tu clase..."></textarea>

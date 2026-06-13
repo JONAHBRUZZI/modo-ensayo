@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -64,5 +65,23 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void loginWithInvalidCredentials_shouldReturn401() throws Exception {
+        String body = """
+            {"email": "noexiste@test.com", "password": "wrongpass"}
+            """;
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void accessProtectedEndpointWithoutToken_shouldReturn403() throws Exception {
+        mockMvc.perform(get("/api/admin/stats"))
+                .andExpect(status().isForbidden());
     }
 }

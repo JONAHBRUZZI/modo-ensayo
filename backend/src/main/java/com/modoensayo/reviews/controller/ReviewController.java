@@ -42,4 +42,10 @@ public class ReviewController {
             @AuthenticationPrincipal CustomUserDetails user) {
         return ResponseEntity.ok(reviewService.getTeacherEligible(user.getUserId()));
     }
+
+    @GetMapping("/target/{type}/{targetId}")
+    public ResponseEntity<List<ReviewResponse>> getByTarget(@PathVariable String type,
+                                                             @PathVariable UUID targetId) {
+        return ResponseEntity.ok(reviewService.getByTarget(type, targetId));
+    }
 }

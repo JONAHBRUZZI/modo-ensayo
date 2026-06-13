@@ -4,6 +4,9 @@
     <div class="flex items-center gap-3 mb-8">
       <p class="text-gray-400">Bienvenido, {{ displayName }}</p>
       <EstadoProfesorBadge :estado="estadoProfesor" />
+      <span v-if="averageRating" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 text-xs font-medium">
+        ★ {{ averageRating?.toFixed(1) }}
+      </span>
     </div>
 
     <!-- Stats -->
@@ -157,10 +160,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
+import api from '@/services/api'
 
 const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
 
 const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, totalRetenido: 0, totalLiberado: 0 })
+const averageRating = ref(null)
 const propiasFuturas = ref([])
 const asignadasActivas = ref([])
 const loadingPropias = ref(false)
@@ -204,6 +209,12 @@ onMounted(async () => {
       .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     loadingAsignadas.value = false
   }
+
+  // Cargar rating promedio
+  try {
+    const profile = await api.get('/users/me/professional-profile')
+    if (profile.data?.averageRating) averageRating.value = profile.data.averageRating
+  } catch {}
 })
 
 function formatDate(d) {

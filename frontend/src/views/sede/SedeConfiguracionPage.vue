@@ -16,7 +16,12 @@
       <div class="card">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-white font-semibold text-lg">{{ venue.name }}</h3>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-white font-semibold text-lg">{{ venue.name }}</h3>
+              <span v-if="venueRating" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 text-xs font-medium">
+                ★ {{ venueRating?.toFixed(1) }}
+              </span>
+            </div>
             <p class="text-gray-400 text-sm">{{ venue.address }}, {{ venue.city }}</p>
           </div>
           <EstadoBadge :status="venue.status" />
@@ -220,6 +225,7 @@ const addressInput = ref(null)
 
 const venue = ref(null)
 const loading = ref(true)
+const venueRating = ref(null)
 
 // Formulario datos estructurales
 const formDatos = reactive({ name: '', city: '', address: '', description: '', phone: '', email: '' })
@@ -266,6 +272,15 @@ onMounted(async () => {
       try {
         documentos.value = await venueService.getVenueDocuments(v.id)
       } catch { documentos.value = [] }
+      // Cargar rating promedio de la sede
+      try {
+        const revRes = await api.get(`/reviews/target/VENUE/${v.id}`)
+        const reviews = revRes.data
+        if (Array.isArray(reviews) && reviews.length > 0) {
+          const avg = reviews.reduce((s, r) => s + (r.score || 0), 0) / reviews.length
+          venueRating.value = avg
+        }
+      } catch {}
     }
   } catch {}
   loading.value = false

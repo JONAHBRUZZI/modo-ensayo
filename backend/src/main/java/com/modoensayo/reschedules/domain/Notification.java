@@ -6,7 +6,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", indexes = {
+    @Index(name = "idx_notification_user",      columnList = "user_id"),
+    @Index(name = "idx_notification_user_read", columnList = "user_id, read")
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Notification {
 

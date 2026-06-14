@@ -18,7 +18,10 @@ import com.modoensayo.venues.enums.EstadoSede;
 import com.modoensayo.venues.repository.VenueRepository;
 import com.modoensayo.reschedules.domain.Notification;
 import com.modoensayo.reschedules.repository.NotificationRepository;
+import com.modoensayo.reschedules.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,12 +39,14 @@ public class AdminService {
     private final IdentityVerificationRepository identityVerificationRepository;
     private final VenueRepository venueRepository;
     private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
     private final ClassRepository classRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentSessionRepository paymentSessionRepository;
     private final AttendanceRepository attendanceRepository;
 
+    @Cacheable("adminStats")
     public Map<String, Object> getStats() {
         Map<String, Object> stats = new HashMap<>();
         stats.put("usuarios", userRepository.count());
@@ -148,6 +153,7 @@ public class AdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "adminStats", allEntries = true)
     public IdentityVerificationResponse reviewIdentity(UUID id, String action, UUID reviewerId) {
         IdentityVerification iv = identityVerificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Not found"));
@@ -230,6 +236,7 @@ public class AdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "adminStats", allEntries = true)
     public VenueResponse approveVenue(UUID id) {
         Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));
         v.setStatus(EstadoSede.APROBADA);
@@ -271,6 +278,7 @@ public class AdminService {
      * No aplica para sedes en PENDIENTE_APROBACION ni RECHAZADA.
      */
     @Transactional
+    @CacheEvict(value = "adminStats", allEntries = true)
     public VenueResponse toggleVenue(UUID id, String motivo) {
         Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));
 
@@ -311,6 +319,7 @@ public class AdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "adminStats", allEntries = true)
     public VenueResponse rejectVenue(UUID id, String reason) {
         Venue v = venueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"));
         v.setStatus(EstadoSede.RECHAZADA);
@@ -366,6 +375,7 @@ public class AdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "adminStats", allEntries = true)
     public void toggleUser(UUID userId, String motivo) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

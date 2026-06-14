@@ -12,7 +12,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "classes")
+@Table(name = "classes", indexes = {
+    @Index(name = "idx_class_status",      columnList = "status"),
+    @Index(name = "idx_class_teacher",     columnList = "teacher_id"),
+    @Index(name = "idx_class_status_time", columnList = "status, end_time"),
+    @Index(name = "idx_class_tipo",        columnList = "tipo_clase")
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Class extends BaseEntity {
 

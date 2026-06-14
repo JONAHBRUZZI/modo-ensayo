@@ -59,3 +59,11 @@ mercadopago:
 app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:3001}
   backend-url: ${APP_BACKEND_URL:http://localhost:8080}
+
+spring:
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=200,expireAfterWrite=5m
+    cache-names:
+      - adminStats

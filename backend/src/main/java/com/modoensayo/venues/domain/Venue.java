@@ -8,7 +8,10 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "venues")
+@Table(name = "venues", indexes = {
+    @Index(name = "idx_venue_status",   columnList = "status"),
+    @Index(name = "idx_venue_admin_id", columnList = "admin_id")
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Venue extends BaseEntity {
 

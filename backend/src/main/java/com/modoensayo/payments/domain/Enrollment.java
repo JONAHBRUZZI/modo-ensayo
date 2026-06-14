@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -22,8 +23,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "enrollments", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"class_id", "beneficiary_type", "beneficiary_id"})
+@Table(name = "enrollments", indexes = {
+    @Index(name = "idx_enrollment_class",       columnList = "class_id"),
+    @Index(name = "idx_enrollment_beneficiary", columnList = "beneficiary_id")
+}, uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"class_id", "beneficiary_type", "beneficiary_id"})
 })
 public class Enrollment extends BaseEntity {
     @Id

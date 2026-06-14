@@ -15,10 +15,11 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
 
     @Async
-    public void enviar(UUID userId, String type, String message) {
+    public void enviar(UUID userId, String type, String title, String message) {
         notificationRepository.save(Notification.builder()
                 .userId(userId)
                 .type(type)
+                .title(title)
                 .message(message)
                 .read(false)
                 .createdAt(Instant.now())

@@ -16,7 +16,6 @@ import com.modoensayo.venues.domain.Venue;
 import com.modoensayo.venues.dto.VenueResponse;
 import com.modoensayo.venues.enums.EstadoSede;
 import com.modoensayo.venues.repository.VenueRepository;
-import com.modoensayo.reschedules.domain.Notification;
 import com.modoensayo.reschedules.repository.NotificationRepository;
 import com.modoensayo.reschedules.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -171,15 +170,11 @@ public class AdminService {
         }
 
         if (aprobado) {
-            notificationRepository.save(Notification.builder()
-                    .userId(iv.getUserId())
-                    .message("Tu identidad ha sido VALIDADA. Ahora puedes registrar una sede o reservar salas para crear clases.")
-                    .read(false).createdAt(Instant.now()).build());
+            notificationService.enviar(iv.getUserId(), null, null,
+                    "Tu identidad ha sido VALIDADA. Ahora puedes registrar una sede o reservar salas para crear clases.");
         } else {
-            notificationRepository.save(Notification.builder()
-                    .userId(iv.getUserId())
-                    .message("Tu solicitud de validacion de identidad ha sido RECHAZADA. Revisa tu documento y vuelve a intentarlo.")
-                    .read(false).createdAt(Instant.now()).build());
+            notificationService.enviar(iv.getUserId(), null, null,
+                    "Tu solicitud de validacion de identidad ha sido RECHAZADA. Revisa tu documento y vuelve a intentarlo.");
         }
 
         return new IdentityVerificationResponse(iv.getId().toString(), iv.getUserId().toString(), iv.getDocumentUrl(), iv.getStatus(), null, iv.getCreatedAt(),
@@ -258,11 +253,8 @@ public class AdminService {
                 owner.setTieneSedeAprobada(true);
                 userRepository.save(owner);
             }
-            notificationRepository.save(Notification.builder()
-                    .userId(v.getAdminId())
-                    .type("CONTEXTO_SEDE_ACTIVADO")
-                    .message("Tu sede '" + v.getName() + "' ha sido APROBADA. Ya tienes acceso al panel de gestión de tu sede.")
-                    .read(false).createdAt(Instant.now()).build());
+            notificationService.enviar(v.getAdminId(), "CONTEXTO_SEDE_ACTIVADO", null,
+                    "Tu sede '" + v.getName() + "' ha sido APROBADA. Ya tienes acceso al panel de gestión de tu sede.");
         }
 
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
@@ -306,10 +298,7 @@ public class AdminService {
                             + (motivo != null && !motivo.isBlank() ? motivo : "No especificado")
                             + ". Tus salas no pueden recibir nuevas reservas. Contacta al administrador para mas detalles."
                     : "Tu sede '" + v.getName() + "' ha sido REACTIVADA. Ya puedes recibir nuevas reservas.";
-            notificationRepository.save(Notification.builder()
-                    .userId(v.getAdminId())
-                    .message(mensaje)
-                    .read(false).createdAt(Instant.now()).build());
+            notificationService.enviar(v.getAdminId(), null, null, mensaje);
         }
 
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
@@ -327,10 +316,8 @@ public class AdminService {
         v = venueRepository.save(v);
 
         if (v.getAdminId() != null) {
-            notificationRepository.save(Notification.builder()
-                    .userId(v.getAdminId())
-                    .message("Tu sede '" + v.getName() + "' ha sido RECHAZADA. Motivo: " + (reason != null ? reason : "No especificado") + ". Corrige los datos y reenvia.")
-                    .read(false).createdAt(Instant.now()).build());
+            notificationService.enviar(v.getAdminId(), null, null,
+                    "Tu sede '" + v.getName() + "' ha sido RECHAZADA. Motivo: " + (reason != null ? reason : "No especificado") + ". Corrige los datos y reenvia.");
         }
 
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
@@ -392,8 +379,7 @@ public class AdminService {
         String msg = user.isEnabled()
                 ? "Tu cuenta ha sido REACTIVADA."
                 : "Tu cuenta ha sido SUSPENDIDA. Motivo: " + (motivo != null ? motivo : "No especificado") + ". Contacta al administrador.";
-        notificationRepository.save(Notification.builder()
-                .userId(userId).message(msg).read(false).createdAt(Instant.now()).build());
+        notificationService.enviar(userId, null, null, msg);
     }
 
     /**

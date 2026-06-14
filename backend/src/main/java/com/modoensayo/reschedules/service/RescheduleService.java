@@ -14,6 +14,7 @@ import com.modoensayo.reschedules.dto.*;
 import com.modoensayo.reschedules.enums.RescheduleStatus;
 import com.modoensayo.reschedules.enums.ResponseType;
 import com.modoensayo.reschedules.repository.*;
+import com.modoensayo.reschedules.service.NotificationService;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.venues.dto.RoomAvailabilityResponse;
@@ -38,6 +39,7 @@ public class RescheduleService {
     private final RescheduleRepository rescheduleRepository;
     private final RescheduleResponseRepository rescheduleResponseRepository;
     private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
     private final EnrollmentRepository enrollmentRepository;
     private final PaymentRepository paymentRepository;
     private final ClassRepository classRepository;
@@ -136,12 +138,8 @@ public class RescheduleService {
                             .respondedAt(null)
                             .build());
                 }
-                notificationRepository.save(Notification.builder()
-                        .userId(e.getBeneficiaryId())
-                        .message("El profesor acepto el reagendamiento para el " + r.getProposedTime() + ". Tienes 48h para confirmar o rechazar.")
-                        .read(false)
-                        .createdAt(Instant.now())
-                        .build());
+                notificationService.enviar(e.getBeneficiaryId(), null, null,
+                        "El profesor acepto el reagendamiento para el " + r.getProposedTime() + ". Tienes 48h para confirmar o rechazar.");
             }
 
             log.info("Teacher {} accepted reschedule {}. Deadline: {}", teacherId, rescheduleId, r.getResponseDeadline());
@@ -267,12 +265,8 @@ public class RescheduleService {
             }
         }
 
-        notificationRepository.save(Notification.builder()
-                .userId(studentId)
-                .message(accepted ? "Has aceptado el reagendamiento. Tu inscripcion sigue activa." : "Has rechazado el reagendamiento. Se procesara tu devolucion.")
-                .read(false)
-                .createdAt(Instant.now())
-                .build());
+        notificationService.enviar(studentId, null, null,
+                accepted ? "Has aceptado el reagendamiento. Tu inscripcion sigue activa." : "Has rechazado el reagendamiento. Se procesara tu devolucion.");
 
         long pending = rescheduleResponseRepository.findByRescheduleIdAndResponseTypeIsNull(rescheduleId).size();
         if (pending == 0) {

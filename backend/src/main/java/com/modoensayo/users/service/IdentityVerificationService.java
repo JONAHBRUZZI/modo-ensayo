@@ -2,8 +2,7 @@ package com.modoensayo.users.service;
 
 import com.modoensayo.users.domain.IdentityVerification;
 import com.modoensayo.users.dto.IdentityVerificationResponse;
-import com.modoensayo.reschedules.domain.Notification;
-import com.modoensayo.reschedules.repository.NotificationRepository;
+import com.modoensayo.reschedules.service.NotificationService;
 import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,7 @@ import java.util.UUID;
 public class IdentityVerificationService {
 
     private final IdentityVerificationRepository identityVerificationRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public IdentityVerificationResponse upload(String userId, String documentUrl) {
@@ -65,12 +64,7 @@ public class IdentityVerificationService {
                 ? "Tu verificacion de identidad fue aprobada. Ya puedes continuar con tu cuenta."
                 : "Tu verificacion de identidad fue rechazada. Sube nuevamente tu documento para reintentar.";
 
-        notificationRepository.save(Notification.builder()
-                .userId(saved.getUserId())
-                .message(message)
-                .read(false)
-                .createdAt(Instant.now())
-                .build());
+        notificationService.enviar(saved.getUserId(), null, null, message);
 
         return toResponse(saved);
     }

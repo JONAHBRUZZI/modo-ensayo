@@ -11,8 +11,7 @@ import com.modoensayo.venues.enums.TipoDocumentoSede;
 import com.modoensayo.venues.enums.TipoPiso;
 import com.modoensayo.venues.enums.TipoSede;
 import com.modoensayo.venues.repository.*;
-import com.modoensayo.reschedules.domain.Notification;
-import com.modoensayo.reschedules.repository.NotificationRepository;
+import com.modoensayo.reschedules.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +28,7 @@ public class VenueService {
     private final RoomRepository roomRepository;
     private final RoomAvailabilityRepository roomAvailabilityRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     public List<VenueResponse> listApproved() {
         return venueRepository.findByStatusOrderByCreatedAtDesc(EstadoSede.APROBADA).stream()
@@ -105,11 +104,8 @@ public class VenueService {
         }
         v = venueRepository.save(v);
 
-        notificationRepository.save(Notification.builder()
-                .userId(adminId)
-                .title("Sede registrada")
-                .message("Tu solicitud de registro para \"" + v.getName() + "\" ha sido recibida. Un administrador la revisara pronto.")
-                .type("VENUE_REGISTERED").build());
+        notificationService.enviar(adminId, "VENUE_REGISTERED", "Sede registrada",
+                "Tu solicitud de registro para \"" + v.getName() + "\" ha sido recibida. Un administrador la revisara pronto.");
 
         return toVenueResponse(v);
     }

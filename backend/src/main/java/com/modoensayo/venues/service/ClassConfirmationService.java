@@ -12,8 +12,7 @@ import com.modoensayo.payments.domain.Payment;
 import com.modoensayo.payments.enums.PaymentStatus;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.payments.repository.PaymentRepository;
-import com.modoensayo.reschedules.domain.Notification;
-import com.modoensayo.reschedules.repository.NotificationRepository;
+import com.modoensayo.reschedules.service.NotificationService;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.venues.domain.Venue;
@@ -37,7 +36,7 @@ public class ClassConfirmationService {
     private final VenueRepository venueRepository;
     private final PaymentRepository paymentRepository;
     private final EnrollmentRepository enrollmentRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
     private final AttendanceRepository attendanceRepository;
     private final ClassStatusHistoryRepository classStatusHistoryRepository;
 
@@ -219,23 +218,11 @@ public class ClassConfirmationService {
     }
 
     private void notifyTeacher(UUID teacherId, String message) {
-        Notification notification = Notification.builder()
-                .userId(teacherId)
-                .message(message)
-                .read(false)
-                .createdAt(Instant.now())
-                .build();
-        notificationRepository.save(notification);
+        notificationService.enviar(teacherId, null, null, message);
     }
 
     private void notifyUser(UUID userId, String message) {
-        Notification notification = Notification.builder()
-                .userId(userId)
-                .message(message)
-                .read(false)
-                .createdAt(Instant.now())
-                .build();
-        notificationRepository.save(notification);
+        notificationService.enviar(userId, null, null, message);
     }
 
     public record ClassSummaryDto(

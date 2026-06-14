@@ -46,6 +46,7 @@ class RescheduleServiceTest {
     @Mock private RescheduleRepository rescheduleRepository;
     @Mock private RescheduleResponseRepository rescheduleResponseRepository;
     @Mock private NotificationRepository notificationRepository;
+    @Mock private NotificationService notificationService;
     @Mock private EnrollmentRepository enrollmentRepository;
     @Mock private PaymentRepository paymentRepository;
     @Mock private ClassRepository classRepository;
@@ -103,7 +104,7 @@ class RescheduleServiceTest {
         when(rescheduleRepository.save(any())).thenReturn(reschedule);
         when(classRepository.save(any())).thenReturn(propiaClass);
         when(enrollmentRepository.findByClassId(classId)).thenReturn(List.of());
-        when(notificationRepository.save(any())).thenReturn(null);
+        doNothing().when(notificationService).enviar(any(), any(), any(), any());
 
         assertDoesNotThrow(() ->
                 rescheduleService.teacherDecision(rescheduleId, true, teacherId, false));
@@ -142,7 +143,7 @@ class RescheduleServiceTest {
         when(rescheduleRepository.save(any())).thenReturn(reschedule);
         when(classRepository.save(any())).thenReturn(asignadaClass);
         when(enrollmentRepository.findByClassId(classId)).thenReturn(List.of());
-        when(notificationRepository.save(any())).thenReturn(null);
+        doNothing().when(notificationService).enviar(any(), any(), any(), any());
 
         assertDoesNotThrow(() ->
                 rescheduleService.teacherDecision(rescheduleId, true, venueAdminId, true));
@@ -233,7 +234,7 @@ class RescheduleServiceTest {
         when(rescheduleResponseRepository.findByRescheduleIdAndUserId(rescheduleId, studentId))
                 .thenReturn(Optional.of(response));
         when(rescheduleResponseRepository.save(any())).thenReturn(response);
-        when(notificationRepository.save(any())).thenReturn(null);
+        doNothing().when(notificationService).enviar(any(), any(), any(), any());
         when(rescheduleResponseRepository.findByRescheduleIdAndResponseTypeIsNull(rescheduleId))
                 .thenReturn(List.of());
         when(rescheduleRepository.save(any())).thenReturn(reschedule);

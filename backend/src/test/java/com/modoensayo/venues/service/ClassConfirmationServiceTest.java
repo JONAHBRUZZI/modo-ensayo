@@ -12,8 +12,7 @@ import com.modoensayo.payments.domain.Payment;
 import com.modoensayo.payments.enums.PaymentStatus;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.payments.repository.PaymentRepository;
-import com.modoensayo.reschedules.domain.Notification;
-import com.modoensayo.reschedules.repository.NotificationRepository;
+import com.modoensayo.reschedules.service.NotificationService;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.venues.domain.Room;
 import com.modoensayo.venues.domain.Venue;
@@ -40,7 +39,7 @@ class ClassConfirmationServiceTest {
     @Mock private VenueRepository venueRepository;
     @Mock private PaymentRepository paymentRepository;
     @Mock private EnrollmentRepository enrollmentRepository;
-    @Mock private NotificationRepository notificationRepository;
+    @Mock private NotificationService notificationService;
     @Mock private AttendanceRepository attendanceRepository;
     @Mock private ClassStatusHistoryRepository classStatusHistoryRepository;
 
@@ -96,7 +95,7 @@ class ClassConfirmationServiceTest {
         when(enrollmentRepository.findByClassId(classId)).thenReturn(List.of(enrollment));
         when(paymentRepository.findByEnrollmentId(enrollmentId)).thenReturn(List.of(payment));
         when(paymentRepository.save(any())).thenReturn(payment);
-        when(notificationRepository.save(any(Notification.class))).thenReturn(null);
+        doNothing().when(notificationService).enviar(any(), any(), any(), any());
 
         ClassConfirmationService.ClassConfirmationResult result =
                 service.confirmClassRealized(adminId.toString(), classId.toString());
@@ -115,12 +114,12 @@ class ClassConfirmationServiceTest {
         when(enrollmentRepository.findByClassId(classId)).thenReturn(List.of(enrollment));
         when(paymentRepository.findByEnrollmentId(enrollmentId)).thenReturn(List.of(payment));
         when(paymentRepository.save(any())).thenReturn(payment);
-        when(notificationRepository.save(any())).thenReturn(null);
+        doNothing().when(notificationService).enviar(any(), any(), any(), any());
 
         service.confirmClassNotRealized(adminId.toString(), classId.toString());
 
         // 1 notification to teacher + 1 to beneficiary
-        verify(notificationRepository, atLeast(1)).save(any(Notification.class));
+        verify(notificationService, atLeast(1)).enviar(any(), any(), any(), any());
         verify(paymentRepository).save(argThat(p -> p.getStatus() == PaymentStatus.REFUND_PENDING));
     }
 
@@ -135,12 +134,12 @@ class ClassConfirmationServiceTest {
         when(enrollmentRepository.findByClassId(classId)).thenReturn(List.of(enrollment));
         when(paymentRepository.findByEnrollmentId(enrollmentId)).thenReturn(List.of(payment));
         when(paymentRepository.save(any())).thenReturn(payment);
-        when(notificationRepository.save(any())).thenReturn(null);
+        doNothing().when(notificationService).enviar(any(), any(), any(), any());
 
         service.confirmClassNotRealized(adminId.toString(), classId.toString());
 
         // Should notify venue admin + teacher (at least 2 notifications)
-        verify(notificationRepository, atLeast(2)).save(any(Notification.class));
+        verify(notificationService, atLeast(2)).enviar(any(), any(), any(), any());
     }
 
     @Test

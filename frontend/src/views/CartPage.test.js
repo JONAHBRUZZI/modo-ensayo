@@ -11,10 +11,8 @@ vi.mock('@/services/paymentService', () => ({
       { id: '2', classTitle: 'Ballet', discipline: 'Ballet', price: 20000 },
     ]}),
     removeFromCart: vi.fn().mockResolvedValue({}),
-    createMercadoPagoPreference: vi.fn().mockResolvedValue({
-      preferenceId: 'pref-123',
+    checkout: vi.fn().mockResolvedValue({
       initPoint: 'https://www.mercadopago.cl/checkout/v1/redirect?pref_id=pref-123',
-      sandboxInitPoint: 'https://sandbox.mercadopago.cl/checkout/v1/redirect?pref_id=pref-123',
     }),
   }
 }))
@@ -36,6 +34,7 @@ describe('CartPage', () => {
 
   beforeEach(() => {
     router = createTestRouter()
+    vi.clearAllMocks()
   })
 
   it('renders cart items and total correctly', async () => {
@@ -48,40 +47,30 @@ describe('CartPage', () => {
     expect(wrapper.text()).toContain('35.000') // total
   })
 
-  it('shows ConfirmModal when clicking Pagar button', async () => {
+  it('sets checkingOut to true when clicking Pagar button', async () => {
     const wrapper = mount(CartPage, { global: { plugins: [router] } })
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
 
-    const payButton = wrapper.find('button')
-    expect(payButton.exists()).toBe(true)
-    await payButton.trigger('click')
+    const buttons = wrapper.findAll('button')
+    expect(buttons.length).toBeGreaterThan(0)
+    const payButton = buttons[buttons.length - 1]
+    payButton.trigger('click')
+    await wrapper.vm.$nextTick()
 
-    // showConfirm should be true after clicking
-    expect(wrapper.vm.showConfirm).toBe(true)
+    // checkingOut should be true after clicking
+    expect(wrapper.vm.checkingOut).toBe(true)
   })
 
-  it('does NOT call createMercadoPagoPreference before confirming', async () => {
+  it('calls checkout when irAPagar is invoked', async () => {
     const paymentService = (await import('@/services/paymentService')).default
     const wrapper = mount(CartPage, { global: { plugins: [router] } })
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
 
-    const payButton = wrapper.find('button')
-    await payButton.trigger('click') // opens confirm modal
+    // Simulate the checkout function directly
+    await wrapper.vm.irAPagar()
 
-    expect(paymentService.createMercadoPagoPreference).not.toHaveBeenCalled()
-  })
-
-  it('calls createMercadoPagoPreference after handleConfirmedCheckout', async () => {
-    const paymentService = (await import('@/services/paymentService')).default
-    const wrapper = mount(CartPage, { global: { plugins: [router] } })
-    await new Promise(r => setTimeout(r, 50))
-    await wrapper.vm.$nextTick()
-
-    // Simulate confirmed checkout directly
-    await wrapper.vm.handleConfirmedCheckout()
-
-    expect(paymentService.createMercadoPagoPreference).toHaveBeenCalledOnce()
+    expect(paymentService.checkout).toHaveBeenCalledOnce()
   })
 })

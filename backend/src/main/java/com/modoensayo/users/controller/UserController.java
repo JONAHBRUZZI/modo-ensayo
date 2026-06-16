@@ -10,6 +10,7 @@ import com.modoensayo.users.domain.ProfessionalProfile;
 import com.modoensayo.users.repository.IdentityVerificationRepository;
 import com.modoensayo.users.repository.UserRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
+import com.modoensayo.classes.domain.Class;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.classes.enums.ClassStatus;
 import com.modoensayo.venues.repository.VenueRepository;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -44,11 +46,12 @@ public class UserController {
     @GetMapping("/me/actividad-maestro")
     public ResponseEntity<Map<String, Object>> getActividadMaestro(@AuthenticationPrincipal CustomUserDetails user) {
         Instant ahora = Instant.now();
-        boolean tieneReservasActivas = classRepository.findByTeacherId(user.getUserId()).stream()
+        List<Class> teacherClasses = classRepository.findByTeacherId(user.getUserId());
+        boolean tieneReservasActivas = teacherClasses.stream()
                 .anyMatch(c -> c.getTipoClase() == TipoClase.PROPIA
                         && (c.getStatus() == ClassStatus.PUBLISHED || c.getStatus() == ClassStatus.DRAFT)
                         && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
-        boolean tieneAsignacionesActivas = classRepository.findByTeacherId(user.getUserId()).stream()
+        boolean tieneAsignacionesActivas = teacherClasses.stream()
                 .anyMatch(c -> c.getTipoClase() == TipoClase.ASIGNADA
                         && (c.getStatus() == ClassStatus.PUBLISHED || c.getStatus() == ClassStatus.DRAFT)
                         && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
@@ -62,9 +65,13 @@ public class UserController {
     public ResponseEntity<Map<String, Object>> getStats(@AuthenticationPrincipal CustomUserDetails user) {
         var enrollments = enrollmentRepository.findByBeneficiaryId(user.getUserId());
         long total = enrollments.size();
-        long proximas = enrollments.stream()
-                .map(e -> classRepository.findById(e.getClassId()).orElse(null))
-                .filter(c -> c != null && c.getStatus() == ClassStatus.PUBLISHED && c.getStartTime() != null && c.getStartTime().isAfter(Instant.now()))
+        List<UUID> classIds = enrollments.stream()
+                .map(e -> e.getClassId())
+                .distinct()
+                .collect(Collectors.toList());
+        List<Class> classes = classRepository.findAllById(classIds);
+        long proximas = classes.stream()
+                .filter(c -> c.getStatus() == ClassStatus.PUBLISHED && c.getStartTime() != null && c.getStartTime().isAfter(Instant.now()))
                 .count();
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalClases", total);
@@ -104,16 +111,17 @@ public class UserController {
                 });
 
         Instant ahora = Instant.now();
-        boolean tieneReservasActivas = classRepository.findByTeacherId(userId).stream()
+        List<Class> teacherClasses = classRepository.findByTeacherIdWithRoomAndVenue(userId);
+        boolean tieneReservasActivas = teacherClasses.stream()
                 .anyMatch(c -> c.getTipoClase() == TipoClase.PROPIA
                         && c.getStatus() != ClassStatus.DRAFT
                         && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
-        boolean tieneAsignacionesActivas = classRepository.findByTeacherId(userId).stream()
+        boolean tieneAsignacionesActivas = teacherClasses.stream()
                 .anyMatch(c -> c.getTipoClase() == TipoClase.ASIGNADA
                         && c.getStatus() != ClassStatus.DRAFT
                         && c.getEndTime() != null && c.getEndTime().isAfter(ahora));
         // reservasSinClase = DRAFTs con sala asignada: sala reservada pero clase aún no configurada
-        long reservasSinClaseCount = classRepository.findByTeacherId(userId).stream()
+        long reservasSinClaseCount = teacherClasses.stream()
                 .filter(c -> c.getTipoClase() == TipoClase.PROPIA
                         && c.getStatus() == ClassStatus.DRAFT
                         && c.getRoom() != null)

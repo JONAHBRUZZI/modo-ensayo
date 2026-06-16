@@ -36,6 +36,9 @@ public interface ClassRepository extends JpaRepository<Class, UUID>, JpaSpecific
 
     List<Class> findByTeacherIdAndTipoClase(UUID teacherId, TipoClase tipoClase);
 
+    @Query("SELECT DISTINCT c FROM Class c LEFT JOIN FETCH c.room r LEFT JOIN FETCH r.venue WHERE c.teacherId = :teacherId")
+    List<Class> findByTeacherIdWithRoomAndVenue(@Param("teacherId") UUID teacherId);
+
     @Query("SELECT DISTINCT c.discipline FROM Class c WHERE c.status = 'PUBLISHED' AND c.discipline IS NOT NULL")
     List<String> findDistinctDisciplinesFromPublished();
 }

@@ -8,6 +8,8 @@ import com.modoensayo.users.domain.*;
 import com.modoensayo.users.dto.*;
 import com.modoensayo.users.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class UserService {
     private final ProfessionalProfileRepository professionalProfileRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Cacheable(value = "userProfile", key = "#userDetails.userId")
     public UserProfileResponse getProfile(CustomUserDetails userDetails) {
         User user = getUser(userDetails.getUserId());
         IdentityVerification iv = identityVerificationRepository.findByUserId(user.getId()).orElse(null);
@@ -35,6 +38,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "userProfile", key = "#userDetails.userId")
     public UserProfileResponse updateProfile(CustomUserDetails userDetails, UpdateProfileRequest req) {
         User user = getUser(userDetails.getUserId());
         if (req.socialName() != null) user.setSocialName(req.socialName());
@@ -72,6 +76,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "userProfile", key = "#userDetails.userId")
     public UserProfileResponse setPreferredRefundMethod(CustomUserDetails userDetails, UUID methodId) {
         User user = getUser(userDetails.getUserId());
         user.setPreferredRefundMethodId(methodId);
@@ -87,6 +92,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "userProfile", key = "#userDetails.userId")
     public IdentityVerificationResponse uploadIdentity(CustomUserDetails userDetails, String documentUrl, String documentType, String documentNumber, String fullName, java.time.LocalDate birthDate) {
         if ("RUT".equals(documentType) && documentNumber != null && !documentNumber.isBlank()) {
             if (!validarRutChileno(documentNumber)) {
@@ -199,6 +205,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "userProfile", key = "#userId")
     public void deleteIdentityDocument(UUID userId) {
         IdentityVerification iv = identityVerificationRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("No verification found"));
@@ -225,6 +232,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "userProfile", key = "#userId")
     public void changePassword(UUID userId, String currentPassword, String newPassword) {
         if (currentPassword == null || newPassword == null || newPassword.length() < 6) {
             throw new BusinessException("La nueva contrasena debe tener al menos 6 caracteres");

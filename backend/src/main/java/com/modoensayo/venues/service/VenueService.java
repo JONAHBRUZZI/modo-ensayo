@@ -13,6 +13,8 @@ import com.modoensayo.venues.enums.TipoSede;
 import com.modoensayo.venues.repository.*;
 import com.modoensayo.reschedules.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,12 +32,14 @@ public class VenueService {
     private final IdentityVerificationRepository identityVerificationRepository;
     private final NotificationService notificationService;
 
+    @Cacheable("approvedVenues")
     public List<VenueResponse> listApproved() {
         return venueRepository.findByStatusOrderByCreatedAtDesc(EstadoSede.APROBADA).stream()
                 .map(this::toVenueResponse).collect(Collectors.toList());
     }
 
     @Transactional
+    @CacheEvict(value = "approvedVenues", allEntries = true)
     public VenueResponse create(VenueRequest req) {
         Venue v = Venue.builder()
                 .name(req.name()).city(req.city()).address(req.address())
@@ -45,6 +49,7 @@ public class VenueService {
     }
 
     @Transactional
+    @CacheEvict(value = "approvedVenues", allEntries = true)
     public VenueResponse createVenueWithIdentityValidation(UUID userId, VenueRequest req) {
         validateIdentityVerified(userId);
         Venue v = Venue.builder()
@@ -62,6 +67,7 @@ public class VenueService {
     }
 
     @Transactional
+    @CacheEvict(value = "approvedVenues", allEntries = true)
     public VenueResponse createVenueAdmin(UUID adminId, VenueRequest req) {
         validateIdentityVerified(adminId);
         Venue v = Venue.builder()
@@ -78,6 +84,7 @@ public class VenueService {
      * La sede queda en PENDIENTE_APROBACION para revisión del administrador.
      */
     @Transactional
+    @CacheEvict(value = "approvedVenues", allEntries = true)
     public VenueResponse registrarSede(UUID adminId, VenueRequest req) {
         // Reutilizar sede RECHAZADA si existe — evita acumular registros basura
         Venue v = venueRepository.findByAdminId(adminId).stream()
@@ -124,6 +131,7 @@ public class VenueService {
      * Actualiza datos estructurales de la sede (solo si no esta APROBADA).
      */
     @Transactional
+    @CacheEvict(value = "approvedVenues", allEntries = true)
     public VenueResponse updateVenue(UUID userId, UUID venueId, VenueRequest req) {
         Venue v = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
@@ -146,6 +154,7 @@ public class VenueService {
      * Actualiza redes sociales / contacto web de la sede (siempre editable, incluso si APROBADA).
      */
     @Transactional
+    @CacheEvict(value = "approvedVenues", allEntries = true)
     public VenueResponse updateVenueSocial(UUID userId, UUID venueId, VenueRequest req) {
         Venue v = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));

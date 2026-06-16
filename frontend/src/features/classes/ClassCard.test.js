@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
-import ClassCard from '../features/classes/ClassCard.vue'
+import ClassCard from './ClassCard.vue'
 
 function createTestRouter() {
   return createRouter({

@@ -31,6 +31,8 @@ import com.modoensayo.venues.repository.RoomRepository;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +63,7 @@ public class ClassService {
     private final NotificationService notificationService;
     private final DisciplineCatalogRepository disciplineCatalogRepository;
 
+    @Cacheable("publishedClasses")
     public List<ClassResponse> listPublished() {
         List<Class> classes = classRepository.findPublishedWithRoomAndVenue(ClassStatus.PUBLISHED);
         Map<UUID, Long> enrollmentCounts = countEnrollmentsByClass(classes);
@@ -137,16 +140,19 @@ public class ClassService {
     }
 
     @Transactional
+    @CacheEvict(value = "publishedClasses", allEntries = true)
     public ClassResponse create(ClassRequest req) {
         return createWithTeacher(req, null);
     }
 
     @Transactional
+    @CacheEvict(value = "publishedClasses", allEntries = true)
     public ClassResponse createWithTeacher(ClassRequest req, UUID teacherId) {
         return createClassInternal(req, teacherId, false);
     }
 
     @Transactional
+    @CacheEvict(value = "publishedClasses", allEntries = true)
     public ClassResponse createWithTeacher(ClassRequest req, UUID teacherId, boolean draft) {
         return createClassInternal(req, teacherId, draft);
     }
@@ -156,6 +162,7 @@ public class ClassService {
      * El rol TEACHER se asigna cuando se publica la clase (asignarReserva).
      */
     @Transactional
+    @CacheEvict(value = "publishedClasses", allEntries = true)
     public ClassResponse createBorrador(ClassRequest req, UUID teacherId) {
         if (teacherId != null) {
             IdentityVerification iv = identityVerificationRepository.findByUserId(teacherId).orElse(null);
@@ -236,6 +243,7 @@ public class ClassService {
     }
 
     @Transactional
+    @CacheEvict(value = "publishedClasses", allEntries = true)
     public ClassResponse completeClass(UUID classId, ClassRequest req, UUID teacherId) {
         Class c = classRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
@@ -361,6 +369,7 @@ public class ClassService {
     }
 
     @Transactional
+    @CacheEvict(value = "publishedClasses", allEntries = true)
     public void deleteDraft(UUID classId, UUID teacherId) {
         Class c = classRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Clase no encontrada"));
@@ -406,6 +415,7 @@ public class ClassService {
     }
 
     @Transactional
+    @CacheEvict(value = "publishedClasses", allEntries = true)
     public ClassResponse updateStatus(UUID classId, ClassStatus status) {
         Class c = classRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));

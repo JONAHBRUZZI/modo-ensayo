@@ -28,6 +28,7 @@ spring:
       spec: maximumSize=200,expireAfterWrite=5m
     cache-names:
       - adminStats
+      - publishedClasses
 
 server:
   port: ${SERVER_PORT:8080}

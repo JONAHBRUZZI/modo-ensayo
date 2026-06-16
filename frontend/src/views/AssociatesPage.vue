@@ -1,5 +1,10 @@
 <template>
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl font-bold text-white">Asociados</h1>
       <button @click="showForm = !showForm" class="btn-primary">
@@ -44,7 +49,10 @@
       </form>
     </div>
 
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
+    </div>
     <div v-else-if="associates.length === 0" class="card text-center py-12">
       <p class="text-gray-400">No tienes asociados registrados.</p>
     </div>

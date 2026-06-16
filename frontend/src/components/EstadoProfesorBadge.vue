@@ -22,7 +22,7 @@ const label = computed(() => {
 
 const tooltip = computed(() => {
   switch (estadoUpper.value) {
-    case 'ACTIVO': return 'Maestro con clases activas. Puedes crear, asignar y gestionar clases.'
+    case 'ACTIVO': return 'Maestro con clases activas. Puedes crear, asignar y gestiónar clases.'
     case 'DORMIDO': return 'Sin clases activas. Crea una clase para activar el contexto Maestro.'
     case 'INACTIVO': return 'Completa tu perfil profesional para activar el contexto Maestro.'
     default: return ''

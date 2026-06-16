@@ -363,7 +363,7 @@ async function submit() {
     fd.append('ciudad', form.city)
     fd.append('direccion', form.address)
     fd.append('descripcion', form.description || '')
-    fd.append('telefono', form.phone || '')
+    fd.append('teléfono', form.phone || '')
     fd.append('email', form.email || '')
     fd.append('tipo', form.tipo)
     if (form.instagram) fd.append('instagram', form.instagram)

@@ -1,12 +1,20 @@
 <template>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-3xl font-bold text-white mb-2">Resenas Pendientes</h1>
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
+    <h1 class="text-3xl font-bold text-white mb-2">Reseñas Pendientes</h1>
     <p class="text-gray-400 text-sm mb-8">Clases completadas que aun no has evaluado.</p>
 
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
+    </div>
 
-    <div v-else-if="elegibles.length === 0" class="card text-center py-12">
-      <p class="text-gray-400">No tienes clases pendientes de resena.</p>
+    <div v-else-if="elegibles.length === 0">
+      <p class="text-gray-400">No tienes clases pendientes de reseña.</p>
       <router-link to="/classes" class="btn-primary mt-4 inline-block">Buscar Clases</router-link>
     </div>
 
@@ -19,7 +27,7 @@
             <p class="text-gray-500 text-xs mt-1">{{ formatDate(item.classEndTime) }}</p>
           </div>
           <span class="text-xs text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full flex-shrink-0">
-            Sin resena
+            Sin reseña
           </span>
         </div>
 
@@ -52,10 +60,10 @@
           <p v-if="errores[item.classId]" class="text-red-400 text-sm">{{ errores[item.classId] }}</p>
 
           <div class="flex gap-3">
-            <button @click="enviarResena(item)"
+            <button @click="enviarReseña(item)"
                     :disabled="!formData[item.classId]?.rating || enviando[item.classId]"
                     class="btn-primary flex-1 text-sm">
-              {{ enviando[item.classId] ? 'Enviando...' : 'Publicar resena' }}
+              {{ enviando[item.classId] ? 'Enviando...' : 'Publicar reseña' }}
             </button>
             <button @click="formActivo = null" class="btn-secondary text-sm px-4">
               Cancelar
@@ -64,7 +72,7 @@
         </div>
 
         <button v-else @click="abrirForm(item)" class="btn-secondary text-sm w-full">
-          Dejar resena
+          Dejar reseña
         </button>
       </div>
     </div>
@@ -100,7 +108,7 @@ function abrirForm(item) {
   }
 }
 
-async function enviarResena(item) {
+async function enviarReseña(item) {
   const data = formData[item.classId]
   if (!data?.rating) return
   enviando[item.classId] = true
@@ -116,7 +124,7 @@ async function enviarResena(item) {
     elegibles.value = elegibles.value.filter(e => e.classId !== item.classId)
     formActivo.value = null
   } catch (e) {
-    errores[item.classId] = e.response?.data?.message || 'Error al enviar la resena'
+    errores[item.classId] = e.response?.data?.message || 'Error al enviar la reseña'
   } finally {
     enviando[item.classId] = false
   }

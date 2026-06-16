@@ -1,5 +1,10 @@
 <template>
-  <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <!-- Paso 1: Confirmar pago -->
     <template v-if="!procesando && !completado">
       <h1 class="text-2xl font-bold text-white mb-6">Confirmar Pago</h1>

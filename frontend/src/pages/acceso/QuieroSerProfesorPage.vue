@@ -1,5 +1,10 @@
 <template>
-  <div class="min-h-[70vh] flex items-center justify-center py-16 px-4">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="min-h-[70vh] flex items-center justify-center py-16 px-4"
+  >
     <div class="max-w-md w-full space-y-6">
 
       <!-- Icono principal -->

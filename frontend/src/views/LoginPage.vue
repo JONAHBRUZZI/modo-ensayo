@@ -1,26 +1,31 @@
 <template>
   <div class="min-h-[80vh] flex items-center justify-center px-4">
-    <div class="card max-w-md w-full">
-      <h1 class="text-2xl font-bold text-white text-center mb-8">Iniciar Sesion</h1>
+    <div
+      v-motion
+      :initial="{ opacity: 0, y: 24, scale: 0.98 }"
+      :enter="{ opacity: 1, y: 0, scale: 1, transition: { duration: 400 } }"
+      class="card max-w-md w-full"
+    >
+      <h1 class="text-2xl font-bold text-white text-center mb-8">Iniciar sesión</h1>
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
           <input type="email" v-model="email" required class="input-field" placeholder="tu@email.com" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Contrasena</label>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Contraseña</label>
           <input type="password" v-model="password" required class="input-field" placeholder="********" />
         </div>
         <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
         <button type="submit" :disabled="loading" class="btn-primary w-full">
-          {{ loading ? 'Iniciando sesion...' : 'Iniciar Sesion' }}
+          {{ loading ? 'Iniciando sesion...' : 'Iniciar sesión' }}
         </button>
       </form>
 
       <GoogleLoginButton />
 
       <p class="text-center text-gray-400 text-sm mt-6">
-        No tienes cuenta?
+        ¿No tienes cuenta?
         <router-link to="/register" class="text-primary hover:underline">Registrate</router-link>
       </p>
     </div>
@@ -48,7 +53,7 @@ async function handleLogin() {
     await login(email.value, password.value)
     router.push('/alumno/dashboard')
   } catch (e) {
-    error.value = e.response?.data?.message || 'Error al iniciar sesion'
+    error.value = e.response?.data?.message || 'Error al iniciar sesión'
   } finally {
     loading.value = false
   }

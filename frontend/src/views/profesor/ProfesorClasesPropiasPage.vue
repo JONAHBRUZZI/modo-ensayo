@@ -1,14 +1,28 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl font-bold text-white">Clases Agendadas</h1>
       <router-link to="/profesor/buscar-salas" class="btn-primary text-sm">Reservar Sala</router-link>
     </div>
 
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
-    <div v-else-if="clases.length === 0" class="card text-center py-12">
-      <p class="text-gray-400">No has creado clases propias aun.</p>
-      <router-link to="/profesor/buscar-salas" class="btn-primary mt-4 inline-block">Buscar Sala</router-link>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
+    </div>
+    <div v-else-if="clases.length === 0" class="card text-center py-16">
+      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <p class="text-gray-400 font-medium">Aún no tienes clases agendadas</p>
+      <p class="text-gray-600 text-sm mt-1">Reserva una sala para crear tu primera clase.</p>
+      <router-link to="/profesor/buscar-salas" class="btn-primary inline-flex mt-4">Buscar sala</router-link>
     </div>
     <div v-else class="space-y-4">
       <div v-for="c in clases" :key="c.id" class="card">

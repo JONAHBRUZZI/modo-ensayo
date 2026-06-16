@@ -1,8 +1,16 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-3xl font-bold text-white mb-8">Gestion de Usuarios</h1>
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
+    <h1 class="text-3xl font-bold text-white mb-8">Gestión de Usuarios</h1>
 
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
+    </div>
 
     <div v-else class="space-y-4">
       <div v-for="u in users" :key="u.id" class="card flex items-center justify-between flex-wrap gap-3">
@@ -112,7 +120,7 @@
         <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
           <p class="text-yellow-300 text-xs">
             Esta accion es <strong>irreversible</strong>. Se eliminaran tambien sus roles asignados,
-            verificación de identidad, asociados, perfil profesional y notificaciones.
+            verificación de identidad, asociados, perfil profesional y notificaciónes.
           </p>
         </div>
 

@@ -1,15 +1,15 @@
 <template>
   <div class="min-h-screen flex flex-col bg-[#0f1119]">
     <!-- Navbar -->
-    <nav class="sticky top-0 z-50 bg-[#0f1119]/95 backdrop-blur-sm border-b border-gray-800">
+    <nav class="sticky top-0 z-50 bg-[#0f1119]/95 backdrop-blur-sm border-b border-[#6C63FF22]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
           <router-link to="/" class="flex items-center space-x-2">
-            <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span class="text-white font-bold text-sm">ME</span>
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, #6C63FF, #9B8CFF);">
+              <span class="text-white font-bold text-xs tracking-wide">ME</span>
             </div>
-            <span class="text-white font-semibold text-lg">Modo Ensayo</span>
+            <span class="font-semibold text-lg">Modo <span class="text-primary">Ensayo</span></span>
           </router-link>
 
           <!-- Desktop Nav -->
@@ -29,7 +29,7 @@
                 <router-link to="/profesor/clases-asignadas" class="nav-link">Asignadas</router-link>
                 <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
                 <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
-                <router-link to="/profesor/metricas" class="nav-link">Metricas</router-link>
+                <router-link to="/profesor/métricas" class="nav-link">Métricas</router-link>
                 <router-link to="/profesor/pagos" class="nav-link">Pagos</router-link>
               </template>
 
@@ -41,8 +41,8 @@
                 <router-link to="/sede/crear-clase" class="nav-link">Crear Clase</router-link>
                 <router-link to="/sede/clases-por-confirmar" class="nav-link">Confirmar</router-link>
                 <router-link to="/sede/profesores" class="nav-link">Profesores</router-link>
-                <router-link to="/sede/metricas" class="nav-link">Metricas</router-link>
-                <router-link to="/sede/configuracion" class="nav-link">Config</router-link>
+                <router-link to="/sede/métricas" class="nav-link">Métricas</router-link>
+                <router-link to="/sede/configuración" class="nav-link">Config</router-link>
               </template>
 
               <!-- Admin mode -->
@@ -59,7 +59,7 @@
                 <router-link to="/alumno/mis-clases" class="nav-link">Mis Clases</router-link>
                 <router-link to="/alumno/asociados" class="nav-link">Asociados</router-link>
                 <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
-                <router-link to="/reviews" class="nav-link">Resenas</router-link>
+                <router-link to="/reviews" class="nav-link">Reseñas</router-link>
                 <router-link to="/cart" class="nav-link relative">
                   Carrito
                   <span v-if="cartCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ cartCount }}</span>
@@ -92,7 +92,7 @@
               <!-- User dropdown -->
               <div class="relative" ref="userMenuRef">
                 <button @click="showUserMenu = !showUserMenu" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-[#1a1d2e] transition-colors">
-                  <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-sm font-medium">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white" style="background: linear-gradient(135deg, #6C63FF, #9B8CFF);">
                     {{ displayName.charAt(0).toUpperCase() }}
                   </div>
                   <div class="hidden lg:block text-left">
@@ -115,13 +115,13 @@
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Perfil
                   </router-link>
-                  <router-link to="/notificaciones" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
+                  <router-link to="/notificaciónes" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                    Notificaciones
+                    Notificaciónes
                   </router-link>
                   <button @click="handleLogout" class="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-[#1a1d2e]">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                    Cerrar sesion
+                    Cerrar sesión
                   </button>
                 </div>
               </div>
@@ -131,10 +131,75 @@
               <router-link to="/login" class="text-gray-300 hover:text-white transition-colors text-sm">Iniciar sesion</router-link>
               <router-link to="/register" class="btn-primary text-sm !py-2 !px-4">Registrarse</router-link>
             </template>
+
+          <!-- Hamburger (mobile) -->
+          <button
+            @click="showMobileMenu = !showMobileMenu"
+            class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#1a1d2e] transition-colors"
+            aria-label="Abrir menú"
+          >
+            <svg v-if="!showMobileMenu" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
           </div>
         </div>
       </div>
     </nav>
+
+    <!-- Mobile drawer -->
+    <Transition
+      enter-active-class="transition-all duration-250"
+      enter-from-class="opacity-0 -translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-200"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-2"
+    >
+      <div v-if="showMobileMenu" class="md:hidden bg-[#0f1119] border-b border-[#1e2130] px-4 pb-4 pt-2">
+        <div class="flex flex-col gap-1">
+          <router-link to="/" class="nav-link-mobile" @click="showMobileMenu = false">Inicio</router-link>
+          <router-link v-if="!isAuthenticated || modoActual === 'alumno'" to="/classes" class="nav-link-mobile" @click="showMobileMenu = false">Cronograma</router-link>
+
+          <template v-if="isAuthenticated">
+            <template v-if="puedeVerContextoProfesor && modoActual === 'profesor'">
+              <router-link to="/profesor/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
+              <router-link to="/profesor/clases-propias" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
+              <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile" @click="showMobileMenu = false">Por Asignar</router-link>
+              <router-link to="/profesor/buscar-salas" class="nav-link-mobile" @click="showMobileMenu = false">Agendar Sala</router-link>
+              <router-link to="/profesor/métricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+            </template>
+            <template v-if="puedeVerContextoSede && modoActual === 'sede'">
+              <router-link to="/sede/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Panel</router-link>
+              <router-link to="/sede/salas" class="nav-link-mobile" @click="showMobileMenu = false">Salas</router-link>
+              <router-link to="/sede/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Clases</router-link>
+              <router-link to="/sede/clases-por-confirmar" class="nav-link-mobile" @click="showMobileMenu = false">Confirmar</router-link>
+              <router-link to="/sede/métricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+            </template>
+            <template v-if="isAdmin && modoActual === 'admin'">
+              <router-link to="/admin" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
+              <router-link to="/admin/roles" class="nav-link-mobile" @click="showMobileMenu = false">Aprobaciones</router-link>
+              <router-link to="/admin/usuarios" class="nav-link-mobile" @click="showMobileMenu = false">Usuarios</router-link>
+            </template>
+            <template v-if="modoActual === 'alumno'">
+              <router-link to="/alumno/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Mi Espacio</router-link>
+              <router-link to="/alumno/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
+              <router-link to="/cart" class="nav-link-mobile" @click="showMobileMenu = false">Carrito</router-link>
+            </template>
+            <div class="h-px bg-[#1e2130] my-2"></div>
+            <router-link to="/profile" class="nav-link-mobile" @click="showMobileMenu = false">Mi Perfil</router-link>
+            <button @click="handleLogout(); showMobileMenu = false" class="nav-link-mobile text-left text-red-400">Cerrar sesión</button>
+          </template>
+          <template v-else>
+            <router-link to="/login" class="nav-link-mobile" @click="showMobileMenu = false">Iniciar sesión</router-link>
+            <router-link to="/register" class="nav-link-mobile font-medium text-primary" @click="showMobileMenu = false">Registrarse</router-link>
+          </template>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Banner: perfil profesional incompleto (contexto Maestro) -->
     <div v-if="mostrarBannerPerfilIncompleto" class="bg-yellow-500/10 border-b border-yellow-500/30">
@@ -166,20 +231,20 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-[#161824] border-t border-gray-800 py-8">
+    <footer class="bg-[#0b0d14] border-t border-[#13161f] py-8">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row justify-between items-center">
           <div class="flex items-center space-x-2 mb-4 md:mb-0">
-            <div class="w-6 h-6 bg-primary rounded flex items-center justify-center">
+            <div class="w-6 h-6 rounded flex items-center justify-center" style="background: #6C63FF;">
               <span class="text-white text-xs font-bold">ME</span>
             </div>
-            <span class="text-gray-400 text-sm">Modo Ensayo &copy; {{ new Date().getFullYear() }}</span>
+            <span class="text-gray-500 text-sm">Modo Ensayo &copy; {{ new Date().getFullYear() }}</span>
           </div>
           <div class="flex space-x-6">
             <router-link to="/" class="text-gray-500 hover:text-gray-300 text-sm">Inicio</router-link>
             <router-link to="/classes" class="text-gray-500 hover:text-gray-300 text-sm">Clases</router-link>
             <router-link to="/quiero-ser-profesor" class="text-gray-500 hover:text-gray-300 text-sm">Ser Profesor</router-link>
-            <router-link to="/quiero-gestionar-sede" class="text-gray-500 hover:text-gray-300 text-sm">Gestionar Sede</router-link>
+            <router-link to="/quiero-gestiónar-sede" class="text-gray-500 hover:text-gray-300 text-sm">Gestiónar Sede</router-link>
           </div>
         </div>
       </div>
@@ -206,6 +271,7 @@ const mostrarBannerPerfilIncompleto = computed(() => {
 })
 
 const showUserMenu = ref(false)
+const showMobileMenu = ref(false)
 const userMenuRef = ref(null)
 const cartCount = ref(0)
 
@@ -268,6 +334,7 @@ onBeforeUnmount(() => {
 
 watch(() => route.path, () => {
   if (isAuthenticated.value) loadCartCount()
+  showMobileMenu.value = false
 })
 </script>
 
@@ -277,6 +344,14 @@ watch(() => route.path, () => {
 }
 
 .nav-link.router-link-active {
+  @apply text-primary bg-primary/10;
+}
+
+.nav-link-mobile {
+  @apply block px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-[#1a1d2e] transition-all;
+}
+
+.nav-link-mobile.router-link-active {
   @apply text-primary bg-primary/10;
 }
 </style>

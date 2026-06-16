@@ -1,47 +1,53 @@
 <template>
   <div class="min-h-[80vh] flex items-center justify-center px-4 py-10">
-    <div class="card max-w-md w-full">
-      <h1 class="text-2xl font-bold text-white text-center mb-8">Crear Cuenta</h1>
+    <div
+      v-motion
+      :initial="{ opacity: 0, y: 24, scale: 0.98 }"
+      :enter="{ opacity: 1, y: 0, scale: 1, transition: { duration: 420 } }"
+      class="card max-w-md w-full"
+    >
+      <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold text-white">Crear cuenta</h1>
+        <p class="text-gray-500 text-sm mt-1">Únete a la comunidad de Modo Ensayo</p>
+      </div>
       <form @submit.prevent="handleRegister" class="space-y-4">
-    <div>
-      <label class="block text-sm font-medium text-gray-300 mb-1">Nombre Completo <span class="text-red-400">*</span></label>
-      <input type="text" v-model="fullName" required class="input-field" placeholder="Juan Perez"
-        :class="errorCampo === 'fullName' ? 'border-red-500/60' : ''"
-        @input="errorCampo = null" />
-      <p v-if="errorCampo === 'fullName'" class="text-red-400 text-xs mt-1">{{ error }}</p>
-    </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-300 mb-1">Email <span class="text-red-400">*</span></label>
-      <input type="email" v-model="email" required class="input-field" placeholder="tu@gmail.com"
-        :class="errorCampo === 'email' ? 'border-red-500/60' : ''"
-        @input="errorCampo = null" />
-    </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-300 mb-1">RUT <span class="text-gray-500">(opcional)</span></label>
-      <input type="text" v-model="rut" class="input-field" placeholder="12345678-9"
-        :class="errorCampo === 'rut' ? 'border-red-500/60' : ''"
-        @input="errorCampo = null" />
-    </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-300 mb-1">Telefono <span class="text-gray-500">(opcional)</span></label>
-      <input type="tel" v-model="phone" class="input-field" placeholder="+56912345678"
-        :class="errorCampo === 'phone' ? 'border-red-500/60' : ''"
-        @input="errorCampo = null" />
-    </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-300 mb-1">Contrasena <span class="text-red-400">*</span></label>
-      <input type="password" v-model="password" required class="input-field" placeholder="Min 8 caracteres, mayuscula, minuscula, numero" />
-      <p class="text-xs text-gray-500 mt-1">Minimo 8 caracteres, al menos una mayuscula, una minuscula y un numero.</p>
-    </div>
-        <div class="flex items-start space-x-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nombre Completo <span class="text-red-400">*</span></label>
+          <input type="text" v-model="fullName" required class="input-field" placeholder="Juan Perez"
+            :class="errorCampo === 'fullName' ? 'border-red-500/60' : ''"
+            @input="errorCampo = null" />
+          <p v-if="errorCampo === 'fullName'" class="text-red-400 text-xs mt-1">{{ error }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Email <span class="text-red-400">*</span></label>
+          <input type="email" v-model="email" required class="input-field" placeholder="tu@gmail.com"
+            :class="errorCampo === 'email' ? 'border-red-500/60' : ''"
+            @input="errorCampo = null" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">RUT <span class="text-gray-500">(opcional)</span></label>
+          <input type="text" v-model="rut" class="input-field" placeholder="12345678-9"
+            :class="errorCampo === 'rut' ? 'border-red-500/60' : ''"
+            @input="errorCampo = null" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Teléfono <span class="text-gray-500">(opcional)</span></label>
+          <input type="tel" v-model="phone" class="input-field" placeholder="+56912345678"
+            :class="errorCampo === 'phone' ? 'border-red-500/60' : ''"
+            @input="errorCampo = null" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Contraseña <span class="text-red-400">*</span></label>
+          <input type="password" v-model="password" required class="input-field" placeholder="Min 8 caracteres, mayúscula, número" />
+          <p class="text-xs text-gray-600 mt-1">Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número.</p>
+        </div>
+        <div class="flex items-start space-x-2 py-1">
           <input type="checkbox" v-model="aceptoTerminos" id="terminos" class="mt-1 text-primary" />
-          <label for="terminos" class="text-xs text-gray-400">Acepto los terminos y condiciones de Modo Ensayo y autorizo el tratamiento de mis datos personales conforme a la Ley 19.628.</label>
+          <label for="terminos" class="text-xs text-gray-400 leading-relaxed">Acepto los términos y condiciones de Modo Ensayo y autorizo el tratamiento de mis datos personales conforme a la Ley 19.628.</label>
         </div>
 
-        <!-- Error genérico -->
         <p v-if="error && !errorCampo" class="text-red-400 text-sm">{{ error }}</p>
 
-        <!-- Error de campo específico (email o RUT duplicado) -->
         <div v-if="error && errorCampo"
           class="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5">
           <svg class="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,15 +63,15 @@
         </div>
 
         <button type="submit" :disabled="loading" class="btn-primary w-full">
-          {{ loading ? 'Creando cuenta...' : 'Crear Cuenta' }}
+          {{ loading ? 'Creando cuenta...' : 'Crear cuenta' }}
         </button>
       </form>
 
       <GoogleLoginButton />
 
-      <p class="text-center text-gray-400 text-sm mt-6">
-        Ya tienes cuenta?
-        <router-link to="/login" class="text-primary hover:underline">Inicia sesion</router-link>
+      <p class="text-center text-gray-500 text-sm mt-6">
+        ¿¿Ya tienes cuenta?
+        <router-link to="/login" class="text-primary hover:underline">Inicia sesión</router-link>
       </p>
     </div>
   </div>
@@ -94,44 +100,38 @@ async function handleRegister() {
   error.value = ''
   errorCampo.value = null
   if (!aceptoTerminos.value) {
-    error.value = 'Debes aceptar los terminos y condiciones para registrarte.'
+    error.value = 'Debes aceptar los términos y condiciones para registrarte.'
     return
   }
-
   const trimmed = fullName.value.trim()
   if (trimmed.split(/\s+/).length < 2) {
     error.value = 'Ingresa tu nombre completo (nombre y apellido).'
     errorCampo.value = 'fullName'
     return
   }
-
   if (!email.value.includes('@') || !email.value.includes('.')) {
-    error.value = 'Ingresa un correo electronico valido.'
+    error.value = 'Ingresa un correo electrónico válido.'
     errorCampo.value = 'email'
     return
   }
-
   if (!/@gmail\.com$/i.test(email.value.trim())) {
     error.value = 'Solo se permiten correos @gmail.com.'
     errorCampo.value = 'email'
     return
   }
-
   if (rut.value && !validateRut(rut.value)) {
-    error.value = 'El RUT ingresado no es valido. Usa formato 12345678-9.'
+    error.value = 'El RUT ingresado no es válido. Usa formato 12345678-9.'
     errorCampo.value = 'rut'
     return
   }
-
   if (phone.value && !/^\+?[0-9]{8,15}$/.test(phone.value.trim())) {
-    error.value = 'El telefono debe tener entre 8 y 15 digitos numericos.'
+    error.value = 'El teléfono debe tener entre 8 y 15 dígitos numéricos.'
     errorCampo.value = 'phone'
     return
   }
-
   const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
   if (!pwRegex.test(password.value)) {
-    error.value = 'La contrasena debe tener al menos 8 caracteres, una mayuscula, una minuscula y un numero.'
+    error.value = 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.'
     return
   }
   loading.value = true
@@ -157,8 +157,7 @@ function validateRut(rut) {
   if (cleaned.length < 2) return false
   const dv = cleaned.slice(-1).toUpperCase()
   const body = cleaned.slice(0, -1)
-  let sum = 0
-  let mul = 2
+  let sum = 0, mul = 2
   for (let i = body.length - 1; i >= 0; i--) {
     sum += parseInt(body[i]) * mul
     mul = mul === 7 ? 2 : mul + 1

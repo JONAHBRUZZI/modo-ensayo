@@ -1,23 +1,28 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-3xl font-bold text-white mb-8">Panel de Administracion</h1>
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
+    <h1 class="text-3xl font-bold text-white mb-8">Panel de Administración</h1>
 
     <!-- Stats cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
       <router-link to="/admin/usuarios" class="card hover:border-primary/50 transition-colors group cursor-pointer">
-        <h3 class="text-gray-400 text-sm mb-1">Usuarios</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Usuarios</h3>
         <p class="text-3xl font-bold text-white group-hover:text-primary">{{ stats.usuarios || 0 }}</p>
       </router-link>
       <router-link to="/admin/sedes" class="card hover:border-primary/50 transition-colors group cursor-pointer">
-        <h3 class="text-gray-400 text-sm mb-1">Sedes</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Sedes</h3>
         <p class="text-3xl font-bold text-primary">{{ stats.sedes || 0 }}</p>
       </router-link>
       <router-link to="/admin/roles" class="card hover:border-primary/50 transition-colors group cursor-pointer">
-        <h3 class="text-gray-400 text-sm mb-1">Verif. Pendientes</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Verif. Pendientes</h3>
         <p class="text-3xl font-bold text-yellow-400">{{ stats.pendientes || 0 }}</p>
       </router-link>
       <router-link to="/admin/sedes" class="card hover:border-primary/50 transition-colors group cursor-pointer">
-        <h3 class="text-gray-400 text-sm mb-1">Sedes Pend.</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Sedes Pend.</h3>
         <p class="text-3xl font-bold text-red-400">{{ stats.sedesPendientes || 0 }}</p>
       </router-link>
     </div>
@@ -59,7 +64,7 @@
     </div>
 
     <!-- Métricas del docente -->
-    <h2 class="text-lg font-semibold text-white mb-4 mt-6">Metricas de Rendimiento</h2>
+    <h2 class="text-lg font-semibold text-white mb-4 mt-6">Métricas de Rendimiento</h2>
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
 
       <div class="card text-center">

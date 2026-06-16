@@ -1,5 +1,10 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <div class="flex items-center justify-between mb-8">
       <div>
         <h1 class="text-3xl font-bold text-white">Clases por Asignar</h1>
@@ -8,7 +13,10 @@
       <router-link to="/profesor/buscar-salas" class="btn-primary text-sm">Reservar Sala</router-link>
     </div>
 
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
+    </div>
 
     <div v-else-if="reservas.length === 0" class="card text-center py-16">
       <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">

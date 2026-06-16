@@ -48,8 +48,8 @@ const routes = [
         component: () => import('@/pages/acceso/QuieroSerProfesorPage.vue')
       },
       {
-        path: 'quiero-gestionar-sede',
-        name: 'QuieroGestionarSede',
+        path: 'quiero-gestiónar-sede',
+        name: 'QuieroGestiónarSede',
         component: () => import('@/pages/acceso/QuieroGestionarSedePage.vue')
       },
       {
@@ -83,8 +83,8 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
-        path: 'notificaciones',
-        name: 'Notificaciones',
+        path: 'notificaciónes',
+        name: 'Notificaciónes',
         component: () => import('@/views/NotificacionesPage.vue'),
         meta: { requiresAuth: true }
       },
@@ -158,8 +158,8 @@ const routes = [
         meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       {
-        path: 'profesor/metricas',
-        name: 'ProfesorMetricas',
+        path: 'profesor/métricas',
+        name: 'ProfesorMétricas',
         component: () => import('@/views/profesor/ProfesorMetricasPage.vue'),
         meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
@@ -262,14 +262,14 @@ const routes = [
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {
-        path: 'sede/metricas',
-        name: 'SedeMetricas',
+        path: 'sede/métricas',
+        name: 'SedeMétricas',
         component: () => import('@/views/sede/SedeMetricasPage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {
-        path: 'sede/configuracion',
-        name: 'SedeConfiguracion',
+        path: 'sede/configuración',
+        name: 'SedeConfiguración',
         component: () => import('@/views/sede/SedeConfiguracionPage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
@@ -352,7 +352,7 @@ const routes = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    component: () => import('@/views/NotFoundPage.vue')
   }
 ]
 

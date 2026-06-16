@@ -36,7 +36,7 @@ onMounted(async () => {
 async function submit() {
   sending.value = true
   try {
-    await rescheduleService.propose(route.params.claseId, new Date(newDate.value).toISOString(), reason.value || 'Reagendamiento solicitado por administracion de sede')
+    await rescheduleService.propose(route.params.claseId, new Date(newDate.value).toISOString(), reason.value || 'Reagendamiento solicitado por administración de sede')
     msg.value = 'Reagendamiento solicitado. Los alumnos seran notificados.'
   } catch (e) {
     msg.value = e.response?.data?.message || 'Error al solicitar reagendamiento'

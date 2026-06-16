@@ -1,5 +1,10 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <h1 class="text-3xl font-bold text-white mb-2">Panel de Maestro</h1>
     <div class="flex items-center gap-3 mb-8">
       <p class="text-gray-400">Bienvenido, {{ displayName }}</p>
@@ -12,23 +17,23 @@
     <!-- Stats -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-10">
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Clases Propias</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Clases Propias</h3>
         <p class="text-3xl font-bold text-white">{{ stats.propias || 0 }}</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Asignadas</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Asignadas</h3>
         <p class="text-3xl font-bold text-primary">{{ stats.asignadas || 0 }}</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Total Alumnos</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Total Alumnos</h3>
         <p class="text-3xl font-bold text-green-400">{{ stats.alumnos || 0 }}</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Retenido</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Retenido</h3>
         <p class="text-3xl font-bold text-yellow-400">${{ stats.totalRetenido?.toLocaleString('es-CL') || 0 }}</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Liberado</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Liberado</h3>
         <p class="text-3xl font-bold text-green-400">${{ stats.totalLiberado?.toLocaleString('es-CL') || 0 }}</p>
       </div>
     </div>
@@ -63,12 +68,12 @@
     <!-- Seccion A: Clases propias activas -->
     <div v-if="tieneReservasActivas" class="mb-10">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-white">Mis Clases Proximas</h2>
+        <h2 class="text-xl font-semibold text-white">Mis Clases Próximas</h2>
         <router-link to="/profesor/clases-propias" class="text-primary text-sm hover:underline">Ver todas</router-link>
       </div>
       <div v-if="loadingPropias" class="text-gray-400 text-sm">Cargando...</div>
       <div v-else-if="propiasFuturas.length === 0" class="card text-center py-6">
-        <p class="text-gray-400 text-sm">No hay clases proximas.</p>
+        <p class="text-gray-400 text-sm">No hay clases próximas.</p>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div v-for="c in propiasFuturas.slice(0, 4)" :key="c.id" class="card">
@@ -135,8 +140,8 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Agendar Sala</h3>
         <p class="text-gray-400 text-sm mt-2">Reserva una sala en una sede para tu proxima clase.</p>
       </router-link>
-      <router-link to="/profesor/metricas" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Metricas</h3>
+      <router-link to="/profesor/métricas" class="card hover:border-primary/50 transition-colors group">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Métricas</h3>
         <p class="text-gray-400 text-sm mt-2">Estadisticas de rendimiento y asistencia.</p>
       </router-link>
       <router-link to="/profesor/pagos" class="card hover:border-primary/50 transition-colors group">

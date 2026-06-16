@@ -11,11 +11,14 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary hover:bg-primary-600 text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-200 disabled:opacity-50;
+    @apply bg-primary hover:bg-primary-600 text-white font-semibold py-2.5 px-5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary:not(:disabled):hover {
+    transform: translateY(-1px);
   }
 
   .btn-secondary {
-    @apply bg-gray-700 hover:bg-gray-600 text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-200;
+    @apply bg-[#1a1d2e] hover:bg-[#22253a] text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-200 border border-[#2a2d3e];
   }
 
   .btn-danger {
@@ -23,70 +26,63 @@
   }
 
   .input-field {
-    @apply w-full bg-[#1a1d2e] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200;
+    @apply w-full bg-[#1a1d2e] border border-[#2a2d3e] rounded-xl px-4 py-3 text-white placeholder-gray-600
+           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200;
   }
 
   .card {
-    @apply bg-[#161824] rounded-2xl border border-gray-800 p-6;
+    @apply bg-[#111420] rounded-2xl border border-[#1e2130] p-6 relative overflow-hidden
+           transition-all duration-200;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(108,99,255,0.25), transparent);
+  }
+  .card:hover {
+    @apply border-primary/20;
   }
 
   .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium tracking-wide;
   }
-
-  .badge-green {
-    @apply bg-green-500/20 text-green-400;
-  }
-
-  .badge-yellow {
-    @apply bg-yellow-500/20 text-yellow-400;
-  }
-
-  .badge-red {
-    @apply bg-red-500/20 text-red-400;
-  }
-
-  .badge-blue {
-    @apply bg-blue-500/20 text-blue-400;
-  }
+  .badge-green  { @apply bg-green-500/15 text-green-400 ring-1 ring-green-500/20; }
+  .badge-yellow { @apply bg-yellow-500/15 text-yellow-400 ring-1 ring-yellow-500/20; }
+  .badge-red    { @apply bg-red-500/15 text-red-400 ring-1 ring-red-500/20; }
+  .badge-blue   { @apply bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20; }
+  .badge-purple { @apply bg-primary/15 text-primary-300 ring-1 ring-primary/20; }
 }
 
 /* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #0f1119; }
+::-webkit-scrollbar-thumb { background: #1e2130; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #2a2d3e; }
 
-::-webkit-scrollbar-track {
-  background: #0f1119;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #2a2d3e;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #3a3d4e;
-}
-
-/* Session timeout modal overlay */
+/* Session timeout modal */
 .session-timeout-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
   z-index: 9999;
 }
-
 .session-timeout-modal {
-  background: #161824;
+  background: #111420;
   border: 1px solid #2a2d3e;
   border-radius: 1rem;
   padding: 2rem;
-  max-width: 400px;
-  width: 90%;
+  max-width: 400px; width: 90%;
   text-align: center;
+}
+
+/* Accessibility: respeta la preferencia del sistema de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

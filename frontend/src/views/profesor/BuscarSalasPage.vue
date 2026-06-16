@@ -1,5 +1,10 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <h1 class="text-3xl font-bold text-white mb-4">Agendar Sala</h1>
     <p class="text-gray-400 mb-3">Encuentra la sala perfecta para tu clase.</p>
     <!-- Banner cuando asignamos sala a un borrador existente -->
@@ -115,7 +120,7 @@
         </div>
         <div class="flex gap-3">
           <button @click="alertaIdentidad = false" class="flex-1 px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cerrar</button>
-          <router-link to="/alumno/validacion-identidad" class="flex-1 text-center px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/80">Validar identidad</router-link>
+          <router-link to="/alumno/validación-identidad" class="flex-1 text-center px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/80">Validar identidad</router-link>
         </div>
       </div>
     </div>
@@ -313,7 +318,7 @@ async function pagar(metodo) {
       }
     } catch {}
     // Redirigir segun estado:
-    // 1) Con rol TEACHER y perfil incompleto → completar perfil profesional (notificacion)
+    // 1) Con rol TEACHER y perfil incompleto → completar perfil profesional (notificación)
     // 2) Con rol TEACHER y perfil completo → clases por asignar
     // 3) Sin rol TEACHER → borradores (fallback)
     if (puedeVerContextoProfesor.value) {

@@ -1,26 +1,34 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <h1 class="text-3xl font-bold text-white mb-8">Pagos Recibidos</h1>
 
     <!-- Resumen financiero -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Retenido (pendiente)</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Retenido (pendiente)</h3>
         <p class="text-3xl font-bold text-yellow-400">${{ resumen.totalRetenido?.toLocaleString('es-CL') || 0 }}</p>
         <p class="text-gray-500 text-xs mt-1">Se libera al confirmar la clase</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Liberado este mes</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Liberado este mes</h3>
         <p class="text-3xl font-bold text-green-400">${{ resumen.totalLiberadoMes?.toLocaleString('es-CL') || 0 }}</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Liberado acumulado</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Liberado acumulado</h3>
         <p class="text-3xl font-bold text-primary">${{ resumen.totalLiberadoAcumulado?.toLocaleString('es-CL') || 0 }}</p>
       </div>
     </div>
 
     <!-- Lista de pagos -->
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
+    </div>
     <div v-else-if="pagos.length === 0" class="card text-center py-12">
       <p class="text-gray-400">Aun no hay pagos registrados.</p>
       <p class="text-gray-500 text-sm mt-2">Los pagos aparecen cuando alumnos se inscriben en tus clases.</p>

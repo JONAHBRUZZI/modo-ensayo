@@ -1,5 +1,10 @@
 <template>
-  <div class="min-h-[70vh] flex items-center justify-center py-16 px-4">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="min-h-[70vh] flex items-center justify-center py-16 px-4"
+  >
     <div class="max-w-md w-full space-y-6">
 
       <!-- Icono principal -->
@@ -99,7 +104,7 @@ onMounted(() => {
 
 const estadoConfig = computed(() => {
   if (!isAuthenticated.value) return {
-    titulo: 'Quiero gestionar una Sede',
+    titulo: 'Quiero gestiónar una Sede',
     descripcion: 'Para registrar tu sede y ofrecer espacios a profesores, primero debes crear una cuenta y validar tu identidad.',
     iconBg: 'bg-indigo-500/20', iconColor: 'text-indigo-400',
     iconPath: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
@@ -118,7 +123,7 @@ const estadoConfig = computed(() => {
   }
   return {
     titulo: '¡Listo para registrar tu sede!',
-    descripcion: 'Tu identidad fue verificada. Ahora puedes registrar tu sede, agregar salas y gestionar la disponibilidad.',
+    descripcion: 'Tu identidad fue verificada. Ahora puedes registrar tu sede, agregar salas y gestiónar la disponibilidad.',
     iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-400',
     iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
   }

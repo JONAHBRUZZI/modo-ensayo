@@ -1,17 +1,22 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <h1 class="text-3xl font-bold text-white mb-2">Mi Espacio</h1>
     <p class="text-gray-400 mb-8">Bienvenido, {{ displayName }}</p>
 
     <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Clases Tomadas</h3>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Clases Tomadas</h3>
         <p class="text-3xl font-bold text-white">{{ stats.totalClases || 0 }}</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-400 text-sm mb-1">Próximas Clases</h3>
-        <p class="text-3xl font-bold text-primary">{{ stats.proximas || 0 }}</p>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Próximas Clases</h3>
+        <p class="text-3xl font-bold text-primary">{{ stats.próximas || 0 }}</p>
       </div>
     </div>
 
@@ -72,7 +77,7 @@
           </div>
           <div>
             <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Asociados</h3>
-            <p class="text-gray-400 text-sm mt-1">Gestiona personas que inscriben a tus clases.</p>
+            <p class="text-gray-400 text-sm mt-1">Gestióna personas que inscriben a tus clases.</p>
           </div>
         </div>
       </router-link>
@@ -176,7 +181,7 @@
                 <h3 class="text-base font-semibold text-white group-hover:text-emerald-400 transition-colors">Mi Sede</h3>
                 <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 uppercase tracking-wider">Aprobada</span>
               </div>
-              <p class="text-gray-400 text-sm mt-1">Gestiona tu sede, salas y disponibilidad.</p>
+              <p class="text-gray-400 text-sm mt-1">Gestióna tu sede, salas y disponibilidad.</p>
             </div>
           </button>
         </div>
@@ -294,7 +299,7 @@ const { displayName, identidadValidada, identidadEnRevision, identidadRechazada,
         puedeVerContextoProfesor, tieneSedeAprobada, estadoSolicitudSede, motivoRechazoSede,
         setModo, syncAtributos } = useAuth()
 
-const stats = ref({ totalClases: 0, proximas: 0 })
+const stats = ref({ totalClases: 0, próximas: 0 })
 
 onMounted(async () => {
   syncAtributos()

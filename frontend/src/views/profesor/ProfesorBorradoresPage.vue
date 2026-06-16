@@ -1,5 +1,10 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <div class="flex items-center justify-between mb-8">
       <div>
         <h1 class="text-3xl font-bold text-white">Mis Borradores</h1>
@@ -11,21 +16,22 @@
       </div>
     </div>
 
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
+    </div>
 
     <div v-else-if="borradores.length === 0" class="card text-center py-16">
-      <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
       </div>
-      <h3 class="text-white font-semibold mb-2">Sin borradores</h3>
-      <p class="text-gray-400 text-sm mb-6">Crea un borrador o reserva una sala para empezar.</p>
-      <div class="flex gap-3 justify-center">
-        <router-link to="/profesor/crear-borrador" class="btn-secondary">Crear Borrador</router-link>
-        <router-link to="/profesor/buscar-salas" class="btn-primary">Buscar Sala</router-link>
-      </div>
+      <p class="text-gray-400 font-medium">Sin borradores</p>
+      <p class='text-gray-600 text-sm mt-1'>Crea un borrador para preparar tu próxima clase.</p>
+      <router-link to="/profesor/borradores/nuevo" class="btn-primary inline-flex mt-4">Nuevo borrador</router-link>
     </div>
+
 
     <div v-else class="space-y-4">
       <div v-for="c in borradores" :key="c.id" class="card">

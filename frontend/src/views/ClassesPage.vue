@@ -1,36 +1,66 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-3xl font-bold text-white mb-4">Clases Disponibles</h1>
-    <div class="card mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+
+    <div
+      v-motion
+      :initial="{ opacity: 0, y: 16 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    >
+      <h1 class="text-3xl font-bold text-white mb-1">Clases Disponibles</h1>
+      <p class="text-gray-500 text-sm mb-6">Encuentra la clase perfecta para ti</p>
+    </div>
+
+    <div
+      v-motion
+      :initial="{ opacity: 0, y: 12 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 380, delay: 80 } }"
+      class="card mb-8 grid grid-cols-2 md:grid-cols-4 gap-3"
+    >
       <select v-model="filtros.disciplina" class="input-field text-sm py-2">
-        <option value="">TODAS</option>
+        <option value="">Todas las disciplinas</option>
         <option v-for="d in disciplinas" :key="d" :value="d">{{ d }}</option>
       </select>
       <select v-model="filtros.nivel" class="input-field text-sm py-2">
-        <option value="">TODAS</option>
+        <option value="">Todos los niveles</option>
         <option v-for="n in niveles" :key="n" :value="n">{{ n }}</option>
       </select>
       <input v-model="filtros.comuna" class="input-field text-sm py-2" placeholder="Comuna" />
       <div class="col-span-2 md:col-span-1 flex space-x-2">
-        <input v-model="filtros.precioMax" type="number" class="input-field text-sm py-2" placeholder="Precio max" />
+        <input v-model="filtros.precioMax" type="number" class="input-field text-sm py-2" placeholder="Precio máx." />
         <button @click="buscar" class="btn-primary text-sm px-4">Buscar</button>
       </div>
     </div>
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando clases...</div>
-    <div v-else-if="classes.length === 0" class="text-center text-gray-400 py-20">
-      No hay clases disponibles en este momento.
+
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando clases...</p>
     </div>
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="c in classes" :key="c.id" class="card hover:border-primary/50 transition-colors cursor-pointer" @click="goToClass(c.id)">
-        <h3 class="text-lg font-semibold text-white mb-2">{{ c.title }}</h3>
-        <div class="flex flex-wrap gap-2 mb-3">
-          <span class="badge badge-blue">{{ c.discipline }}</span>
-          <span class="badge badge-green">{{ c.level }}</span>
+    <div v-else-if="classes.length === 0" class="card text-center py-20">
+      <p class="text-gray-400 mb-2">No hay clases disponibles en este momento.</p>
+      <p class="text-gray-600 text-sm">Intenta ajustar los filtros de búsqueda.</p>
+    </div>
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div
+        v-for="(c, i) in classes"
+        :key="c.id"
+        v-motion
+        :initial="{ opacity: 0, y: 20 }"
+        :visible="{ opacity: 1, y: 0, transition: { duration: 350, delay: Math.min(i * 50, 300) } }"
+        class="card cursor-pointer group"
+        @click="goToClass(c.id)"
+      >
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex flex-wrap gap-1.5">
+            <span class="badge badge-purple">{{ c.discipline }}</span>
+            <span class="badge badge-green">{{ c.level }}</span>
+          </div>
+          <span class="text-primary font-bold text-lg">${{ c.price?.toLocaleString() }}</span>
         </div>
-        <p class="text-gray-400 text-sm mb-4 line-clamp-2">{{ c.description }}</p>
-        <div class="flex items-center justify-between text-sm text-gray-400">
+        <h3 class="text-base font-semibold text-white mb-2 group-hover:text-primary transition-colors">{{ c.title }}</h3>
+        <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ c.description }}</p>
+        <div class="flex items-center justify-between text-xs text-gray-600 border-t border-[#1e2130] pt-3 mt-auto">
           <span>{{ formatDate(c.startTime) }}</span>
-          <span class="text-primary font-medium">${{ c.price?.toLocaleString() }}</span>
+          <span class="text-primary/70 group-hover:text-primary transition-colors">Ver detalle →</span>
         </div>
       </div>
     </div>
@@ -68,9 +98,7 @@ async function buscar() {
   }
 }
 
-function goToClass(id) {
-  router.push(`/alumno/clases/${id}`)
-}
+function goToClass(id) { router.push(`/alumno/clases/${id}`) }
 
 function formatDate(date) {
   if (!date) return ''

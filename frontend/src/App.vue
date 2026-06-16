@@ -1,5 +1,9 @@
 <template>
-  <router-view />
+  <router-view v-slot="{ Component }">
+    <Transition name="page" mode="out-in">
+      <component :is="Component" :key="$route.path" />
+    </Transition>
+  </router-view>
   <AppToast />
 </template>
 
@@ -10,9 +14,7 @@ import AppToast from './components/AppToast.vue'
 
 const { token } = useAuth()
 
-onMounted(() => {
-  checkTokenExpiration()
-})
+onMounted(() => { checkTokenExpiration() })
 
 function checkTokenExpiration() {
   if (!token.value) return
@@ -24,8 +26,21 @@ function checkTokenExpiration() {
       localStorage.removeItem('auth_refresh_token')
       window.location.href = '/login'
     }
-  } catch {
-    // token invalid
-  }
+  } catch {}
 }
 </script>
+
+<style>
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>

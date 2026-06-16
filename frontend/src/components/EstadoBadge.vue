@@ -1,54 +1,30 @@
 <template>
-  <span :class="badgeClass">{{ label }}</span>
+  <span :class="['badge', badgeClass]">{{ label }}</span>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 
-const props = defineProps({
-  status: { type: String, default: '' }
-})
+const props = defineProps({ status: { type: String, default: '' } })
 
-const label = computed(() => {
-  switch (props.status?.toUpperCase()) {
-    case 'ACTIVE': return 'Activo'
-    case 'PENDING': return 'Pendiente'
-    case 'APPROVED': return 'Aprobado'
-    case 'REJECTED': return 'Rechazado'
-    case 'COMPLETED': return 'Completado'
-    case 'CANCELLED': return 'Cancelado'
-    case 'IN_PROGRESS': return 'En Progreso'
-    case 'REALIZED': return 'Realizado'
-    case 'NOT_REALIZED': return 'No Realizado'
-    case 'ENABLED': return 'Habilitado'
-    case 'DISABLED': return 'Deshabilitado'
-    case 'PUBLISHED': return 'Publicado'
-    case 'DRAFT': return 'Borrador'
-    case 'NO_SOLICITADA': return 'No solicitada'
-    default: return props.status || 'Desconocido'
-  }
-})
+const MAP = {
+  ACTIVE:              { label: 'Activo',        cls: 'badge-green'  },
+  APPROVED:            { label: 'Aprobado',       cls: 'badge-green'  },
+  COMPLETED:           { label: 'Completado',     cls: 'badge-green'  },
+  REALIZED:            { label: 'Realizado',      cls: 'badge-green'  },
+  ENABLED:             { label: 'Habilitado',     cls: 'badge-green'  },
+  PUBLISHED:           { label: 'Publicado',      cls: 'badge-green'  },
+  PENDING:             { label: 'Pendiente',      cls: 'badge-yellow' },
+  IN_PROGRESS:         { label: 'En progreso',    cls: 'badge-yellow' },
+  DRAFT:               { label: 'Borrador',       cls: 'badge-yellow' },
+  REJECTED:            { label: 'Rechazado',      cls: 'badge-red'    },
+  CANCELLED:           { label: 'Cancelado',      cls: 'badge-red'    },
+  NOT_REALIZED:        { label: 'No realizado',   cls: 'badge-red'    },
+  DISABLED:            { label: 'Deshabilitado',  cls: 'badge-red'    },
+  NO_SOLICITADA:       { label: 'Sin solicitud',  cls: 'badge-blue'   },
+}
 
-const badgeClass = computed(() => {
-  switch (props.status?.toUpperCase()) {
-    case 'ACTIVE':
-    case 'APPROVED':
-    case 'COMPLETED':
-    case 'REALIZED':
-    case 'ENABLED':
-    case 'PUBLISHED':
-      return 'badge badge-green'
-    case 'PENDING':
-    case 'IN_PROGRESS':
-    case 'DRAFT':
-      return 'badge badge-yellow'
-    case 'REJECTED':
-    case 'CANCELLED':
-    case 'NOT_REALIZED':
-    case 'DISABLED':
-      return 'badge badge-red'
-    default:
-      return 'badge badge-blue'
-  }
-})
+const resolved = computed(() => MAP[props.status?.toUpperCase()] ?? { label: props.status || '—', cls: 'badge-blue' })
+const label     = computed(() => resolved.value.label)
+const badgeClass = computed(() => resolved.value.cls)
 </script>

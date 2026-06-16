@@ -1,8 +1,13 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-white">Gestion de Sedes</h1>
+        <h1 class="text-3xl font-bold text-white">Gestión de Sedes</h1>
         <p class="text-gray-400 text-sm mt-1">Todas las sedes registradas en el sistema</p>
       </div>
       <router-link to="/admin/roles"
@@ -50,7 +55,7 @@
 
             <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-400">
               <p v-if="s.adminFullName"><span class="text-gray-500">Admin:</span> <span class="text-white">{{ s.adminFullName }}</span> <span class="text-gray-500">({{ s.adminEmail }})</span></p>
-              <p v-if="s.phone"><span class="text-gray-500">Telefono:</span> <span class="text-white">{{ s.phone }}</span></p>
+              <p v-if="s.phone"><span class="text-gray-500">Teléfono:</span> <span class="text-white">{{ s.phone }}</span></p>
               <p v-if="s.email"><span class="text-gray-500">Email sede:</span> <span class="text-white">{{ s.email }}</span></p>
               <p v-if="s.createdAt"><span class="text-gray-500">Registrada:</span> <span class="text-white">{{ formatDate(s.createdAt) }}</span></p>
             </div>

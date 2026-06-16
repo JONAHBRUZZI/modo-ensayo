@@ -41,7 +41,7 @@ async function handleSubmit() {
 <template>
   <form @submit.prevent="handleSubmit" class="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
     <h2 class="text-2xl font-bold mb-6 text-center">
-      {{ mode === 'login' ? 'Iniciar Sesion' : 'Crear Cuenta' }}
+      {{ mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta' }}
     </h2>
 
     <div v-if="error" class="mb-4 p-3 bg-red-100 text-red-700 rounded">
@@ -59,7 +59,7 @@ async function handleSubmit() {
     </div>
 
     <div class="mb-4">
-      <label class="block text-sm font-medium mb-1">Contrasena</label>
+      <label class="block text-sm font-medium mb-1">Contraseña</label>
       <input
         v-model="form.password"
         type="password"
@@ -80,7 +80,7 @@ async function handleSubmit() {
         />
       </div>
       <div class="mb-4">
-        <label class="block text-sm font-medium mb-1">Telefono (opcional)</label>
+        <label class="block text-sm font-medium mb-1">Teléfono (opcional)</label>
         <input
           v-model="form.phone"
           type="text"

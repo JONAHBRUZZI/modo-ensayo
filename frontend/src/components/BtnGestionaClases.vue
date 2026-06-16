@@ -20,7 +20,7 @@
     </div>
 
     <!-- Estado C-SEDE: director de sede → setModo('sede') + crear clase -->
-    <button v-else-if="estado === 'C-SEDE'" @click="irAGestionar('sede', '/sede/crear-clase')" type="button"
+    <button v-else-if="estado === 'C-SEDE'" @click="irAGestiónar('sede', '/sede/crear-clase')" type="button"
             class="hidden md:flex flex-col items-center justify-center gap-1 w-14 h-12 rounded-xl border transition-all duration-300 bg-emerald-500/10 border-emerald-400/40 shadow-[0_0_14px_rgba(16,185,129,0.25)]">
       <svg class="w-4 h-4 text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]"
            fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -28,11 +28,11 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
           d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
       </svg>
-      <span class="text-[9px] font-semibold leading-none text-emerald-300">Gestionar</span>
+      <span class="text-[9px] font-semibold leading-none text-emerald-300">Gestiónar</span>
     </button>
 
     <!-- Estado C: identidad validada → setModo('profesor') + buscar sala -->
-    <button v-else-if="estado === 'C'" @click="irAGestionar('profesor', '/profesor/buscar-salas')" type="button"
+    <button v-else-if="estado === 'C'" @click="irAGestiónar('profesor', '/profesor/buscar-salas')" type="button"
             class="hidden md:flex flex-col items-center justify-center gap-1 w-14 h-12 rounded-xl border transition-all duration-300 bg-indigo-500/10 border-indigo-400/40 shadow-[0_0_14px_rgba(99,102,241,0.25)]">
       <svg class="w-4 h-4 text-indigo-400 drop-shadow-[0_0_5px_rgba(99,102,241,0.8)]"
            fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -40,7 +40,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
           d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
       </svg>
-      <span class="text-[9px] font-semibold leading-none text-indigo-300">Gestionar</span>
+      <span class="text-[9px] font-semibold leading-none text-indigo-300">Gestiónar</span>
     </button>
   </template>
 </template>
@@ -62,7 +62,7 @@ const estado = computed(() => {
   return 'A'
 })
 
-const irAGestionar = (modo, ruta) => {
+const irAGestiónar = (modo, ruta) => {
   setModo(modo)
   router.push(ruta)
 }

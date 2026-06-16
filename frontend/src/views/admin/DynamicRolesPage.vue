@@ -1,8 +1,24 @@
 <template>
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
     <h1 class="text-3xl font-bold text-white mb-8">Verificaciones de Identidad</h1>
-    <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
-    <div v-else-if="verifications.length === 0" class="card text-center py-12"><p class="text-gray-400">No hay verificaciones pendientes.</p></div>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
+    </div>
+    <div v-else-if="verifications.length === 0" class="card text-center py-16">
+      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+        </svg>
+      </div>
+      <p class="text-gray-400 font-medium">Sin verificaciones pendientes</p>
+      <p class='text-gray-600 text-sm mt-1'>Cuando un usuario suba su identidad, aparecerá aquí.</p>
+    </div>
     <div v-else class="space-y-4">
       <div v-for="v in verifications" :key="v.id" class="card">
         <div class="flex items-start justify-between">
@@ -29,7 +45,14 @@
     </div>
 
     <h2 class="text-2xl font-bold text-white mt-12 mb-6">Sedes Pendientes de Aprobacion</h2>
-    <div v-if="pendingVenues.length === 0" class="card text-center py-8"><p class="text-gray-400">No hay sedes pendientes.</p></div>
+    <div v-if="pendingVenues.length === 0" class="card text-center py-12">
+      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+      <p class="text-gray-400 font-medium">Sin sedes pendientes</p>
+    </div>
     <div v-else class="space-y-4">
       <div v-for="v in pendingVenues" :key="v.id" class="card flex items-center justify-between">
         <div><h3 class="text-white font-medium">{{ v.name }}</h3><p class="text-gray-400 text-sm">{{ v.city }}, {{ v.address }}</p></div>

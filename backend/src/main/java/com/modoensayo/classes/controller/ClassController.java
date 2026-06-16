@@ -28,15 +28,24 @@ public class ClassController {
             @RequestParam(required = false) String fechaHasta,
             @RequestParam(required = false) Double precioMin,
             @RequestParam(required = false) Double precioMax,
-            @RequestParam(required = false) String nivel) {
+            @RequestParam(required = false) String nivel,
+            @RequestParam(required = false) Integer edadMin,
+            @RequestParam(required = false) Integer edadMax) {
 
         boolean hasFilters = disciplina != null || comuna != null || fechaDesde != null
-                || fechaHasta != null || precioMin != null || precioMax != null || nivel != null;
+                || fechaHasta != null || precioMin != null || precioMax != null
+                || nivel != null || edadMin != null || edadMax != null;
 
         if (hasFilters) {
-            return ResponseEntity.ok(classService.search(disciplina, comuna, fechaDesde, fechaHasta, precioMin, precioMax, nivel));
+            return ResponseEntity.ok(classService.search(disciplina, comuna, fechaDesde, fechaHasta,
+                    precioMin, precioMax, nivel, edadMin, edadMax));
         }
         return ResponseEntity.ok(classService.listPublished());
+    }
+
+    @GetMapping("/disciplines")
+    public ResponseEntity<List<Map<String, Object>>> getDisciplines() {
+        return ResponseEntity.ok(classService.getAvailableDisciplines());
     }
 
     @GetMapping("/{id}")
@@ -84,10 +93,6 @@ public class ClassController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Perfil público del profesor de una clase (sin autenticación).
-     * GET /api/classes/{id}/profesor
-     */
     @GetMapping("/{id}/profesor")
     public ResponseEntity<Map<String, Object>> getProfesor(@PathVariable UUID id) {
         return ResponseEntity.ok(classService.getTeacherProfileForClass(id));

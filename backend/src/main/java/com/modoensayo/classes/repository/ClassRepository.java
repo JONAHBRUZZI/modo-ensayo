@@ -31,4 +31,7 @@ public interface ClassRepository extends JpaRepository<Class, UUID>, JpaSpecific
     List<Class> findConflictingClasses(@Param("roomId") UUID roomId, @Param("startTime") Instant startTime, @Param("endTime") Instant endTime);
 
     List<Class> findByTeacherIdAndTipoClase(UUID teacherId, TipoClase tipoClase);
+
+    @Query("SELECT DISTINCT c.discipline FROM Class c WHERE c.status = 'PUBLISHED' AND c.discipline IS NOT NULL")
+    List<String> findDistinctDisciplinesFromPublished();
 }

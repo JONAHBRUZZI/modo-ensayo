@@ -5,11 +5,11 @@ import com.modoensayo.classes.domain.ClassStatusHistory;
 import com.modoensayo.classes.dto.ClassRequest;
 import com.modoensayo.classes.dto.ClassResponse;
 import com.modoensayo.classes.enums.ClassStatus;
-import com.modoensayo.classes.enums.Disciplina;
 import com.modoensayo.classes.enums.NivelClase;
 import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.classes.repository.ClassStatusHistoryRepository;
+import com.modoensayo.classes.repository.DisciplineCatalogRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
@@ -59,6 +59,7 @@ public class ClassService {
     private final ClassStatusHistoryRepository classStatusHistoryRepository;
     private final ProfessionalProfileRepository profileRepository;
     private final NotificationService notificationService;
+    private final DisciplineCatalogRepository disciplineCatalogRepository;
 
     public List<ClassResponse> listPublished() {
         return classRepository.findByStatusOrderByStartTimeAsc(ClassStatus.PUBLISHED).stream()
@@ -73,13 +74,13 @@ public class ClassService {
 
     public List<ClassResponse> search(String disciplina, String comuna, String fechaDesde,
                                        String fechaHasta, Double precioMin, Double precioMax,
-                                       String nivel) {
+                                       String nivel, Integer edadMin, Integer edadMax) {
         Specification<Class> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), ClassStatus.PUBLISHED));
 
             if (disciplina != null && !disciplina.isBlank()) {
-                predicates.add(cb.equal(root.get("discipline"), Disciplina.valueOf(disciplina)));
+                predicates.add(cb.equal(cb.lower(root.get("discipline")), disciplina.toLowerCase()));
             }
             if (nivel != null && !nivel.isBlank()) {
                 predicates.add(cb.equal(root.get("level"), NivelClase.valueOf(nivel)));
@@ -99,6 +100,12 @@ public class ClassService {
             if (comuna != null && !comuna.isBlank()) {
                 var venueJoin = root.join("room", JoinType.LEFT).join("venue", JoinType.LEFT);
                 predicates.add(cb.equal(cb.lower(venueJoin.get("city")), comuna.toLowerCase()));
+            }
+            if (edadMin != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("maxAge"), edadMin));
+            }
+            if (edadMax != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("minAge"), edadMax));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -139,7 +146,8 @@ public class ClassService {
 
         Class c = Class.builder()
                 .title(req.title())
-                .discipline(req.discipline() != null ? Disciplina.valueOf(req.discipline()) : Disciplina.OTRO)
+                .discipline(req.discipline())
+                .disciplineCategory(resolveCategory(req.discipline()))
                 .level(req.level() != null ? NivelClase.valueOf(req.level()) : NivelClase.BASICO)
                 .description(req.description())
                 .capacity(req.capacity())
@@ -214,7 +222,10 @@ public class ClassService {
             throw new BusinessException("No tienes permiso para editar esta clase");
         }
         if (req.title() != null) c.setTitle(req.title());
-        if (req.discipline() != null) c.setDiscipline(Disciplina.valueOf(req.discipline()));
+        if (req.discipline() != null) {
+            c.setDiscipline(req.discipline());
+            c.setDisciplineCategory(resolveCategory(req.discipline()));
+        }
         if (req.level() != null) c.setLevel(NivelClase.valueOf(req.level()));
         if (req.description() != null) c.setDescription(req.description());
         if (req.capacity() != null) c.setCapacity(req.capacity());
@@ -287,7 +298,8 @@ public class ClassService {
 
         Class c = Class.builder()
                 .title(req.title())
-                .discipline(req.discipline() != null ? Disciplina.valueOf(req.discipline()) : Disciplina.OTRO)
+                .discipline(req.discipline())
+                .disciplineCategory(resolveCategory(req.discipline()))
                 .level(req.level() != null ? NivelClase.valueOf(req.level()) : NivelClase.BASICO)
                 .description(req.description())
                 .capacity(req.capacity())
@@ -452,10 +464,61 @@ public class ClassService {
         return result;
     }
 
+    private String resolveCategory(String discipline) {
+        if (discipline == null || discipline.isBlank()) return null;
+        var match = disciplineCatalogRepository.findByActiveTrueOrderByCategoryAscSortOrderAsc()
+                .stream().filter(d -> d.getName().equalsIgnoreCase(discipline)).findFirst().orElse(null);
+        return match != null ? match.getCategory() : null;
+    }
+
+    public List<Map<String, Object>> getAvailableDisciplines() {
+        List<String> usedDisciplines = classRepository.findDistinctDisciplinesFromPublished();
+        var catalog = disciplineCatalogRepository.findByActiveTrueOrderByCategoryAscSortOrderAsc();
+
+        Map<String, List<String>> grouped = new java.util.LinkedHashMap<>();
+        Map<String, String> desc = new java.util.LinkedHashMap<>();
+        desc.put("Danza", "Danza");
+        desc.put("Musica", "Musica");
+        desc.put("Teatro", "Teatro");
+
+        for (var d : catalog) {
+            grouped.computeIfAbsent(d.getCategory(), k -> new ArrayList<>()).add(d.getName());
+        }
+
+        java.util.Set<String> usedSet = usedDisciplines.stream()
+                .map(String::toLowerCase).collect(Collectors.toSet());
+        List<String> ungroupedNames = new ArrayList<>();
+        for (String d : usedDisciplines) {
+            if (d == null || d.isBlank()) continue;
+            boolean inCatalog = catalog.stream()
+                    .anyMatch(c -> c.getName().equalsIgnoreCase(d));
+            if (!inCatalog) {
+                ungroupedNames.add(d);
+            }
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (var entry : grouped.entrySet()) {
+            Map<String, Object> group = new HashMap<>();
+            group.put("category", entry.getKey());
+            group.put("label", desc.getOrDefault(entry.getKey(), entry.getKey()));
+            group.put("items", entry.getValue());
+            result.add(group);
+        }
+        Map<String, Object> otherGroup = new HashMap<>();
+        otherGroup.put("category", null);
+        otherGroup.put("label", "Otras");
+        otherGroup.put("items", ungroupedNames);
+        result.add(otherGroup);
+
+        return result;
+    }
+
     private ClassResponse toResponse(Class c) {
         long enrolledCount = enrollmentRepository.countByClassId(c.getId());
         return new ClassResponse(c.getId(), c.getTitle(),
-                c.getDiscipline() != null ? c.getDiscipline().name() : null,
+                c.getDiscipline(),
+                c.getDisciplineCategory(),
                 c.getLevel() != null ? c.getLevel().name() : null,
                 c.getDescription(), c.getCapacity(), c.getDuration(), c.getPrice(),
                 c.getMinAge(), c.getMaxAge(), c.getStartTime(),

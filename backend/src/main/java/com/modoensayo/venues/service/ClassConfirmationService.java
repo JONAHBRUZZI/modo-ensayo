@@ -52,7 +52,7 @@ public class ClassConfirmationService {
                 result.add(new ClassSummaryDto(
                         classEntity.getId().toString(),
                         classEntity.getTitle(),
-                        classEntity.getDiscipline().name(),
+                        classEntity.getDiscipline(),
                         classEntity.getRoom().getId().toString(),
                         classEntity.getRoom().getName(),
                         venue.getId().toString(),
@@ -81,7 +81,7 @@ public class ClassConfirmationService {
                 result.add(new ClassSummaryDto(
                         classEntity.getId().toString(),
                         classEntity.getTitle(),
-                        classEntity.getDiscipline().name(),
+                        classEntity.getDiscipline(),
                         classEntity.getRoom().getId().toString(),
                         classEntity.getRoom().getName(),
                         venue.getId().toString(),

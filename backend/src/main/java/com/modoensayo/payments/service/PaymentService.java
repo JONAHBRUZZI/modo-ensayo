@@ -40,7 +40,7 @@ public class PaymentService {
 
         CartItem item = CartItem.builder()
                 .ownerId(ownerId).classId(classId)
-                .classTitle(c.getTitle()).discipline(c.getDiscipline() != null ? c.getDiscipline().name() : null)
+                .classTitle(c.getTitle()).discipline(c.getDiscipline())
                 .level(c.getLevel() != null ? c.getLevel().name() : null).price(c.getPrice())
                 .beneficiaryType(beneficiaryType != null ? beneficiaryType : "USER")
                 .beneficiaryId(beneficiaryId)
@@ -142,7 +142,7 @@ public class PaymentService {
                 item.put("enrollmentId", e.getId().toString());
                 item.put("classId", c.getId().toString());
                 item.put("title", c.getTitle());
-                item.put("discipline", c.getDiscipline() != null ? c.getDiscipline().name() : null);
+                item.put("discipline", c.getDiscipline());
                 item.put("level", c.getLevel() != null ? c.getLevel().name() : null);
                 item.put("startTime", c.getStartTime());
                 item.put("endTime", c.getEndTime());

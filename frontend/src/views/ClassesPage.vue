@@ -18,16 +18,24 @@
     >
       <select v-model="filtros.disciplina" class="input-field text-sm py-2">
         <option value="">Todas las disciplinas</option>
-        <option v-for="d in disciplinas" :key="d" :value="d">{{ d }}</option>
+        <optgroup v-for="g in disciplineGroups" :key="g.category || 'otras'" :label="g.label">
+          <option v-for="item in g.items" :key="item" :value="item">{{ item }}</option>
+        </optgroup>
       </select>
       <select v-model="filtros.nivel" class="input-field text-sm py-2">
         <option value="">Todos los niveles</option>
         <option v-for="n in niveles" :key="n" :value="n">{{ n }}</option>
       </select>
       <input v-model="filtros.comuna" class="input-field text-sm py-2" placeholder="Comuna" />
-      <div class="col-span-2 md:col-span-1 flex space-x-2">
-        <input v-model="filtros.precioMax" type="number" class="input-field text-sm py-2" placeholder="Precio máx." />
-        <button @click="buscar" class="btn-primary text-sm px-4">Buscar</button>
+      <div class="col-span-2 md:col-span-1 flex flex-col gap-2">
+        <div class="flex space-x-2">
+          <input v-model.number="filtros.edadMin" type="number" class="input-field text-sm py-2" placeholder="Edad min." min="0" max="99" />
+          <input v-model.number="filtros.edadMax" type="number" class="input-field text-sm py-2" placeholder="Edad max." min="0" max="99" />
+        </div>
+        <div class="flex space-x-2">
+          <input v-model.number="filtros.precioMax" type="number" class="input-field text-sm py-2" placeholder="Precio max." />
+          <button @click="buscar" class="btn-primary text-sm px-4">Buscar</button>
+        </div>
       </div>
     </div>
 
@@ -37,7 +45,7 @@
     </div>
     <div v-else-if="classes.length === 0" class="card text-center py-20">
       <p class="text-gray-400 mb-2">No hay clases disponibles en este momento.</p>
-      <p class="text-gray-600 text-sm">Intenta ajustar los filtros de búsqueda.</p>
+      <p class="text-gray-600 text-sm">Intenta ajustar los filtros de busqueda.</p>
     </div>
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       <div
@@ -60,7 +68,7 @@
         <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ c.description }}</p>
         <div class="flex items-center justify-between text-xs text-gray-600 border-t border-[#1e2130] pt-3 mt-auto">
           <span>{{ formatDate(c.startTime) }}</span>
-          <span class="text-primary/70 group-hover:text-primary transition-colors">Ver detalle →</span>
+          <span class="text-primary/70 group-hover:text-primary transition-colors">Ver detalle &rarr;</span>
         </div>
       </div>
     </div>
@@ -70,16 +78,26 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '@/services/api'
 import classService from '@/services/classService'
 
 const router = useRouter()
 const classes = ref([])
 const loading = ref(true)
-const disciplinas = ['CUECA', 'BALLET', 'DANZA', 'TEATRO', 'MUSICA', 'OTRO']
+const disciplineGroups = ref([])
 const niveles = ['BASICO', 'INTERMEDIO', 'AVANZADO']
-const filtros = reactive({ disciplina: '', nivel: '', comuna: '', precioMax: null })
+const filtros = reactive({ disciplina: '', nivel: '', comuna: '', precioMax: null, edadMin: null, edadMax: null })
 
-onMounted(() => buscar())
+onMounted(async () => {
+  await Promise.all([buscar(), loadDisciplines()])
+})
+
+async function loadDisciplines() {
+  try {
+    const data = await api.get('/classes/disciplines')
+    disciplineGroups.value = Array.isArray(data) ? data : []
+  } catch { disciplineGroups.value = [] }
+}
 
 async function buscar() {
   loading.value = true
@@ -89,6 +107,8 @@ async function buscar() {
     if (filtros.nivel) params.nivel = filtros.nivel
     if (filtros.comuna) params.comuna = filtros.comuna
     if (filtros.precioMax) params.precioMax = filtros.precioMax
+    if (filtros.edadMin) params.edadMin = filtros.edadMin
+    if (filtros.edadMax) params.edadMax = filtros.edadMax
     const data = await classService.getClasses(params)
     classes.value = Array.isArray(data) ? data : data.content || []
   } catch {

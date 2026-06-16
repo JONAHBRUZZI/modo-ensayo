@@ -300,7 +300,7 @@ async function pagar(metodo) {
       // Flujo booking: crear borrador con sala asignada (backend otorga rol TEACHER)
       await api.post('/classes?draft=true', {
         title: 'Reserva - ' + modal.value.room.name,
-        discipline: 'OTRO',
+        discipline: null,
         level: 'BASICO',
         capacity: modal.value.room.capacity,
         duration: 60,

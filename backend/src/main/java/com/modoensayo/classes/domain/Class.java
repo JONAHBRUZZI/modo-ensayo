@@ -1,7 +1,6 @@
 package com.modoensayo.classes.domain;
 
 import com.modoensayo.classes.enums.ClassStatus;
-import com.modoensayo.classes.enums.Disciplina;
 import com.modoensayo.classes.enums.NivelClase;
 import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.shared.config.BaseEntity;
@@ -26,8 +25,9 @@ public class Class extends BaseEntity {
 
     private String title;
 
-    @Enumerated(EnumType.STRING)
-    private Disciplina discipline;
+    private String discipline;
+
+    private String disciplineCategory;
 
     @Enumerated(EnumType.STRING)
     private NivelClase level;

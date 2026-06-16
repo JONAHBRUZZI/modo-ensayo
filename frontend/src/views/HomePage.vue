@@ -6,70 +6,105 @@
       <div class="hero-glow" aria-hidden="true"></div>
       <div class="hero-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div
-          v-motion
-          :initial="{ opacity: 0, y: 20 }"
-          :enter="{ opacity: 1, y: 0, transition: { duration: 500 } }"
-          class="hero-eyebrow"
-        >
-          <span class="eyebrow-dot" aria-hidden="true"></span>
-          Plataforma de danza y música en Chile
-        </div>
+        <div class="hero-grid">
 
-        <h1
-          v-motion
-          :initial="{ opacity: 0, y: 24 }"
-          :enter="{ opacity: 1, y: 0, transition: { duration: 550, delay: 80 } }"
-          class="hero-title"
-        >
-          Tu <em>arte</em> encuentra<br>su espacio aquí
-        </h1>
+          <!-- Columna izquierda: texto -->
+          <div class="hero-text">
+            <div
+              v-motion
+              :initial="{ opacity: 0, y: 20 }"
+              :enter="{ opacity: 1, y: 0, transition: { duration: 500 } }"
+              class="hero-eyebrow"
+            >
+              <span class="eyebrow-dot" aria-hidden="true"></span>
+              Plataforma de danza y música en Chile
+            </div>
 
-        <p
-          v-motion
-          :initial="{ opacity: 0, y: 20 }"
-          :enter="{ opacity: 1, y: 0, transition: { duration: 500, delay: 160 } }"
-          class="hero-sub"
-        >
-          Conectamos alumnos, maestros y salas de ensayo en un solo lugar.
-          Reserva, aprende y crece.
-        </p>
+            <h1
+              v-motion
+              :initial="{ opacity: 0, y: 24 }"
+              :enter="{ opacity: 1, y: 0, transition: { duration: 550, delay: 80 } }"
+              class="hero-title"
+            >
+              Tu <em>arte</em> encuentra<br>su espacio aquí
+            </h1>
 
-        <div
-          v-motion
-          :initial="{ opacity: 0, y: 16 }"
-          :enter="{ opacity: 1, y: 0, transition: { duration: 450, delay: 240 } }"
-          class="hero-ctas"
-        >
-          <router-link to="/classes" class="btn-hero-primary">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            Explorar clases
-          </router-link>
-          <router-link to="/register" class="btn-hero-secondary">
-            Crear cuenta →
-          </router-link>
-        </div>
+            <p
+              v-motion
+              :initial="{ opacity: 0, y: 20 }"
+              :enter="{ opacity: 1, y: 0, transition: { duration: 500, delay: 160 } }"
+              class="hero-sub"
+            >
+              Conectamos alumnos, maestros y salas de ensayo en un solo lugar.
+              Reserva, aprende y crece.
+            </p>
 
-        <div
-          v-motion
-          :initial="{ opacity: 0 }"
-          :enter="{ opacity: 1, transition: { duration: 600, delay: 400 } }"
-          class="stats-row"
-        >
-          <div class="stat-item">
-            <span class="stat-num">+120</span>
-            <span class="stat-label">Clases activas</span>
+            <div
+              v-motion
+              :initial="{ opacity: 0, y: 16 }"
+              :enter="{ opacity: 1, y: 0, transition: { duration: 450, delay: 240 } }"
+              class="hero-ctas"
+            >
+              <router-link to="/classes" class="btn-hero-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                Explorar clases
+              </router-link>
+              <router-link to="/register" class="btn-hero-secondary">
+                Crear cuenta →
+              </router-link>
+            </div>
+
+            <div
+              v-motion
+              :initial="{ opacity: 0 }"
+              :enter="{ opacity: 1, transition: { duration: 600, delay: 400 } }"
+              class="stats-row"
+            >
+              <div class="stat-item">
+                <span class="stat-num">+120</span>
+                <span class="stat-label">Clases activas</span>
+              </div>
+              <div class="stat-divider" aria-hidden="true"></div>
+              <div class="stat-item">
+                <span class="stat-num">+40</span>
+                <span class="stat-label">Maestros</span>
+              </div>
+              <div class="stat-divider" aria-hidden="true"></div>
+              <div class="stat-item">
+                <span class="stat-num">+15</span>
+                <span class="stat-label">Sedes</span>
+              </div>
+            </div>
           </div>
-          <div class="stat-divider" aria-hidden="true"></div>
-          <div class="stat-item">
-            <span class="stat-num">+40</span>
-            <span class="stat-label">Maestros</span>
+
+          <!-- Columna derecha: crossfade imágenes -->
+          <div
+            v-motion
+            :initial="{ opacity: 0, scale: 0.96 }"
+            :enter="{ opacity: 1, scale: 1, transition: { duration: 700, delay: 300 } }"
+            class="hero-visual"
+            aria-hidden="true"
+          >
+            <div class="hero-img-wrap">
+              <img
+                v-for="(img, i) in heroImages"
+                :key="i"
+                :src="img"
+                :class="['hero-img', { 'hero-img--active': i === activeImg }]"
+                alt=""
+              />
+              <div class="hero-dots">
+                <button
+                  v-for="(_, i) in heroImages"
+                  :key="i"
+                  :class="['hero-dot', { 'hero-dot--active': i === activeImg }]"
+                  @click="goToImg(i)"
+                  :aria-label="`Imagen ${i + 1}`"
+                />
+              </div>
+            </div>
           </div>
-          <div class="stat-divider" aria-hidden="true"></div>
-          <div class="stat-item">
-            <span class="stat-num">+15</span>
-            <span class="stat-label">Sedes</span>
-          </div>
+
         </div>
       </div>
     </section>
@@ -136,6 +171,29 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import heroBailarines from '@/assets/hero-bailarines.png'
+import heroMusicos from '@/assets/hero-musicos.png'
+
+const heroImages = [heroBailarines, heroMusicos]
+const activeImg = ref(0)
+let timer = null
+
+function goToImg(i) {
+  activeImg.value = i
+  resetTimer()
+}
+
+function resetTimer() {
+  clearInterval(timer)
+  timer = setInterval(() => {
+    activeImg.value = (activeImg.value + 1) % heroImages.length
+  }, 3500)
+}
+
+onMounted(() => resetTimer())
+onUnmounted(() => clearInterval(timer))
+
 const features = [
   {
     title: 'Reserva salas',
@@ -150,7 +208,7 @@ const features = [
     icon: `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>`,
   },
   {
-    title: 'Gestióna tu sede',
+    title: 'Gestiona tu sede',
     desc: 'Administra salas, profesores y clases desde un solo lugar con métricas en tiempo real.',
     iconClass: 'icon-amber',
     icon: `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
@@ -183,12 +241,65 @@ const steps = [
 }
 .hero-inner { position: relative; z-index: 1; }
 
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+@media (max-width: 768px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  .hero-visual { order: -1; }
+}
+
+.hero-text { display: flex; flex-direction: column; }
+
+/* Imagen crossfade */
+.hero-visual { position: relative; }
+.hero-img-wrap {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  background: #0b0d14;
+}
+.hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+.hero-img--active { opacity: 1; }
+
+/* Dots indicadores */
+.hero-dots {
+  position: absolute;
+  bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; z-index: 2;
+}
+.hero-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  border: none; cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+  padding: 0;
+}
+.hero-dot--active {
+  background: #6C63FF;
+  transform: scale(1.3);
+}
+
 .hero-eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
   background: #6C63FF12; border: 1px solid #6C63FF2e;
   color: #9B8CFF; font-size: 13px; font-weight: 500;
   padding: 5px 16px; border-radius: 100px;
   margin-bottom: 1.5rem; letter-spacing: 0.2px;
+  width: fit-content;
 }
 .eyebrow-dot {
   width: 6px; height: 6px;
@@ -199,7 +310,7 @@ const steps = [
 .hero-title {
   font-size: clamp(36px, 5vw, 52px);
   font-weight: 700; color: white; line-height: 1.12;
-  margin-bottom: 1.25rem; max-width: 540px;
+  margin-bottom: 1.25rem;
 }
 .hero-title em {
   font-style: normal;
@@ -210,7 +321,7 @@ const steps = [
 
 .hero-sub {
   color: #6B7280; font-size: 16px; line-height: 1.75;
-  max-width: 440px; margin-bottom: 2rem;
+  margin-bottom: 2rem;
 }
 
 .hero-ctas { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
@@ -319,7 +430,6 @@ const steps = [
   border-top: 1px solid #13161f;
   padding: 4rem 0;
 }
-.cta-box { }
 .cta-title { color: white; font-size: 28px; font-weight: 700; margin-bottom: 10px; }
 .cta-sub   { color: #6B7280; font-size: 15px; margin-bottom: 1.75rem; }
 </style>

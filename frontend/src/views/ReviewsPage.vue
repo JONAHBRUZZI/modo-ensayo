@@ -24,7 +24,7 @@
           <div>
             <h3 class="text-white font-semibold">{{ item.classTitle }}</h3>
             <p class="text-gray-400 text-sm">{{ item.targetLabel || item.targetType }}</p>
-            <p class="text-gray-500 text-xs mt-1">{{ formatDate(item.classEndTime) }}</p>
+            <p class="text-gray-500 text-xs mt-1">{{ formatDate(item.classDate) }}</p>
           </div>
           <span class="text-xs text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full flex-shrink-0">
             Sin reseña

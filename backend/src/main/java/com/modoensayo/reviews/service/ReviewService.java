@@ -53,7 +53,7 @@ public class ReviewService {
                 .filter(c -> c != null && c.getStatus() == ClassStatus.COMPLETED)
                 .filter(c -> reviewRepository.findByClassId(c.getId()).stream()
                         .noneMatch(r -> r.getReviewerId().equals(studentId)))
-                .map(c -> new EligibleReviewItem(c.getId(), c.getTitle(), c.getEndTime(),
+                .map(c -> new EligibleReviewItem(c.getId(), c.getTitle(), c.getStartTime(),
                         "CLASS", c.getId(), c.getTitle()))
                 .collect(Collectors.toList());
     }
@@ -65,7 +65,7 @@ public class ReviewService {
                         .filter(e -> reviewRepository.findByClassId(c.getId()).stream()
                                 .noneMatch(r -> r.getReviewerId().equals(teacherId)
                                         && r.getTargetId().equals(e.getBeneficiaryId())))
-                        .map(e -> new EligibleReviewItem(c.getId(), c.getTitle(), c.getEndTime(),
+                        .map(e -> new EligibleReviewItem(c.getId(), c.getTitle(), c.getStartTime(),
                                 "STUDENT", e.getBeneficiaryId(), "Alumno")))
                 .distinct()
                 .collect(Collectors.toList());

@@ -6,7 +6,7 @@ import java.util.UUID;
 public record EligibleReviewItem(
         UUID classId,
         String classTitle,
-        Instant classEndTime,
+        Instant classDate,
         String targetType,
         UUID targetId,
         String targetLabel

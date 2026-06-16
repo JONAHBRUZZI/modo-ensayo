@@ -32,7 +32,14 @@
             </router-link>
             <div class="flex items-center gap-3 flex-shrink-0">
               <span class="text-primary font-semibold text-sm">${{ c.price?.toLocaleString('es-CL') }}</span>
-              <EstadoBadge :status="c.enrollmentStatus || c.status" />
+              <EstadoBadge :status="c.enrollmentStatus === 'CANCELLED' ? 'CANCELLED' : c.status" />
+              <router-link
+                v-if="c.status === 'COMPLETED' && c.enrollmentStatus !== 'CANCELLED'"
+                to="/reviews"
+                class="text-xs bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 px-3 py-1 rounded-full hover:bg-yellow-400/20 transition-colors whitespace-nowrap"
+              >
+                Dejar reseña
+              </router-link>
             </div>
           </div>
         </div>

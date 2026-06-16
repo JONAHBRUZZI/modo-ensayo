@@ -7,6 +7,12 @@ export const reviewService = {
   getTeacherEligible() {
     return api.get('/reviews/eligible/teacher')
   },
+  getByClass(classId) {
+    return api.get(`/reviews/class/${classId}`)
+  },
+  getByTeacher(teacherId) {
+    return api.get(`/reviews/teacher/${teacherId}`)
+  },
   createStudentClassReview(payload) {
     return api.post('/reviews', { ...payload, targetType: 'CLASS' })
   },

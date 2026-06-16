@@ -56,17 +56,41 @@
         </button>
         <p v-if="msg" :class="msg.includes('Error') ? 'text-red-400' : 'text-green-400'" class="text-sm text-center">{{ msg }}</p>
       </div>
+
+      <!-- Reseñas de esta clase -->
+      <div class="card space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Reseñas</h2>
+          <span v-if="reviews.length" class="text-yellow-400 text-sm font-semibold">
+            ★ {{ promedioReviews.toFixed(1) }} <span class="text-gray-500 font-normal">({{ reviews.length }})</span>
+          </span>
+        </div>
+        <div v-if="reviews.length === 0" class="text-gray-500 text-sm">
+          Aún no hay reseñas para esta clase.
+        </div>
+        <div v-else class="space-y-3">
+          <div v-for="r in reviews" :key="r.id" class="border-t border-white/5 pt-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-white text-sm font-medium">{{ r.authorName || 'Alumno' }}</span>
+              <span class="text-yellow-400 text-sm">{{ '★'.repeat(r.score) }}{{ '☆'.repeat(5 - r.score) }}</span>
+            </div>
+            <p v-if="r.comment" class="text-gray-400 text-sm">{{ r.comment }}</p>
+            <p class="text-gray-600 text-xs mt-1">{{ formatDate(r.createdAt) }}</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import paymentService from '@/services/paymentService'
 import userService from '@/services/userService'
+import { reviewService } from '@/services/reviewService'
 
 const route = useRoute()
 const { user } = useAuth()
@@ -76,12 +100,22 @@ const adding = ref(false)
 const msg = ref('')
 const beneficiaries = ref([])
 const selectedBeneficiary = ref(null)
+const reviews = ref([])
+
+const promedioReviews = computed(() => {
+  if (!reviews.value.length) return 0
+  return reviews.value.reduce((sum, r) => sum + r.score, 0) / reviews.value.length
+})
 
 onMounted(async () => {
   try {
     clase.value = await classService.getClass(route.params.id)
-    const assoc = await userService.getAssociates?.()
+    const [assoc, rev] = await Promise.all([
+      userService.getAssociates?.().catch(() => []),
+      reviewService.getByClass(route.params.id).then(r => r.data).catch(() => [])
+    ])
     beneficiaries.value = Array.isArray(assoc) ? assoc : []
+    reviews.value = Array.isArray(rev) ? rev : []
   } catch (err) {
     console.error('Error al cargar detalle de la clase', err)
   } finally { loading.value = false }

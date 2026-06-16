@@ -48,4 +48,9 @@ public class ReviewController {
                                                              @PathVariable UUID targetId) {
         return ResponseEntity.ok(reviewService.getByTarget(type, targetId));
     }
+
+    @GetMapping("/teacher/{teacherId}")
+    public ResponseEntity<List<ReviewResponse>> getByTeacher(@PathVariable UUID teacherId) {
+        return ResponseEntity.ok(reviewService.getByTeacher(teacherId));
+    }
 }

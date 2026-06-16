@@ -47,6 +47,13 @@ public class ReviewService {
                 .map(this::toResponse).collect(Collectors.toList());
     }
 
+    public List<ReviewResponse> getByTeacher(UUID teacherId) {
+        return classRepository.findByTeacherId(teacherId).stream()
+                .flatMap(c -> reviewRepository.findByClassId(c.getId()).stream())
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<EligibleReviewItem> getStudentEligible(UUID studentId) {
         return enrollmentRepository.findByBeneficiaryId(studentId).stream()
                 .map(e -> classRepository.findById(e.getClassId()).orElse(null))

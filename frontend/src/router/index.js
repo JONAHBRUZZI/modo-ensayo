@@ -367,7 +367,9 @@ router.beforeEach((to, from, next) => {
   let user = null
   try {
     user = JSON.parse(userRaw)
-  } catch {}
+  } catch (err) {
+    console.error('Error al parsear usuario almacenado', err)
+  }
 
   const isAuthenticated = () => {
     if (!token) return false

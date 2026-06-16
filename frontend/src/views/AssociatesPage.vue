@@ -124,7 +124,9 @@ async function createAssociate() {
     rutError.value = ''
     showForm.value = false
     await loadAssociates()
-  } catch {} finally {
+  } catch (err) {
+    console.error('Error al crear asociado', err)
+  } finally {
     creating.value = false
   }
 }
@@ -167,7 +169,9 @@ async function deleteAssociate() {
     await associateService.deleteAssociate(associateToDelete.value.id)
     showConfirm.value = false
     await loadAssociates()
-  } catch {}
+  } catch (err) {
+    console.error('Error al eliminar asociado', err)
+  }
 }
 
 function formatDate(d) {

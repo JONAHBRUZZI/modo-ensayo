@@ -225,7 +225,9 @@ onMounted(async () => {
           duration: cls.duration || null
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error('Error al cargar datos del borrador', err)
+    }
   } else {
     // Modo crear directo (sin reserva previa)
     if (route.query.roomId) form.value.roomId = route.query.roomId

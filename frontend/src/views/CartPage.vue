@@ -92,7 +92,9 @@ async function removeItem(id) {
   try {
     await paymentService.removeFromCart(id)
     items.value = items.value.filter(i => i.id !== id)
-  } catch {}
+  } catch (err) {
+    console.error('Error al eliminar item del carrito', err)
+  }
 }
 
 async function irAPagar() {

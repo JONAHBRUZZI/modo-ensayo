@@ -1,6 +1,5 @@
 package com.modoensayo.reviews.service;
 
-import com.modoensayo.classes.domain.Class;
 import com.modoensayo.classes.enums.ClassStatus;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;

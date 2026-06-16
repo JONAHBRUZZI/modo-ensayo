@@ -9,7 +9,6 @@ import com.modoensayo.shared.exceptions.ConflictException;
 import com.modoensayo.shared.security.JwtUtil;
 import com.modoensayo.users.domain.*;
 import com.modoensayo.users.repository.*;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -82,7 +82,9 @@ onMounted(async () => {
     clase.value = await classService.getClass(route.params.id)
     const assoc = await userService.getAssociates?.()
     beneficiaries.value = Array.isArray(assoc) ? assoc : []
-  } catch {} finally { loading.value = false }
+  } catch (err) {
+    console.error('Error al cargar detalle de la clase', err)
+  } finally { loading.value = false }
 })
 
 async function addToCart() {

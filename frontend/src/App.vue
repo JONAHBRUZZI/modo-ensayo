@@ -26,7 +26,9 @@ function checkTokenExpiration() {
       localStorage.removeItem('auth_refresh_token')
       window.location.href = '/login'
     }
-  } catch {}
+  } catch (err) {
+    console.error('Error al verificar expiración del token', err)
+  }
 }
 </script>
 

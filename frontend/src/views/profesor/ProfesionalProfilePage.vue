@@ -236,7 +236,9 @@ onMounted(async () => {
       if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
       if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
     }
-  } catch {}
+  } catch (err) {
+    console.error('Error al cargar perfil profesional', err)
+  }
 })
 
 async function save() {
@@ -263,7 +265,9 @@ async function save() {
     if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
     if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
     // Refrescar atributos (perfilProfesionalCompleto puede haber cambiado)
-    try { await syncAtributos() } catch {}
+    try { await syncAtributos() } catch (err) {
+      console.error('Error al sincronizar atributos del perfil', err)
+    }
     msg.value = primeraVez.value
       ? 'Perfil guardado. Te llevamos a configurar tu clase...'
       : 'Perfil guardado correctamente'

@@ -15,6 +15,7 @@ import com.modoensayo.venues.service.VenueService;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.shared.storage.UnifiedStorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/venue-admin")
 @RequiredArgsConstructor
@@ -116,7 +118,7 @@ public class VenueAdminController {
                 TipoDocumentoSede tipoEnum = null;
                 try {
                     if (tipoDoc != null) tipoEnum = TipoDocumentoSede.valueOf(tipoDoc);
-                } catch (IllegalArgumentException ignored) {}
+                } catch (IllegalArgumentException e) { log.warn("Tipo de documento de sede no reconocido: {}", tipoDoc, e); }
                 venueDocumentRepository.save(VenueDocument.builder()
                         .venueId(venue.id())
                         .fileUrl(fileUrl)

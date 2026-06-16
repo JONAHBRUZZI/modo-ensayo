@@ -257,16 +257,16 @@ async function buscar() {
               roomsWithSlots.push(room)
               roomSlots.value[room.id] = filtered
             }
-          } catch {
-            // room has no availability
+          } catch (err) {
+            console.error('Error al cargar disponibilidad de sala', err)
           }
         }
         if (roomsWithSlots.length > 0) {
           venuesWithAvailableRooms.push({ ...v, rooms: roomsWithSlots })
         }
-      } catch {
-        // venue load error
-      }
+        } catch (err) {
+          console.error('Error al cargar salas de la sede', err)
+        }
     }
     venues.value = venuesWithAvailableRooms
   } catch { venues.value = [] }
@@ -316,7 +316,9 @@ async function pagar(metodo) {
       if (puedeVerContextoProfesor.value) {
         setModo('profesor')
       }
-    } catch {}
+    } catch (err) {
+      console.error('Error al sincronizar atributos tras reserva', err)
+    }
     // Redirigir segun estado:
     // 1) Con rol TEACHER y perfil incompleto → completar perfil profesional (notificación)
     // 2) Con rol TEACHER y perfil completo → clases por asignar

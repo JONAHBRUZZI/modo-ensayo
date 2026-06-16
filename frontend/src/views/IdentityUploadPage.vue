@@ -117,7 +117,9 @@ const minBirthDate = computed(() => {
 })
 
 onMounted(async () => {
-  try { verification.value = await userService.getIdentityVerification() } catch {}
+  try { verification.value = await userService.getIdentityVerification() } catch (err) {
+    console.error('Error al cargar verificación de identidad', err)
+  }
 })
 
 function handleFile(e) { file.value = e.target.files[0] }

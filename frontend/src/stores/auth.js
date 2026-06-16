@@ -178,8 +178,8 @@ export function useAuth() {
         method: 'POST',
         headers: { Authorization: `Bearer ${store.getToken()}` }
       })
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Error al cerrar sesión', err)
     }
     store.logout()
     window.location.href = '/login'
@@ -208,8 +208,8 @@ export function useAuth() {
           tieneAsignacionesActivas: res.data.tieneAsignacionesActivas
         })
       }
-    } catch {
-      // silencioso — no crítico
+    } catch (err) {
+      console.error('Error al sincronizar actividad de maestro', err)
     }
   }
 
@@ -257,7 +257,9 @@ export function useAuth() {
           localStorage.setItem('auth_user', JSON.stringify(user.value))
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error('Error al sincronizar atributos de usuario', err)
+    }
   }
 
   async function refreshProfile() {

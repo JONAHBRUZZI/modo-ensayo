@@ -219,7 +219,9 @@ onMounted(async () => {
   try {
     const profile = await api.get('/users/me/professional-profile')
     if (profile.data?.averageRating) averageRating.value = profile.data.averageRating
-  } catch {}
+  } catch (err) {
+    console.error('Error al cargar rating del profesor', err)
+  }
 })
 
 function formatDate(d) {

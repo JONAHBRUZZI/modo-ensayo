@@ -6,6 +6,7 @@ import com.modoensayo.users.repository.ProfessionalProfileRepository;
 import com.modoensayo.users.repository.UserRepository;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProfessionalProfileService {
@@ -60,8 +62,8 @@ public class ProfessionalProfileService {
         if (data.containsKey("experienceYears") && data.get("experienceYears") != null) {
             try {
                 profile.setExperienceYears(((Number) data.get("experienceYears")).intValue());
-            } catch (ClassCastException e) {
-                try { profile.setExperienceYears(Integer.parseInt(str(data.get("experienceYears")))); } catch (NumberFormatException ignored) {}
+            } catch (ClassCastException ex) {
+                try { profile.setExperienceYears(Integer.parseInt(str(data.get("experienceYears")))); } catch (NumberFormatException e) { log.warn("No se pudo parsear experienceYears como entero", e); }
             }
         }
         if (data.containsKey("instagram")) profile.setInstagram(str(data.get("instagram")));

@@ -306,7 +306,9 @@ onMounted(async () => {
   try {
     const res = await api.get('/users/me/stats')
     stats.value = res.data
-  } catch {}
+  } catch (err) {
+    console.error('Error al cargar estadísticas del alumno', err)
+  }
 })
 
 function irAMiSede() {

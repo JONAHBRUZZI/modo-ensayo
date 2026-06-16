@@ -271,7 +271,10 @@ onMounted(async () => {
       // Cargar documentos
       try {
         documentos.value = await venueService.getVenueDocuments(v.id)
-      } catch { documentos.value = [] }
+      } catch (err) {
+        console.error('Error al cargar documentos de la sede', err)
+        documentos.value = []
+      }
       // Cargar rating promedio de la sede
       try {
         const revRes = await api.get(`/reviews/target/VENUE/${v.id}`)
@@ -280,7 +283,9 @@ onMounted(async () => {
           const avg = reviews.reduce((s, r) => s + (r.score || 0), 0) / reviews.length
           venueRating.value = avg
         }
-      } catch {}
+      } catch (err) {
+        console.error('Error al cargar rating de la sede', err)
+      }
     }
   } catch {}
   loading.value = false
@@ -366,6 +371,8 @@ async function eliminarDocumento(docId) {
   try {
     await venueService.deleteVenueDocument(docId)
     documentos.value = documentos.value.filter(d => d.id !== docId)
-  } catch {}
+  } catch (err) {
+    console.error('Error al eliminar documento de la sede', err)
+  }
 }
 </script>

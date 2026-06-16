@@ -38,6 +38,8 @@ async function markAttendance(student) {
     await classService.markAttendance(route.params.classId, { userId: student.userId, present: student.present })
     success.value = 'Asistencia actualizada'
     setTimeout(() => success.value = '', 2000)
-  } catch {}
+  } catch (err) {
+    console.error('Error al actualizar asistencia', err)
+  }
 }
 </script>

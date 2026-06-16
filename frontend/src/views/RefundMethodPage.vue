@@ -37,13 +37,17 @@ async function addMethod() {
     await userService.createRefundMethod(form)
     Object.assign(form, { bank: '', accountType: 'CORRIENTE', accountNumber: '', accountHolder: '', rut: '' })
     methods.value = await userService.getRefundMethods()
-  } catch {} finally { adding.value = false }
+  } catch (err) {
+    console.error('Error al agregar método de devolución', err)
+  } finally { adding.value = false }
 }
 
 async function removeMethod(id) {
   try {
     await userService.deleteRefundMethod(id)
     methods.value = methods.value.filter(m => m.id !== id)
-  } catch {}
+  } catch (err) {
+    console.error('Error al eliminar método de devolución', err)
+  }
 }
 </script>

@@ -7,7 +7,6 @@ import com.modoensayo.payments.domain.Payment;
 import com.modoensayo.payments.enums.PaymentStatus;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.payments.repository.PaymentRepository;
-import com.modoensayo.reschedules.domain.Notification;
 import com.modoensayo.reschedules.domain.Reschedule;
 import com.modoensayo.reschedules.domain.RescheduleResponse;
 import com.modoensayo.reschedules.dto.*;

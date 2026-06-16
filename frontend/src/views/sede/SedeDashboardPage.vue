@@ -64,9 +64,13 @@ onMounted(async () => {
       try {
         const rooms = await venueService.getVenueRooms(v.id)
         totalSalas += Array.isArray(rooms) ? rooms.length : 0
-      } catch {}
+      } catch (err) {
+        console.error('Error al cargar salas de la sede', err)
+      }
     }
     stats.value.salas = totalSalas
-  } catch {}
+  } catch (err) {
+    console.error('Error al cargar estadísticas de la sede', err)
+  }
 })
 </script>

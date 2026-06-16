@@ -15,13 +15,39 @@
       :initial="{ opacity: 0, y: 12 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 380, delay: 80 } }"
       class="card mb-8 grid grid-cols-2 md:grid-cols-4 gap-3"
+      @keydown.enter="buscar"
     >
-      <select v-model="filtros.disciplina" class="input-field text-sm py-2">
-        <option value="">Todas las disciplinas</option>
-        <optgroup v-for="g in disciplineGroups" :key="g.category || 'otras'" :label="g.label">
-          <option v-for="item in g.items" :key="item" :value="item">{{ item }}</option>
-        </optgroup>
-      </select>
+      <!-- Buscador de disciplina -->
+      <div class="relative" ref="disciplineRef">
+        <input
+          v-model="disciplineSearch"
+          class="input-field text-sm py-2 w-full"
+          :placeholder="filtros.disciplina || 'Buscar disciplina...'"
+          autocomplete="off"
+          @focus="disciplineOpen = true"
+          @input="disciplineOpen = true"
+          @keydown.escape="disciplineOpen = false"
+        />
+        <div
+          v-if="disciplineOpen && filteredDisciplines.length > 0"
+          class="absolute z-20 top-full left-0 right-0 mt-1 bg-[#111420] border border-[#1e2130] rounded-lg max-h-56 overflow-y-auto shadow-xl"
+        >
+          <div
+            class="px-3 py-2 text-xs text-gray-500 hover:bg-[#1a1d2e] cursor-pointer"
+            @click="selectDiscipline('')"
+          >Todas las disciplinas</div>
+          <template v-for="g in filteredDisciplines" :key="g.category || 'otras'">
+            <div class="px-3 pt-2 pb-0.5 text-[10px] text-gray-600 uppercase tracking-wider">{{ g.label }}</div>
+            <div
+              v-for="item in g.items"
+              :key="item"
+              class="px-3 py-1.5 text-sm text-gray-300 hover:bg-[#1a1d2e] hover:text-white cursor-pointer"
+              @click="selectDiscipline(item)"
+            >{{ item }}</div>
+          </template>
+        </div>
+      </div>
+
       <select v-model="filtros.nivel" class="input-field text-sm py-2">
         <option value="">Todos los niveles</option>
         <option v-for="n in niveles" :key="n" :value="n">{{ n }}</option>
@@ -76,7 +102,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import classService from '@/services/classService'
@@ -88,8 +114,43 @@ const disciplineGroups = ref([])
 const niveles = ['BASICO', 'INTERMEDIO', 'AVANZADO']
 const filtros = reactive({ disciplina: '', nivel: '', comuna: '', precioMax: null, edadMin: null, edadMax: null })
 
+const disciplineSearch = ref('')
+const disciplineOpen = ref(false)
+const disciplineRef = ref(null)
+
+const filteredDisciplines = computed(() => {
+  const q = disciplineSearch.value.trim().toLowerCase()
+  if (!q) return disciplineGroups.value
+
+  return disciplineGroups.value
+    .map(g => {
+      const filtered = g.items.filter(item => item.toLowerCase().includes(q))
+      return filtered.length > 0 ? { ...g, items: filtered } : null
+    })
+    .filter(Boolean)
+})
+
+function selectDiscipline(name) {
+  filtros.disciplina = name
+  disciplineSearch.value = name
+  disciplineOpen.value = false
+  buscar()
+}
+
+function handleClickOutside(e) {
+  if (disciplineRef.value && !disciplineRef.value.contains(e.target)) {
+    disciplineOpen.value = false
+    disciplineSearch.value = filtros.disciplina
+  }
+}
+
 onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
   await Promise.all([buscar(), loadDisciplines()])
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 
 async function loadDisciplines() {

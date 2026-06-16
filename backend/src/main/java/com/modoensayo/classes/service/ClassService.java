@@ -102,10 +102,10 @@ public class ClassService {
                 predicates.add(cb.equal(cb.lower(venueJoin.get("city")), comuna.toLowerCase()));
             }
             if (edadMin != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("maxAge"), edadMin));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("maxAge"), edadMin));
             }
             if (edadMax != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("minAge"), edadMax));
+                predicates.add(cb.lessThanOrEqualTo(root.get("minAge"), edadMax));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

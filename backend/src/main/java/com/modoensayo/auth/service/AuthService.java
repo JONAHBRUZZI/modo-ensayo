@@ -6,6 +6,7 @@ import com.modoensayo.auth.dto.LoginRequest;
 import com.modoensayo.auth.dto.RegisterRequest;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ConflictException;
+import com.modoensayo.shared.exceptions.UnauthorizedException;
 import com.modoensayo.shared.security.JwtUtil;
 import com.modoensayo.users.domain.*;
 import com.modoensayo.users.repository.*;
@@ -66,14 +67,14 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest req) {
         User user = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new BusinessException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
         if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
-            throw new BusinessException("Invalid credentials");
+            throw new UnauthorizedException("Invalid credentials");
         }
 
         if (!user.isEnabled()) {
-            throw new BusinessException("Account is disabled");
+            throw new UnauthorizedException("Account is disabled");
         }
 
         return buildAuthResponse(user);

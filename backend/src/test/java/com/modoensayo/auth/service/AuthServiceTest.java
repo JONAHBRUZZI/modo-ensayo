@@ -4,6 +4,8 @@ import com.modoensayo.auth.dto.AuthResponse;
 import com.modoensayo.auth.dto.LoginRequest;
 import com.modoensayo.auth.dto.RegisterRequest;
 import com.modoensayo.shared.exceptions.BusinessException;
+import com.modoensayo.shared.exceptions.ConflictException;
+import com.modoensayo.shared.exceptions.UnauthorizedException;
 import com.modoensayo.shared.security.JwtUtil;
 import com.modoensayo.users.domain.Role;
 import com.modoensayo.users.domain.User;
@@ -89,7 +91,7 @@ class AuthServiceTest {
         RegisterRequest request = new RegisterRequest("Test", "taken@test.com", "Password1", null, null);
         when(userRepository.existsByEmail("taken@test.com")).thenReturn(true);
 
-        assertThrows(BusinessException.class, () -> authService.register(request));
+        assertThrows(ConflictException.class, () -> authService.register(request));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -117,14 +119,14 @@ class AuthServiceTest {
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong_password", "hashed_password")).thenReturn(false);
 
-        assertThrows(BusinessException.class, () -> authService.login(request));
+        assertThrows(UnauthorizedException.class, () -> authService.login(request));
     }
 
     @Test
     void login_shouldThrow_whenUserNotFound() {
-        LoginRequest request = new LoginRequest("nonexistent@test.com", "password");
-        when(userRepository.findByEmail("nonexistent@test.com")).thenReturn(Optional.empty());
+        LoginRequest request = new LoginRequest("missing@test.com", "password123");
+        when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
 
-        assertThrows(BusinessException.class, () -> authService.login(request));
+        assertThrows(UnauthorizedException.class, () -> authService.login(request));
     }
 }

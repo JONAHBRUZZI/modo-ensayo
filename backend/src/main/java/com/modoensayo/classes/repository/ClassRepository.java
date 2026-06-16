@@ -27,7 +27,7 @@ public interface ClassRepository extends JpaRepository<Class, UUID>, JpaSpecific
     @Query("SELECT c FROM Class c WHERE c.id = :id")
     Optional<Class> findWithLockById(@Param("id") UUID id);
 
-    List<Class> findByStatusAndEndTimeBefore(ClassStatus status, Instant endTime);
+    List<Class> findByStatusAndStartTimeBefore(ClassStatus status, Instant startTime);
 
     List<Class> findByStatusAndRoomVenueId(ClassStatus status, UUID venueId);
 

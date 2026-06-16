@@ -23,7 +23,7 @@ public class ClassCompletionProcessor {
     @Transactional
     public void completePastClasses() {
         Instant now = Instant.now();
-        List<Class> publishedPast = classRepository.findByStatusAndEndTimeBefore(ClassStatus.PUBLISHED, now);
+        List<Class> publishedPast = classRepository.findByStatusAndStartTimeBefore(ClassStatus.PUBLISHED, now);
         for (Class classEntity : publishedPast) {
             classEntity.setStatus(ClassStatus.POR_VALIDAR);
             classRepository.save(classEntity);

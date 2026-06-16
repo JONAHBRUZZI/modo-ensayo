@@ -4,6 +4,12 @@
     <!-- HERO -->
     <section class="hero">
       <div class="hero-glow" aria-hidden="true"></div>
+
+      <!-- Particle layer -->
+      <div class="hero-particles" aria-hidden="true">
+        <span v-for="n in 12" :key="n" class="particle" :style="{ left: particleX(n), animationDelay: (n * 0.4) + 's', animationDuration: (4 + (n % 3)) + 's' }" />
+      </div>
+
       <div class="hero-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div class="hero-grid">
@@ -17,7 +23,7 @@
               class="hero-eyebrow"
             >
               <span class="eyebrow-dot" aria-hidden="true"></span>
-              Plataforma de danza y música en Chile
+              Plataforma de danza y musica en Chile
             </div>
 
             <h1
@@ -26,7 +32,7 @@
               :enter="{ opacity: 1, y: 0, transition: { duration: 550, delay: 80 } }"
               class="hero-title"
             >
-              Tu <em>arte</em> encuentra<br>su espacio aquí
+              Tu <em>arte</em> encuentra<br>su espacio aqui
             </h1>
 
             <p
@@ -50,34 +56,29 @@
                 Explorar clases
               </router-link>
               <router-link to="/register" class="btn-hero-secondary">
-                Crear cuenta →
+                Crear cuenta &rarr;
               </router-link>
             </div>
 
-            <div
-              v-motion
-              :initial="{ opacity: 0 }"
-              :enter="{ opacity: 1, transition: { duration: 600, delay: 400 } }"
-              class="stats-row"
-            >
+            <div ref="statsRowRef" class="stats-row" :class="{ 'stats-row--visible': statsVisible }">
               <div class="stat-item">
-                <span class="stat-num">+120</span>
+                <span class="stat-num">+{{ displayClases }}</span>
                 <span class="stat-label">Clases activas</span>
               </div>
               <div class="stat-divider" aria-hidden="true"></div>
               <div class="stat-item">
-                <span class="stat-num">+40</span>
+                <span class="stat-num">+{{ displayMaestros }}</span>
                 <span class="stat-label">Maestros</span>
               </div>
               <div class="stat-divider" aria-hidden="true"></div>
               <div class="stat-item">
-                <span class="stat-num">+15</span>
+                <span class="stat-num">+{{ displaySedes }}</span>
                 <span class="stat-label">Sedes</span>
               </div>
             </div>
           </div>
 
-          <!-- Columna derecha: crossfade imágenes -->
+          <!-- Columna derecha: crossfade imagenes -->
           <div
             v-motion
             :initial="{ opacity: 0, scale: 0.96 }"
@@ -112,7 +113,7 @@
     <!-- FEATURES -->
     <section class="features-section">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <p class="section-eyebrow">¿Qué puedes hacer?</p>
+        <p class="section-eyebrow">&iquest;Que puedes hacer?</p>
         <div class="features-grid">
           <router-link
             v-for="(feat, i) in features"
@@ -134,8 +135,11 @@
     <!-- HOW IT WORKS -->
     <section class="steps-section">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <p class="section-eyebrow">¿Cómo funciona?</p>
-        <div class="steps-grid">
+        <p class="section-eyebrow">&iquest;Como funciona?</p>
+        <div ref="stepsGridRef" class="steps-grid" :class="{ 'steps-grid--visible': stepsLineVisible }">
+          <div class="steps-line-track" aria-hidden="true">
+            <div class="steps-line-fill" />
+          </div>
           <div
             v-for="(step, i) in steps"
             :key="step.title"
@@ -160,9 +164,9 @@
         :visible="{ opacity: 1, scale: 1, transition: { duration: 500 } }"
         class="cta-box max-w-2xl mx-auto px-4 text-center"
       >
-        <h2 class="cta-title">¿Listo para empezar?</h2>
-        <p class="cta-sub">Únete a la comunidad de artistas que ya confían en Modo Ensayo.</p>
-        <router-link to="/register" class="btn-hero-primary inline-flex">
+        <h2 class="cta-title">&iquest;Listo para empezar?</h2>
+        <p class="cta-sub">Unete a la comunidad de artistas que ya confian en Modo Ensayo.</p>
+        <router-link to="/register" class="btn-hero-primary inline-flex cta-pulse">
           Crear cuenta gratis
         </router-link>
       </div>
@@ -177,7 +181,7 @@ import { useAuth } from '@/stores/auth'
 import heroBailarines from '@/assets/hero-bailarines.png'
 import heroMusicos from '@/assets/hero-musicos.png'
 
-const { isAuthenticated, isSede } = useAuth()
+const { isAuthenticated } = useAuth()
 
 const heroImages = [heroBailarines, heroMusicos]
 const activeImg = ref(0)
@@ -198,6 +202,66 @@ function resetTimer() {
 onMounted(() => resetTimer())
 onUnmounted(() => clearInterval(timer))
 
+// Particle positions (pseudo-random but deterministic)
+function particleX(n) {
+  const seeds = [5, 12, 18, 25, 32, 40, 48, 55, 62, 70, 78, 88]
+  return seeds[n - 1] + '%'
+}
+
+// --- Count-up stats ---
+const displayClases = ref(0)
+const displayMaestros = ref(0)
+const displaySedes = ref(0)
+const statsVisible = ref(false)
+const statsRowRef = ref(null)
+let statsObserver = null
+
+function animateCount(refVar, target, duration = 1400) {
+  const start = performance.now()
+  function tick(now) {
+    const elapsed = now - start
+    const progress = Math.min(elapsed / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3)
+    refVar.value = Math.round(eased * target)
+    if (progress < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
+onMounted(() => {
+  statsObserver = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting && !statsVisible.value) {
+      statsVisible.value = true
+      animateCount(displayClases, 120)
+      animateCount(displayMaestros, 40)
+      animateCount(displaySedes, 15)
+    }
+  }, { threshold: 0.5 })
+  if (statsRowRef.value) statsObserver.observe(statsRowRef.value)
+})
+
+onUnmounted(() => {
+  if (statsObserver) statsObserver.disconnect()
+})
+
+// --- Steps connecting line animation ---
+const stepsLineVisible = ref(false)
+const stepsGridRef = ref(null)
+let stepsObserver = null
+
+onMounted(() => {
+  stepsObserver = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting && !stepsLineVisible.value) {
+      stepsLineVisible.value = true
+    }
+  }, { threshold: 0.3 })
+  if (stepsGridRef.value) stepsObserver.observe(stepsGridRef.value)
+})
+
+onUnmounted(() => {
+  if (stepsObserver) stepsObserver.disconnect()
+})
+
 const features = computed(() => [
   {
     title: 'Reserva salas',
@@ -208,32 +272,32 @@ const features = computed(() => [
   },
   {
     title: 'Toma clases',
-    desc: 'Accede a clases de danza y música con maestros calificados en diversas disciplinas.',
+    desc: 'Accede a clases de danza y musica con maestros calificados en diversas disciplinas.',
     iconClass: 'icon-green',
     icon: `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>`,
     to: '/classes',
   },
   {
     title: 'Gestiona tu sede',
-    desc: 'Administra salas, profesores y clases desde un solo lugar con métricas en tiempo real.',
+    desc: 'Administra salas, profesores y clases desde un solo lugar con metricas en tiempo real.',
     iconClass: 'icon-amber',
     icon: `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
-    to: isAuthenticated.value && isSede.value ? '/sede/dashboard' : '/quiero-gestionar-sede',
+    to: '/quiero-gestiónar-sede',
   },
 ])
 
 const steps = [
-  { title: 'Regístrate', desc: 'Crea tu cuenta gratis en segundos' },
+  { title: 'Registrate', desc: 'Crea tu cuenta gratis en segundos' },
   { title: 'Explora', desc: 'Busca clases y salas disponibles' },
   { title: 'Reserva', desc: 'Paga de forma segura y asegura tu cupo' },
-  { title: 'Disfruta', desc: 'Ensayar nunca fue tan fácil' },
+  { title: 'Disfruta', desc: 'Ensayar nunca fue tan facil' },
 ]
 </script>
 
 <style scoped>
 .home { background: #0f1119; }
 
-/* HERO */
+/* =============== HERO =============== */
 .hero {
   position: relative;
   overflow: hidden;
@@ -248,6 +312,23 @@ const steps = [
 }
 .hero-inner { position: relative; z-index: 1; }
 
+/* Particles */
+.hero-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.particle {
+  position: absolute;
+  bottom: -10px;
+  width: 4px; height: 4px;
+  background: #6C63FF33;
+  border-radius: 50%;
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  10%  { opacity: 0.7; }
+  90%  { opacity: 0.3; }
+  100% { transform: translateY(-500px) scale(0.4); opacity: 0; }
+}
+
 .hero-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -261,7 +342,6 @@ const steps = [
 
 .hero-text { display: flex; flex-direction: column; }
 
-/* Imagen crossfade */
 .hero-visual { position: relative; }
 .hero-img-wrap {
   position: relative;
@@ -281,7 +361,6 @@ const steps = [
 }
 .hero-img--active { opacity: 1; }
 
-/* Dots indicadores */
 .hero-dots {
   position: absolute;
   bottom: 14px; left: 50%; transform: translateX(-50%);
@@ -354,11 +433,14 @@ const steps = [
   border-top: 1px solid #1e2130;
 }
 .stat-item { display: flex; flex-direction: column; }
-.stat-num { font-size: 24px; font-weight: 700; color: white; }
+.stat-num {
+  font-size: 24px; font-weight: 700; color: white;
+  font-variant-numeric: tabular-nums;
+}
 .stat-label { font-size: 12px; color: #4B5563; margin-top: 2px; }
 .stat-divider { width: 1px; height: 28px; background: #1e2130; }
 
-/* FEATURES */
+/* =============== FEATURES =============== */
 .features-section {
   background: #0b0d14;
   padding: 3rem 0;
@@ -378,6 +460,7 @@ const steps = [
   padding: 1.5rem;
   position: relative; overflow: hidden;
   transition: border-color 0.2s, transform 0.2s;
+  text-decoration: none;
 }
 .feat-card::before {
   content: '';
@@ -390,7 +473,9 @@ const steps = [
   width: 42px; height: 42px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 1rem;
+  transition: transform 0.3s ease;
 }
+.feat-card:hover .feat-icon { transform: scale(1.1); }
 .icon-purple { background: #6C63FF1a; color: #8B83FF; }
 .icon-green  { background: #10b9811a; color: #34d399; }
 .icon-amber  { background: #f59e0b1a; color: #fbbf24; }
@@ -398,7 +483,7 @@ const steps = [
 .feat-title { color: white; font-size: 15px; font-weight: 600; margin-bottom: 6px; }
 .feat-desc  { color: #4B5563; font-size: 13px; line-height: 1.65; }
 
-/* HOW IT WORKS */
+/* =============== HOW IT WORKS =============== */
 .steps-section {
   background: #0f1119;
   padding: 3rem 0;
@@ -410,13 +495,22 @@ const steps = [
   gap: 2rem;
   position: relative;
 }
-.steps-grid::before {
-  content: '';
+
+/* Animated connecting line */
+.steps-line-track {
   position: absolute; top: 20px;
-  left: calc(12.5% + 8px); right: calc(12.5% + 8px);
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #6C63FF38, #6C63FF38, transparent);
+  left: calc(12.5%); right: calc(12.5%);
+  height: 1px; overflow: hidden;
+  pointer-events: none;
 }
+.steps-line-fill {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #6C63FF66, #6C63FF66, transparent);
+  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.steps-grid--visible .steps-line-fill { width: 100%; }
+
 .step-item { text-align: center; }
 .step-num {
   width: 40px; height: 40px;
@@ -431,7 +525,7 @@ const steps = [
 .step-title { color: white; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
 .step-desc  { color: #4B5563; font-size: 12px; }
 
-/* CTA FINAL */
+/* =============== CTA FINAL =============== */
 .cta-section {
   background: #0b0d14;
   border-top: 1px solid #13161f;
@@ -439,4 +533,13 @@ const steps = [
 }
 .cta-title { color: white; font-size: 28px; font-weight: 700; margin-bottom: 10px; }
 .cta-sub   { color: #6B7280; font-size: 15px; margin-bottom: 1.75rem; }
+
+/* Pulsing glow on CTA button */
+.cta-pulse {
+  animation: cta-glow 2.5s ease-in-out infinite;
+}
+@keyframes cta-glow {
+  0%, 100% { box-shadow: 0 0 0 0 #6C63FF44; }
+  50%      { box-shadow: 0 0 18px 4px #6C63FF33; }
+}
 </style>

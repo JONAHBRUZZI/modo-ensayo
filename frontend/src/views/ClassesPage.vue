@@ -20,13 +20,14 @@
       <!-- Buscador de disciplina -->
       <div class="relative" ref="disciplineRef">
         <input
-          v-model="disciplineSearch"
+          v-model="disciplineQuery"
           class="input-field text-sm py-2 w-full"
-          :placeholder="filtros.disciplina || 'Buscar disciplina...'"
+          placeholder="Buscar disciplina..."
           autocomplete="off"
           @focus="disciplineOpen = true"
           @input="disciplineOpen = true"
           @keydown.escape="disciplineOpen = false"
+          @keydown.enter.stop.prevent="onDisciplineEnter"
         />
         <div
           v-if="disciplineOpen && filteredDisciplines.length > 0"
@@ -102,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import classService from '@/services/classService'
@@ -114,12 +115,16 @@ const disciplineGroups = ref([])
 const niveles = ['BASICO', 'INTERMEDIO', 'AVANZADO']
 const filtros = reactive({ disciplina: '', nivel: '', comuna: '', precioMax: null, edadMin: null, edadMax: null })
 
-const disciplineSearch = ref('')
+const disciplineQuery = ref('')
 const disciplineOpen = ref(false)
 const disciplineRef = ref(null)
 
+watch(disciplineQuery, (val) => {
+  filtros.disciplina = val
+})
+
 const filteredDisciplines = computed(() => {
-  const q = disciplineSearch.value.trim().toLowerCase()
+  const q = disciplineQuery.value.trim().toLowerCase()
   if (!q) return disciplineGroups.value
 
   return disciplineGroups.value
@@ -131,10 +136,21 @@ const filteredDisciplines = computed(() => {
 })
 
 function selectDiscipline(name) {
+  disciplineQuery.value = name
   filtros.disciplina = name
-  disciplineSearch.value = name
   disciplineOpen.value = false
   buscar()
+}
+
+function onDisciplineEnter() {
+  disciplineOpen.value = false
+  buscar()
+}
+
+function handleClickOutside(e) {
+  if (disciplineRef.value && !disciplineRef.value.contains(e.target)) {
+    disciplineOpen.value = false
+  }
 }
 
 function handleClickOutside(e) {

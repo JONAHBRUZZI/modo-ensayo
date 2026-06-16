@@ -80,7 +80,7 @@ public class ClassService {
             predicates.add(cb.equal(root.get("status"), ClassStatus.PUBLISHED));
 
             if (disciplina != null && !disciplina.isBlank()) {
-                predicates.add(cb.equal(cb.lower(root.get("discipline")), disciplina.toLowerCase()));
+                predicates.add(cb.like(cb.lower(root.get("discipline")), "%" + disciplina.toLowerCase() + "%"));
             }
             if (nivel != null && !nivel.isBlank()) {
                 predicates.add(cb.equal(root.get("level"), NivelClase.valueOf(nivel)));

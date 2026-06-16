@@ -153,13 +153,6 @@ function handleClickOutside(e) {
   }
 }
 
-function handleClickOutside(e) {
-  if (disciplineRef.value && !disciplineRef.value.contains(e.target)) {
-    disciplineOpen.value = false
-    disciplineSearch.value = filtros.disciplina
-  }
-}
-
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   await Promise.all([buscar(), loadDisciplines()])

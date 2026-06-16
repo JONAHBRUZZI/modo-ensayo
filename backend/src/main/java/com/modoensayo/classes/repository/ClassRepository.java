@@ -16,6 +16,10 @@ import java.util.UUID;
 
 public interface ClassRepository extends JpaRepository<Class, UUID>, JpaSpecificationExecutor<Class> {
     List<Class> findByStatusOrderByStartTimeAsc(ClassStatus status);
+
+    @Query("SELECT DISTINCT c FROM Class c LEFT JOIN FETCH c.room r LEFT JOIN FETCH r.venue WHERE c.status = :status ORDER BY c.startTime")
+    List<Class> findPublishedWithRoomAndVenue(@Param("status") ClassStatus status);
+
     List<Class> findByTeacherId(UUID teacherId);
     List<Class> findByRoomVenueId(UUID venueId);
 

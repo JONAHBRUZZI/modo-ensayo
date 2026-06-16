@@ -62,8 +62,23 @@ public class ClassService {
     private final DisciplineCatalogRepository disciplineCatalogRepository;
 
     public List<ClassResponse> listPublished() {
-        return classRepository.findByStatusOrderByStartTimeAsc(ClassStatus.PUBLISHED).stream()
-                .map(this::toResponse).collect(Collectors.toList());
+        List<Class> classes = classRepository.findPublishedWithRoomAndVenue(ClassStatus.PUBLISHED);
+        Map<UUID, Long> enrollmentCounts = countEnrollmentsByClass(classes);
+        return classes.stream()
+                .map(c -> toResponse(c, enrollmentCounts))
+                .collect(Collectors.toList());
+    }
+
+    private Map<UUID, Long> countEnrollmentsByClass(List<Class> classes) {
+        List<UUID> ids = classes.stream().map(Class::getId).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, Long> counts = new HashMap<>();
+        for (Object[] row : enrollmentRepository.countByClassIdIn(ids)) {
+            counts.put((UUID) row[0], (Long) row[1]);
+        }
+        return counts;
     }
 
     public ClassResponse getById(UUID id) {
@@ -76,8 +91,12 @@ public class ClassService {
                                        String fechaHasta, Double precioMin, Double precioMax,
                                        String nivel, Integer edadMin, Integer edadMax) {
         Specification<Class> spec = (root, query, cb) -> {
+            query.distinct(true);
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), ClassStatus.PUBLISHED));
+
+            var roomJoin = root.join("room", JoinType.LEFT);
+            var venueJoin = roomJoin.join("venue", JoinType.LEFT);
 
             if (disciplina != null && !disciplina.isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("discipline")), "%" + disciplina.toLowerCase() + "%"));
@@ -98,7 +117,6 @@ public class ClassService {
                 predicates.add(cb.lessThanOrEqualTo(root.get("price"), precioMax));
             }
             if (comuna != null && !comuna.isBlank()) {
-                var venueJoin = root.join("room", JoinType.LEFT).join("venue", JoinType.LEFT);
                 predicates.add(cb.equal(cb.lower(venueJoin.get("city")), comuna.toLowerCase()));
             }
             if (edadMin != null) {
@@ -111,8 +129,11 @@ public class ClassService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        return classRepository.findAll(spec).stream()
-                .map(this::toResponse).collect(Collectors.toList());
+        List<Class> classes = classRepository.findAll(spec);
+        Map<UUID, Long> enrollmentCounts = countEnrollmentsByClass(classes);
+        return classes.stream()
+                .map(c -> toResponse(c, enrollmentCounts))
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -515,7 +536,11 @@ public class ClassService {
     }
 
     private ClassResponse toResponse(Class c) {
-        long enrolledCount = enrollmentRepository.countByClassId(c.getId());
+        return toResponse(c, Map.of());
+    }
+
+    private ClassResponse toResponse(Class c, Map<UUID, Long> enrollmentCounts) {
+        long enrolledCount = enrollmentCounts.getOrDefault(c.getId(), enrollmentRepository.countByClassId(c.getId()));
         return new ClassResponse(c.getId(), c.getTitle(),
                 c.getDiscipline(),
                 c.getDisciplineCategory(),

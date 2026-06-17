@@ -29,7 +29,7 @@
                 <router-link to="/profesor/clases-asignadas" class="nav-link">Asignadas</router-link>
                 <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
                 <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
-                <router-link to="/profesor/métricas" class="nav-link">Métricas</router-link>
+                <router-link to="/profesor/metricas" class="nav-link">Métricas</router-link>
                 <router-link to="/profesor/pagos" class="nav-link">Pagos</router-link>
               </template>
 
@@ -41,8 +41,8 @@
                 <router-link to="/sede/crear-clase" class="nav-link">Crear Clase</router-link>
                 <router-link to="/sede/clases-por-confirmar" class="nav-link">Confirmar</router-link>
                 <router-link to="/sede/profesores" class="nav-link">Profesores</router-link>
-                <router-link to="/sede/métricas" class="nav-link">Métricas</router-link>
-                <router-link to="/sede/configuración" class="nav-link">Config</router-link>
+                <router-link to="/sede/metricas" class="nav-link">Métricas</router-link>
+                <router-link to="/sede/configuracion" class="nav-link">Config</router-link>
               </template>
 
               <!-- Admin mode -->
@@ -115,7 +115,7 @@
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Perfil
                   </router-link>
-                  <router-link to="/notificaciónes" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
+                  <router-link to="/notificaciones" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                     Notificaciónes
                   </router-link>
@@ -170,14 +170,14 @@
               <router-link to="/profesor/clases-propias" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
               <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile" @click="showMobileMenu = false">Por Asignar</router-link>
               <router-link to="/profesor/buscar-salas" class="nav-link-mobile" @click="showMobileMenu = false">Agendar Sala</router-link>
-              <router-link to="/profesor/métricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+              <router-link to="/profesor/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
             </template>
             <template v-if="puedeVerContextoSede && modoActual === 'sede'">
               <router-link to="/sede/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Panel</router-link>
               <router-link to="/sede/salas" class="nav-link-mobile" @click="showMobileMenu = false">Salas</router-link>
               <router-link to="/sede/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Clases</router-link>
               <router-link to="/sede/clases-por-confirmar" class="nav-link-mobile" @click="showMobileMenu = false">Confirmar</router-link>
-              <router-link to="/sede/métricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+              <router-link to="/sede/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
             </template>
             <template v-if="isAdmin && modoActual === 'admin'">
               <router-link to="/admin" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
@@ -244,7 +244,7 @@
             <router-link to="/" class="text-gray-500 hover:text-gray-300 text-sm">Inicio</router-link>
             <router-link to="/classes" class="text-gray-500 hover:text-gray-300 text-sm">Clases</router-link>
             <router-link to="/quiero-ser-profesor" class="text-gray-500 hover:text-gray-300 text-sm">Ser Profesor</router-link>
-            <router-link to="/quiero-gestiónar-sede" class="text-gray-500 hover:text-gray-300 text-sm">Gestiónar Sede</router-link>
+            <router-link to="/quiero-gestionar-sede" class="text-gray-500 hover:text-gray-300 text-sm">Gestiónar Sede</router-link>
           </div>
         </div>
       </div>

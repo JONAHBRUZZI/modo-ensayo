@@ -48,7 +48,7 @@ const routes = [
         component: () => import('@/pages/acceso/QuieroSerProfesorPage.vue')
       },
       {
-        path: 'quiero-gestiónar-sede',
+        path: 'quiero-gestionar-sede',
         name: 'QuieroGestiónarSede',
         component: () => import('@/pages/acceso/QuieroGestionarSedePage.vue')
       },
@@ -83,7 +83,7 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
-        path: 'notificaciónes',
+        path: 'notificaciones',
         name: 'Notificaciónes',
         component: () => import('@/views/NotificacionesPage.vue'),
         meta: { requiresAuth: true }
@@ -158,7 +158,7 @@ const routes = [
         meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       {
-        path: 'profesor/métricas',
+        path: 'profesor/metricas',
         name: 'ProfesorMétricas',
         component: () => import('@/views/profesor/ProfesorMetricasPage.vue'),
         meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
@@ -262,13 +262,13 @@ const routes = [
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {
-        path: 'sede/métricas',
+        path: 'sede/metricas',
         name: 'SedeMétricas',
         component: () => import('@/views/sede/SedeMetricasPage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {
-        path: 'sede/configuración',
+        path: 'sede/configuracion',
         name: 'SedeConfiguración',
         component: () => import('@/views/sede/SedeConfiguracionPage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
@@ -312,6 +312,12 @@ const routes = [
       }
     ]
   },
+  // Redirects de rutas antiguas con tilde (se codifican mal al recargar) → ASCII
+  { path: '/sede/configuración', redirect: '/sede/configuracion' },
+  { path: '/sede/métricas', redirect: '/sede/metricas' },
+  { path: '/profesor/métricas', redirect: '/profesor/metricas' },
+  { path: '/notificaciónes', redirect: '/notificaciones' },
+  { path: '/quiero-gestiónar-sede', redirect: '/quiero-gestionar-sede' },
   // Redirects
   {
     path: '/associates',

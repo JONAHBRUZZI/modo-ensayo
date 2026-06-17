@@ -40,7 +40,7 @@
               class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
               Todo leído
             </button>
-            <router-link to="/notificaciónes" @click="showMenu = false"
+            <router-link to="/notificaciones" @click="showMenu = false"
               class="text-xs text-gray-500 hover:text-gray-300 transition-colors">
               Ver todo →
             </router-link>
@@ -88,7 +88,7 @@
 
         <!-- Pie -->
         <div class="border-t border-white/5 px-4 py-2.5">
-          <router-link to="/notificaciónes" @click="showMenu = false"
+          <router-link to="/notificaciones" @click="showMenu = false"
             class="flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-indigo-400 transition-colors">
             Ver todas las notificaciónes
           </router-link>

@@ -20,7 +20,7 @@
       <div>
         <p class="text-yellow-300 text-sm font-medium">Identidad no validada</p>
         <p class="text-gray-400 text-sm">Necesitas validar tu identidad para crear clases.</p>
-        <router-link to="/alumno/validación-identidad" class="text-primary text-sm underline mt-1 inline-block">Validar ahora</router-link>
+        <router-link to="/profile/identity" class="text-primary text-sm underline mt-1 inline-block">Validar ahora</router-link>
       </div>
     </div>
 

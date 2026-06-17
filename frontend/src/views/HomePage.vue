@@ -282,7 +282,7 @@ const features = computed(() => [
     desc: 'Administra salas, profesores y clases desde un solo lugar con metricas en tiempo real.',
     iconClass: 'icon-amber',
     icon: `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
-    to: '/quiero-gestiónar-sede',
+    to: '/quiero-gestionar-sede',
   },
 ])
 

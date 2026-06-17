@@ -140,7 +140,7 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Agendar Sala</h3>
         <p class="text-gray-400 text-sm mt-2">Reserva una sala en una sede para tu proxima clase.</p>
       </router-link>
-      <router-link to="/profesor/métricas" class="card hover:border-primary/50 transition-colors group">
+      <router-link to="/profesor/metricas" class="card hover:border-primary/50 transition-colors group">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Métricas</h3>
         <p class="text-gray-400 text-sm mt-2">Estadisticas de rendimiento y asistencia.</p>
       </router-link>

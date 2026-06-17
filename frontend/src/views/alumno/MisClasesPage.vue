@@ -33,13 +33,18 @@
             <div class="flex items-center gap-3 flex-shrink-0">
               <span class="text-primary font-semibold text-sm">${{ c.price?.toLocaleString('es-CL') }}</span>
               <EstadoBadge :status="c.enrollmentStatus === 'CANCELLED' ? 'CANCELLED' : c.status" />
-              <router-link
-                v-if="c.status === 'COMPLETED' && c.enrollmentStatus !== 'CANCELLED'"
-                to="/reviews"
-                class="text-xs bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 px-3 py-1 rounded-full hover:bg-yellow-400/20 transition-colors whitespace-nowrap"
-              >
-                Dejar reseña
-              </router-link>
+              <template v-if="c.status === 'COMPLETED' && c.enrollmentStatus !== 'CANCELLED'">
+                <router-link
+                  v-if="pendienteReseña(c.classId)"
+                  to="/reviews"
+                  class="text-xs bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 px-3 py-1 rounded-full hover:bg-yellow-400/20 transition-colors whitespace-nowrap"
+                >
+                  Dejar reseña
+                </router-link>
+                <span v-else class="text-xs bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1 rounded-full whitespace-nowrap">
+                  ★ Reseña realizada
+                </span>
+              </template>
             </div>
           </div>
         </div>
@@ -51,10 +56,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import paymentService from '@/services/paymentService'
+import { reviewService } from '@/services/reviewService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 
 const clases = ref([])
 const loading = ref(true)
+const clasesElegibles = ref(new Set())
 
 const clasesAgrupadas = computed(() => {
   const grupos = {}
@@ -73,13 +80,21 @@ onMounted(async () => {
 async function cargarClases() {
   loading.value = true
   try {
-    const data = await paymentService.getMyEnrollments()
+    const [data, eligible] = await Promise.all([
+      paymentService.getMyEnrollments(),
+      reviewService.getStudentEligible().then(r => r.data).catch(() => [])
+    ])
     clases.value = Array.isArray(data) ? data : []
+    clasesElegibles.value = new Set((Array.isArray(eligible) ? eligible : []).map(e => e.classId))
   } catch {
     clases.value = []
   } finally {
     loading.value = false
   }
+}
+
+function pendienteReseña(classId) {
+  return clasesElegibles.value.has(classId)
 }
 
 function formatDate(d) {

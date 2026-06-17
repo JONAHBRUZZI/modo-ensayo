@@ -115,26 +115,95 @@
 
     </div>
 
-    <!-- Valoraciones de Modo Ensayo (feedback de la plataforma) -->
-    <div class="flex items-center justify-between mb-4 mt-8">
-      <h2 class="text-lg font-semibold text-white">Valoraciones de Modo Ensayo</h2>
-      <span v-if="systemReviews.length" class="text-yellow-400 text-sm font-semibold">
-        ★ {{ promedioSistema.toFixed(1) }} <span class="text-gray-500 font-normal">({{ systemReviews.length }})</span>
-      </span>
+    <!-- ════ Feedback de la plataforma (Voz del usuario) ════ -->
+    <div class="flex items-center justify-between mb-1 mt-10">
+      <h2 class="text-lg font-semibold text-white">Voz del Usuario · Modo Ensayo</h2>
+      <span class="text-xs text-gray-500">Lo que opina la comunidad de la plataforma</span>
     </div>
-    <div v-if="systemReviews.length === 0" class="card text-center py-8">
+    <p class="text-gray-500 text-sm mb-4">Datos para confirmar la intuitividad y priorizar mejoras.</p>
+
+    <div v-if="(sysStats.total || 0) === 0" class="card text-center py-8">
       <p class="text-gray-400 text-sm">Aún no hay valoraciones de la plataforma.</p>
     </div>
-    <div v-else class="space-y-3">
-      <div v-for="r in systemReviews" :key="r.id" class="card">
-        <div class="flex items-start justify-between gap-3">
-          <h3 class="text-white font-medium">{{ r.authorName || 'Usuario' }}</h3>
-          <span class="text-yellow-400 text-sm flex-shrink-0">{{ estrellas(r.score) }}</span>
+
+    <template v-else>
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="card">
+          <h3 class="text-gray-400 text-xs uppercase tracking-wider mb-1">Satisfacción global</h3>
+          <p class="text-3xl font-bold text-yellow-400">★ {{ (sysStats.promedio || 0).toFixed(1) }}</p>
+          <p class="text-xs text-gray-500 mt-1">{{ sysStats.total }} valoraciones</p>
         </div>
-        <p v-if="r.comment" class="text-gray-400 text-sm mt-2">{{ r.comment }}</p>
-        <p class="text-gray-600 text-xs mt-2">{{ formatDate(r.createdAt) }}</p>
+        <div class="card">
+          <h3 class="text-gray-400 text-xs uppercase tracking-wider mb-1">% Satisfechos</h3>
+          <p class="text-3xl font-bold" :class="(sysStats.satisfaccion||0) >= 70 ? 'text-green-400' : 'text-yellow-400'">
+            {{ sysStats.satisfaccion || 0 }}%
+          </p>
+          <p class="text-xs text-gray-500 mt-1">califican 4★ o 5★</p>
+        </div>
+        <div class="card">
+          <h3 class="text-gray-400 text-xs uppercase tracking-wider mb-1">% Detractores</h3>
+          <p class="text-3xl font-bold" :class="(sysStats.detractores||0) <= 15 ? 'text-green-400' : 'text-red-400'">
+            {{ sysStats.detractores || 0 }}%
+          </p>
+          <p class="text-xs text-gray-500 mt-1">califican 1★ o 2★</p>
+        </div>
+        <div class="card">
+          <h3 class="text-gray-400 text-xs uppercase tracking-wider mb-1">Participación</h3>
+          <p class="text-3xl font-bold text-primary">{{ sysStats.participacion || 0 }}%</p>
+          <p class="text-xs text-gray-500 mt-1">{{ sysStats.total }} de {{ sysStats.totalUsuarios }} usuarios</p>
+        </div>
       </div>
-    </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Distribución por estrella -->
+        <div class="card">
+          <h3 class="text-white font-medium mb-4">Distribución de puntuaciones</h3>
+          <div class="space-y-2">
+            <div v-for="n in [5,4,3,2,1]" :key="n" class="flex items-center gap-3">
+              <span class="text-yellow-400 text-xs w-8 flex-shrink-0">{{ n }}★</span>
+              <div class="flex-1 bg-[#1a1d2e] rounded-full h-3 overflow-hidden">
+                <div class="h-full rounded-full transition-all"
+                     :class="n >= 4 ? 'bg-green-500' : n === 3 ? 'bg-yellow-500' : 'bg-red-500'"
+                     :style="{ width: barPct(n) + '%' }"></div>
+              </div>
+              <span class="text-gray-400 text-xs w-8 text-right flex-shrink-0">{{ distCount(n) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desglose por perfil -->
+        <div class="card">
+          <h3 class="text-white font-medium mb-1">¿Quién lo encuentra más intuitivo?</h3>
+          <p class="text-gray-500 text-xs mb-4">Promedio por tipo de usuario</p>
+          <div class="space-y-3">
+            <div v-for="(d, rol) in (sysStats.porRol || {})" :key="rol" class="flex items-center gap-3">
+              <span class="text-gray-300 text-sm w-20 flex-shrink-0">{{ rol }}</span>
+              <div class="flex-1 bg-[#1a1d2e] rounded-full h-3 overflow-hidden">
+                <div class="h-full rounded-full bg-primary transition-all" :style="{ width: ((d.promedio || 0) / 5 * 100) + '%' }"></div>
+              </div>
+              <span class="text-white text-sm w-16 text-right flex-shrink-0">
+                {{ d.total ? '★ ' + d.promedio.toFixed(1) : '—' }}
+              </span>
+            </div>
+          </div>
+          <p class="text-gray-600 text-xs mt-4">El perfil con menor promedio señala dónde enfocar mejoras de usabilidad.</p>
+        </div>
+      </div>
+
+      <!-- Comentarios (feedback cualitativo) -->
+      <h3 class="text-white font-medium mb-3">Comentarios recientes</h3>
+      <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
+        <div v-for="r in systemReviews" :key="r.id" class="card">
+          <div class="flex items-start justify-between gap-3">
+            <h4 class="text-white font-medium text-sm">{{ r.authorName || 'Usuario' }}</h4>
+            <span class="text-yellow-400 text-sm flex-shrink-0">{{ estrellas(r.score) }}</span>
+          </div>
+          <p v-if="r.comment" class="text-gray-400 text-sm mt-2">{{ r.comment }}</p>
+          <p class="text-gray-600 text-xs mt-2">{{ formatDate(r.createdAt) }}</p>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -152,13 +221,16 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 
 const stats = ref({})
 const systemReviews = ref([])
+const sysStats = ref({})
 
-const promedioSistema = computed(() => {
-  if (!systemReviews.value.length) return 0
-  return systemReviews.value.reduce((s, r) => s + (r.score || 0), 0) / systemReviews.value.length
-})
 const estrellas = (s) => { const n = Math.round(s || 0); return '★'.repeat(n) + '☆'.repeat(5 - n) }
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+const distCount = (n) => (sysStats.value.distribucion?.[n]) || 0
+const barPct = (n) => {
+  const dist = sysStats.value.distribucion || {}
+  const max = Math.max(1, ...Object.values(dist).map(Number))
+  return Math.round((distCount(n) / max) * 100)
+}
 
 const chartUsuariosRol = computed(() => ({
   labels: Object.keys(stats.value.usuariosPorRol || {}),
@@ -206,5 +278,6 @@ const lineOptions = { plugins: { legend: { display: false } }, scales: { x: { ti
 onMounted(async () => {
   try { stats.value = await adminService.getStats() } catch { stats.value = {} }
   try { systemReviews.value = (await reviewService.getSystemReviews()).data || [] } catch { systemReviews.value = [] }
+  try { sysStats.value = (await reviewService.getSystemStats()).data || {} } catch { sysStats.value = {} }
 })
 </script>

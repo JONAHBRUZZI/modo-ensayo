@@ -65,6 +65,13 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getSystemReviews());
     }
 
+    /** Analitica de las valoraciones del sistema. Solo Admin General. */
+    @GetMapping("/system/stats")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<java.util.Map<String, Object>> getSystemStats() {
+        return ResponseEntity.ok(reviewService.getSystemStats());
+    }
+
     @GetMapping("/eligible/student")
     public ResponseEntity<List<EligibleReviewItem>> getStudentEligible(
             @AuthenticationPrincipal CustomUserDetails user) {

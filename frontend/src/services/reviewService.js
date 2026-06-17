@@ -22,6 +22,9 @@ export const reviewService = {
   getSystemReviews() {
     return api.get('/reviews/system')
   },
+  getSystemStats() {
+    return api.get('/reviews/system/stats')
+  },
   create(payload) {
     return api.post('/reviews', payload)
   },

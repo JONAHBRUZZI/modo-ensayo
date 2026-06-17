@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -99,6 +100,71 @@ public class ReviewService {
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Analitica de las valoraciones del sistema, con valor para decisiones:
+     * promedio, % de satisfaccion, distribucion por estrella, participacion
+     * y desglose por tipo de usuario (que perfil lo encuentra mas intuitivo).
+     */
+    public Map<String, Object> getSystemStats() {
+        List<Review> reviews = reviewRepository.findByTargetTypeAndTargetId("SYSTEM", SYSTEM_TARGET_ID);
+        int total = reviews.size();
+
+        Map<String, Object> out = new java.util.LinkedHashMap<>();
+        double promedio = total == 0 ? 0
+                : reviews.stream().mapToInt(Review::getScore).average().orElse(0);
+        long satisfechos = reviews.stream().filter(r -> r.getScore() != null && r.getScore() >= 4).count();
+        long detractores = reviews.stream().filter(r -> r.getScore() != null && r.getScore() <= 2).count();
+
+        // Distribucion 1..5
+        Map<Integer, Long> distribucion = new java.util.TreeMap<>();
+        for (int i = 1; i <= 5; i++) distribucion.put(i, 0L);
+        reviews.forEach(r -> {
+            if (r.getScore() != null) distribucion.merge(r.getScore(), 1L, Long::sum);
+        });
+
+        // Desglose por perfil del autor
+        Map<String, long[]> acc = new java.util.LinkedHashMap<>(); // rol -> [count, suma]
+        acc.put("Alumno", new long[]{0, 0});
+        acc.put("Maestro", new long[]{0, 0});
+        acc.put("Sede", new long[]{0, 0});
+        for (Review r : reviews) {
+            String rol = rolPrincipal(r.getReviewerId());
+            long[] a = acc.get(rol);
+            if (a != null) { a[0]++; a[1] += (r.getScore() != null ? r.getScore() : 0); }
+        }
+        Map<String, Object> porRol = new java.util.LinkedHashMap<>();
+        acc.forEach((rol, a) -> {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("total", a[0]);
+            m.put("promedio", a[0] == 0 ? 0 : Math.round((double) a[1] / a[0] * 10.0) / 10.0);
+            porRol.put(rol, m);
+        });
+
+        long totalUsuarios = userRepository.count();
+
+        out.put("total", total);
+        out.put("promedio", Math.round(promedio * 10.0) / 10.0);
+        out.put("satisfaccion", total == 0 ? 0 : Math.round((double) satisfechos * 100 / total));
+        out.put("detractores", total == 0 ? 0 : Math.round((double) detractores * 100 / total));
+        out.put("distribucion", distribucion);
+        out.put("porRol", porRol);
+        out.put("participacion", totalUsuarios == 0 ? 0 : Math.round((double) total * 100 / totalUsuarios));
+        out.put("totalUsuarios", totalUsuarios);
+        return out;
+    }
+
+    /** Rol principal del usuario para el desglose (Sede > Maestro > Alumno). */
+    private String rolPrincipal(UUID userId) {
+        if (userId == null) return "Alumno";
+        return userRepository.findById(userId).map(u -> {
+            java.util.Set<String> roles = u.getUserRoles().stream()
+                    .map(ur -> ur.getRole().getName()).collect(Collectors.toSet());
+            if (roles.contains("VENUE_ADMIN")) return "Sede";
+            if (roles.contains("TEACHER")) return "Maestro";
+            return "Alumno";
+        }).orElse("Alumno");
     }
 
     /** La valoracion del sistema que dejo el usuario, si existe (para no pedirla dos veces). */

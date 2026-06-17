@@ -6,7 +6,7 @@
     class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
     <h1 class="text-3xl font-bold text-white mb-2">Reseñas</h1>
-    <p class="text-gray-400 text-sm mb-6">Opiniones y valoraciones según lo que te corresponde ver y evaluar.</p>
+    <p class="text-gray-400 text-sm mb-6">{{ subtituloContexto }}</p>
 
     <!-- Pestañas -->
     <div class="flex flex-wrap gap-2 mb-8 border-b border-white/10 pb-3">
@@ -26,9 +26,8 @@
     </div>
 
     <template v-else>
-      <!-- ══════════ PESTAÑA: CLASES ══════════ -->
+      <!-- ══════════ CLASES (alumno) ══════════ -->
       <div v-show="tab === 'CLASS'" class="space-y-10">
-        <!-- Pendientes -->
         <section>
           <h2 class="text-lg font-semibold text-white mb-1">Pendientes de evaluar</h2>
           <p class="text-gray-400 text-sm mb-4">Clases completadas que aún no has evaluado.</p>
@@ -78,7 +77,7 @@
                       :items="comunidadPorTipo('CLASS')" vacio="Todavía no hay reseñas de otros alumnos." :mostrarAutor="true" />
       </div>
 
-      <!-- ══════════ PESTAÑA: MAESTROS ══════════ -->
+      <!-- ══════════ MAESTROS ══════════ -->
       <div v-show="tab === 'TEACHER'" class="space-y-10">
         <ListaReseñas titulo="Mis reseñas a maestros" subtitulo="Lo que has opinado sobre profesores."
                       :items="misPorTipo('TEACHER')" vacio="Aún no has reseñado a ningún maestro." :mostrarAutor="false" />
@@ -86,7 +85,7 @@
                       :items="comunidadPorTipo('TEACHER')" vacio="Todavía no hay reseñas sobre maestros." :mostrarAutor="true" />
       </div>
 
-      <!-- ══════════ PESTAÑA: SEDES ══════════ -->
+      <!-- ══════════ SEDES ══════════ -->
       <div v-show="tab === 'VENUE'" class="space-y-10">
         <ListaReseñas titulo="Mis reseñas a sedes" subtitulo="Lo que has opinado sobre sedes y salas."
                       :items="misPorTipo('VENUE')" vacio="Aún no has reseñado ninguna sede." :mostrarAutor="false" />
@@ -94,10 +93,16 @@
                       :items="comunidadPorTipo('VENUE')" vacio="Todavía no hay reseñas sobre sedes." :mostrarAutor="true" />
       </div>
 
-      <!-- ══════════ PESTAÑA: ALUMNOS (solo maestro/sede) ══════════ -->
+      <!-- ══════════ MIS ALUMNOS (maestro / sede) ══════════ -->
       <div v-show="tab === 'STUDENT'" class="space-y-10">
         <ListaReseñas titulo="Mis reseñas a alumnos" subtitulo="Valoraciones que has dejado sobre tus alumnos. Solo tú las ves."
                       :items="misPorTipo('STUDENT')" vacio="Aún no has reseñado a ningún alumno." :mostrarAutor="false" />
+      </div>
+
+      <!-- ══════════ MI COMPORTAMIENTO / MI REPUTACIÓN (sobre mí) ══════════ -->
+      <div v-show="tab === 'ABOUT_ME'" class="space-y-10">
+        <ListaReseñas :titulo="tituloSobreMi" :subtitulo="subtituloSobreMi"
+                      :items="sobreMiFiltrado" :vacio="vacioSobreMi" :mostrarAutor="true" />
       </div>
     </template>
   </div>
@@ -109,46 +114,94 @@ import api from '@/services/api'
 import { reviewService } from '@/services/reviewService'
 import { useAuth } from '@/stores/auth'
 
-const { user, hasRoleTeacher, puedeVerContextoSede } = useAuth()
+const { modoActual } = useAuth()
 
 const tab = ref('CLASS')
 const elegibles = ref([])
 const mias = ref([])
 const comunidad = ref([])
+const sobreMi = ref([])
 const loading = ref(true)
 const formActivo = ref(null)
 const formData = reactive({})
 const enviando = reactive({})
 const errores = reactive({})
 
-// La pestaña Alumnos solo es visible para maestros o administradores de sede.
-const puedeVerAlumnos = computed(() => hasRoleTeacher.value || puedeVerContextoSede.value)
+const contexto = computed(() => modoActual.value || 'alumno')
 
+const subtituloContexto = computed(() => {
+  if (contexto.value === 'profesor') return 'Tu reputación como maestro y las valoraciones que tú das.'
+  if (contexto.value === 'sede') return 'La reputación de tu sede y las valoraciones que tú das.'
+  return 'Opiniones y valoraciones según lo que te corresponde ver y evaluar.'
+})
+
+// Pestañas segun el contexto activo
 const tabsVisibles = computed(() => {
-  const base = [
+  if (contexto.value === 'profesor') {
+    return [
+      { value: 'ABOUT_ME', label: 'Mi Reputación' },
+      { value: 'VENUE', label: 'Sedes' },
+      { value: 'STUDENT', label: 'Mis Alumnos' },
+    ]
+  }
+  if (contexto.value === 'sede') {
+    return [
+      { value: 'ABOUT_ME', label: 'Mi Reputación' },
+      { value: 'TEACHER', label: 'Maestros' },
+      { value: 'STUDENT', label: 'Mis Alumnos' },
+    ]
+  }
+  // alumno
+  return [
     { value: 'CLASS', label: 'Clases' },
     { value: 'TEACHER', label: 'Maestros' },
     { value: 'VENUE', label: 'Sedes' },
+    { value: 'ABOUT_ME', label: 'Mi Comportamiento' },
   ]
-  if (puedeVerAlumnos.value) base.push({ value: 'STUDENT', label: 'Alumnos' })
-  return base
+})
+
+// "Sobre mí" muestra el tipo que corresponde al contexto
+const tipoSobreMi = computed(() => {
+  if (contexto.value === 'profesor') return 'TEACHER'
+  if (contexto.value === 'sede') return 'VENUE'
+  return 'STUDENT'
+})
+const sobreMiFiltrado = computed(() => sobreMi.value.filter(r => r.targetType === tipoSobreMi.value))
+const tituloSobreMi = computed(() => {
+  if (contexto.value === 'profesor') return 'Reseñas sobre mí como maestro'
+  if (contexto.value === 'sede') return 'Reseñas sobre mi sede'
+  return 'Mi comportamiento como alumno'
+})
+const subtituloSobreMi = computed(() => {
+  if (contexto.value === 'profesor') return 'Lo que alumnos y sedes han opinado de ti.'
+  if (contexto.value === 'sede') return 'Lo que maestros y alumnos han opinado de tu sede.'
+  return 'Valoraciones que tus maestros y sedes han dejado sobre ti.'
+})
+const vacioSobreMi = computed(() => {
+  if (contexto.value === 'profesor') return 'Todavía no tienes reseñas como maestro.'
+  if (contexto.value === 'sede') return 'Todavía no hay reseñas sobre tu sede.'
+  return 'Todavía nadie ha valorado tu comportamiento como alumno.'
 })
 
 const misPorTipo = (tipo) => mias.value.filter(r => r.targetType === tipo)
 const comunidadPorTipo = (tipo) => comunidad.value.filter(r => r.targetType === tipo)
 
 async function cargar() {
-  const [elig, m, c] = await Promise.all([
+  const [elig, m, c, sm] = await Promise.all([
     reviewService.getStudentEligible().then(r => r.data).catch(() => []),
     reviewService.getMine().then(r => r.data).catch(() => []),
-    reviewService.getRecent().then(r => r.data).catch(() => [])
+    reviewService.getRecent().then(r => r.data).catch(() => []),
+    reviewService.getAboutMe().then(r => r.data).catch(() => [])
   ])
   elegibles.value = Array.isArray(elig) ? elig : []
   mias.value = Array.isArray(m) ? m : []
   comunidad.value = Array.isArray(c) ? c : []
+  sobreMi.value = Array.isArray(sm) ? sm : []
 }
 
 onMounted(async () => {
+  // La pestaña inicial es la primera visible del contexto
+  tab.value = tabsVisibles.value[0]?.value || 'CLASS'
   try { await cargar() } finally { loading.value = false }
 })
 
@@ -185,7 +238,7 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-// Componente de lista de reseñas reutilizable (render inline)
+// Lista de reseñas reutilizable
 const ListaReseñas = {
   props: { titulo: String, subtitulo: String, items: Array, vacio: String, mostrarAutor: Boolean },
   setup(props) {

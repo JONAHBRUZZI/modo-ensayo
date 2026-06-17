@@ -107,6 +107,21 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Reseñas que OTROS han hecho SOBRE el usuario: como alumno (STUDENT),
+     * como maestro (TEACHER) y sobre sus sedes (VENUE). Es solo lectura.
+     */
+    public List<ReviewResponse> getAboutMe(UUID userId) {
+        List<Review> result = new java.util.ArrayList<>(reviewRepository.findByTargetId(userId));
+        venueRepository.findByAdminId(userId).forEach(v ->
+                result.addAll(reviewRepository.findByTargetTypeAndTargetId("VENUE", v.getId())));
+        return result.stream()
+                .distinct()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<ReviewResponse> getByTarget(String type, UUID targetId) {
         return reviewRepository.findByTargetTypeAndTargetId(type, targetId).stream()
                 .map(this::toResponse).collect(Collectors.toList());

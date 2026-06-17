@@ -41,6 +41,11 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getRecentFromOthers(user.getUserId()));
     }
 
+    @GetMapping("/about-me")
+    public ResponseEntity<List<ReviewResponse>> getAboutMe(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(reviewService.getAboutMe(user.getUserId()));
+    }
+
     @GetMapping("/eligible/student")
     public ResponseEntity<List<EligibleReviewItem>> getStudentEligible(
             @AuthenticationPrincipal CustomUserDetails user) {

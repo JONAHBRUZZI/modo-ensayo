@@ -10,6 +10,9 @@ export const reviewService = {
   getRecent() {
     return api.get('/reviews/recent')
   },
+  getAboutMe() {
+    return api.get('/reviews/about-me')
+  },
   getTeacherEligible() {
     return api.get('/reviews/eligible/teacher')
   },

@@ -31,6 +31,7 @@
                 <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
                 <router-link to="/profesor/metricas" class="nav-link">Métricas</router-link>
                 <router-link to="/profesor/pagos" class="nav-link">Pagos</router-link>
+                <router-link to="/reviews" class="nav-link">Reseñas</router-link>
               </template>
 
               <!-- Sede mode -->
@@ -43,6 +44,7 @@
                 <router-link to="/sede/profesores" class="nav-link">Profesores</router-link>
                 <router-link to="/sede/metricas" class="nav-link">Métricas</router-link>
                 <router-link to="/sede/configuracion" class="nav-link">Config</router-link>
+                <router-link to="/reviews" class="nav-link">Reseñas</router-link>
               </template>
 
               <!-- Admin mode -->
@@ -171,6 +173,7 @@
               <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile" @click="showMobileMenu = false">Por Asignar</router-link>
               <router-link to="/profesor/buscar-salas" class="nav-link-mobile" @click="showMobileMenu = false">Agendar Sala</router-link>
               <router-link to="/profesor/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+              <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
             </template>
             <template v-if="puedeVerContextoSede && modoActual === 'sede'">
               <router-link to="/sede/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Panel</router-link>
@@ -178,6 +181,7 @@
               <router-link to="/sede/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Clases</router-link>
               <router-link to="/sede/clases-por-confirmar" class="nav-link-mobile" @click="showMobileMenu = false">Confirmar</router-link>
               <router-link to="/sede/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+              <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
             </template>
             <template v-if="isAdmin && modoActual === 'admin'">
               <router-link to="/admin" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>

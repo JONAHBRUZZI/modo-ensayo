@@ -5,15 +5,28 @@
     :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
-    <h1 class="text-3xl font-bold text-white mb-8">Gestión de Usuarios</h1>
+    <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+      <h1 class="text-3xl font-bold text-white">Gestión de Usuarios</h1>
+      <div class="relative w-full sm:w-80">
+        <svg class="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input v-model="busqueda" type="text" placeholder="Buscar por email o nombre..."
+               class="w-full bg-[#1a1d2e] border border-white/10 rounded-lg text-sm text-gray-200 pl-9 pr-3 py-2 focus:outline-none focus:border-primary/50" />
+      </div>
+    </div>
 
     <div v-if="loading" class="text-center text-gray-500 py-20">
       <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
       <p class="text-sm">Cargando...</p>
     </div>
 
+    <div v-else-if="usuariosFiltrados.length === 0" class="card text-center py-12">
+      <p class="text-gray-400">No se encontraron usuarios para "{{ busqueda }}".</p>
+    </div>
+
     <div v-else class="space-y-4">
-      <div v-for="u in users" :key="u.id" class="card flex items-center justify-between flex-wrap gap-3">
+      <div v-for="u in usuariosFiltrados" :key="u.id" class="card flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center space-x-4 min-w-0">
           <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold flex-shrink-0">
             {{ (u.fullName || u.email || 'U').charAt(0).toUpperCase() }}
@@ -142,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { useToast } from '@/composables/useToast'
@@ -150,6 +163,17 @@ import { useToast } from '@/composables/useToast'
 const toast = useToast()
 const users = ref([])
 const loading = ref(true)
+
+// Busqueda por email o nombre (HU22)
+const busqueda = ref('')
+const usuariosFiltrados = computed(() => {
+  const q = busqueda.value.trim().toLowerCase()
+  if (!q) return users.value
+  return users.value.filter(u =>
+    (u.email || '').toLowerCase().includes(q) ||
+    (u.fullName || '').toLowerCase().includes(q)
+  )
+})
 
 // Estado del modal de eliminacion
 const usuarioAEliminar = ref(null)

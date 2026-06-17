@@ -8,6 +8,7 @@ import com.modoensayo.reviews.dto.CreateReviewRequest;
 import com.modoensayo.reviews.dto.EligibleReviewItem;
 import com.modoensayo.reviews.dto.ReviewResponse;
 import com.modoensayo.reviews.repository.ReviewRepository;
+import com.modoensayo.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final ClassRepository classRepository;
+    private final UserRepository userRepository;
 
     public ReviewResponse create(UUID reviewerId, CreateReviewRequest req) {
         Review r = Review.builder()
@@ -40,6 +42,24 @@ public class ReviewService {
     public List<ReviewResponse> getByUser(UUID userId) {
         return reviewRepository.findByReviewerId(userId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
+    }
+
+    /** Reseñas de clase que el usuario ha escrito, de la mas reciente a la mas antigua. */
+    public List<ReviewResponse> getMine(UUID userId) {
+        return reviewRepository.findByReviewerId(userId).stream()
+                .filter(r -> r.getClassId() != null && "CLASS".equals(r.getTargetType()))
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /** Reseñas de clase recientes de OTROS usuarios, como recomendaciones de la comunidad. */
+    public List<ReviewResponse> getRecentFromOthers(UUID userId) {
+        return reviewRepository.findTop30ByOrderByCreatedAtDesc().stream()
+                .filter(r -> r.getReviewerId() != null && !r.getReviewerId().equals(userId))
+                .filter(r -> r.getClassId() != null && "CLASS".equals(r.getTargetType()))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     public List<ReviewResponse> getByTarget(String type, UUID targetId) {
@@ -79,7 +99,13 @@ public class ReviewService {
     }
 
     private ReviewResponse toResponse(Review r) {
-        return new ReviewResponse(r.getId(), r.getClassId(), r.getReviewerId(), "Usuario",
+        String classTitle = r.getClassId() == null ? "Clase"
+                : classRepository.findById(r.getClassId()).map(c -> c.getTitle()).orElse("Clase");
+        String authorName = r.getReviewerId() == null ? "Usuario"
+                : userRepository.findById(r.getReviewerId())
+                    .map(u -> u.getFullName() != null && !u.getFullName().isBlank() ? u.getFullName() : "Usuario")
+                    .orElse("Usuario");
+        return new ReviewResponse(r.getId(), r.getClassId(), classTitle, r.getReviewerId(), authorName,
                 r.getTargetType(), r.getTargetId(), r.getScore(), r.getComment(), r.getCreatedAt());
     }
 }

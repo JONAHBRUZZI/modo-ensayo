@@ -31,6 +31,16 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getByClass(classId));
     }
 
+    @GetMapping("/mine")
+    public ResponseEntity<List<ReviewResponse>> getMine(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(reviewService.getMine(user.getUserId()));
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<ReviewResponse>> getRecentFromOthers(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(reviewService.getRecentFromOthers(user.getUserId()));
+    }
+
     @GetMapping("/eligible/student")
     public ResponseEntity<List<EligibleReviewItem>> getStudentEligible(
             @AuthenticationPrincipal CustomUserDetails user) {

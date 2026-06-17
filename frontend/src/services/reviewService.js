@@ -4,6 +4,12 @@ export const reviewService = {
   getStudentEligible() {
     return api.get('/reviews/eligible/student')
   },
+  getMine() {
+    return api.get('/reviews/mine')
+  },
+  getRecent() {
+    return api.get('/reviews/recent')
+  },
   getTeacherEligible() {
     return api.get('/reviews/eligible/teacher')
   },

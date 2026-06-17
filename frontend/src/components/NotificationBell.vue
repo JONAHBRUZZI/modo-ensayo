@@ -102,7 +102,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useNotifications } from '../hooks/useNotifications'
 
-const { notifs, unreadCount, iconConfig, markRead, markAllRead, formatTime } = useNotifications()
+const { notifs, unreadCount, iconConfig, markRead, markAllRead, formatTime, startPolling, stopPolling } = useNotifications()
 
 const showMenu = ref(false)
 const bellRef = ref(null)
@@ -115,6 +115,12 @@ const handleClickOutside = (e) => {
   }
 }
 
-onMounted(() => document.addEventListener('mousedown', handleClickOutside))
-onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
+onMounted(() => {
+  startPolling()
+  document.addEventListener('mousedown', handleClickOutside)
+})
+onUnmounted(() => {
+  stopPolling()
+  document.removeEventListener('mousedown', handleClickOutside)
+})
 </script>

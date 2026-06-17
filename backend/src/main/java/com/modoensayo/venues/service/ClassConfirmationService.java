@@ -218,11 +218,11 @@ public class ClassConfirmationService {
     }
 
     private void notifyTeacher(UUID teacherId, String message) {
-        notificationService.enviar(teacherId, null, null, message);
+        notificationService.enviar(teacherId, "clase", "Actualización de clase", message);
     }
 
     private void notifyUser(UUID userId, String message) {
-        notificationService.enviar(userId, null, null, message);
+        notificationService.enviar(userId, "clase", "Actualización de clase", message);
     }
 
     public record ClassSummaryDto(

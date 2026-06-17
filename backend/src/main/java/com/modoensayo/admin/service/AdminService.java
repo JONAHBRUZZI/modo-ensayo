@@ -169,10 +169,10 @@ public class AdminService {
         }
 
         if (aprobado) {
-            notificationService.enviar(iv.getUserId(), null, null,
+            notificationService.enviar(iv.getUserId(), "sistema", "Identidad validada",
                     "Tu identidad ha sido VALIDADA. Ahora puedes registrar una sede o reservar salas para crear clases.");
         } else {
-            notificationService.enviar(iv.getUserId(), null, null,
+            notificationService.enviar(iv.getUserId(), "sistema", "Identidad rechazada",
                     "Tu solicitud de validacion de identidad ha sido RECHAZADA. Revisa tu documento y vuelve a intentarlo.");
         }
 
@@ -297,7 +297,8 @@ public class AdminService {
                             + (motivo != null && !motivo.isBlank() ? motivo : "No especificado")
                             + ". Tus salas no pueden recibir nuevas reservas. Contacta al administrador para mas detalles."
                     : "Tu sede '" + v.getName() + "' ha sido REACTIVADA. Ya puedes recibir nuevas reservas.";
-            notificationService.enviar(v.getAdminId(), null, null, mensaje);
+            String tituloToggle = suspendiendo ? "Sede suspendida" : "Sede reactivada";
+            notificationService.enviar(v.getAdminId(), "sistema", tituloToggle, mensaje);
         }
 
         return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
@@ -315,7 +316,7 @@ public class AdminService {
         v = venueRepository.save(v);
 
         if (v.getAdminId() != null) {
-            notificationService.enviar(v.getAdminId(), null, null,
+            notificationService.enviar(v.getAdminId(), "sistema", "Sede rechazada",
                     "Tu sede '" + v.getName() + "' ha sido RECHAZADA. Motivo: " + (reason != null ? reason : "No especificado") + ". Corrige los datos y reenvia.");
         }
 
@@ -375,10 +376,11 @@ public class AdminService {
         user.setEnabled(!suspendiendo);
         userRepository.save(user);
 
+        String msgTitulo = user.isEnabled() ? "Cuenta reactivada" : "Cuenta suspendida";
         String msg = user.isEnabled()
                 ? "Tu cuenta ha sido REACTIVADA."
                 : "Tu cuenta ha sido SUSPENDIDA. Motivo: " + (motivo != null ? motivo : "No especificado") + ". Contacta al administrador.";
-        notificationService.enviar(userId, null, null, msg);
+        notificationService.enviar(userId, "sistema", msgTitulo, msg);
     }
 
     /**

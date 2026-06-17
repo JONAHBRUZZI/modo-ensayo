@@ -63,7 +63,8 @@ public class IdentityVerificationService {
                 ? "Tu verificacion de identidad fue aprobada. Ya puedes continuar con tu cuenta."
                 : "Tu verificacion de identidad fue rechazada. Sube nuevamente tu documento para reintentar.";
 
-        notificationService.enviar(saved.getUserId(), null, null, message);
+        String titleIV = "APPROVED".equals(action) ? "Identidad validada" : "Identidad rechazada";
+        notificationService.enviar(saved.getUserId(), "sistema", titleIV, message);
 
         return toResponse(saved);
     }

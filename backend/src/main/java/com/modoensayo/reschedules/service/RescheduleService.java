@@ -137,7 +137,7 @@ public class RescheduleService {
                             .respondedAt(null)
                             .build());
                 }
-                notificationService.enviar(e.getBeneficiaryId(), null, null,
+                notificationService.enviar(e.getBeneficiaryId(), "reschedule", "Reagendamiento propuesto",
                         "El profesor acepto el reagendamiento para el " + r.getProposedTime() + ". Tienes 48h para confirmar o rechazar.");
             }
 
@@ -264,7 +264,8 @@ public class RescheduleService {
             }
         }
 
-        notificationService.enviar(studentId, null, null,
+        notificationService.enviar(studentId, "reschedule",
+                accepted ? "Reagendamiento aceptado" : "Reagendamiento rechazado",
                 accepted ? "Has aceptado el reagendamiento. Tu inscripcion sigue activa." : "Has rechazado el reagendamiento. Se procesara tu devolucion.");
 
         long pending = rescheduleResponseRepository.findByRescheduleIdAndResponseTypeIsNull(rescheduleId).size();

@@ -75,21 +75,36 @@
         </button>
       </form>
 
-      <!-- Sede aprobada: datos estructurales solo lectura -->
-      <div v-else class="card">
-        <div class="flex items-start gap-3 mb-4">
-          <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
+      <!-- Sede aprobada: datos verificados -->
+      <div v-else class="card space-y-5">
+        <!-- Banner verificado -->
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/25">
+          <div class="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
           <div>
-            <p class="text-green-400 font-medium">Sede verificada y aprobada</p>
-            <p class="text-gray-500 text-sm">Los datos estructurales (nombre, direccion) no pueden modificarse. Contacta al Administrador General si necesitas cambios.</p>
+            <p class="text-green-400 font-semibold text-sm">Sede verificada y aprobada por el Administrador General</p>
+            <p class="text-gray-500 text-xs mt-0.5">Los datos registrados fueron revisados y validados. Si necesitas modificar datos estructurales, contacta al Administrador General.</p>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div><span class="text-gray-500">Descripción:</span> <span class="text-gray-300">{{ venue.description || '—' }}</span></div>
-          <div><span class="text-gray-500">Teléfono:</span> <span class="text-gray-300">{{ venue.phone || '—' }}</span></div>
-          <div><span class="text-gray-500">Email:</span> <span class="text-gray-300">{{ venue.email || '—' }}</span></div>
+
+        <!-- Datos verificados -->
+        <div>
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Datos registrados y verificados</h4>
+          <div class="space-y-2">
+            <div v-for="campo in camposVerificados" :key="campo.label"
+                 class="flex items-start justify-between py-2 border-b border-white/5 last:border-0">
+              <span class="text-gray-500 text-sm w-32 flex-shrink-0">{{ campo.label }}</span>
+              <div class="flex items-center gap-2 flex-1 justify-end">
+                <span class="text-gray-200 text-sm text-right">{{ campo.valor }}</span>
+                <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -214,7 +229,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import venueService from '@/services/venueService'
 import api from '@/services/api'
 import EstadoBadge from '@/components/EstadoBadge.vue'
@@ -226,6 +241,18 @@ const addressInput = ref(null)
 const venue = ref(null)
 const loading = ref(true)
 const venueRating = ref(null)
+
+const camposVerificados = computed(() => {
+  if (!venue.value) return []
+  return [
+    { label: 'Nombre', valor: venue.value.name },
+    { label: 'Tipo', valor: venue.value.tipo === 'HOME_STUDIO' ? 'Home Studio' : 'Sede' },
+    { label: 'Ciudad', valor: venue.value.city },
+    { label: 'Dirección', valor: venue.value.address },
+    { label: 'Teléfono', valor: venue.value.phone || '—' },
+    { label: 'Email', valor: venue.value.email || '—' },
+  ].filter(c => c.valor)
+})
 
 // Formulario datos estructurales
 const formDatos = reactive({ name: '', city: '', address: '', description: '', phone: '', email: '' })

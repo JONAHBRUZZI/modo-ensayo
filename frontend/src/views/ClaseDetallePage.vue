@@ -109,10 +109,10 @@ const promedioReviews = computed(() => {
 
 onMounted(async () => {
   try {
-    clase.value = await classService.getClass(route.params.id)
+    clase.value = await classService.getClassById(route.params.claseId)
     const [assoc, rev] = await Promise.all([
       userService.getAssociates?.().catch(() => []),
-      reviewService.getByClass(route.params.id).then(r => r.data).catch(() => [])
+      reviewService.getByClass(route.params.claseId).then(r => r.data).catch(() => [])
     ])
     beneficiaries.value = Array.isArray(assoc) ? assoc : []
     reviews.value = Array.isArray(rev) ? rev : []

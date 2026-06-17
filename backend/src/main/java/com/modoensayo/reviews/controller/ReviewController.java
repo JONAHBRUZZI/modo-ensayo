@@ -46,6 +46,25 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getAboutMe(user.getUserId()));
     }
 
+    /** Objetivos que el usuario puede valorar ahora (maestros, sedes, alumnos segun su relacion). */
+    @GetMapping("/eligible/targets")
+    public ResponseEntity<List<EligibleReviewItem>> getEligibleTargets(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(reviewService.getEligibleTargets(user.getUserId()));
+    }
+
+    /** Mi valoracion del sistema Modo Ensayo (null si aun no la dejo). */
+    @GetMapping("/system/mine")
+    public ResponseEntity<ReviewResponse> miValoracionSistema(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(reviewService.miValoracionSistema(user.getUserId()));
+    }
+
+    /** Todas las valoraciones del sistema. Solo Admin General. */
+    @GetMapping("/system")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<List<ReviewResponse>> getSystemReviews() {
+        return ResponseEntity.ok(reviewService.getSystemReviews());
+    }
+
     @GetMapping("/eligible/student")
     public ResponseEntity<List<EligibleReviewItem>> getStudentEligible(
             @AuthenticationPrincipal CustomUserDetails user) {

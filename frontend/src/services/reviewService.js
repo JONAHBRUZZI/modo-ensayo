@@ -13,6 +13,18 @@ export const reviewService = {
   getAboutMe() {
     return api.get('/reviews/about-me')
   },
+  getEligibleTargets() {
+    return api.get('/reviews/eligible/targets')
+  },
+  getMySystemReview() {
+    return api.get('/reviews/system/mine')
+  },
+  getSystemReviews() {
+    return api.get('/reviews/system')
+  },
+  create(payload) {
+    return api.post('/reviews', payload)
+  },
   getTeacherEligible() {
     return api.get('/reviews/eligible/teacher')
   },

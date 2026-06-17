@@ -114,12 +114,34 @@
       </div>
 
     </div>
+
+    <!-- Valoraciones de Modo Ensayo (feedback de la plataforma) -->
+    <div class="flex items-center justify-between mb-4 mt-8">
+      <h2 class="text-lg font-semibold text-white">Valoraciones de Modo Ensayo</h2>
+      <span v-if="systemReviews.length" class="text-yellow-400 text-sm font-semibold">
+        ★ {{ promedioSistema.toFixed(1) }} <span class="text-gray-500 font-normal">({{ systemReviews.length }})</span>
+      </span>
+    </div>
+    <div v-if="systemReviews.length === 0" class="card text-center py-8">
+      <p class="text-gray-400 text-sm">Aún no hay valoraciones de la plataforma.</p>
+    </div>
+    <div v-else class="space-y-3">
+      <div v-for="r in systemReviews" :key="r.id" class="card">
+        <div class="flex items-start justify-between gap-3">
+          <h3 class="text-white font-medium">{{ r.authorName || 'Usuario' }}</h3>
+          <span class="text-yellow-400 text-sm flex-shrink-0">{{ estrellas(r.score) }}</span>
+        </div>
+        <p v-if="r.comment" class="text-gray-400 text-sm mt-2">{{ r.comment }}</p>
+        <p class="text-gray-600 text-xs mt-2">{{ formatDate(r.createdAt) }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
+import { reviewService } from '@/services/reviewService'
 import { Pie, Bar, Line } from 'vue-chartjs'
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale,
@@ -129,6 +151,14 @@ import {
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler)
 
 const stats = ref({})
+const systemReviews = ref([])
+
+const promedioSistema = computed(() => {
+  if (!systemReviews.value.length) return 0
+  return systemReviews.value.reduce((s, r) => s + (r.score || 0), 0) / systemReviews.value.length
+})
+const estrellas = (s) => { const n = Math.round(s || 0); return '★'.repeat(n) + '☆'.repeat(5 - n) }
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 
 const chartUsuariosRol = computed(() => ({
   labels: Object.keys(stats.value.usuariosPorRol || {}),
@@ -175,5 +205,6 @@ const lineOptions = { plugins: { legend: { display: false } }, scales: { x: { ti
 
 onMounted(async () => {
   try { stats.value = await adminService.getStats() } catch { stats.value = {} }
+  try { systemReviews.value = (await reviewService.getSystemReviews()).data || [] } catch { systemReviews.value = [] }
 })
 </script>

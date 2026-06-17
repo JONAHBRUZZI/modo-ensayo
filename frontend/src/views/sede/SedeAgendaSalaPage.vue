@@ -26,8 +26,9 @@ onMounted(async () => {
   try {
     const venues = await venueService.getMyVenues()
     const vArr = Array.isArray(venues) ? venues : venues.content || []
-    if (vArr.length > 0) {
-      salas.value = await venueService.getVenueRooms(vArr[0].id)
+    const sede = vArr.find(v => v.status === 'APROBADA') || vArr[0]
+    if (sede) {
+      salas.value = await venueService.getVenueRooms(sede.id)
     }
   } catch { salas.value = [] }
   loading.value = false

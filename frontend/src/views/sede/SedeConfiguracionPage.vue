@@ -250,8 +250,12 @@ onMounted(async () => {
   try {
     const venues = await venueService.getMyVenues()
     const vArr = Array.isArray(venues) ? venues : venues?.content || []
-    if (vArr.length > 0) {
-      venue.value = vArr[0]
+    const prioridad = ['APROBADA', 'SUSPENDIDA', 'PENDIENTE_APROBACION', 'RECHAZADA']
+    const sorted = [...vArr].sort((a, b) =>
+      prioridad.indexOf(a.status) - prioridad.indexOf(b.status)
+    )
+    if (sorted.length > 0) {
+      venue.value = sorted[0]
       const v = venue.value
       // Poblar formulario datos
       formDatos.name = v.name || ''

@@ -76,7 +76,7 @@
               <!-- Contenido -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between gap-1">
-                  <p class="text-xs font-semibold text-white leading-tight">{{ n.title }}</p>
+                  <p class="text-xs font-semibold text-white leading-tight">{{ tituloNotif(n) }}</p>
                   <span v-if="!n.read" class="w-1.5 h-1.5 bg-indigo-400 rounded-full flex-shrink-0 mt-1"></span>
                 </div>
                 <p class="text-xs text-gray-400 mt-0.5 leading-relaxed line-clamp-2">{{ n.message }}</p>
@@ -106,6 +106,25 @@ const { notifs, unreadCount, iconConfig, markRead, markAllRead, formatTime, star
 
 const showMenu = ref(false)
 const bellRef = ref(null)
+
+// Fallback de título: notificaciones antiguas pueden no tener title guardado.
+// Se infiere a partir del tipo o del contenido del mensaje.
+const tituloNotif = (n) => {
+  if (n.title && n.title.trim()) return n.title
+  const porTipo = {
+    pago: 'Pago procesado', PAYMENT_COMPLETED: 'Pago completado',
+    STUDENT_ENROLLED: 'Nuevo alumno inscrito', VENUE_REGISTERED: 'Sede registrada',
+    CONTEXTO_SEDE_ACTIVADO: 'Sede aprobada', CONTEXTO_PROFESOR_ACTIVADO: 'Contexto Maestro activado',
+    reschedule: 'Reagendamiento', clase: 'Actualización de clase', sistema: 'Notificación',
+  }
+  if (n.type && porTipo[n.type]) return porTipo[n.type]
+  const m = (n.message || '').toLowerCase()
+  if (m.includes('aprobada')) return 'Sede aprobada'
+  if (m.includes('rechazada')) return 'Solicitud rechazada'
+  if (m.includes('identidad')) return 'Verificación de identidad'
+  if (m.includes('pago')) return 'Pago'
+  return 'Notificación'
+}
 
 const toggleMenu = () => { showMenu.value = !showMenu.value }
 

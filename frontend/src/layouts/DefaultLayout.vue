@@ -167,30 +167,51 @@
           <router-link v-if="!isAuthenticated || modoActual === 'alumno'" to="/classes" class="nav-link-mobile" @click="showMobileMenu = false">Cronograma</router-link>
 
           <template v-if="isAuthenticated">
+            <!-- Cambiar de contexto (movil) -->
+            <div v-if="puedeAlternarModo" class="flex items-center gap-1 bg-[#1a1d2e] rounded-lg p-1 mb-2">
+              <button v-for="mode in availableModes" :key="mode.value"
+                      @click="cambiarModo(mode.value); showMobileMenu = false"
+                      :class="[
+                        'flex-1 px-2 py-1.5 rounded-md text-sm transition-all',
+                        modoActual === mode.value ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
+                      ]">
+                {{ mode.label }}
+              </button>
+            </div>
             <template v-if="puedeVerContextoProfesor && modoActual === 'profesor'">
               <router-link to="/profesor/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
-              <router-link to="/profesor/clases-propias" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
               <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile" @click="showMobileMenu = false">Por Asignar</router-link>
+              <router-link to="/profesor/clases-propias" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
+              <router-link to="/profesor/clases-asignadas" class="nav-link-mobile" @click="showMobileMenu = false">Asignadas</router-link>
+              <router-link to="/profesor/borradores" class="nav-link-mobile" @click="showMobileMenu = false">Borradores</router-link>
               <router-link to="/profesor/buscar-salas" class="nav-link-mobile" @click="showMobileMenu = false">Agendar Sala</router-link>
               <router-link to="/profesor/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+              <router-link to="/profesor/pagos" class="nav-link-mobile" @click="showMobileMenu = false">Pagos</router-link>
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
             </template>
             <template v-if="puedeVerContextoSede && modoActual === 'sede'">
               <router-link to="/sede/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Panel</router-link>
               <router-link to="/sede/salas" class="nav-link-mobile" @click="showMobileMenu = false">Salas</router-link>
               <router-link to="/sede/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Clases</router-link>
+              <router-link to="/sede/crear-clase" class="nav-link-mobile" @click="showMobileMenu = false">Crear Clase</router-link>
               <router-link to="/sede/clases-por-confirmar" class="nav-link-mobile" @click="showMobileMenu = false">Confirmar</router-link>
+              <router-link to="/sede/profesores" class="nav-link-mobile" @click="showMobileMenu = false">Profesores</router-link>
               <router-link to="/sede/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+              <router-link to="/sede/configuracion" class="nav-link-mobile" @click="showMobileMenu = false">Config</router-link>
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
             </template>
             <template v-if="isAdmin && modoActual === 'admin'">
               <router-link to="/admin" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
               <router-link to="/admin/roles" class="nav-link-mobile" @click="showMobileMenu = false">Aprobaciones</router-link>
               <router-link to="/admin/usuarios" class="nav-link-mobile" @click="showMobileMenu = false">Usuarios</router-link>
+              <router-link to="/admin/sedes" class="nav-link-mobile" @click="showMobileMenu = false">Sedes</router-link>
             </template>
             <template v-if="modoActual === 'alumno'">
               <router-link to="/alumno/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Mi Espacio</router-link>
               <router-link to="/alumno/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
+              <router-link to="/alumno/asociados" class="nav-link-mobile" @click="showMobileMenu = false">Asociados</router-link>
+              <router-link to="/alumno/pagos" class="nav-link-mobile" @click="showMobileMenu = false">Pagos</router-link>
+              <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
               <router-link to="/cart" class="nav-link-mobile" @click="showMobileMenu = false">Carrito</router-link>
             </template>
             <div class="h-px bg-[#1e2130] my-2"></div>

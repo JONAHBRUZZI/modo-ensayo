@@ -216,7 +216,7 @@ import { reviewService } from '@/services/reviewService'
 
 const router = useRouter()
 const route = useRoute()
-const { syncAtributos, perfilProfesionalCompleto, puedeVerContextoProfesor } = useAuth()
+const { user, syncAtributos, perfilProfesionalCompleto, puedeVerContextoProfesor } = useAuth()
 
 const primeraVez = computed(() => route.query.primeraVez === 'true')
 const hasTeacherRole = computed(() => puedeVerContextoProfesor.value)
@@ -269,9 +269,11 @@ onMounted(async () => {
       Object.assign(form, res.data)
       if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
       if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
-      // Cargar reseñas del profesor usando su ID del perfil
-      if (res.data.id) {
-        const rev = await reviewService.getByTeacher(res.data.id).then(r => r.data).catch(() => [])
+      // Cargar reseñas del profesor usando su ID de usuario (= teacherId de las clases).
+      // No usar res.data.id: ese es el id del perfil profesional, no el del usuario.
+      const teacherId = user.value?.id
+      if (teacherId) {
+        const rev = await reviewService.getByTeacher(teacherId).then(r => r.data).catch(() => [])
         reviews.value = Array.isArray(rev) ? rev : []
       }
     }

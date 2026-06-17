@@ -110,37 +110,49 @@
 
       <!-- Documentos de la sede -->
       <div class="card space-y-4">
-        <h3 class="text-white font-medium">Documentos de la sede</h3>
-        <p class="text-gray-500 text-xs">Sube permisos, certificados o documentos requeridos para la aprobación. El Admin General los revisará.</p>
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="text-white font-medium">Documentos de la sede</h3>
+            <p v-if="venue.status === 'APROBADA'" class="text-green-400 text-xs mt-1">✓ Todos los documentos fueron revisados y aprobados</p>
+            <p v-else class="text-gray-500 text-xs mt-1">Sube permisos, certificados o documentos requeridos para la aprobación. El Admin General los revisará.</p>
+          </div>
+        </div>
 
         <!-- Lista de documentos existentes -->
         <div v-if="documentos.length > 0" class="space-y-2">
           <div v-for="doc in documentos" :key="doc.id"
-               class="flex items-center justify-between p-3 bg-dark-bg rounded-lg border border-dark-border">
+               class="flex items-center justify-between p-3 bg-dark-bg rounded-lg border"
+               :class="venue.status === 'APROBADA' ? 'border-green-500/30' : 'border-dark-border'">
             <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg :class="{
+                'text-green-400': venue.status === 'APROBADA' || doc.estado === 'APROBADO',
+                'text-yellow-500': venue.status !== 'APROBADA' && doc.estado === 'PENDIENTE',
+                'text-red-400': doc.estado === 'RECHAZADO'
+              }" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
               <div>
                 <p class="text-sm text-white">{{ doc.nombre || 'Documento' }}</p>
                 <span :class="{
-                  'text-yellow-400': doc.estado === 'PENDIENTE',
-                  'text-green-400': doc.estado === 'APROBADO',
+                  'text-yellow-400': venue.status !== 'APROBADA' && doc.estado === 'PENDIENTE',
+                  'text-green-400': venue.status === 'APROBADA' || doc.estado === 'APROBADO',
                   'text-red-400': doc.estado === 'RECHAZADO'
-                }" class="text-xs">{{ doc.estado }}</span>
+                }" class="text-xs font-medium">
+                  {{ venue.status === 'APROBADA' ? 'APROBADO' : doc.estado }}
+                </span>
                 <span v-if="doc.motivoRechazo" class="text-xs text-red-400 ml-2">— {{ doc.motivoRechazo }}</span>
               </div>
             </div>
             <div class="flex items-center gap-2">
               <a :href="doc.fileUrl" target="_blank" class="text-primary text-xs hover:underline">Ver</a>
-              <button @click="eliminarDocumento(doc.id)" class="text-red-400 text-xs hover:underline">Eliminar</button>
+              <button v-if="venue.status !== 'APROBADA'" @click="eliminarDocumento(doc.id)" class="text-red-400 text-xs hover:underline">Eliminar</button>
             </div>
           </div>
         </div>
         <p v-else class="text-gray-500 text-sm">No hay documentos subidos aún.</p>
 
-        <!-- Subir nuevo documento -->
-        <div class="border border-dark-border rounded-lg p-4 space-y-3">
+        <!-- Subir nuevo documento (solo si no aprobada) -->
+        <div v-if="venue.status !== 'APROBADA'" class="border border-dark-border rounded-lg p-4 space-y-3">
           <p class="text-sm text-gray-300 font-medium">Subir documento</p>
           <div>
             <label class="block text-xs text-gray-400 mb-1">Tipo de documento</label>

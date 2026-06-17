@@ -54,14 +54,21 @@
                 Asignar Clase
               </button>
             </div>
-            <!-- PUBLISHED: ir a asistencia -->
-            <router-link
-              v-else
-              :to="'/profesor/asistencia/' + c.id"
-              class="btn-primary text-xs !py-1.5 !px-3"
-            >
-              Asistencia
-            </router-link>
+            <!-- PUBLISHED: asistencia + reagendar (la clase propia la reagenda el maestro dueño, R18) -->
+            <template v-else>
+              <router-link
+                :to="'/profesor/clases/' + c.id + '/reagendamiento'"
+                class="btn-secondary text-xs !py-1.5 !px-3"
+              >
+                Reagendar
+              </router-link>
+              <router-link
+                :to="'/profesor/asistencia/' + c.id"
+                class="btn-primary text-xs !py-1.5 !px-3"
+              >
+                Asistencia
+              </router-link>
+            </template>
           </div>
         </div>
       </div>

@@ -102,10 +102,4 @@ class PaymentServiceTest {
                 () -> paymentService.removeFromCart(ownerId, itemId));
         verify(cartItemRepository, never()).deleteById(any());
     }
-
-    @Test
-    void clearCart_shouldDeleteAllItemsForOwner() {
-        paymentService.clearCart(ownerId);
-        verify(cartItemRepository).deleteByOwnerId(ownerId);
-    }
 }

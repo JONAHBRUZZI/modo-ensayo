@@ -44,11 +44,6 @@ public class PaymentController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/checkout")
-    public ResponseEntity<Map<String, Object>> checkout(@AuthenticationPrincipal CustomUserDetails user) {
-        return ResponseEntity.ok(paymentService.checkout(user.getUserId()));
-    }
-
     @PostMapping("/mercadopago/create-preference")
     public ResponseEntity<?> createPreference(@AuthenticationPrincipal CustomUserDetails user) {
         try {

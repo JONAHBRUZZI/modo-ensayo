@@ -112,7 +112,7 @@ public class MercadoPagoService {
                 .backUrls(backUrls)
                 .autoReturn("approved")
                 .externalReference(externalReference)
-                .notificationUrl(backendUrl + "/api/payments/webhook")
+                .notificationUrl(backendUrl + "/api/payments/mercadopago/webhook")
                 .build();
 
         PreferenceClient client = new PreferenceClient();

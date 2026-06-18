@@ -15,11 +15,6 @@ export default {
     await api.delete(`/payments/cart/${id}`)
   },
 
-  async checkout() {
-    const res = await api.post('/payments/checkout')
-    return res.data
-  },
-
   async createMercadoPagoPreference() {
     const res = await api.post('/payments/mercadopago/create-preference')
     return res.data

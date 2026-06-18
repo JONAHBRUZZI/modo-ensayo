@@ -42,9 +42,6 @@ public class PaymentService {
         if (c.getStatus() != ClassStatus.PUBLISHED) {
             throw new BusinessException("Clase no disponible para inscripcion");
         }
-        if (c.getCapacity() != null && enrollmentRepository.countByClassId(classId) >= c.getCapacity()) {
-            throw new BusinessException("Clase sin cupos disponibles");
-        }
         if (enrollmentRepository.existsByClassIdAndBeneficiaryId(classId,
                 beneficiaryId != null ? beneficiaryId : ownerId)) {
             throw new BusinessException("Ya estas inscrito en esta clase");
@@ -72,88 +69,6 @@ public class PaymentService {
             throw new ResourceNotFoundException("Cart item not found");
         }
         cartItemRepository.deleteById(itemId);
-    }
-
-    @Transactional
-    public void clearCart(UUID ownerId) {
-        cartItemRepository.deleteByOwnerId(ownerId);
-    }
-
-    @Transactional
-    public Map<String, Object> checkout(UUID ownerId) {
-        List<CartItem> items = cartItemRepository.findByOwnerId(ownerId);
-        List<String> failures = new ArrayList<>();
-
-        for (CartItem item : items) {
-            UUID beneficiaryId = item.getBeneficiaryId() != null ? item.getBeneficiaryId() : ownerId;
-            if (enrollmentRepository.existsByClassIdAndBeneficiaryId(item.getClassId(), beneficiaryId)) {
-                failures.add("Ya estas inscrito en " + item.getClassTitle());
-                continue;
-            }
-            Class c = classRepository.findById(item.getClassId()).orElse(null);
-            if (c == null) {
-                failures.add("Clase no encontrada: " + item.getClassTitle());
-                continue;
-            }
-            if (c.getCapacity() != null && enrollmentRepository.countByClassId(item.getClassId()) >= c.getCapacity()) {
-                failures.add("Clase sin cupos: " + item.getClassTitle());
-            }
-        }
-
-        if (!failures.isEmpty()) {
-            throw new BusinessException("No se pudo completar el checkout: " + String.join("; ", failures));
-        }
-
-        List<Map<String, Object>> processed = new ArrayList<>();
-        double total = 0;
-
-        for (CartItem item : items) {
-            UUID beneficiaryId = item.getBeneficiaryId() != null ? item.getBeneficiaryId() : ownerId;
-            Enrollment enrollment = Enrollment.builder()
-                    .classId(item.getClassId())
-                    .beneficiaryType(item.getBeneficiaryType() != null ? item.getBeneficiaryType() : "USER")
-                    .beneficiaryId(beneficiaryId)
-                    .status("ACTIVE")
-                    .build();
-            enrollmentRepository.save(enrollment);
-
-            Payment payment = Payment.builder()
-                    .enrollment(enrollment)
-                    .amount(item.getPrice() != null ? item.getPrice().intValue() : 0)
-                    .status(PaymentStatus.RETAINED)
-                    .build();
-            paymentRepository.save(payment);
-            total += item.getPrice() != null ? item.getPrice() : 0;
-
-            Map<String, Object> detail = new HashMap<>();
-            detail.put("classTitle", item.getClassTitle());
-            detail.put("amount", item.getPrice());
-            detail.put("status", "RETAINED");
-            processed.add(detail);
-        }
-
-        cartItemRepository.deleteByOwnerId(ownerId);
-
-        // Notificar al alumno
-        notificationService.enviar(ownerId, "PAYMENT_COMPLETED", "Pago completado",
-                "Se ha completado el pago de " + processed.size() + " clase(s) por $" + (int) total);
-
-        // Notificar al profesor de cada clase
-        for (CartItem item : items) {
-            classRepository.findById(item.getClassId()).ifPresent(c -> {
-                if (c.getTeacherId() != null) {
-                    notificationService.enviar(c.getTeacherId(), "STUDENT_ENROLLED", "Nuevo alumno inscrito",
-                            "Un alumno se ha inscrito a tu clase \"" + c.getTitle() + "\"");
-                }
-            });
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("items", processed);
-        result.put("total", total);
-        result.put("count", processed.size());
-        result.put("status", "COMPLETED");
-        return result;
     }
 
     @Transactional(readOnly = true)
@@ -272,18 +187,5 @@ public class PaymentService {
         result.put("resumen", resumen);
         result.put("pagos", pagos);
         return result;
-    }
-
-    public Map<String, Object> createMercadoPagoPreference(UUID ownerId) {
-        List<CartItem> items = cartItemRepository.findByOwnerId(ownerId);
-        double total = items.stream().mapToDouble(CartItem::getPrice).sum();
-        String prefId = UUID.randomUUID().toString().substring(0, 16);
-
-        Map<String, Object> resp = new HashMap<>();
-        resp.put("preferenceId", prefId);
-        resp.put("initPoint", "/payment/pending");
-        resp.put("total", total);
-        resp.put("items", items);
-        return resp;
     }
 }

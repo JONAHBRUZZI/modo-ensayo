@@ -33,8 +33,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: modoensayo
       JWT_SECRET: 7Dt5OOsrW2R6v2Eyk2rqzQnmXcEe/agy0lTFWbja1ww=
       MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-TEST-xxxxxxxxxxxxxxxxxxxx}
-      APP_FRONTEND_URL: http://localhost:3001
-      APP_BACKEND_URL: http://localhost:8080
+      APP_FRONTEND_URL: https://modoensayo.cl
+      APP_BACKEND_URL: https://modoensayo.cl
       STORAGE_PROVIDER: local
       STORAGE_UPLOAD_DIR: /app/uploads
     volumes:

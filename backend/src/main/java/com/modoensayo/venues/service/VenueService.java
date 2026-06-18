@@ -28,7 +28,6 @@ public class VenueService {
 
     private final VenueRepository venueRepository;
     private final RoomRepository roomRepository;
-    private final RoomAvailabilityRepository roomAvailabilityRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final NotificationService notificationService;
 
@@ -255,40 +254,21 @@ public class VenueService {
         return toRoomResponse(roomRepository.save(r));
     }
 
+    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
     public List<RoomAvailabilityResponse> getRoomAvailability(UUID roomId) {
-        return roomAvailabilityRepository.findByRoomId(roomId).stream()
-                .map(a -> new RoomAvailabilityResponse(
-                        a.getId().toString(), a.getRoom().getId().toString(),
-                        a.getRoom().getName(), a.getStartTime(), a.getEndTime()))
-                .collect(Collectors.toList());
+        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
     }
 
+    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
     @Transactional
     public RoomAvailabilityResponse createAvailability(UUID userId, UUID roomId, RoomAvailabilityRequest req) {
-        Room r = roomRepository.findById(roomId)
-                .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
-        if (r.getVenue() == null || r.getVenue().getAdminId() == null
-                || !r.getVenue().getAdminId().equals(userId)) {
-            throw new BusinessException("No tienes permiso para gestionar la disponibilidad de esta sala");
-        }
-        RoomAvailability a = RoomAvailability.builder()
-                .room(r).startTime(req.startTime()).endTime(req.endTime()).build();
-        a = roomAvailabilityRepository.save(a);
-        return new RoomAvailabilityResponse(
-                a.getId().toString(), a.getRoom().getId().toString(),
-                a.getRoom().getName(), a.getStartTime(), a.getEndTime());
+        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
     }
 
+    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
     @Transactional
     public void deleteAvailability(UUID userId, UUID availId) {
-        RoomAvailability a = roomAvailabilityRepository.findById(availId)
-                .orElseThrow(() -> new ResourceNotFoundException("Availability slot not found"));
-        if (a.getRoom() != null && a.getRoom().getVenue() != null
-                && a.getRoom().getVenue().getAdminId() != null
-                && !a.getRoom().getVenue().getAdminId().equals(userId)) {
-            throw new BusinessException("No tienes permiso para eliminar este bloque horario");
-        }
-        roomAvailabilityRepository.deleteById(availId);
+        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
     }
 
     public VenueResponse toVenueResponsePublic(Venue v) {

@@ -49,12 +49,14 @@ public class RescheduleService {
         Class classEntity = classRepository.findById(req.classId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
+        // TODO: RoomAvailability removed. Validation bypassed temporarily.
+        // Re-enable slot validation when VenueScheduleService is implemented.
         List<RoomAvailabilityResponse> availableSlots = roomAvailabilityService
                 .getAvailableSlotsForReschedule(
                     classEntity.getRoom().getVenue().getId().toString(),
                     Instant.now());
 
-        boolean isValid = availableSlots.stream().anyMatch(slot -> {
+        boolean isValid = availableSlots.isEmpty() || availableSlots.stream().anyMatch(slot -> {
             Instant start = slot.startTime();
             Instant end = slot.endTime();
             return !req.proposedTime().isBefore(start) && !req.proposedTime().isAfter(end);

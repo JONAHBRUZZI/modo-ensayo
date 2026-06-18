@@ -164,23 +164,25 @@ public class VenueAdminController {
         return ResponseEntity.ok(venueService.createRoom(user.getUserId(), venueId, req));
     }
 
+    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService.
     @PostMapping("/rooms/{roomId}/availability")
-    public ResponseEntity<RoomAvailabilityResponse> createAvailability(@AuthenticationPrincipal CustomUserDetails user,
-                                                                        @PathVariable UUID roomId,
-                                                                        @RequestBody RoomAvailabilityRequest req) {
-        return ResponseEntity.ok(venueService.createAvailability(user.getUserId(), roomId, req));
+    public ResponseEntity<?> createAvailability(@AuthenticationPrincipal CustomUserDetails user,
+                                                 @PathVariable UUID roomId,
+                                                 @RequestBody RoomAvailabilityRequest req) {
+        return ResponseEntity.status(501).body("RoomAvailability removed. TODO: use VenueScheduleService.");
     }
 
+    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService.
     @GetMapping("/rooms/{roomId}/availability")
     public ResponseEntity<List<RoomAvailabilityResponse>> getAvailability(@PathVariable UUID roomId) {
-        return ResponseEntity.ok(venueService.getRoomAvailability(roomId));
+        return ResponseEntity.ok(java.util.Collections.emptyList());
     }
 
+    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService.
     @DeleteMapping("/rooms/{roomId}/availability/{slotId}")
-    public ResponseEntity<Void> deleteAvailability(@AuthenticationPrincipal CustomUserDetails user,
-                                                    @PathVariable UUID roomId, @PathVariable UUID slotId) {
-        venueService.deleteAvailability(user.getUserId(), slotId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteAvailability(@AuthenticationPrincipal CustomUserDetails user,
+                                                 @PathVariable UUID roomId, @PathVariable UUID slotId) {
+        return ResponseEntity.status(501).body("RoomAvailability removed. TODO: use VenueScheduleService.");
     }
 
     // ── Documentos de sede ──────────────────────────────────────────────────

@@ -115,6 +115,12 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'alumno/mis-clases/calendario',
+        name: 'MisClasesCalendario',
+        component: () => import('@/views/alumno/MisClasesCalendarioPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'alumno/pagos',
         name: 'PagosHistorial',
         component: () => import('@/views/alumno/PagosHistorialPage.vue'),
@@ -193,6 +199,12 @@ const routes = [
         name: 'ProfesorCrearClase',
         component: () => import('@/views/CrearClasePage.vue'),
         meta: { requiresAuth: true, requiresIdentity: true }
+      },
+      {
+        path: 'profesor/calendario',
+        name: 'ProfesorCalendario',
+        component: () => import('@/views/profesor/ProfesorCalendarioPage.vue'),
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       {
         path: 'profesor/borradores',
@@ -285,6 +297,12 @@ const routes = [
         name: 'RoomRegistration',
         component: () => import('@/views/sede/RoomRegistrationPage.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: 'sede/calendario',
+        name: 'SedeCalendario',
+        component: () => import('@/views/sede/SedeCalendarioPage.vue'),
+        meta: { requiresAuth: true, roles: ['VENUE_ADMIN', 'ADMIN'] }
       },
       // Admin routes
       {

@@ -14,6 +14,7 @@ import com.modoensayo.venues.domain.Venue;
 import com.modoensayo.venues.repository.VenueRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -183,6 +184,7 @@ public class ReviewService {
      * - Como sede: los maestros y alumnos de las clases de su sede.
      * Excluye objetivos ya reseñados y respeta la matriz etica (sin auto-reseña, sin sede->sede).
      */
+    @Transactional(readOnly = true)
     public List<EligibleReviewItem> getEligibleTargets(UUID userId) {
         boolean esAdminSede = !venueRepository.findByAdminId(userId).isEmpty();
         java.util.Set<String> yaReseñados = reviewRepository.findByReviewerId(userId).stream()

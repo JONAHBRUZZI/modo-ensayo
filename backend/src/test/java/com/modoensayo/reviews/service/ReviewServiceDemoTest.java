@@ -10,8 +10,10 @@ import com.modoensayo.reviews.dto.CreateReviewRequest;
 import com.modoensayo.reviews.dto.ReviewResponse;
 import com.modoensayo.reviews.repository.ReviewRepository;
 import com.modoensayo.shared.exceptions.BusinessException;
+import com.modoensayo.users.repository.UserRepository;
 import com.modoensayo.venues.domain.Room;
 import com.modoensayo.venues.domain.Venue;
+import com.modoensayo.venues.repository.VenueRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +37,8 @@ class ReviewServiceDemoTest {
     @Mock private ReviewRepository reviewRepository;
     @Mock private ClassRepository classRepository;
     @Mock private EnrollmentRepository enrollmentRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private VenueRepository venueRepository;
 
     @InjectMocks
     private ReviewService reviewService;

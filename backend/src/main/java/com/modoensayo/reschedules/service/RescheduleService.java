@@ -15,8 +15,10 @@ import com.modoensayo.reschedules.enums.ResponseType;
 import com.modoensayo.reschedules.repository.*;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
+import com.modoensayo.venues.domain.RoomScheduleBlock;
 import com.modoensayo.venues.dto.RoomAvailabilityResponse;
 import com.modoensayo.classes.enums.TipoClase;
+import com.modoensayo.venues.repository.RoomScheduleBlockRepository;
 import com.modoensayo.venues.repository.VenueRepository;
 import com.modoensayo.venues.service.RoomAvailabilityService;
 import lombok.RequiredArgsConstructor;
@@ -43,29 +45,36 @@ public class RescheduleService {
     private final ClassRepository classRepository;
     private final VenueRepository venueRepository;
     private final RoomAvailabilityService roomAvailabilityService;
+    private final RoomScheduleBlockRepository roomScheduleBlockRepository;
 
     @Transactional
     public RescheduleResponseDto propose(RescheduleRequest req) {
         Class classEntity = classRepository.findById(req.classId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
-        // TODO: RoomAvailability removed. Validation bypassed temporarily.
-        // Re-enable slot validation when VenueScheduleService is implemented.
-        List<RoomAvailabilityResponse> availableSlots = roomAvailabilityService
-                .getAvailableSlotsForReschedule(
-                    classEntity.getRoom().getVenue().getId().toString(),
-                    Instant.now());
+        // Validate proposed time against RoomScheduleBlock availability
+        UUID roomId = classEntity.getRoom().getId();
+        Instant fromDate = req.proposedTime().minusSeconds(86400);
+        Instant toDate = req.proposedTime().plusSeconds(86400);
 
-        boolean isValid = availableSlots.isEmpty() || availableSlots.stream().anyMatch(slot -> {
-            Instant start = slot.startTime();
-            Instant end = slot.endTime();
-            return !req.proposedTime().isBefore(start) && !req.proposedTime().isAfter(end);
-        });
+        List<RoomScheduleBlock> availableBlocks = roomScheduleBlockRepository
+                .findByRoomIdAndStatusAndStartTimeBetweenOrderByStartTime(
+                    roomId, "AVAILABLE", fromDate, toDate);
+
+        if (availableBlocks.isEmpty()) {
+            throw new BusinessException(
+                "No hay bloques disponibles para la fecha propuesta. " +
+                "Consulta las opciones disponibles en /reschedules/class/{classId}/available-slots.");
+        }
+
+        boolean isValid = availableBlocks.stream().anyMatch(block ->
+            !req.proposedTime().isBefore(block.getStartTime())
+                && req.proposedTime().isBefore(block.getEndTime()));
 
         if (!isValid) {
             throw new BusinessException(
-                "La fecha propuesta no esta dentro de los bloques horarios disponibles de la sede. " +
-                "Consulta las opciones disponibles en /reschedules/class/{classId}/available-slots.");
+                "La fecha propuesta no esta dentro de los bloques horarios disponibles de la sala. " +
+                "Consulta las opciones disponibles en /reschedules/class/" + req.classId() + "/available-slots.");
         }
 
         Reschedule r = Reschedule.builder()

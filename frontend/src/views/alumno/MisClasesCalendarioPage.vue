@@ -7,25 +7,34 @@
   >
     <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
       <h1 class="text-3xl font-bold text-white">Calendario</h1>
-      <router-link to="/alumno/mis-clases" class="text-sm text-gray-400 hover:text-white">← Volver a Mis Clases</router-link>
+      <router-link to="/alumno/mis-clases" class="text-sm text-gray-400 hover:text-white">&larr; Volver a Mis Clases</router-link>
     </div>
 
-    <!-- Filtro -->
+    <!-- Filtro: radio buttons -->
     <div class="card mb-6">
-      <div class="flex flex-wrap gap-4">
+      <div class="flex flex-wrap items-center gap-6">
         <label v-for="f in filtros" :key="f.key" class="flex items-center gap-2 cursor-pointer">
           <input type="radio" v-model="filtroActivo" :value="f.key" class="w-4 h-4 text-primary focus:ring-primary/50" />
           <span class="text-sm text-gray-300">{{ f.label }}</span>
         </label>
+
+        <!-- Dropdown de asociado -->
+        <div v-if="filtroActivo === 'por-asociado'" class="flex items-center gap-2">
+          <span class="text-xs text-gray-500">Asociado:</span>
+          <select v-model="associateSelected" class="input-field text-sm py-1.5 w-48">
+            <option value="">Todos</option>
+            <option v-for="a in associates" :key="a.id" :value="a.id">{{ a.name || a.email }}</option>
+          </select>
+        </div>
       </div>
     </div>
 
     <!-- Navegador mensual -->
     <div class="card mb-6">
       <div class="flex items-center justify-between">
-        <button @click="prevMonth" class="text-sm text-gray-400 hover:text-white px-3 py-1 rounded hover:bg-dark-border">← Anterior</button>
+        <button @click="prevMonth" class="text-sm text-gray-400 hover:text-white px-3 py-1 rounded hover:bg-dark-border">&larr; Anterior</button>
         <h2 class="text-lg font-semibold text-white">{{ monthLabel }}</h2>
-        <button @click="nextMonth" class="text-sm text-gray-400 hover:text-white px-3 py-1 rounded hover:bg-dark-border">Siguiente →</button>
+        <button @click="nextMonth" class="text-sm text-gray-400 hover:text-white px-3 py-1 rounded hover:bg-dark-border">Siguiente &rarr;</button>
       </div>
     </div>
 
@@ -59,7 +68,7 @@
       </table>
 
       <!-- Leyenda -->
-      <div class="flex items-center gap-6 mt-4 pt-4 border-t border-dark-border">
+      <div class="flex items-center gap-6 mt-4 pt-4 border-t border-dark-border flex-wrap">
         <span class="flex items-center gap-1.5 text-xs text-gray-400">
           <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Mis clases
         </span>
@@ -80,18 +89,18 @@
         </div>
         <div v-if="dayDetail.length === 0" class="text-gray-400 text-sm py-4">Sin clases este dia.</div>
         <div v-else class="space-y-3">
-          <div v-for="c in dayDetail" :key="c.classId" :class="['rounded-xl p-4 border', c.esPropia ? 'border-purple-500/30 bg-purple-500/5' : 'border-orange-500/30 bg-orange-500/5']">
+          <div v-for="c in dayDetail" :key="c.classId || c.id" :class="['rounded-xl p-4 border', c.esPropia ? 'border-purple-500/30 bg-purple-500/5' : 'border-orange-500/30 bg-orange-500/5']">
             <div class="flex items-start justify-between">
               <div>
                 <h4 class="text-white font-medium">{{ c.title }}</h4>
-                <p class="text-gray-400 text-sm mt-0.5">{{ c.discipline }} {{ c.level ? '— ' + c.level : '' }}</p>
+                <p class="text-gray-400 text-sm mt-0.5">{{ c.discipline }} {{ c.level ? '-- ' + c.level : '' }}</p>
                 <p class="text-gray-500 text-xs mt-1">{{ formatTime(c.startTime) }} - {{ formatTime(c.endTime) }}</p>
                 <p v-if="c.venueName" class="text-gray-500 text-xs">{{ c.venueName }}</p>
                 <span :class="['text-xs px-2 py-0.5 rounded-full mt-1.5 inline-block', c.esPropia ? 'bg-purple-500/20 text-purple-300' : 'bg-orange-500/20 text-orange-300']">
                   {{ c.esPropia ? 'Mi clase' : 'Asociado' }}
                 </span>
               </div>
-              <router-link :to="'/alumno/clases/' + c.classId" class="text-primary text-sm hover:underline whitespace-nowrap ml-4">Ver detalle</router-link>
+              <router-link :to="'/alumno/clases/' + (c.classId || c.id)" class="text-primary text-sm hover:underline whitespace-nowrap ml-4">Ver detalle</router-link>
             </div>
           </div>
         </div>
@@ -101,8 +110,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import scheduleService from '@/services/scheduleService'
+import associateService from '@/services/associateService'
 import { formatTime } from '@/utils/dateFormatter'
 
 const loading = ref(true)
@@ -111,27 +121,44 @@ const currentMonth = ref(new Date().getMonth())
 const currentYear = ref(new Date().getFullYear())
 const selectedDay = ref(null)
 
-const filtroActivo = ref('todas')
+const filtroActivo = ref('mis-clases')
 const filtros = [
-  { key: 'todas', label: 'Todas' },
-  { key: 'propias', label: 'Propias' },
-  { key: 'asociados', label: 'Asociados' }
+  { key: 'mis-clases', label: 'Mis clases' },
+  { key: 'por-asociado', label: 'Por asociado' },
+  { key: 'mixta', label: 'Vista mixta' }
 ]
 
-const dayHeaders = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+const associates = ref([])
+const associateSelected = ref('')
+
+const dayHeaders = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
 
 const monthLabel = computed(() => {
   const d = new Date(currentYear.value, currentMonth.value)
   return d.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })
 })
 
+const filteredEnrollments = computed(() => {
+  if (filtroActivo.value === 'mis-clases') {
+    return enrollments.value.filter(e => e.esPropia !== false)
+  }
+  if (filtroActivo.value === 'por-asociado') {
+    let list = enrollments.value.filter(e => e.esPropia === false)
+    if (associateSelected.value) {
+      list = list.filter(e => e.associateId == associateSelected.value)
+    }
+    return list
+  }
+  // Vista mixta: todas
+  return enrollments.value
+})
+
 const monthWeeks = computed(() => {
   const year = currentYear.value
   const month = currentMonth.value
   const firstDay = new Date(year, month, 1)
-  // Ajustar para que la semana empiece en lunes
   let startDay = firstDay.getDay() || 7
-  startDay -= 1 // 0 = lunes
+  startDay -= 1
 
   const lastDate = new Date(year, month + 1, 0).getDate()
 
@@ -139,7 +166,6 @@ const monthWeeks = computed(() => {
   let day = 1
   let currentWeek = []
 
-  // Días vacíos antes del primero
   for (let i = 0; i < startDay; i++) {
     currentWeek.push({ dayNumber: '', isCurrentMonth: false, classes: [], propiasCount: 0, asociadasCount: 0, date: null })
   }
@@ -166,7 +192,6 @@ const monthWeeks = computed(() => {
     day++
   }
 
-  // Rellenar última semana
   if (currentWeek.length > 0) {
     while (currentWeek.length < 7) {
       currentWeek.push({ dayNumber: '', isCurrentMonth: false, classes: [], propiasCount: 0, asociadasCount: 0, date: null })
@@ -175,12 +200,6 @@ const monthWeeks = computed(() => {
   }
 
   return weeks
-})
-
-const filteredEnrollments = computed(() => {
-  if (filtroActivo.value === 'propias') return enrollments.value.filter(e => e.esPropia !== false)
-  if (filtroActivo.value === 'asociados') return enrollments.value.filter(e => e.esPropia === false)
-  return enrollments.value
 })
 
 function getClassesForDate(dateStr) {
@@ -206,6 +225,7 @@ function prevMonth() {
   } else {
     currentMonth.value--
   }
+  loadCalendar()
 }
 
 function nextMonth() {
@@ -215,6 +235,7 @@ function nextMonth() {
   } else {
     currentMonth.value++
   }
+  loadCalendar()
 }
 
 function formatDateFull(dateStr) {
@@ -223,7 +244,8 @@ function formatDateFull(dateStr) {
   return new Date(+y, +m - 1, +d).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-onMounted(async () => {
+async function loadCalendar() {
+  loading.value = true
   try {
     const year = currentYear.value
     const month = currentMonth.value
@@ -236,5 +258,19 @@ onMounted(async () => {
     enrollments.value = []
   }
   loading.value = false
+}
+
+onMounted(async () => {
+  try {
+    const data = await associateService.getAssociates()
+    associates.value = Array.isArray(data) ? data : []
+  } catch {
+    associates.value = []
+  }
+  await loadCalendar()
+})
+
+watch([currentMonth, currentYear], () => {
+  loadCalendar()
 })
 </script>

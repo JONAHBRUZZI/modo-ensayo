@@ -229,7 +229,7 @@ const routes = [
       {
         path: 'sede/salas/:salaId/agenda',
         name: 'SedeAgendaSala',
-        component: () => import('@/views/sede/SedeAgendaSalaPage.vue'),
+        component: () => import('@/views/sede/SedeSalaAgendaPage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {

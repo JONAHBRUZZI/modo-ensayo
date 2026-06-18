@@ -84,6 +84,23 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">
+              Región <span class="text-red-400">*</span>
+            </label>
+            <select v-model="form.region" required class="input-field">
+              <option value="">Selecciona una región</option>
+              <option v-for="r in regiones" :key="r" :value="r">{{ r }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">
+              Comuna <span class="text-red-400">*</span>
+            </label>
+            <input v-model="form.comuna" required class="input-field" placeholder="ej: Providencia, Las Condes" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">
               Ciudad / Comuna <span class="text-red-400">*</span>
             </label>
             <input v-model="form.city" required class="input-field" placeholder="ej: Santiago, Providencia" />
@@ -290,6 +307,8 @@ const form = reactive({
   tipo: 'SEDE',
   name: '',
   description: '',
+  region: '',
+  comuna: '',
   city: '',
   address: '',
   referencia: '',
@@ -303,6 +322,25 @@ const form = reactive({
   equipamiento: [],
   caracteristicas: [],
 })
+
+const regiones = [
+  'Arica y Parinacota',
+  'Tarapacá',
+  'Antofagasta',
+  'Atacama',
+  'Coquimbo',
+  'Valparaíso',
+  'Metropolitana de Santiago',
+  "O'Higgins",
+  'Maule',
+  'Ñuble',
+  'Biobío',
+  'La Araucanía',
+  'Los Ríos',
+  'Los Lagos',
+  'Aysén',
+  'Magallanes y de la Antártica Chilena',
+]
 
 const docArchivos = ref({})
 const docGuardados = ref([])  // tipos de documento ya guardados en el servidor
@@ -339,6 +377,8 @@ onMounted(async () => {
     form.tipo        = v.tipo        || 'SEDE'
     form.name        = v.name        || ''
     form.description = v.description || ''
+    form.region      = v.region      || ''
+    form.comuna      = v.comuna      || ''
     form.city        = v.city        || ''
     form.address     = v.address     || ''
     form.phone       = v.phone       || ''
@@ -361,6 +401,8 @@ async function submit() {
     const fd = new FormData()
     fd.append('nombre', form.name)
     fd.append('ciudad', form.city)
+    fd.append('region', form.region)
+    fd.append('comuna', form.comuna)
     fd.append('direccion', form.address)
     fd.append('descripcion', form.description || '')
     fd.append('teléfono', form.phone || '')

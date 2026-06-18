@@ -51,7 +51,7 @@
               </span>
             </div>
 
-            <p class="text-gray-400 text-sm mt-1">{{ s.address || 'Sin direccion' }}<span v-if="s.city"> · {{ s.city }}</span></p>
+            <p class="text-gray-400 text-sm mt-1">{{ s.address || 'Sin direccion' }}<span v-if="s.city"> · {{ s.city }}</span><span v-if="s.region"> · {{ s.region }}</span><span v-if="s.comuna"> · {{ s.comuna }}</span></p>
 
             <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-400">
               <p v-if="s.adminFullName"><span class="text-gray-500">Admin:</span> <span class="text-white">{{ s.adminFullName }}</span> <span class="text-gray-500">({{ s.adminEmail }})</span></p>

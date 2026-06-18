@@ -90,6 +90,8 @@ public class VenueAdminController {
             @AuthenticationPrincipal CustomUserDetails user,
             @RequestParam String nombre,
             @RequestParam String ciudad,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String comuna,
             @RequestParam String direccion,
             @RequestParam(required = false) String descripcion,
             @RequestParam(required = false) String telefono,
@@ -102,7 +104,7 @@ public class VenueAdminController {
             @RequestParam(value = "documentos", required = false) List<MultipartFile> documentos,
             @RequestParam(value = "tiposDocumento", required = false) List<String> tiposDocumento) throws java.io.IOException {
 
-        VenueRequest req = new VenueRequest(nombre, ciudad, direccion, descripcion,
+        VenueRequest req = new VenueRequest(nombre, ciudad, region, comuna, direccion, descripcion,
                 telefono, email, tipo, instagram, youtube, sitioWeb, facebook);
 
         VenueResponse venue = venueService.registrarSede(user.getUserId(), req);

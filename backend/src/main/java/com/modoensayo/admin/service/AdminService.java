@@ -182,7 +182,7 @@ public class AdminService {
 
     public List<VenueResponse> getPendingVenues() {
         return venueRepository.findByStatusOrderByCreatedAtDesc(EstadoSede.PENDIENTE_APROBACION).stream()
-                .map(v -> new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
+                .map(v -> new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getRegion(), v.getComuna(), v.getAddress(),
                         v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
                         v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
                         v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook()))
@@ -256,7 +256,7 @@ public class AdminService {
                     "Tu sede '" + v.getName() + "' ha sido APROBADA. Ya tienes acceso al panel de gestión de tu sede.");
         }
 
-        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
+        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getRegion(), v.getComuna(), v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
                 v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
                 v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());
@@ -301,7 +301,7 @@ public class AdminService {
             notificationService.enviar(v.getAdminId(), "sistema", tituloToggle, mensaje);
         }
 
-        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
+        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getRegion(), v.getComuna(), v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
                 v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
                 v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());
@@ -320,7 +320,7 @@ public class AdminService {
                     "Tu sede '" + v.getName() + "' ha sido RECHAZADA. Motivo: " + (reason != null ? reason : "No especificado") + ". Corrige los datos y reenvia.");
         }
 
-        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getAddress(),
+        return new VenueResponse(v.getId(), v.getName(), v.getCity(), v.getRegion(), v.getComuna(), v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(), v.getStatus().name(),
                 v.getTipo() != null ? v.getTipo().name() : null, v.getCreatedAt(),
                 v.getInstagram(), v.getYoutube(), v.getSitioWeb(), v.getFacebook());

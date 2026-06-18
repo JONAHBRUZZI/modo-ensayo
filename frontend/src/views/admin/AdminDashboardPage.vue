@@ -211,6 +211,7 @@
 import { ref, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import { reviewService } from '@/services/reviewService'
+import { formatDate } from '@/utils/dateFormatter'
 import { Pie, Bar, Line } from 'vue-chartjs'
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale,
@@ -224,7 +225,6 @@ const systemReviews = ref([])
 const sysStats = ref({})
 
 const estrellas = (s) => { const n = Math.round(s || 0); return '★'.repeat(n) + '☆'.repeat(5 - n) }
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 const distCount = (n) => (sysStats.value.distribucion?.[n]) || 0
 const barPct = (n) => {
   const dist = sysStats.value.distribucion || {}

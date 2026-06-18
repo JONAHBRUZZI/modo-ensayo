@@ -123,6 +123,7 @@
 import { ref, reactive, computed, onMounted, h } from 'vue'
 import { reviewService } from '@/services/reviewService'
 import { useAuth } from '@/stores/auth'
+import { formatDate } from '@/utils/dateFormatter'
 
 const { modoActual } = useAuth()
 
@@ -264,11 +265,6 @@ async function valorarSistema(score, comment) {
   } finally {
     enviandoSistema.value = false
   }
-}
-
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 // ── Componente: formulario de estrellas + comentario ──

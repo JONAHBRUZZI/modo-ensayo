@@ -161,6 +161,7 @@ import { useRouter } from 'vue-router'
 import classService from '@/services/classService'
 import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
+import { formatDate } from '@/utils/dateFormatter'
 
 const router = useRouter()
 const { syncAtributos } = useAuth()
@@ -247,14 +248,5 @@ async function eliminarReserva() {
     eliminandoId.value = null
   }
   eliminando.value = false
-}
-
-function formatDate(d) {
-  return d
-    ? new Date(d).toLocaleDateString('es-CL', {
-        weekday: 'short', day: 'numeric', month: 'short',
-        hour: '2-digit', minute: '2-digit'
-      })
-    : ''
 }
 </script>

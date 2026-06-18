@@ -159,6 +159,7 @@ import venueService from '@/services/venueService'
 import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { formatDate, formatTime } from '@/utils/dateFormatter'
 
 const toast = useToast()
 
@@ -369,12 +370,6 @@ function filteredSlots(roomId) {
   })
 }
 
-function formatDate(d) {
-  return d ? new Date(d).toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) : ''
-}
-function formatTime(d) {
-  return d ? new Date(d).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
-}
 </script>
 
 <style scoped>

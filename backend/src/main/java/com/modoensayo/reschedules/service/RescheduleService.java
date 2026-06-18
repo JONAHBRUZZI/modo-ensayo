@@ -13,7 +13,6 @@ import com.modoensayo.reschedules.dto.*;
 import com.modoensayo.reschedules.enums.RescheduleStatus;
 import com.modoensayo.reschedules.enums.ResponseType;
 import com.modoensayo.reschedules.repository.*;
-import com.modoensayo.reschedules.service.NotificationService;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.venues.dto.RoomAvailabilityResponse;

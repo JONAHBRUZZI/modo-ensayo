@@ -37,6 +37,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import rescheduleService from '@/services/rescheduleService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const notifications = ref([])
 const loading = ref(true)
@@ -49,8 +50,5 @@ onMounted(async () => {
   loading.value = false
 })
 
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-}
+
 </script>

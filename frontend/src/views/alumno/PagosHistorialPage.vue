@@ -38,6 +38,7 @@
 import { ref, onMounted } from 'vue'
 import paymentService from '@/services/paymentService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { formatDate } from '@/utils/dateFormatter'
 
 const pagos = ref([])
 const loading = ref(true)
@@ -53,8 +54,4 @@ onMounted(async () => {
   }
 })
 
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
-}
 </script>

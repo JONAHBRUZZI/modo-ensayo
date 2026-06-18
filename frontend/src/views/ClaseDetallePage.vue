@@ -89,8 +89,8 @@ import { useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import paymentService from '@/services/paymentService'
-import userService from '@/services/userService'
 import { reviewService } from '@/services/reviewService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const route = useRoute()
 const { user } = useAuth()
@@ -110,11 +110,7 @@ const promedioReviews = computed(() => {
 onMounted(async () => {
   try {
     clase.value = await classService.getClassById(route.params.claseId)
-    const [assoc, rev] = await Promise.all([
-      userService.getAssociates?.().catch(() => []),
-      reviewService.getByClass(route.params.claseId).then(r => r.data).catch(() => [])
-    ])
-    beneficiaries.value = Array.isArray(assoc) ? assoc : []
+    const rev = await reviewService.getByClass(route.params.claseId).then(r => r.data).catch(() => [])
     reviews.value = Array.isArray(rev) ? rev : []
   } catch (err) {
     console.error('Error al cargar detalle de la clase', err)
@@ -130,9 +126,6 @@ async function addToCart() {
     msg.value = e.response?.data?.message || 'Error al agregar'
   } finally { adding.value = false }
 }
-
-function formatDate(date) {
-  if (!date) return ''
-  return new Date(date).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
-}
 </script>
+
+

@@ -33,6 +33,7 @@
 import { ref, onMounted } from 'vue'
 import venueService from '@/services/venueService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { formatDate } from '@/utils/dateFormatter'
 
 const clases = ref([])
 const loading = ref(true)
@@ -41,9 +42,7 @@ onMounted(async () => {
   try {
     const data = await venueService.getVenueClasses()
     clases.value = Array.isArray(data) ? data : []
-  } catch { clases.value = [] }
+  } catch (e) { clases.value = [] }
   loading.value = false
 })
-
-function formatDate(d) { return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '' }
 </script>

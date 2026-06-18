@@ -123,9 +123,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
 import api from '@/services/api'
+import { formatDate } from '@/utils/dateFormatter'
 
 const borradores = ref([])
 const loading = ref(true)
@@ -167,9 +168,5 @@ async function eliminarBorrador() {
   eliminando.value = false
 }
 
-function formatDate(d) {
-  return d ? new Date(d).toLocaleDateString('es-CL', {
-    weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-  }) : 'Sin fecha'
-}
+
 </script>

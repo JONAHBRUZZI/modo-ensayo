@@ -90,6 +90,7 @@ import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import BorradorSelector from '@/components/BorradorSelector.vue'
+import { formatDate } from '@/utils/dateFormatter'
 
 const clases = ref([])
 const loading = ref(true)
@@ -110,7 +111,5 @@ async function cargar() {
 
 onMounted(() => { cargar() })
 
-function formatDate(d) {
-  return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
-}
+
 </script>

@@ -213,6 +213,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import { useToast } from '@/composables/useToast'
+import { formatDate } from '@/utils/dateFormatter'
 
 const toast = useToast()
 
@@ -349,10 +350,5 @@ function estadoClase(s) {
   if (s === 'RECHAZADA') return 'bg-red-500/10 text-red-300 border-red-500/30'
   if (s === 'SUSPENDIDA') return 'bg-orange-500/10 text-orange-300 border-orange-500/30'
   return 'bg-gray-500/10 text-gray-300 border-gray-500/30'
-}
-
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 </script>

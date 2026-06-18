@@ -166,6 +166,7 @@ import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
 import api from '@/services/api'
+import { formatDate } from '@/utils/dateFormatter'
 
 const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
 
@@ -224,7 +225,5 @@ onMounted(async () => {
   }
 })
 
-function formatDate(d) {
-  return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
-}
+
 </script>

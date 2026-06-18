@@ -53,6 +53,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const pagos = ref([])
 const resumen = ref({ totalRetenido: 0, totalLiberadoMes: 0, totalLiberadoAcumulado: 0 })
@@ -63,15 +64,11 @@ onMounted(async () => {
     const data = await classService.getTeacherEarnings()
     pagos.value = data?.pagos || []
     resumen.value = data?.resumen || { totalRetenido: 0, totalLiberadoMes: 0, totalLiberadoAcumulado: 0 }
-  } catch {
+  } catch (e) {
     pagos.value = []
   }
   loading.value = false
 })
-
-function formatDate(d) {
-  return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
-}
 
 function statusLabel(status) {
   const labels = { RETAINED: 'Retenido', RELEASED: 'Liberado', REFUND_PENDING: 'En devolucion', REFUNDED: 'Devuelto', FAILED: 'Fallido' }

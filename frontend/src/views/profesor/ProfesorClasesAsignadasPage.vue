@@ -31,7 +31,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
-import EstadoBadge from '@/components/EstadoBadge.vue'
+import { formatDate } from '@/utils/dateFormatter'
 
 const clases = ref([])
 const loading = ref(true)
@@ -44,7 +44,5 @@ onMounted(async () => {
   loading.value = false
 })
 
-function formatDate(d) {
-  return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
-}
+
 </script>

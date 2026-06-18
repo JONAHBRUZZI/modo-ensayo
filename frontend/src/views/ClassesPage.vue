@@ -107,6 +107,7 @@ import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import classService from '@/services/classService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const router = useRouter()
 const classes = ref([])
@@ -190,10 +191,5 @@ async function buscar() {
 
 function goToClass(id) { router.push(`/alumno/clases/${id}`) }
 
-function formatDate(date) {
-  if (!date) return ''
-  return new Date(date).toLocaleDateString('es-CL', {
-    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-  })
-}
+
 </script>

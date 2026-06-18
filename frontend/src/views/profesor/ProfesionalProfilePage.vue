@@ -213,6 +213,7 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 import { reviewService } from '@/services/reviewService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const router = useRouter()
 const route = useRoute()
@@ -252,10 +253,6 @@ const promedioReviews = computed(() => {
   return reviews.value.reduce((sum, r) => sum + r.score, 0) / reviews.value.length
 })
 
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
-}
 
 const iniciales = computed(() => {
   const nombre = form.socialName || form.fullName || ''

@@ -58,6 +58,7 @@ import { ref, computed, onMounted } from 'vue'
 import paymentService from '@/services/paymentService'
 import { reviewService } from '@/services/reviewService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
+import { formatDate } from '@/utils/dateFormatter'
 
 const clases = ref([])
 const loading = ref(true)
@@ -95,10 +96,5 @@ async function cargarClases() {
 
 function pendienteReseña(classId) {
   return clasesElegibles.value.has(classId)
-}
-
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 </script>

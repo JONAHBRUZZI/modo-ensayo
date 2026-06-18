@@ -330,7 +330,7 @@ onMounted(async () => {
         console.error('Error al cargar rating de la sede', err)
       }
     }
-  } catch {}
+  } catch (err) { console.error('Error al cargar sedes del usuario', err) }
   loading.value = false
   attachAutocomplete(addressInput.value, (place) => {
     formDatos.address = place.formatted_address

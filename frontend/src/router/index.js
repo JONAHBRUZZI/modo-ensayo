@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { decodeJwt } from '@/utils/jwt'
 
 const routes = [
   {
@@ -379,12 +380,9 @@ router.beforeEach((to, from, next) => {
 
   const isAuthenticated = () => {
     if (!token) return false
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      return payload.exp * 1000 > Date.now()
-    } catch {
-      return false
-    }
+    const payload = decodeJwt(token)
+    if (!payload) return false
+    return payload.exp * 1000 > Date.now()
   }
 
   const hasRole = (roles) => {

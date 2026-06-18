@@ -53,6 +53,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import venueService from '@/services/venueService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const clases = ref([])
 const loading = ref(true)
@@ -92,6 +93,4 @@ async function ejecutarConfirmacion() {
   }
   modal.enviando = false
 }
-
-function formatDate(d) { return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '' }
 </script>

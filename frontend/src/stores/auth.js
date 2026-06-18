@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import api from '@/services/api'
+import { decodeJwt } from '@/utils/jwt'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
@@ -38,12 +39,9 @@ class AuthStore {
 
   isAuthenticated() {
     if (!this.token.value) return false
-    try {
-      const payload = jwtDecode(this.token.value)
-      return payload.exp * 1000 > Date.now()
-    } catch {
-      return false
-    }
+    const payload = decodeJwt(this.token.value)
+    if (!payload) return false
+    return payload.exp * 1000 > Date.now()
   }
 
   hasRole(roles) {
@@ -61,14 +59,6 @@ class AuthStore {
 
   logout() {
     this.clearAuth()
-  }
-}
-
-function jwtDecode(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]))
-  } catch {
-    return {}
   }
 }
 

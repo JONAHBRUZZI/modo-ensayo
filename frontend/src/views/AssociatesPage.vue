@@ -83,6 +83,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import associateService from '@/services/associateService'
 import ConfirmModal from '@/components/ConfirmModal.vue'
+import { formatearRut as formatearRutUtil, validateRut as validateRutUtil } from '@/utils/rutValidator'
+import { formatDate } from '@/utils/dateFormatter'
 
 const associates = ref([])
 const loading = ref(true)
@@ -132,31 +134,13 @@ async function createAssociate() {
 }
 
 function formatearRut() {
-  if (!form.rut) return
-  let valor = form.rut.replace(/[^0-9kK]/g, '')
-  if (valor.length < 2) { form.rut = valor; return }
-  const dv = valor.slice(-1)
-  let cuerpo = valor.slice(0, -1)
-  cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  form.rut = cuerpo + '-' + dv
+  form.rut = formatearRutUtil(form.rut)
 }
 
 function validarRut() {
   rutError.value = ''
   if (!form.rut) return
-  const rut = form.rut.replace(/[^0-9kK]/g, '')
-  if (rut.length < 2) { rutError.value = 'RUT invalido'; return }
-  const dv = rut.slice(-1).toUpperCase()
-  const cuerpo = rut.slice(0, -1)
-  let suma = 0
-  let multiplo = 2
-  for (let i = cuerpo.length - 1; i >= 0; i--) {
-    suma += parseInt(cuerpo[i]) * multiplo
-    multiplo = multiplo < 7 ? multiplo + 1 : 2
-  }
-  const dvEsperado = 11 - (suma % 11)
-  const dvCalculado = dvEsperado === 11 ? '0' : dvEsperado === 10 ? 'K' : dvEsperado.toString()
-  if (dv !== dvCalculado) rutError.value = 'RUT invalido: digito verificador no coincide'
+  if (!validateRutUtil(form.rut)) rutError.value = 'RUT invalido: digito verificador no coincide'
 }
 
 function confirmDelete(associate) {
@@ -174,8 +158,4 @@ async function deleteAssociate() {
   }
 }
 
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
-}
 </script>

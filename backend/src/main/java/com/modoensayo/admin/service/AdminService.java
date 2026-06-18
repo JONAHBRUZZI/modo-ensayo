@@ -409,9 +409,6 @@ public class AdminService {
         // Limpiar notificaciones (sin cascade en BD)
         notificationRepository.deleteAll(notificationRepository.findByUserIdOrderByCreatedAtDesc(targetUserId));
 
-        // Eliminar al usuario. JPA cascadea user_roles, identity, associates,
-        // professional_profile y refund_methods configurados con CascadeType.ALL
-        // y orphanRemoval = true.
         userRepository.delete(target);
     }
 }

@@ -20,7 +20,6 @@ import rescheduleService from '@/services/rescheduleService'
 const route = useRoute()
 const newDate = ref('')
 const roomId = ref('')
-const reason = ref('')
 const rooms = ref([])
 const sending = ref(false)
 const msg = ref('')

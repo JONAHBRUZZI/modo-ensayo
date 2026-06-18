@@ -24,5 +24,17 @@ export default {
   },
   releaseMaintenance(blockId) {
     return api.delete(`/venues/rooms/blocks/${blockId}/maintenance`).then(r => r.data)
+  },
+
+  searchAvailableRooms(from, to) {
+    return api.get('/rooms/available', { params: { from, to } }).then(r => r.data)
+  },
+
+  bookSlot(roomId, blockId, classId) {
+    return api.post(`/rooms/${roomId}/book`, { blockId, classId: classId || null }).then(r => r.data)
+  },
+
+  getUserCalendar(from, to) {
+    return api.get('/users/me/calendar', { params: { from, to } }).then(r => r.data)
   }
 }

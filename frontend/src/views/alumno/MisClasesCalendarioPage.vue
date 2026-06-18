@@ -102,7 +102,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import paymentService from '@/services/paymentService'
+import scheduleService from '@/services/scheduleService'
 import { formatTime } from '@/utils/dateFormatter'
 
 const loading = ref(true)
@@ -225,7 +225,12 @@ function formatDateFull(dateStr) {
 
 onMounted(async () => {
   try {
-    const data = await paymentService.getMyEnrollments()
+    const year = currentYear.value
+    const month = currentMonth.value
+    const from = `${year}-${String(month + 1).padStart(2, '0')}-01T00:00:00`
+    const lastDay = new Date(year, month + 1, 0).getDate()
+    const to = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}T23:59:59`
+    const data = await scheduleService.getUserCalendar(from, to)
     enrollments.value = Array.isArray(data) ? data : data?.content || []
   } catch {
     enrollments.value = []

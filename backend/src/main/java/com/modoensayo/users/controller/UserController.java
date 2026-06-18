@@ -14,6 +14,7 @@ import com.modoensayo.classes.domain.Class;
 import com.modoensayo.classes.repository.ClassRepository;
 import com.modoensayo.classes.enums.ClassStatus;
 import com.modoensayo.venues.repository.VenueRepository;
+import com.modoensayo.payments.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -38,6 +39,7 @@ public class UserController {
     private final IdentityVerificationRepository identityVerificationRepository;
     private final UserRepository userRepository;
     private final VenueRepository venueRepository;
+    private final PaymentService paymentService;
 
     /**
      * Retorna si el usuario tiene clases propias activas (futuras/en curso) o clases asignadas activas.
@@ -221,6 +223,25 @@ public class UserController {
     public ResponseEntity<ProfessionalProfile> saveProfessionalProfile(@AuthenticationPrincipal CustomUserDetails user,
                                                             @RequestBody Map<String, String> body) {
         return ResponseEntity.ok(profileService.save(user.getUserId(), body));
+    }
+
+    @GetMapping("/me/calendar")
+    public ResponseEntity<List<Map<String, Object>>> getCalendar(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to) {
+        List<Map<String, Object>> enrollments = paymentService.getMyEnrollments(user.getUserId());
+        if (from == null && to == null) {
+            return ResponseEntity.ok(enrollments);
+        }
+        Instant f = from != null ? Instant.parse(from) : Instant.now();
+        Instant t = to != null ? Instant.parse(to) : Instant.now().plus(14, java.time.temporal.ChronoUnit.DAYS);
+        return ResponseEntity.ok(enrollments.stream()
+                .filter(e -> {
+                    Instant startTime = (Instant) e.get("startTime");
+                    return startTime != null && !startTime.isBefore(f) && !startTime.isAfter(t);
+                })
+                .toList());
     }
 
     @PutMapping("/me/password")

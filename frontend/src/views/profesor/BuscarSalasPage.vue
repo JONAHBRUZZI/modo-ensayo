@@ -273,6 +273,14 @@ function getRoomColor(roomId) {
   return ROOM_COLORS[Math.abs(idx) % ROOM_COLORS.length]
 }
 
+function getMonday(d) {
+  const date = new Date(d)
+  const day = date.getDay() || 7
+  date.setDate(date.getDate() - day + 1)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
 const calendarFilters = ref([
   { key: 'danza', label: 'Danza', checked: false },
   { key: 'musica', label: 'Música', checked: false },
@@ -330,55 +338,33 @@ function onCalendarFilterChange() {
 async function loadCalendarData() {
   calendarLoading.value = true
   try {
-    const data = await classService.getVenues()
-    let list = Array.isArray(data) ? data : data?.content || []
-    if (filtros.value.comuna) list = list.filter(v => v.city === filtros.value.comuna)
+    const from = calendarWeekDays.value[0].date + 'T00:00:00'
+    const to = calendarWeekDays.value[6].date + 'T23:59:59'
+    const data = await scheduleService.searchAvailableRooms(from, to)
+    let allSlots = Array.isArray(data) ? data : data?.content || []
 
     const activeFilters = calendarFilters.value.filter(f => f.checked).map(f => f.key)
-    const allSlots = []
+    if (activeFilters.length > 0) {
+      allSlots = allSlots.filter(slot => {
+        let include = false
+        const t = (slot.roomType || slot.type || '').toLowerCase()
+        const ft = (slot.floorType || slot.tipoPiso || '').toLowerCase()
+        if (activeFilters.includes('danza') && t === 'danza') include = true
+        if (activeFilters.includes('musica') && t === 'musica') include = true
+        if (activeFilters.includes('espejo') && slot.hasMirrors) include = true
+        if (activeFilters.includes('sinEspejo') && !slot.hasMirrors) include = true
+        if (activeFilters.includes('madera') && (ft.includes('madera') || ft.includes('wood'))) include = true
+        if (activeFilters.includes('flotante') && (ft.includes('flotante') || ft.includes('floating'))) include = true
+        return include
+      })
+    }
+
     const roomsMap = new Map()
-
-    for (const v of list) {
-      try {
-        const rooms = await venueService.getRooms(v.id)
-        for (const room of rooms) {
-          let include = true
-          if (activeFilters.length > 0) {
-            include = false
-            const t = (room.type || '').toLowerCase()
-            const ft = (room.floorType || room.tipoPiso || '').toLowerCase()
-            if (activeFilters.includes('danza') && t === 'danza') include = true
-            if (activeFilters.includes('musica') && t === 'musica') include = true
-            if (activeFilters.includes('espejo') && room.hasMirrors) include = true
-            if (activeFilters.includes('sinEspejo') && !room.hasMirrors) include = true
-            if (activeFilters.includes('madera') && (ft.includes('madera') || ft.includes('wood'))) include = true
-            if (activeFilters.includes('flotante') && (ft.includes('flotante') || ft.includes('floating'))) include = true
-          }
-          if (!include) continue
-
-          try {
-            const from = calendarWeekDays.value[0].date
-            const to = calendarWeekDays.value[6].date
-            const entries = await scheduleService.getRoomSchedule(room.id, from + 'T00:00:00', to + 'T23:59:59')
-            if (Array.isArray(entries)) {
-              for (const entry of entries) {
-                if (entry.status === 'AVAILABLE' || !entry.status) {
-                  allSlots.push({
-                    ...entry,
-                    roomId: room.id,
-                    roomName: room.name,
-                    venueName: v.name,
-                    venue: v,
-                    room: room,
-                    venueId: v.id
-                  })
-                }
-              }
-            }
-          } catch { /* skip room schedule errors */ }
-          roomsMap.set(room.id, room)
-        }
-      } catch { /* skip venue room errors */ }
+    for (const slot of allSlots) {
+      const rid = slot.roomId
+      if (rid && !roomsMap.has(rid)) {
+        roomsMap.set(rid, { id: rid, name: slot.roomName || '' })
+      }
     }
 
     calendarRooms.value = Array.from(roomsMap.values())
@@ -388,7 +374,11 @@ async function loadCalendarData() {
 }
 
 function openCalendarSlot(slot) {
-  confirmarAgendamiento(slot.room, slot.venue, slot)
+  confirmarAgendamiento(
+    slot.room || { id: slot.roomId, name: slot.roomName, capacity: slot.capacity, pricePerHour: slot.pricePerHour },
+    slot.venue || { name: slot.venueName },
+    slot
+  )
 }
 
 function prevCalendarWeek() {
@@ -517,15 +507,17 @@ function confirmarAgendamiento(room, venue, slot) {
 async function pagar(metodo) {
   modal.value.procesando = true
   try {
-    if (borradorId.value) {
-      // Flujo: asignar sala a un borrador existente (y publicarlo)
+    const blockId = modal.value.slot?.blockId || modal.value.slot?.id
+    if (blockId) {
+      const roomId = modal.value.room.id || modal.value.slot?.roomId
+      await scheduleService.bookSlot(roomId, blockId, borradorId.value || null)
+    } else if (borradorId.value) {
       await api.post(`/profesor/clases/${borradorId.value}/asignar-reserva`, {
         roomId: modal.value.room.id,
         startTime: modal.value.slot.startTime,
         duration: 60
       })
     } else {
-      // Flujo booking: crear borrador con sala asignada (backend otorga rol TEACHER)
       await api.post('/classes?draft=true', {
         title: 'Reserva - ' + modal.value.room.name,
         discipline: null,

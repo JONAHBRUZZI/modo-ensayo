@@ -30,6 +30,7 @@ public class VenueService {
     private final RoomRepository roomRepository;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final NotificationService notificationService;
+    private final VenueScheduleService scheduleService;
 
     @Cacheable("approvedVenues")
     public List<VenueResponse> listApproved() {
@@ -215,7 +216,9 @@ public class VenueService {
                 // Legacy
                 .equipment(req.equipment())
                 .build();
-        return toRoomResponse(roomRepository.save(r));
+        Room saved = roomRepository.save(r);
+        scheduleService.generateBlocks(v.getId());
+        return toRoomResponse(saved);
     }
 
     /**

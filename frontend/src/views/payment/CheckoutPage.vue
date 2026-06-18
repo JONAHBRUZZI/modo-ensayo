@@ -106,11 +106,13 @@ async function procesarPago() {
   error.value = ''
   enviando.value = true
   try {
-    // Animacion de procesamiento
     procesando.value = true
-    await new Promise(r => setTimeout(r, 2000))
-    const resultado = await paymentService.checkout()
-    completadoItems.value = resultado.items || []
+    const resultado = await paymentService.createMercadoPagoPreference()
+    if (resultado?.initPoint) {
+      window.location.href = resultado.initPoint
+      return
+    }
+    completadoItems.value = resultado?.items || []
     procesando.value = false
     completado.value = true
   } catch (e) {

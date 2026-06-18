@@ -11,6 +11,8 @@ import com.modoensayo.payments.repository.CartItemRepository;
 import com.modoensayo.payments.repository.EnrollmentRepository;
 import com.modoensayo.payments.repository.PaymentRepository;
 import com.modoensayo.reschedules.service.NotificationService;
+import com.modoensayo.classes.enums.ClassStatus;
+import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,17 @@ public class PaymentService {
     public void addToCart(UUID ownerId, UUID classId, String beneficiaryType, UUID beneficiaryId) {
         Class c = classRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
+
+        if (c.getStatus() != ClassStatus.PUBLISHED) {
+            throw new BusinessException("Clase no disponible para inscripcion");
+        }
+        if (c.getCapacity() != null && enrollmentRepository.countByClassId(classId) >= c.getCapacity()) {
+            throw new BusinessException("Clase sin cupos disponibles");
+        }
+        if (enrollmentRepository.existsByClassIdAndBeneficiaryId(classId,
+                beneficiaryId != null ? beneficiaryId : ownerId)) {
+            throw new BusinessException("Ya estas inscrito en esta clase");
+        }
 
         CartItem item = CartItem.builder()
                 .ownerId(ownerId).classId(classId)
@@ -69,14 +82,33 @@ public class PaymentService {
     @Transactional
     public Map<String, Object> checkout(UUID ownerId) {
         List<CartItem> items = cartItemRepository.findByOwnerId(ownerId);
+        List<String> failures = new ArrayList<>();
+
+        for (CartItem item : items) {
+            UUID beneficiaryId = item.getBeneficiaryId() != null ? item.getBeneficiaryId() : ownerId;
+            if (enrollmentRepository.existsByClassIdAndBeneficiaryId(item.getClassId(), beneficiaryId)) {
+                failures.add("Ya estas inscrito en " + item.getClassTitle());
+                continue;
+            }
+            Class c = classRepository.findById(item.getClassId()).orElse(null);
+            if (c == null) {
+                failures.add("Clase no encontrada: " + item.getClassTitle());
+                continue;
+            }
+            if (c.getCapacity() != null && enrollmentRepository.countByClassId(item.getClassId()) >= c.getCapacity()) {
+                failures.add("Clase sin cupos: " + item.getClassTitle());
+            }
+        }
+
+        if (!failures.isEmpty()) {
+            throw new BusinessException("No se pudo completar el checkout: " + String.join("; ", failures));
+        }
+
         List<Map<String, Object>> processed = new ArrayList<>();
         double total = 0;
 
         for (CartItem item : items) {
             UUID beneficiaryId = item.getBeneficiaryId() != null ? item.getBeneficiaryId() : ownerId;
-            if (enrollmentRepository.existsByClassIdAndBeneficiaryId(item.getClassId(), beneficiaryId)) {
-                continue;
-            }
             Enrollment enrollment = Enrollment.builder()
                     .classId(item.getClassId())
                     .beneficiaryType(item.getBeneficiaryType() != null ? item.getBeneficiaryType() : "USER")

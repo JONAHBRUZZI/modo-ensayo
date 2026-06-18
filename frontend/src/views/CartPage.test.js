@@ -11,9 +11,7 @@ vi.mock('@/services/paymentService', () => ({
       { id: '2', classTitle: 'Ballet', discipline: 'Ballet', price: 20000 },
     ]}),
     removeFromCart: vi.fn().mockResolvedValue({}),
-    checkout: vi.fn().mockResolvedValue({
-      initPoint: 'https://www.mercadopago.cl/checkout/v1/redirect?pref_id=pref-123',
-    }),
+    checkout: vi.fn().mockResolvedValue({}),
   }
 }))
 
@@ -22,6 +20,7 @@ function createTestRouter() {
     history: createWebHistory(),
     routes: [
       { path: '/', component: { template: '<div/>' } },
+      { path: '/payment/checkout', component: { template: '<div/>' } },
       { path: '/payment/success', component: { template: '<div/>' } },
       { path: '/payment/failure', component: { template: '<div/>' } },
       { path: '/payment/pending', component: { template: '<div/>' } },
@@ -47,7 +46,7 @@ describe('CartPage', () => {
     expect(wrapper.text()).toContain('35.000') // total
   })
 
-  it('sets checkingOut to true when clicking Pagar button', async () => {
+  it('shows confirm modal when clicking Pagar button', async () => {
     const wrapper = mount(CartPage, { global: { plugins: [router] } })
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
@@ -58,19 +57,6 @@ describe('CartPage', () => {
     payButton.trigger('click')
     await wrapper.vm.$nextTick()
 
-    // checkingOut should be true after clicking
-    expect(wrapper.vm.checkingOut).toBe(true)
-  })
-
-  it('calls checkout when irAPagar is invoked', async () => {
-    const paymentService = (await import('@/services/paymentService')).default
-    const wrapper = mount(CartPage, { global: { plugins: [router] } })
-    await new Promise(r => setTimeout(r, 50))
-    await wrapper.vm.$nextTick()
-
-    // Simulate the checkout function directly
-    await wrapper.vm.irAPagar()
-
-    expect(paymentService.checkout).toHaveBeenCalledOnce()
+    expect(wrapper.vm.showConfirm).toBe(true)
   })
 })

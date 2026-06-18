@@ -67,6 +67,14 @@
         {{ checkingOut ? 'Procesando...' : `Pagar $${total.toLocaleString()}` }}
       </button>
     </div>
+
+    <ConfirmDialog
+      :visible="showConfirm"
+      title="Confirmar pago"
+      :message="`¿Confirmas tu pago de $${total.toLocaleString()}?`"
+      @confirm="confirmarPago"
+      @cancel="showConfirm = false"
+    />
   </div>
 </template>
 
@@ -74,11 +82,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import paymentService from '@/services/paymentService'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const router = useRouter()
 const items = ref([])
 const loading = ref(true)
 const checkingOut = ref(false)
+const showConfirm = ref(false)
 const total = computed(() => items.value.reduce((sum, i) => sum + (i.price || 0), 0))
 
 onMounted(async () => {
@@ -97,12 +107,13 @@ async function removeItem(id) {
   }
 }
 
-async function irAPagar() {
+function irAPagar() {
+  showConfirm.value = true
+}
+
+async function confirmarPago() {
   checkingOut.value = true
-  try {
-    const res = await paymentService.checkout()
-    if (res?.initPoint) window.location.href = res.initPoint
-    else router.push('/alumno/mis-clases')
-  } catch { checkingOut.value = false }
+  showConfirm.value = false
+  await router.push('/payment/checkout')
 }
 </script>

@@ -63,7 +63,7 @@ public class RescheduleService {
         if (!isValid) {
             throw new BusinessException(
                 "La fecha propuesta no esta dentro de los bloques horarios disponibles de la sede. " +
-                "Consulta las opciones disponibles en /reschedules/{classId}/available-slots.");
+                "Consulta las opciones disponibles en /reschedules/class/{classId}/available-slots.");
         }
 
         Reschedule r = Reschedule.builder()

@@ -26,6 +26,7 @@
                   <span v-if="reservasSinClaseCount > 0" class="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{{ reservasSinClaseCount }}</span>
                 </router-link>
                 <router-link to="/profesor/clases-propias" class="nav-link">Mis Clases</router-link>
+                <router-link to="/profesor/calendario" class="nav-link">Calendario</router-link>
                 <router-link to="/profesor/clases-asignadas" class="nav-link">Asignadas</router-link>
                 <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
                 <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
@@ -38,6 +39,7 @@
               <template v-if="puedeVerContextoSede && modoActual === 'sede'">
                 <router-link to="/sede/dashboard" class="nav-link">Panel</router-link>
                 <router-link to="/sede/salas" class="nav-link">Salas</router-link>
+                <router-link to="/sede/calendario" class="nav-link">Calendario</router-link>
                 <router-link to="/sede/mis-clases" class="nav-link">Clases</router-link>
                 <router-link to="/sede/crear-clase" class="nav-link">Crear Clase</router-link>
                 <router-link to="/sede/clases-por-confirmar" class="nav-link">Confirmar</router-link>
@@ -59,6 +61,7 @@
               <template v-if="modoActual === 'alumno'">
                 <router-link to="/alumno/dashboard" class="nav-link">Mi Espacio</router-link>
                 <router-link to="/alumno/mis-clases" class="nav-link">Mis Clases</router-link>
+                <router-link to="/alumno/mis-clases/calendario" class="nav-link">Calendario</router-link>
                 <router-link to="/alumno/asociados" class="nav-link">Asociados</router-link>
                 <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
                 <router-link to="/reviews" class="nav-link">Reseñas</router-link>
@@ -182,6 +185,7 @@
               <router-link to="/profesor/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
               <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile" @click="showMobileMenu = false">Por Asignar</router-link>
               <router-link to="/profesor/clases-propias" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
+              <router-link to="/profesor/calendario" class="nav-link-mobile" @click="showMobileMenu = false">Calendario</router-link>
               <router-link to="/profesor/clases-asignadas" class="nav-link-mobile" @click="showMobileMenu = false">Asignadas</router-link>
               <router-link to="/profesor/borradores" class="nav-link-mobile" @click="showMobileMenu = false">Borradores</router-link>
               <router-link to="/profesor/buscar-salas" class="nav-link-mobile" @click="showMobileMenu = false">Agendar Sala</router-link>
@@ -192,6 +196,7 @@
             <template v-if="puedeVerContextoSede && modoActual === 'sede'">
               <router-link to="/sede/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Panel</router-link>
               <router-link to="/sede/salas" class="nav-link-mobile" @click="showMobileMenu = false">Salas</router-link>
+              <router-link to="/sede/calendario" class="nav-link-mobile" @click="showMobileMenu = false">Calendario</router-link>
               <router-link to="/sede/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Clases</router-link>
               <router-link to="/sede/crear-clase" class="nav-link-mobile" @click="showMobileMenu = false">Crear Clase</router-link>
               <router-link to="/sede/clases-por-confirmar" class="nav-link-mobile" @click="showMobileMenu = false">Confirmar</router-link>
@@ -209,6 +214,7 @@
             <template v-if="modoActual === 'alumno'">
               <router-link to="/alumno/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Mi Espacio</router-link>
               <router-link to="/alumno/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
+              <router-link to="/alumno/mis-clases/calendario" class="nav-link-mobile" @click="showMobileMenu = false">Calendario</router-link>
               <router-link to="/alumno/asociados" class="nav-link-mobile" @click="showMobileMenu = false">Asociados</router-link>
               <router-link to="/alumno/pagos" class="nav-link-mobile" @click="showMobileMenu = false">Pagos</router-link>
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>

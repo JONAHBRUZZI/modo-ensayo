@@ -465,8 +465,8 @@ async function saveAllConfig() {
       }))
 
     const cfg = {
-      durationMinutes: blockCfg.duration,
-      gapMinutes: blockCfg.gap
+      blockDurationMin: blockCfg.duration,
+      gapBetweenBlocksMin: blockCfg.gap
     }
 
     await scheduleService.saveSchedule(venue.value.id, schedules)
@@ -568,8 +568,8 @@ onMounted(async () => {
     }
 
     if (blockConfigRes.status === 'fulfilled' && blockConfigRes.value) {
-      blockCfg.duration = blockConfigRes.value.durationMinutes || 60
-      blockCfg.gap = blockConfigRes.value.gapMinutes || 15
+      blockCfg.duration = blockConfigRes.value.blockDurationMin || 60
+      blockCfg.gap = blockConfigRes.value.gapBetweenBlocksMin || 15
     }
 
     await loadAllSchedules()

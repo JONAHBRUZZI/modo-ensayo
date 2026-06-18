@@ -7,6 +7,23 @@
 
     <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
 
+    <!-- CTA: sin horario -->
+    <div v-else-if="schedules.length === 0" class="card text-center py-16 mb-6">
+      <div class="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold text-white mb-2">Sin horarios disponibles</h2>
+      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">
+        Tu sede aún no tiene un horario laboral configurado. Defínelo para que el sistema
+        genere automáticamente los bloques de disponibilidad de tus salas.
+      </p>
+      <button @click="showConfig = true" class="btn-primary text-base px-8 py-3">
+        Crear horario laboral
+      </button>
+    </div>
+
     <template v-else>
       <!-- Config section (collapsible) -->
       <div class="card mb-6">

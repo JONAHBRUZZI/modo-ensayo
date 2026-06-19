@@ -89,15 +89,15 @@
         </div>
         <div v-if="dayDetail.length === 0" class="text-gray-400 text-sm py-4">Sin clases este dia.</div>
         <div v-else class="space-y-3">
-          <div v-for="c in dayDetail" :key="c.classId || c.id" :class="['rounded-xl p-4 border', c.esPropia ? 'border-purple-500/30 bg-purple-500/5' : 'border-orange-500/30 bg-orange-500/5']">
+          <div v-for="c in dayDetail" :key="c.classId || c.id" :class="['rounded-xl p-4 border', c.isOwner ? 'border-purple-500/30 bg-purple-500/5' : 'border-orange-500/30 bg-orange-500/5']">
             <div class="flex items-start justify-between">
               <div>
                 <h4 class="text-white font-medium">{{ c.title }}</h4>
                 <p class="text-gray-400 text-sm mt-0.5">{{ c.discipline }} {{ c.level ? '-- ' + c.level : '' }}</p>
                 <p class="text-gray-500 text-xs mt-1">{{ formatTime(c.startTime) }} - {{ formatTime(c.endTime) }}</p>
                 <p v-if="c.venueName" class="text-gray-500 text-xs">{{ c.venueName }}</p>
-                <span :class="['text-xs px-2 py-0.5 rounded-full mt-1.5 inline-block', c.esPropia ? 'bg-purple-500/20 text-purple-300' : 'bg-orange-500/20 text-orange-300']">
-                  {{ c.esPropia ? 'Mi clase' : 'Asociado' }}
+                <span :class="['text-xs px-2 py-0.5 rounded-full mt-1.5 inline-block', c.isOwner ? 'bg-purple-500/20 text-purple-300' : 'bg-orange-500/20 text-orange-300']">
+                  {{ c.isOwner ? 'Mi clase' : 'Asociado' }}
                 </span>
               </div>
               <router-link :to="'/alumno/clases/' + (c.classId || c.id)" class="text-primary text-sm hover:underline whitespace-nowrap ml-4">Ver detalle</router-link>
@@ -140,12 +140,12 @@ const monthLabel = computed(() => {
 
 const filteredEnrollments = computed(() => {
   if (filtroActivo.value === 'mis-clases') {
-    return enrollments.value.filter(e => e.esPropia !== false)
+    return enrollments.value.filter(e => e.isOwner !== false)
   }
   if (filtroActivo.value === 'por-asociado') {
-    let list = enrollments.value.filter(e => e.esPropia === false)
+    let list = enrollments.value.filter(e => e.isOwner === false)
     if (associateSelected.value) {
-      list = list.filter(e => e.associateId == associateSelected.value)
+      list = list.filter(e => e.beneficiaryId == associateSelected.value)
     }
     return list
   }
@@ -173,8 +173,8 @@ const monthWeeks = computed(() => {
   while (day <= lastDate) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const dayClasses = getClassesForDate(dateStr)
-    const propias = dayClasses.filter(c => c.esPropia).length
-    const asociadas = dayClasses.filter(c => !c.esPropia).length
+    const propias = dayClasses.filter(c => c.isOwner).length
+    const asociadas = dayClasses.filter(c => !c.isOwner).length
 
     currentWeek.push({
       dayNumber: day,
@@ -247,12 +247,8 @@ function formatDateFull(dateStr) {
 async function loadCalendar() {
   loading.value = true
   try {
-    const year = currentYear.value
-    const month = currentMonth.value
-    const from = `${year}-${String(month + 1).padStart(2, '0')}-01T00:00:00`
-    const lastDay = new Date(year, month + 1, 0).getDate()
-    const to = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}T23:59:59`
-    const data = await scheduleService.getUserCalendar(from, to)
+    // Traemos todas las inscripciones; el calendario filtra por mes/dia en el cliente.
+    const data = await scheduleService.getUserCalendar()
     enrollments.value = Array.isArray(data) ? data : data?.content || []
   } catch {
     enrollments.value = []

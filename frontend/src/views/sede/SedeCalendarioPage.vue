@@ -428,7 +428,7 @@ function onCellClick(day, block) {
     maintenanceConfirm.value = {
       action: 'release',
       message: '¿Liberar este horario de mantención?',
-      blockId: entry.blockId,
+      blockId: entry.id,
       roomId: selectedRoomId.value
     }
     return
@@ -437,7 +437,7 @@ function onCellClick(day, block) {
   maintenanceConfirm.value = {
     action: 'mark',
     message: '¿Marcar este horario como mantención?',
-    blockId: entry?.blockId,
+    blockId: entry?.id,
     roomId: selectedRoomId.value,
     date: day.date,
     startMin: block.start

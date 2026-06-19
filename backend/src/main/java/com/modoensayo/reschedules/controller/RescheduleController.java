@@ -3,7 +3,7 @@ package com.modoensayo.reschedules.controller;
 import com.modoensayo.auth.service.CustomUserDetails;
 import com.modoensayo.reschedules.dto.*;
 import com.modoensayo.reschedules.service.RescheduleService;
-import com.modoensayo.venues.dto.RoomAvailabilityResponse;
+import com.modoensayo.venues.dto.RoomScheduleBlockDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,7 +37,7 @@ public class RescheduleController {
     }
 
     @GetMapping("/class/{classId}/available-slots")
-    public ResponseEntity<List<RoomAvailabilityResponse>> getAvailableSlots(@PathVariable UUID classId) {
+    public ResponseEntity<List<RoomScheduleBlockDto>> getAvailableSlots(@PathVariable UUID classId) {
         return ResponseEntity.ok(rescheduleService.getAvailableSlotsForReschedule(classId));
     }
 

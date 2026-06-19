@@ -37,12 +37,6 @@ public class VenueController {
         return ResponseEntity.ok(venueService.getRooms(venueId));
     }
 
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService.
-    @GetMapping("/rooms/{roomId}/availability")
-    public ResponseEntity<List<RoomAvailabilityResponse>> getAvailability(@PathVariable UUID roomId) {
-        return ResponseEntity.ok(java.util.Collections.emptyList());
-    }
-
     /** Fotos públicas de una sede. */
     @GetMapping("/{venueId}/fotos")
     public ResponseEntity<List<VenuePhoto>> getVenuePhotos(@PathVariable UUID venueId) {

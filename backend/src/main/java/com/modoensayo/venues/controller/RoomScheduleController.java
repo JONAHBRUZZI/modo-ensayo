@@ -1,7 +1,7 @@
 package com.modoensayo.venues.controller;
 
 import com.modoensayo.venues.domain.Room;
-import com.modoensayo.venues.domain.RoomScheduleBlock;
+import com.modoensayo.venues.dto.RoomScheduleBlockDto;
 import com.modoensayo.venues.repository.RoomRepository;
 import com.modoensayo.venues.service.VenueScheduleService;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class RoomScheduleController {
     private final RoomRepository roomRepo;
 
     @GetMapping("/available")
-    public ResponseEntity<List<RoomScheduleBlock>> searchAvailable(
+    public ResponseEntity<List<RoomScheduleBlockDto>> searchAvailable(
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to) {
         Instant f = from != null ? Instant.parse(from) : Instant.now();
@@ -29,11 +29,11 @@ public class RoomScheduleController {
         List<UUID> allRoomIds = roomRepo.findAll().stream().map(Room::getId).toList();
         if (allRoomIds.isEmpty()) return ResponseEntity.ok(List.of());
         return ResponseEntity.ok(scheduleService.getRoomsSchedule(allRoomIds, f, t)
-                .stream().filter(b -> "AVAILABLE".equals(b.getStatus())).toList());
+                .stream().filter(b -> "AVAILABLE".equals(b.status())).toList());
     }
 
     @PostMapping("/{roomId}/book")
-    public ResponseEntity<RoomScheduleBlock> bookSlot(@PathVariable UUID roomId,
+    public ResponseEntity<RoomScheduleBlockDto> bookSlot(@PathVariable UUID roomId,
             @RequestBody Map<String, String> body) {
         UUID blockId = UUID.fromString(body.get("blockId"));
         UUID classId = body.get("classId") != null ? UUID.fromString(body.get("classId")) : null;

@@ -265,23 +265,6 @@ public class VenueService {
         return toRoomResponse(roomRepository.save(r));
     }
 
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
-    public List<RoomAvailabilityResponse> getRoomAvailability(UUID roomId) {
-        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
-    }
-
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
-    @Transactional
-    public RoomAvailabilityResponse createAvailability(UUID userId, UUID roomId, RoomAvailabilityRequest req) {
-        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
-    }
-
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
-    @Transactional
-    public void deleteAvailability(UUID userId, UUID availId) {
-        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
-    }
-
     public VenueResponse toVenueResponsePublic(Venue v) {
         return toVenueResponse(v);
     }

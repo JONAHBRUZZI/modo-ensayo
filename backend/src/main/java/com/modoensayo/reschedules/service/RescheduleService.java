@@ -16,11 +16,10 @@ import com.modoensayo.reschedules.repository.*;
 import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.venues.domain.RoomScheduleBlock;
-import com.modoensayo.venues.dto.RoomAvailabilityResponse;
+import com.modoensayo.venues.dto.RoomScheduleBlockDto;
 import com.modoensayo.classes.enums.TipoClase;
 import com.modoensayo.venues.repository.RoomScheduleBlockRepository;
 import com.modoensayo.venues.repository.VenueRepository;
-import com.modoensayo.venues.service.RoomAvailabilityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,7 +43,6 @@ public class RescheduleService {
     private final PaymentRepository paymentRepository;
     private final ClassRepository classRepository;
     private final VenueRepository venueRepository;
-    private final RoomAvailabilityService roomAvailabilityService;
     private final RoomScheduleBlockRepository roomScheduleBlockRepository;
 
     @Transactional
@@ -192,13 +190,21 @@ public class RescheduleService {
     }
 
     @Transactional(readOnly = true)
-    public List<RoomAvailabilityResponse> getAvailableSlotsForReschedule(UUID classId) {
+    public List<RoomScheduleBlockDto> getAvailableSlotsForReschedule(UUID classId) {
         Class classEntity = classRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
-        return roomAvailabilityService.getAvailableSlotsForReschedule(
-                classEntity.getRoom().getVenue().getId().toString(),
-                Instant.now());
+        UUID roomId = classEntity.getRoom().getId();
+        Instant from = Instant.now();
+        Instant to = from.plusSeconds(30L * 86400); // proximos 30 dias
+        return roomScheduleBlockRepository
+                .findByRoomIdAndStatusAndStartTimeBetweenOrderByStartTime(roomId, "AVAILABLE", from, to)
+                .stream()
+                .map(b -> new RoomScheduleBlockDto(b.getId(),
+                        b.getRoom() != null ? b.getRoom().getId() : null,
+                        b.getRoom() != null ? b.getRoom().getName() : null,
+                        b.getStartTime(), b.getEndTime(), b.getStatus(), b.getClassId()))
+                .toList();
     }
 
     public List<RescheduleResponseDto> getByClass(UUID classId) {

@@ -374,15 +374,10 @@ async function loadRoomCalendar(roomId) {
     const monday = getRoomWeekStart(roomId)
     const sunday = new Date(monday)
     sunday.setDate(monday.getDate() + 6)
-    const from = monday.toISOString().slice(0, 10) + 'T00:00:00'
-    const to = sunday.toISOString().slice(0, 10) + 'T23:59:59'
-    const slots = await venueService.getPublicRoomAvailability(roomId)
-    let available = Array.isArray(slots) ? slots : []
-    available = available.filter(s => {
-      if (!s.startTime) return false
-      return s.startTime >= from && s.startTime <= to
-    })
-    roomSlots.value[roomId] = available
+    sunday.setHours(23, 59, 59, 999)
+    const slots = await scheduleService.getRoomSchedule(roomId, monday.toISOString(), sunday.toISOString())
+    // Solo los bloques disponibles son reservables en el buscador.
+    roomSlots.value[roomId] = (Array.isArray(slots) ? slots : []).filter(s => s.status === 'AVAILABLE')
   } catch {
     roomSlots.value[roomId] = []
   }

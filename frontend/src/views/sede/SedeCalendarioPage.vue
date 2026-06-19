@@ -271,6 +271,20 @@ function pad2(n) {
   return String(n).padStart(2, '0')
 }
 
+const ZONA_SEDE = 'America/Santiago'
+
+// Convierte un instante ISO (UTC) a su fecha (YYYY-MM-DD) y hora (HH:MM) en la
+// zona horaria de la sede, para que coincida con la grilla del horario laboral.
+function instantToLocalParts(iso) {
+  if (!iso) return { date: '', time: '' }
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ZONA_SEDE, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(new Date(iso)).reduce((a, x) => { a[x.type] = x.value; return a }, {})
+  const hour = p.hour === '24' ? '00' : p.hour
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${hour}:${p.minute}` }
+}
+
 function timeToMinutes(t) {
   if (!t) return 0
   const [h, m] = t.split(':').map(Number)
@@ -524,8 +538,8 @@ async function loadAllSchedules() {
       const entries = await scheduleService.getRoomSchedule(room.id, from, to)
       if (Array.isArray(entries)) {
         for (const entry of entries) {
-          const dateStr = entry.startTime?.slice(0, 10)
-          const timeStr = entry.startTime?.slice(11, 16)
+          // El bloque viene en UTC; la grilla usa la hora local de la sede.
+          const { date: dateStr, time: timeStr } = instantToLocalParts(entry.startTime)
           if (dateStr && timeStr) {
             const key = buildLookupKey(room.id, dateStr, timeStr)
             map[key] = { ...entry, roomId: room.id }

@@ -75,7 +75,7 @@
     </div>
 
     <!-- Modal accion rapida -->
-    <BottomSheet :model-value="!!selectedClass" @update:model-value="if (!$event) selectedClass = null">
+    <BottomSheet :model-value="!!selectedClass" @update:model-value="$event || (selectedClass = null)">
       <template v-if="selectedClass">
         <h3 class="text-lg font-semibold text-white mb-2">{{ selectedClass.title }}</h3>
         <div class="text-gray-400 text-sm space-y-2 mb-6">

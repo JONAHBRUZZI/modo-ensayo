@@ -131,7 +131,7 @@
     </BottomSheet>
 
     <!-- Modal confirmacion liberar sala -->
-    <BottomSheet :model-value="!!eliminandoId" @update:model-value="if (!$event) eliminandoId = null">
+    <BottomSheet :model-value="!!eliminandoId" @update:model-value="$event || (eliminandoId = null)">
       <h3 class="text-white font-semibold mb-2">Liberar sala reservada</h3>
       <p class="text-gray-400 text-sm mb-6">
         ¿Confirmas cancelar esta reserva? La sala quedara disponible para otros profesores.

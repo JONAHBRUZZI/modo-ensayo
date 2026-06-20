@@ -147,7 +147,7 @@
     </div>
 
     <!-- Modal confirmacion eliminar -->
-    <BottomSheet :model-value="!!borrandoId" @update:model-value="if (!$event) borrandoId = null">
+    <BottomSheet :model-value="!!borrandoId" @update:model-value="$event || (borrandoId = null)">
       <h3 class="text-white font-semibold mb-2">Eliminar borrador</h3>
       <p class="text-gray-400 text-sm mb-6">
         Estas seguro de eliminar este borrador?

@@ -69,7 +69,7 @@
     </div>
 
     <!-- Modal de confirmacion de suspension con motivo -->
-    <BottomSheet :model-value="!!suspendTarget" @update:model-value="if (!$event) cerrarSuspender()">
+    <BottomSheet :model-value="!!suspendTarget" @update:model-value="$event || cerrarSuspender()">
       <template v-if="suspendTarget">
         <div class="flex items-start gap-3 mb-4">
           <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
@@ -109,7 +109,7 @@
       </template>
     </BottomSheet>
 
-    <BottomSheet :model-value="!!usuarioAEliminar" @update:model-value="if (!$event) cerrarModal()">
+    <BottomSheet :model-value="!!usuarioAEliminar" @update:model-value="$event || cerrarModal()">
       <template v-if="usuarioAEliminar">
         <div class="flex items-start gap-3 mb-4">
           <div class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">

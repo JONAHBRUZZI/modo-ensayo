@@ -1,5 +1,5 @@
 <template>
-  <BottomSheet :model-value="abierto" @update:model-value="if (!$event) cerrar()">
+  <BottomSheet :model-value="abierto" @update:model-value="$event || cerrar()">
     <h3 class="text-[var(--text-primary)] font-semibold text-lg mb-1">Seleccionar Borrador</h3>
     <p class="text-[var(--text-secondary)] text-sm mb-4">
       Asigna la sala reservada a un borrador existente y publicalo.

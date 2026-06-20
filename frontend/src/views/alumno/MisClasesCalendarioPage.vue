@@ -79,7 +79,7 @@
     </div>
 
     <!-- Modal dia expandido -->
-    <BottomSheet :model-value="!!selectedDay" @update:model-value="if (!$event) selectedDay = null">
+    <BottomSheet :model-value="!!selectedDay" @update:model-value="$event || (selectedDay = null)">
       <template v-if="selectedDay">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-white">{{ formatDateFull(selectedDay.date) }}</h3>

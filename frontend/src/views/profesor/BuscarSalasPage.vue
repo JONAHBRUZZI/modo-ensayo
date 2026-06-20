@@ -250,7 +250,8 @@ const caracteristicasPorDisciplina = {
     { key: 'barraBallet', label: 'Barra ballet' },
     { key: 'pisoMadera', label: 'Piso madera' },
     { key: 'pisoFlotante', label: 'Piso flotante' },
-    { key: 'aireAcondicionado', label: 'Aire acondicionado' }
+    { key: 'aireAcondicionado', label: 'Aire acondicionado' },
+    { key: 'sonido', label: 'Equipo de música' }
   ],
   'Musica': [
     { key: 'insonorizado', label: 'Insonorizado' },

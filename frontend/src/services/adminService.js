@@ -1,70 +1,90 @@
-import api from './api'
+import { supabase, invokeFunction, camelize } from './supabase'
 
 export default {
   async getStats() {
-    const res = await api.get('/admin/stats')
-    return res.data
+    return invokeFunction('admin-stats')
   },
 
   async getIdentityVerifications() {
-    const res = await api.get('/admin/identity-verifications')
-    return res.data
+    const { data, error } = await supabase
+      .from('identity_verifications').select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return camelize(data)
   },
 
   async reviewIdentity(id, action) {
-    const res = await api.patch(`/admin/identity-verifications/${id}?action=${action}`)
-    return res.data
+    const approved = action === 'approve' || action === 'APPROVED' || action === 'APROBADO'
+    const status = approved ? 'APPROVED' : 'REJECTED'
+    const { data: idver, error } = await supabase
+      .from('identity_verifications').update({ status }).eq('id', id).select('user_id').single()
+    if (error) throw error
+    const { error: profErr } = await supabase
+      .from('profiles')
+      .update({
+        identidad_validada: approved,
+        identidad_estado: approved ? 'APROBADO' : 'RECHAZADO'
+      })
+      .eq('id', idver.user_id)
+    if (profErr) throw profErr
+    return { status }
   },
 
   async getPendingVenues() {
-    const res = await api.get('/admin/venues/pending')
-    return res.data
+    const { data, error } = await supabase
+      .from('venues').select('*').eq('status', 'PENDIENTE_APROBACION')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return camelize(data)
   },
 
-  // Todas las sedes registradas (cualquier estado) para listado del Admin General
   async getAllVenues() {
-    const res = await api.get('/admin/venues')
-    return res.data
+    const { data, error } = await supabase
+      .from('venues').select('*').order('created_at', { ascending: false })
+    if (error) throw error
+    return camelize(data)
   },
 
-  async approveVenue(id) {
-    const res = await api.patch(`/admin/venues/${id}/approve`)
-    return res.data
+  approveVenue(id) {
+    return invokeFunction('admin-approve-venue', { body: { venueId: id, action: 'approve' } })
   },
 
-  async rejectVenue(id, motivo) {
-    const res = await api.patch(`/admin/venues/${id}/reject`, { motivo })
-    return res.data
+  rejectVenue(id, motivo) {
+    return invokeFunction('admin-approve-venue', { body: { venueId: id, action: 'reject', reason: motivo } })
   },
 
-  // Alterna APROBADA <-> SUSPENDIDA. Motivo se usa solo al suspender.
+  // Alterna APROBADA <-> SUSPENDIDA (update directo permitido por RLS al ADMIN).
   async toggleVenue(id, motivo) {
-    const res = await api.patch(`/admin/venues/${id}/toggle`, { motivo: motivo || '' })
-    return res.data
+    const { data: venue, error: getErr } = await supabase
+      .from('venues').select('status').eq('id', id).single()
+    if (getErr) throw getErr
+    const next = venue.status === 'SUSPENDIDA' ? 'APROBADA' : 'SUSPENDIDA'
+    const patch = { status: next }
+    if (next === 'SUSPENDIDA') patch.rejection_reason = motivo || ''
+    const { data, error } = await supabase
+      .from('venues').update(patch).eq('id', id).select('*').single()
+    if (error) throw error
+    return camelize(data)
   },
 
+  // ── Gestión de usuarios (Edge Function admin-users, requiere Admin API) ──
   async getUsers() {
-    const res = await api.get('/admin/users')
-    return res.data
+    return invokeFunction('admin-users', { body: { action: 'list' } })
   },
 
   async assignRole(userId, roleName) {
-    const res = await api.post(`/admin/users/${userId}/roles`, { roleName })
-    return res.data
+    return invokeFunction('admin-users', { body: { action: 'assignRole', userId, role: roleName } })
   },
 
   async revokeRole(userId, roleName) {
-    const res = await api.delete(`/admin/users/${userId}/roles/${roleName}`)
-    return res.data
+    return invokeFunction('admin-users', { body: { action: 'revokeRole', userId, role: roleName } })
   },
 
-  async toggleUser(userId, motivo) {
-    const res = await api.patch(`/admin/users/${userId}/toggle`, { motivo })
-    return res.data
+  async toggleUser(userId) {
+    return invokeFunction('admin-users', { body: { action: 'toggleUser', userId } })
   },
 
-  // Eliminacion permanente de una cuenta de usuario por parte de un Admin
   async deleteUser(userId) {
-    await api.delete(`/admin/users/${userId}`)
+    return invokeFunction('admin-users', { body: { action: 'deleteUser', userId } })
   }
 }

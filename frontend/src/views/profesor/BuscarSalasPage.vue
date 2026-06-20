@@ -238,7 +238,6 @@ import { useRoute } from 'vue-router'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 import scheduleService from '@/services/scheduleService'
-import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
@@ -560,7 +559,7 @@ async function pagar(metodo) {
 
     if (borradorId.value) {
       // Flujo borrador existente: asignar sala y publicar (esto ya asigna rol TEACHER)
-      await api.post(`/profesor/clases/${borradorId.value}/asignar-reserva`, {
+      await classService.assignReserva(borradorId.value, {
         roomId,
         startTime: firstSlot.startTime,
         duration: slots.length * 60
@@ -572,7 +571,7 @@ async function pagar(metodo) {
       }
     } else {
       // Flujo independiente: crear clase draft con roomId → dispara asignarRolTeacher
-      const claseRes = await api.post('/classes?draft=true', {
+      const claseRes = await classService.createBorrador({
         title: 'Reserva - ' + room.name,
         discipline: null,
         level: 'BASICO',
@@ -582,7 +581,7 @@ async function pagar(metodo) {
         startTime: firstSlot.startTime,
         roomId
       })
-      const claseId = claseRes.data?.id
+      const claseId = claseRes?.id
       // Marcar los bloques en room_schedule_blocks como ocupados
       for (const slot of sortedSlots) {
         const blockId = slot.blockId || slot.id

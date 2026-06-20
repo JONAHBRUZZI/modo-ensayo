@@ -172,7 +172,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
-import api from '@/services/api'
+import professionalProfileService from '@/services/professionalProfileService'
 
 const { identidadValidada, identidadEnRevision, syncIdentityStatus } = useAuth()
 
@@ -214,8 +214,8 @@ async function submit() {
   enviando.value = true
   error.value = ''
   try {
-    await api.post('/users/me/professional-profile', {
-      specialty: form.disciplinaPrincipal,
+    await professionalProfileService.save({
+      disciplinaPrincipal: form.disciplinaPrincipal,
       disciplinasSecundarias: form.disciplinasSecundarias,
       experienceYears: form.anosExperiencia,
       nivelEnsenanza: form.nivelEnsenanza,

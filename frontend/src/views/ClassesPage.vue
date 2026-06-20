@@ -105,7 +105,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '@/services/api'
 import classService from '@/services/classService'
 import { formatDate } from '@/utils/dateFormatter'
 
@@ -165,7 +164,7 @@ onUnmounted(() => {
 
 async function loadDisciplines() {
   try {
-    const data = await api.get('/classes/disciplines')
+    const data = await classService.getDisciplines()
     disciplineGroups.value = Array.isArray(data) ? data : []
   } catch { disciplineGroups.value = [] }
 }

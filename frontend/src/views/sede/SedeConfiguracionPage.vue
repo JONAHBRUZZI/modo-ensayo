@@ -243,7 +243,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import venueService from '@/services/venueService'
-import api from '@/services/api'
+import uploadService from '@/services/uploadService'
+import { reviewService } from '@/services/reviewService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
 
@@ -320,7 +321,7 @@ onMounted(async () => {
       }
       // Cargar rating promedio de la sede
       try {
-        const revRes = await api.get(`/reviews/target/VENUE/${v.id}`)
+        const revRes = await reviewService.getByTarget('VENUE', v.id)
         const reviews = revRes.data
         if (Array.isArray(reviews) && reviews.length > 0) {
           const avg = reviews.reduce((s, r) => s + (r.score || 0), 0) / reviews.length
@@ -375,11 +376,8 @@ async function onDocFileChange(event) {
   nuevoDoc.fileUrl = ''
   msgDoc.value = ''
   try {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('type', 'documents')
-    const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-    nuevoDoc.fileUrl = res.data.fileUrl || res.data.url
+    const res = await uploadService.uploadFile(file, 'venue-documents', venue.value.id)
+    nuevoDoc.fileUrl = res.url
     nuevoDoc.tipoArchivo = file.type
   } catch (e) {
     msgDoc.value = e?.response?.data?.error || 'Error al subir el archivo'

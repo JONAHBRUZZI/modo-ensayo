@@ -109,7 +109,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '@/services/classService'
-import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
@@ -121,7 +120,7 @@ const disciplineGroups = ref([])
 
 onMounted(async () => {
   try {
-    const data = await api.get('/classes/disciplines')
+    const data = await classService.getDisciplines()
     disciplineGroups.value = Array.isArray(data) ? data : []
   } catch { disciplineGroups.value = [] }
 })

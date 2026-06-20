@@ -171,7 +171,6 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
-import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 import BorradorSelector from '@/components/BorradorSelector.vue'
 
@@ -197,7 +196,7 @@ const modalBorrador = ref(false)
 
 onMounted(async () => {
   try { venues.value = await classService.getVenues() } catch { venues.value = [] }
-  try { const data = await api.get('/classes/disciplines'); disciplineGroups.value = Array.isArray(data) ? data : [] } catch { disciplineGroups.value = [] }
+  try { const data = await classService.getDisciplines(); disciplineGroups.value = Array.isArray(data) ? data : [] } catch { disciplineGroups.value = [] }
 
   if (route.query.edit) {
     // Modo publicar borrador: sala y horario son fijos
@@ -251,7 +250,7 @@ async function handleCreate() {
   try {
     if (isEditing.value) {
       // Publicar borrador — sala y horario vienen del DRAFT original, no del formulario
-      await api.put('/classes/' + editingClassId.value + '/publish', {
+      await classService.publishClass(editingClassId.value, {
         title: form.value.title,
         discipline: form.value.discipline,
         level: form.value.level,

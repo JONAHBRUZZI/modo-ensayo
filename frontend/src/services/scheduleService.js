@@ -1,40 +1,102 @@
-import api from './api'
+import { supabase, invokeFunction, camelize } from './supabase'
 
 export default {
-  getSchedule(venueId) {
-    return api.get(`/venues/${venueId}/schedule`).then(r => r.data)
-  },
-  saveSchedule(venueId, schedules) {
-    return api.put(`/venues/${venueId}/schedule`, schedules).then(r => r.data)
-  },
-  getBlockConfig(venueId) {
-    return api.get(`/venues/${venueId}/block-config`).then(r => r.data)
-  },
-  saveBlockConfig(venueId, config) {
-    return api.put(`/venues/${venueId}/block-config`, config).then(r => r.data)
-  },
-  generateBlocks(venueId) {
-    return api.post(`/venues/${venueId}/generate-blocks`).then(r => r.data)
-  },
-  getRoomSchedule(roomId, from, to) {
-    return api.get(`/venues/rooms/${roomId}/schedule`, { params: { from, to } }).then(r => r.data)
-  },
-  markMaintenance(roomId, blockId, reason) {
-    return api.post(`/venues/rooms/${roomId}/blocks/${blockId}/maintenance`, { reason }).then(r => r.data)
-  },
-  releaseMaintenance(blockId) {
-    return api.delete(`/venues/rooms/blocks/${blockId}/maintenance`).then(r => r.data)
+  async getSchedule(venueId) {
+    const { data, error } = await supabase
+      .from('venue_schedules').select('*').eq('venue_id', venueId)
+    if (error) throw error
+    return camelize(data)
   },
 
-  searchAvailableRooms(from, to) {
-    return api.get('/rooms/available', { params: { from, to } }).then(r => r.data)
+  async saveSchedule(venueId, schedules) {
+    // Reemplaza el horario completo de la sede (igual que el PUT del backend).
+    const { error: delErr } = await supabase.from('venue_schedules').delete().eq('venue_id', venueId)
+    if (delErr) throw delErr
+    const rows = (schedules || []).map((s) => ({
+      venue_id: venueId,
+      day_of_week: s.dayOfWeek || s.day_of_week,
+      open_time: s.openTime || s.open_time,
+      close_time: s.closeTime || s.close_time
+    }))
+    if (rows.length === 0) return []
+    const { data, error } = await supabase.from('venue_schedules').insert(rows).select('*')
+    if (error) throw error
+    return camelize(data)
   },
 
-  bookSlot(roomId, blockId, classId) {
-    return api.post(`/rooms/${roomId}/book`, { blockId, classId: classId || null }).then(r => r.data)
+  async getBlockConfig(venueId) {
+    const { data, error } = await supabase
+      .from('venue_block_configs').select('*').eq('venue_id', venueId).maybeSingle()
+    if (error) throw error
+    return camelize(data)
   },
 
-  getUserCalendar(from, to) {
-    return api.get('/users/me/calendar', { params: { from, to } }).then(r => r.data)
+  async saveBlockConfig(venueId, config) {
+    const row = {
+      venue_id: venueId,
+      block_duration_min: config.blockDurationMin ?? config.block_duration_min ?? 60,
+      gap_between_blocks_min: config.gapBetweenBlocksMin ?? config.gap_between_blocks_min ?? 15
+    }
+    const { data, error } = await supabase
+      .from('venue_block_configs').upsert(row, { onConflict: 'venue_id' }).select('*').single()
+    if (error) throw error
+    return camelize(data)
+  },
+
+  async generateBlocks() {
+    // La Edge Function regenera todos los bloques (RPC regenerate_schedule_blocks).
+    return invokeFunction('generate-blocks')
+  },
+
+  async getRoomSchedule(roomId, from, to) {
+    let q = supabase.from('room_schedule_blocks').select('*').eq('room_id', roomId)
+    if (from) q = q.gte('start_time', from)
+    if (to) q = q.lte('end_time', to)
+    const { data, error } = await q.order('start_time', { ascending: true })
+    if (error) throw error
+    return camelize(data)
+  },
+
+  async markMaintenance(roomId, blockId, reason) {
+    const { error: updErr } = await supabase
+      .from('room_schedule_blocks').update({ status: 'MAINTENANCE' }).eq('id', blockId)
+    if (updErr) throw updErr
+    const { data: block } = await supabase
+      .from('room_schedule_blocks').select('start_time, end_time').eq('id', blockId).single()
+    const { error } = await supabase.from('room_maintenances').insert({
+      room_id: roomId,
+      start_time: block?.start_time,
+      end_time: block?.end_time,
+      reason: reason ?? null
+    })
+    if (error) throw error
+    return { status: 'ok' }
+  },
+
+  async releaseMaintenance(blockId) {
+    const { error } = await supabase
+      .from('room_schedule_blocks').update({ status: 'AVAILABLE' }).eq('id', blockId)
+    if (error) throw error
+    return { status: 'ok' }
+  },
+
+  async searchAvailableRooms(from, to) {
+    let q = supabase
+      .from('room_schedule_blocks')
+      .select('*, room:rooms(*, venue:venues(*))')
+      .eq('status', 'AVAILABLE')
+    if (from) q = q.gte('start_time', from)
+    if (to) q = q.lte('end_time', to)
+    const { data, error } = await q.order('start_time', { ascending: true })
+    if (error) throw error
+    return camelize(data)
+  },
+
+  async bookSlot(roomId, blockId, classId) {
+    return invokeFunction('book-slot', { body: { blockId, classId: classId || null } })
+  },
+
+  getUserCalendar() {
+    throw { response: { status: 501, data: { message: 'getUserCalendar requiere una Edge Function/RPC aún no migrada' } } }
   }
 }

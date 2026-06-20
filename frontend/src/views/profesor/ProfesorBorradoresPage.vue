@@ -171,7 +171,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
-import api from '@/services/api'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
 import { useToast } from '@/composables/useToast'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -197,8 +196,7 @@ async function cargar() {
 
     // Fetch bookings without assigned class (reservas sin borrador)
     try {
-      const data = await api.get('/profesor/reservas')
-      const list = Array.isArray(data.data) ? data.data : data.data?.content || []
+      const list = await classService.getReservasSinBorrador()
       reservas.value = list.map(r => ({ ...r, selectedDraft: '', asignando: false }))
     } catch {
       reservas.value = []
@@ -218,7 +216,7 @@ async function eliminarBorrador() {
   if (!borrandoId.value) return
   eliminando.value = true
   try {
-    await api.delete('/classes/' + borrandoId.value)
+    await classService.deleteDraft(borrandoId.value)
     borradores.value = borradores.value.filter(c => c.id !== borrandoId.value)
     borrandoId.value = null
   } catch {

@@ -306,7 +306,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
-import api from '@/services/api'
+import userService from '@/services/userService'
 
 const router = useRouter()
 const { displayName, identidadValidada, identidadEnRevision, identidadRechazada,
@@ -318,8 +318,7 @@ const stats = ref({ totalClases: 0, próximas: 0 })
 onMounted(async () => {
   syncAtributos()
   try {
-    const res = await api.get('/users/me/stats')
-    stats.value = res.data
+    stats.value = await userService.getStudentStats()
   } catch (err) {
     console.error('Error al cargar estadísticas del alumno', err)
   }

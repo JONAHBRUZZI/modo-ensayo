@@ -24,11 +24,11 @@
         <div class="border-t border-white/5 pt-4">
           <h3 class="text-white font-medium mb-3">Metodo de pago</h3>
           <div class="space-y-2">
-            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer" :class="metodo === 'simulado' ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/20'">
-              <input type="radio" v-model="metodo" value="simulado" class="text-primary" />
+            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer" :class="metodo === 'mercadopago' ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/20'">
+              <input type="radio" v-model="metodo" value="mercadopago" class="text-primary" />
               <div>
-                <p class="text-white text-sm font-medium">Pago Simulado (Demo)</p>
-                <p class="text-gray-500 text-xs">Para pruebas del sistema. El pago queda retenido hasta confirmacion de clase.</p>
+                <p class="text-white text-sm font-medium">MercadoPago</p>
+                <p class="text-gray-500 text-xs">Serás redirigido a MercadoPago para completar el pago. El pago queda retenido hasta la confirmacion de la clase.</p>
               </div>
             </label>
           </div>
@@ -87,7 +87,7 @@ import paymentService from '@/services/paymentService'
 const router = useRouter()
 const items = ref([])
 const total = computed(() => items.value.reduce((sum, i) => sum + (i.price || 0), 0))
-const metodo = ref('simulado')
+const metodo = ref('mercadopago')
 const enviando = ref(false)
 const procesando = ref(false)
 const completado = ref(false)

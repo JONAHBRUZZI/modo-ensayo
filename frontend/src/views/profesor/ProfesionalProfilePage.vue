@@ -210,7 +210,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import api from '@/services/api'
+import professionalProfileService from '@/services/professionalProfileService'
 import { useAuth } from '@/stores/auth'
 import { reviewService } from '@/services/reviewService'
 import { formatDate } from '@/utils/dateFormatter'
@@ -261,9 +261,9 @@ const iniciales = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await api.get('/profesor/perfil')
-    if (res.data) {
-      Object.assign(form, res.data)
+    const data = await professionalProfileService.getMine()
+    if (data) {
+      Object.assign(form, data)
       if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
       if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
       // Cargar reseñas del profesor usando su ID de usuario (= teacherId de las clases).
@@ -283,7 +283,7 @@ async function save() {
   saving.value = true
   msg.value = ''
   try {
-    const res = await api.put('/profesor/perfil', {
+    const data = await professionalProfileService.save({
       especialidad: form.especialidad,
       nivelEnsenanza: form.nivelEnsenanza,
       experienceYears: form.experienceYears,
@@ -299,7 +299,7 @@ async function save() {
       sitioWeb: form.sitioWeb,
       linkedin: form.linkedin
     })
-    Object.assign(form, res.data)
+    Object.assign(form, data)
     if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
     if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
     // Refrescar atributos (perfilProfesionalCompleto puede haber cambiado)

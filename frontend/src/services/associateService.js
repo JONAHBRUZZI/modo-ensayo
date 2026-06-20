@@ -1,17 +1,34 @@
-import api from './api'
+import { supabase, currentUserId, camelize } from './supabase'
 
 export default {
   async getAssociates() {
-    const res = await api.get('/associates')
-    return res.data
+    const uid = await currentUserId()
+    const { data, error } = await supabase
+      .from('associates').select('*').eq('owner_id', uid)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return camelize(data)
   },
 
   async createAssociate(data) {
-    const res = await api.post('/associates', data)
-    return res.data
+    const uid = await currentUserId()
+    const { data: row, error } = await supabase
+      .from('associates')
+      .insert({
+        owner_id: uid,
+        name: data.name,
+        email: data.email ?? null,
+        relationship: data.relationship ?? null,
+        birth_date: data.birthDate ?? null,
+        rut: data.rut ?? null
+      })
+      .select('*').single()
+    if (error) throw error
+    return camelize(row)
   },
 
   async deleteAssociate(id) {
-    await api.delete(`/associates/${id}`)
+    const { error } = await supabase.from('associates').delete().eq('id', id)
+    if (error) throw error
   }
 }

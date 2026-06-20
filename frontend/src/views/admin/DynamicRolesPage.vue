@@ -85,7 +85,7 @@ import { ref, reactive, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { useToast } from '@/composables/useToast'
-import api from '@/services/api'
+import uploadService from '@/services/uploadService'
 import BottomSheet from '@/components/BottomSheet.vue'
 
 const toast = useToast()
@@ -106,13 +106,9 @@ onMounted(async () => {
 
 async function verDocumento(url) {
   try {
-    const docPath = url.startsWith('/api/') ? url.substring(4) : url
-    const res = await api.get(docPath, { responseType: 'blob' })
-    const ext = url.split('.').pop()?.toLowerCase()
-    const mime = ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/*'
-    const blob = new Blob([res.data], { type: mime })
-    const blobUrl = URL.createObjectURL(blob)
-    window.open(blobUrl, '_blank')
+    const viewUrl = await uploadService.resolveDocUrl(url)
+    if (!viewUrl) throw new Error('sin url')
+    window.open(viewUrl, '_blank')
   } catch {
     toast.error('No se pudo cargar el documento')
   }

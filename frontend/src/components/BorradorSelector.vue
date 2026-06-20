@@ -57,7 +57,6 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import classService from '@/services/classService'
-import api from '@/services/api'
 import BottomSheet from '@/components/BottomSheet.vue'
 
 const props = defineProps({
@@ -105,13 +104,13 @@ async function asignar() {
   procesando.value = true
   errorMsg.value = ''
   try {
-    await api.post(`/profesor/clases/${seleccionado.value.id}/asignar-reserva`, {
+    await classService.assignReserva(seleccionado.value.id, {
       roomId: props.roomId,
       startTime: props.startTime,
       duration: props.duration
     })
     if (props.reservationId) {
-      await api.delete(`/classes/${props.reservationId}`)
+      await classService.deleteDraft(props.reservationId)
     }
     emit('applied', seleccionado.value)
     cerrar()

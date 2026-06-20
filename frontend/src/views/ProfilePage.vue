@@ -34,7 +34,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useAuth } from '@/stores/auth'
-import api from '@/services/api'
+import userService from '@/services/userService'
 
 const { user, displayName, updateUserProfile } = useAuth()
 const form = reactive({ socialName: user.value?.socialName || '', phone: user.value?.phone || '' })
@@ -65,7 +65,7 @@ async function changePw() {
   pwSaving.value = true
   pwMsg.value = ''
   try {
-    await api.put('/users/me/password', { currentPassword: pw.current, newPassword: pw.new })
+    await userService.changePassword(pw.new)
     pwMsg.value = 'Contraseña cambiada exitosamente'
     pwOk.value = true
     pw.current = ''

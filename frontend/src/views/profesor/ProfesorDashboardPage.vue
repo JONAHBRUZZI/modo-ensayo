@@ -173,7 +173,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
-import api from '@/services/api'
+import professionalProfileService from '@/services/professionalProfileService'
 import { formatDate } from '@/utils/dateFormatter'
 
 const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
@@ -226,8 +226,8 @@ onMounted(async () => {
 
   // Cargar rating promedio
   try {
-    const profile = await api.get('/users/me/professional-profile')
-    if (profile.data?.averageRating) averageRating.value = profile.data.averageRating
+    const profile = await professionalProfileService.getMine()
+    if (profile?.averageRating) averageRating.value = profile.averageRating
   } catch (err) {
     console.error('Error al cargar rating del profesor', err)
   }

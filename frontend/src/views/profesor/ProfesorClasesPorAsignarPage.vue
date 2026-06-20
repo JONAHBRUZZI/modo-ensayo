@@ -154,7 +154,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '@/services/classService'
-import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 import { formatDate } from '@/utils/dateFormatter'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -217,7 +216,7 @@ async function asignarBorrador() {
       duration: reserva.duration || 60
     })
     // 2. Eliminar el draft de la reserva original
-    await api.delete(`/classes/${reserva.id}`)
+    await classService.deleteDraft(reserva.id)
     // 3. Actualizar atributos del usuario
     await syncAtributos()
     modalBorrador.value.abierto = false
@@ -236,7 +235,7 @@ async function eliminarReserva() {
   if (!eliminandoId.value) return
   eliminando.value = true
   try {
-    await api.delete(`/classes/${eliminandoId.value}`)
+    await classService.deleteDraft(eliminandoId.value)
     reservas.value = reservas.value.filter(r => r.id !== eliminandoId.value)
     await syncAtributos()
     eliminandoId.value = null

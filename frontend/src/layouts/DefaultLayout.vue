@@ -14,7 +14,7 @@
 
           <!-- Desktop Nav -->
           <div class="hidden md:flex items-center space-x-1">
-            <router-link to="/" class="nav-link">Inicio</router-link>
+            <router-link v-if="!isAuthenticated" to="/" class="nav-link">Inicio</router-link>
             <router-link v-if="!isAuthenticated || modoActual === 'alumno'" to="/classes" class="nav-link">Cronograma</router-link>
 
             <template v-if="isAuthenticated">
@@ -167,7 +167,7 @@
     >
       <div v-if="showMobileMenu" class="md:hidden bg-[var(--bg-base)] border-b border-[var(--border-subtle)] px-4 pb-4 pt-2">
         <div class="flex flex-col gap-1">
-          <router-link to="/" class="nav-link-mobile" @click="showMobileMenu = false">Inicio</router-link>
+          <router-link v-if="!isAuthenticated" to="/" class="nav-link-mobile" @click="showMobileMenu = false">Inicio</router-link>
           <router-link v-if="!isAuthenticated || modoActual === 'alumno'" to="/classes" class="nav-link-mobile" @click="showMobileMenu = false">Cronograma</router-link>
 
           <template v-if="isAuthenticated">

@@ -59,11 +59,7 @@
 
               <!-- Alumno mode -->
               <template v-if="modoActual === 'alumno'">
-                <router-link to="/alumno/dashboard" class="nav-link">Mi Espacio</router-link>
-                <router-link to="/alumno/mis-clases" class="nav-link">Mis Clases</router-link>
-                <router-link to="/alumno/mis-clases/calendario" class="nav-link">Calendario</router-link>
-                <router-link to="/alumno/asociados" class="nav-link">Asociados</router-link>
-                <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
+                <router-link to="/classes" class="nav-link">Cronograma</router-link>
                 <router-link to="/reviews" class="nav-link">Reseñas</router-link>
                 <router-link to="/cart" class="nav-link relative">
                   Carrito
@@ -217,11 +213,7 @@
               <router-link to="/admin/sedes" class="nav-link-mobile" @click="showMobileMenu = false">Sedes</router-link>
             </template>
             <template v-if="modoActual === 'alumno'">
-              <router-link to="/alumno/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Mi Espacio</router-link>
-              <router-link to="/alumno/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
-              <router-link to="/alumno/mis-clases/calendario" class="nav-link-mobile" @click="showMobileMenu = false">Calendario</router-link>
-              <router-link to="/alumno/asociados" class="nav-link-mobile" @click="showMobileMenu = false">Asociados</router-link>
-              <router-link to="/alumno/pagos" class="nav-link-mobile" @click="showMobileMenu = false">Pagos</router-link>
+              <router-link to="/classes" class="nav-link-mobile" @click="showMobileMenu = false">Cronograma</router-link>
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
               <router-link to="/cart" class="nav-link-mobile" @click="showMobileMenu = false">Carrito</router-link>
             </template>

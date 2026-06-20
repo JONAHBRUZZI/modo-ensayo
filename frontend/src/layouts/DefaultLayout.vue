@@ -59,6 +59,7 @@
 
               <!-- Alumno mode -->
               <template v-if="modoActual === 'alumno'">
+                <router-link to="/alumno/dashboard" class="nav-link">Mi Espacio</router-link>
                 <router-link to="/reviews" class="nav-link">Reseñas</router-link>
                 <router-link to="/cart" class="nav-link relative">
                   Carrito
@@ -212,6 +213,7 @@
               <router-link to="/admin/sedes" class="nav-link-mobile" @click="showMobileMenu = false">Sedes</router-link>
             </template>
             <template v-if="modoActual === 'alumno'">
+              <router-link to="/alumno/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Mi Espacio</router-link>
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
               <router-link to="/cart" class="nav-link-mobile" @click="showMobileMenu = false">Carrito</router-link>
             </template>

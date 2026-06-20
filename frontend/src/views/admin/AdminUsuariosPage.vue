@@ -69,11 +69,9 @@
     </div>
 
     <!-- Modal de confirmacion de suspension con motivo -->
-    <div v-if="suspendTarget"
-         class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
-         @click.self="cerrarSuspender">
-      <div class="bg-[var(--bg-overlay)] border border-yellow-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-        <div class="flex items-start gap-3">
+    <BottomSheet :model-value="!!suspendTarget" @update:model-value="$event || cerrarSuspender()">
+      <template v-if="suspendTarget">
+        <div class="flex items-start gap-3 mb-4">
           <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 4l8 14H4l8-14z"/>
@@ -88,7 +86,7 @@
           </div>
         </div>
 
-        <div>
+        <div class="mb-4">
           <label class="block text-sm font-medium text-gray-300 mb-1">
             Motivo de suspension <span class="text-red-400">*</span>
           </label>
@@ -108,13 +106,12 @@
             Cancelar
           </button>
         </div>
-      </div>
-    </div>
-    <div v-if="usuarioAEliminar"
-         class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
-         @click.self="cerrarModal">
-      <div class="bg-[var(--bg-overlay)] border border-red-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-        <div class="flex items-start gap-3">
+      </template>
+    </BottomSheet>
+
+    <BottomSheet :model-value="!!usuarioAEliminar" @update:model-value="$event || cerrarModal()">
+      <template v-if="usuarioAEliminar">
+        <div class="flex items-start gap-3 mb-4">
           <div class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -130,14 +127,14 @@
           </div>
         </div>
 
-        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
           <p class="text-yellow-300 text-xs">
             Esta accion es <strong>irreversible</strong>. Se eliminaran tambien sus roles asignados,
             verificación de identidad, asociados, perfil profesional y notificaciónes.
           </p>
         </div>
 
-        <p v-if="errorEliminar" class="text-red-400 text-sm">{{ errorEliminar }}</p>
+        <p v-if="errorEliminar" class="text-red-400 text-sm mb-3">{{ errorEliminar }}</p>
 
         <div class="flex gap-3">
           <button @click="confirmarEliminacion" :disabled="eliminando"
@@ -149,8 +146,8 @@
             Cancelar
           </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </BottomSheet>
   </div>
 </template>
 
@@ -159,6 +156,7 @@ import { ref, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { useToast } from '@/composables/useToast'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const toast = useToast()
 const users = ref([])

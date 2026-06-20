@@ -35,18 +35,16 @@
       </div>
     </div>
 
-    <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
-      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold text-white mb-2">{{ modal.titulo }}</h3>
-        <p class="text-gray-400 text-sm mb-6">{{ modal.mensaje }}</p>
-        <div class="flex space-x-3 justify-end">
-          <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
-          <button @click="ejecutarConfirmacion" :disabled="modal.enviando" class="px-4 py-2 rounded-xl text-white text-sm font-medium" :class="modal.confirmandoRealizada ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'">
-            {{ modal.enviando ? 'Procesando...' : 'Si, confirmar' }}
-          </button>
-        </div>
+    <BottomSheet v-model="modal.abierto">
+      <h3 class="text-lg font-semibold text-white mb-2">{{ modal.titulo }}</h3>
+      <p class="text-gray-400 text-sm mb-6">{{ modal.mensaje }}</p>
+      <div class="flex space-x-3 justify-end">
+        <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
+        <button @click="ejecutarConfirmacion" :disabled="modal.enviando" class="px-4 py-2 rounded-xl text-white text-sm font-medium" :class="modal.confirmandoRealizada ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'">
+          {{ modal.enviando ? 'Procesando...' : 'Si, confirmar' }}
+        </button>
       </div>
-    </div>
+    </BottomSheet>
   </div>
 </template>
 
@@ -54,6 +52,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import venueService from '@/services/venueService'
 import { formatDate } from '@/utils/dateFormatter'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const clases = ref([])
 const loading = ref(true)

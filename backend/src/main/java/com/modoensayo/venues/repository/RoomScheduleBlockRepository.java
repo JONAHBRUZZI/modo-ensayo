@@ -10,10 +10,17 @@ import java.util.List;
 import java.util.UUID;
 
 public interface RoomScheduleBlockRepository extends JpaRepository<RoomScheduleBlock, UUID> {
-    List<RoomScheduleBlock> findByRoomIdAndStartTimeBetweenOrderByStartTime(UUID roomId, Instant from, Instant to);
-    List<RoomScheduleBlock> findByRoomIdAndStatusAndStartTimeBetweenOrderByStartTime(UUID roomId, String status, Instant from, Instant to);
-    List<RoomScheduleBlock> findByRoomIdInAndStartTimeBetweenOrderByStartTime(List<UUID> roomIds, Instant from, Instant to);
-    List<RoomScheduleBlock> findByRoomIdInAndStatusAndStartTimeBetweenOrderByStartTime(List<UUID> roomIds, String status, Instant from, Instant to);
+    @Query("SELECT b FROM RoomScheduleBlock b JOIN FETCH b.room r WHERE r.id = :roomId AND b.startTime BETWEEN :from AND :to ORDER BY b.startTime")
+    List<RoomScheduleBlock> findByRoomIdAndStartTimeBetweenOrderByStartTime(@Param("roomId") UUID roomId, @Param("from") Instant from, @Param("to") Instant to);
+
+    @Query("SELECT b FROM RoomScheduleBlock b JOIN FETCH b.room r WHERE r.id = :roomId AND b.status = :status AND b.startTime BETWEEN :from AND :to ORDER BY b.startTime")
+    List<RoomScheduleBlock> findByRoomIdAndStatusAndStartTimeBetweenOrderByStartTime(@Param("roomId") UUID roomId, @Param("status") String status, @Param("from") Instant from, @Param("to") Instant to);
+
+    @Query("SELECT b FROM RoomScheduleBlock b JOIN FETCH b.room r WHERE r.id IN :roomIds AND b.startTime BETWEEN :from AND :to ORDER BY b.startTime")
+    List<RoomScheduleBlock> findByRoomIdInAndStartTimeBetweenOrderByStartTime(@Param("roomIds") List<UUID> roomIds, @Param("from") Instant from, @Param("to") Instant to);
+
+    @Query("SELECT b FROM RoomScheduleBlock b JOIN FETCH b.room r WHERE r.id IN :roomIds AND b.status = :status AND b.startTime BETWEEN :from AND :to ORDER BY b.startTime")
+    List<RoomScheduleBlock> findByRoomIdInAndStatusAndStartTimeBetweenOrderByStartTime(@Param("roomIds") List<UUID> roomIds, @Param("status") String status, @Param("from") Instant from, @Param("to") Instant to);
 
     @Modifying
     @Query("DELETE FROM RoomScheduleBlock r WHERE r.room.id IN :roomIds AND r.status = 'AVAILABLE'")

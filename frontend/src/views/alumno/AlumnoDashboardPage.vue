@@ -5,8 +5,7 @@
     :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
-    <h1 class="text-3xl font-bold text-white mb-2">Mi Espacio</h1>
-    <p class="text-gray-400 mb-8">Bienvenido, {{ displayName }}</p>
+    <h1 class="text-3xl font-bold text-[var(--text-primary)] mb-8">Hola, {{ displayName }}</h1>
 
     <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
@@ -31,7 +30,7 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Mis Clases</h3>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Mis Clases</h3>
             <p class="text-gray-400 text-sm mt-1">Clases en las que estás inscrito y su estado.</p>
           </div>
         </div>
@@ -46,7 +45,7 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Explorar Clases</h3>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Explorar Clases</h3>
             <p class="text-gray-400 text-sm mt-1">Busca y reserva clases de cualquier disciplina.</p>
           </div>
         </div>
@@ -61,7 +60,7 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Historial de Pagos</h3>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Historial de Pagos</h3>
             <p class="text-gray-400 text-sm mt-1">Revisa tus pagos y comprobantes.</p>
           </div>
         </div>
@@ -76,8 +75,23 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Asociados</h3>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Asociados</h3>
             <p class="text-gray-400 text-sm mt-1">Gestióna personas que inscriben a tus clases.</p>
+          </div>
+        </div>
+      </router-link>
+
+      <router-link to="/alumno/mis-clases/calendario" class="card hover:border-primary/50 transition-colors group">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Calendario</h3>
+            <p class="text-gray-400 text-sm mt-1">Tus clases próximas en vista de calendario.</p>
           </div>
         </div>
       </router-link>

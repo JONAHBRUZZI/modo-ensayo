@@ -14,24 +14,17 @@
 
           <!-- Desktop Nav -->
           <div class="hidden md:flex items-center space-x-1">
-            <router-link to="/" class="nav-link">Inicio</router-link>
+            <router-link v-if="!isAuthenticated" to="/" class="nav-link">Inicio</router-link>
             <router-link v-if="!isAuthenticated || modoActual === 'alumno'" to="/classes" class="nav-link">Cronograma</router-link>
 
             <template v-if="isAuthenticated">
               <!-- Profesor mode -->
               <template v-if="puedeVerContextoProfesor && modoActual === 'profesor'">
-                <router-link to="/profesor/dashboard" class="nav-link">Dashboard</router-link>
+                <router-link to="/profesor/dashboard" class="nav-link">Home</router-link>
                 <router-link to="/profesor/clases-por-asignar" class="nav-link relative">
                   Por Asignar
                   <span v-if="reservasSinClaseCount > 0" class="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{{ reservasSinClaseCount }}</span>
                 </router-link>
-                <router-link to="/profesor/clases-propias" class="nav-link">Mis Clases</router-link>
-                <router-link to="/profesor/calendario" class="nav-link">Calendario</router-link>
-                <router-link to="/profesor/clases-asignadas" class="nav-link">Asignadas</router-link>
-                <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
-                <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
-                <router-link to="/profesor/metricas" class="nav-link">Métricas</router-link>
-                <router-link to="/profesor/pagos" class="nav-link">Pagos</router-link>
                 <router-link to="/reviews" class="nav-link">Reseñas</router-link>
               </template>
 
@@ -51,7 +44,7 @@
 
               <!-- Admin mode -->
               <template v-if="isAdmin && modoActual === 'admin'">
-                <router-link to="/admin" class="nav-link">Dashboard</router-link>
+                <router-link to="/admin" class="nav-link">Home</router-link>
                 <router-link to="/admin/roles" class="nav-link">Aprobaciones</router-link>
                 <router-link to="/admin/usuarios" class="nav-link">Usuarios</router-link>
                 <router-link to="/admin/sedes" class="nav-link">Sedes</router-link>
@@ -60,10 +53,6 @@
               <!-- Alumno mode -->
               <template v-if="modoActual === 'alumno'">
                 <router-link to="/alumno/dashboard" class="nav-link">Mi Espacio</router-link>
-                <router-link to="/alumno/mis-clases" class="nav-link">Mis Clases</router-link>
-                <router-link to="/alumno/mis-clases/calendario" class="nav-link">Calendario</router-link>
-                <router-link to="/alumno/asociados" class="nav-link">Asociados</router-link>
-                <router-link to="/alumno/pagos" class="nav-link">Pagos</router-link>
                 <router-link to="/reviews" class="nav-link">Reseñas</router-link>
                 <router-link to="/cart" class="nav-link relative">
                   Carrito
@@ -171,7 +160,7 @@
     >
       <div v-if="showMobileMenu" class="md:hidden bg-[var(--bg-base)] border-b border-[var(--border-subtle)] px-4 pb-4 pt-2">
         <div class="flex flex-col gap-1">
-          <router-link to="/" class="nav-link-mobile" @click="showMobileMenu = false">Inicio</router-link>
+          <router-link v-if="!isAuthenticated" to="/" class="nav-link-mobile" @click="showMobileMenu = false">Inicio</router-link>
           <router-link v-if="!isAuthenticated || modoActual === 'alumno'" to="/classes" class="nav-link-mobile" @click="showMobileMenu = false">Cronograma</router-link>
 
           <template v-if="isAuthenticated">
@@ -187,15 +176,11 @@
               </button>
             </div>
             <template v-if="puedeVerContextoProfesor && modoActual === 'profesor'">
-              <router-link to="/profesor/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
-              <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile" @click="showMobileMenu = false">Por Asignar</router-link>
-              <router-link to="/profesor/clases-propias" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
-              <router-link to="/profesor/calendario" class="nav-link-mobile" @click="showMobileMenu = false">Calendario</router-link>
-              <router-link to="/profesor/clases-asignadas" class="nav-link-mobile" @click="showMobileMenu = false">Asignadas</router-link>
-              <router-link to="/profesor/borradores" class="nav-link-mobile" @click="showMobileMenu = false">Borradores</router-link>
-              <router-link to="/profesor/buscar-salas" class="nav-link-mobile" @click="showMobileMenu = false">Agendar Sala</router-link>
-              <router-link to="/profesor/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
-              <router-link to="/profesor/pagos" class="nav-link-mobile" @click="showMobileMenu = false">Pagos</router-link>
+              <router-link to="/profesor/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Home</router-link>
+              <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile relative" @click="showMobileMenu = false">
+                Por Asignar
+                <span v-if="reservasSinClaseCount > 0" class="ml-2 bg-yellow-500 text-black text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{{ reservasSinClaseCount }}</span>
+              </router-link>
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
             </template>
             <template v-if="puedeVerContextoSede && modoActual === 'sede'">
@@ -211,17 +196,13 @@
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
             </template>
             <template v-if="isAdmin && modoActual === 'admin'">
-              <router-link to="/admin" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
+              <router-link to="/admin" class="nav-link-mobile" @click="showMobileMenu = false">Home</router-link>
               <router-link to="/admin/roles" class="nav-link-mobile" @click="showMobileMenu = false">Aprobaciones</router-link>
               <router-link to="/admin/usuarios" class="nav-link-mobile" @click="showMobileMenu = false">Usuarios</router-link>
               <router-link to="/admin/sedes" class="nav-link-mobile" @click="showMobileMenu = false">Sedes</router-link>
             </template>
             <template v-if="modoActual === 'alumno'">
               <router-link to="/alumno/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Mi Espacio</router-link>
-              <router-link to="/alumno/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
-              <router-link to="/alumno/mis-clases/calendario" class="nav-link-mobile" @click="showMobileMenu = false">Calendario</router-link>
-              <router-link to="/alumno/asociados" class="nav-link-mobile" @click="showMobileMenu = false">Asociados</router-link>
-              <router-link to="/alumno/pagos" class="nav-link-mobile" @click="showMobileMenu = false">Pagos</router-link>
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
               <router-link to="/cart" class="nav-link-mobile" @click="showMobileMenu = false">Carrito</router-link>
             </template>

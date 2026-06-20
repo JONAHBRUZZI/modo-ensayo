@@ -78,80 +78,75 @@
     </div>
 
     <!-- Modal: Usar borrador existente -->
-    <div v-if="modalBorrador.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-         @click.self="modalBorrador.abierto = false">
-      <div class="bg-[var(--bg-overlay)] border border-gray-700 rounded-xl p-6 max-w-lg w-full">
-        <h3 class="text-white font-semibold text-lg mb-1">Seleccionar Borrador</h3>
-        <p class="text-gray-400 text-sm mb-4">
-          Asigna la sala reservada a uno de tus borradores y publícalo.
-        </p>
+    <BottomSheet v-model="modalBorrador.abierto">
+      <h3 class="text-white font-semibold text-lg mb-1">Seleccionar Borrador</h3>
+      <p class="text-gray-400 text-sm mb-4">
+        Asigna la sala reservada a uno de tus borradores y publícalo.
+      </p>
 
-        <div v-if="loadingBorradores" class="text-gray-400 text-sm py-4 text-center">
-          Cargando borradores...
-        </div>
-        <div v-else-if="borradores.length === 0" class="text-center py-4">
-          <p class="text-gray-500 text-sm">No tienes borradores sin sala disponibles.</p>
-          <router-link to="/profesor/crear-borrador" class="text-primary text-sm underline mt-2 inline-block">
-            Crear un borrador
-          </router-link>
-        </div>
-        <div v-else class="space-y-2 max-h-64 overflow-y-auto mb-4">
-          <button
-            v-for="b in borradores"
-            :key="b.id"
-            @click="borradoresSeleccionado = b"
-            :class="[
-              'w-full text-left p-3 rounded-xl border transition-colors',
-              borradoresSeleccionado?.id === b.id
-                ? 'border-primary bg-primary/10'
-                : 'border-white/10 hover:border-white/20 bg-[var(--bg-base)]'
-            ]"
-          >
-            <p class="text-white text-sm font-medium">{{ b.title }}</p>
-            <p class="text-gray-400 text-xs mt-0.5">
-              {{ b.discipline || 'Sin disciplina' }}
-              <span v-if="b.level"> · {{ b.level }}</span>
-              <span v-if="b.price != null"> · ${{ b.price?.toLocaleString('es-CL') }}</span>
-            </p>
-          </button>
-        </div>
-
-        <p v-if="modalBorrador.error" class="text-red-400 text-sm mb-3">{{ modalBorrador.error }}</p>
-
-        <div class="flex gap-3">
-          <button
-            @click="asignarBorrador"
-            :disabled="!borradoresSeleccionado || modalBorrador.procesando"
-            class="btn-primary flex-1 text-sm"
-          >
-            {{ modalBorrador.procesando ? 'Publicando...' : 'Asignar y Publicar' }}
-          </button>
-          <button @click="modalBorrador.abierto = false" class="btn-secondary text-sm px-4">
-            Cancelar
-          </button>
-        </div>
+      <div v-if="loadingBorradores" class="text-gray-400 text-sm py-4 text-center">
+        Cargando borradores...
       </div>
-    </div>
+      <div v-else-if="borradores.length === 0" class="text-center py-4">
+        <p class="text-gray-500 text-sm">No tienes borradores sin sala disponibles.</p>
+        <router-link to="/profesor/crear-borrador" class="text-primary text-sm underline mt-2 inline-block">
+          Crear un borrador
+        </router-link>
+      </div>
+      <div v-else class="space-y-2 max-h-64 overflow-y-auto mb-4">
+        <button
+          v-for="b in borradores"
+          :key="b.id"
+          @click="borradoresSeleccionado = b"
+          :class="[
+            'w-full text-left p-3 rounded-xl border transition-colors',
+            borradoresSeleccionado?.id === b.id
+              ? 'border-primary bg-primary/10'
+              : 'border-white/10 hover:border-white/20 bg-[var(--bg-base)]'
+          ]"
+        >
+          <p class="text-white text-sm font-medium">{{ b.title }}</p>
+          <p class="text-gray-400 text-xs mt-0.5">
+            {{ b.discipline || 'Sin disciplina' }}
+            <span v-if="b.level"> · {{ b.level }}</span>
+            <span v-if="b.price != null"> · ${{ b.price?.toLocaleString('es-CL') }}</span>
+          </p>
+        </button>
+      </div>
+
+      <p v-if="modalBorrador.error" class="text-red-400 text-sm mb-3">{{ modalBorrador.error }}</p>
+
+      <div class="flex gap-3">
+        <button
+          @click="asignarBorrador"
+          :disabled="!borradoresSeleccionado || modalBorrador.procesando"
+          class="btn-primary flex-1 text-sm"
+        >
+          {{ modalBorrador.procesando ? 'Publicando...' : 'Asignar y Publicar' }}
+        </button>
+        <button @click="modalBorrador.abierto = false" class="btn-secondary text-sm px-4">
+          Cancelar
+        </button>
+      </div>
+    </BottomSheet>
 
     <!-- Modal confirmacion liberar sala -->
-    <div v-if="eliminandoId" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div class="bg-[var(--bg-overlay)] border border-gray-700 rounded-xl p-6 max-w-sm w-full mx-4">
-        <h3 class="text-white font-semibold mb-2">Liberar sala reservada</h3>
-        <p class="text-gray-400 text-sm mb-6">
-          ¿Confirmas cancelar esta reserva? La sala quedara disponible para otros profesores.
-        </p>
-        <div class="flex gap-3">
-          <button @click="eliminarReserva" :disabled="eliminando"
-            class="btn-primary flex-1 bg-red-600 hover:bg-red-700 border-red-600">
-            {{ eliminando ? 'Liberando...' : 'Si, liberar sala' }}
-          </button>
-          <button @click="eliminandoId = null"
-            class="flex-1 px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-[var(--bg-elevated)]">
-            Cancelar
-          </button>
-        </div>
+    <BottomSheet :model-value="!!eliminandoId" @update:model-value="$event || (eliminandoId = null)">
+      <h3 class="text-white font-semibold mb-2">Liberar sala reservada</h3>
+      <p class="text-gray-400 text-sm mb-6">
+        ¿Confirmas cancelar esta reserva? La sala quedara disponible para otros profesores.
+      </p>
+      <div class="flex gap-3">
+        <button @click="eliminarReserva" :disabled="eliminando"
+          class="btn-primary flex-1 bg-red-600 hover:bg-red-700 border-red-600">
+          {{ eliminando ? 'Liberando...' : 'Si, liberar sala' }}
+        </button>
+        <button @click="eliminandoId = null"
+          class="flex-1 px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-[var(--bg-elevated)]">
+          Cancelar
+        </button>
       </div>
-    </div>
+    </BottomSheet>
   </div>
 </template>
 
@@ -162,6 +157,7 @@ import classService from '@/services/classService'
 import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 import { formatDate } from '@/utils/dateFormatter'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const router = useRouter()
 const { syncAtributos } = useAuth()

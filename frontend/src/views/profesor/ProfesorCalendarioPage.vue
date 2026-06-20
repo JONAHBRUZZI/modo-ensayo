@@ -75,8 +75,8 @@
     </div>
 
     <!-- Modal accion rapida -->
-    <div v-if="selectedClass" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="selectedClass = null">
-      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
+    <BottomSheet :model-value="!!selectedClass" @update:model-value="$event || (selectedClass = null)">
+      <template v-if="selectedClass">
         <h3 class="text-lg font-semibold text-white mb-2">{{ selectedClass.title }}</h3>
         <div class="text-gray-400 text-sm space-y-2 mb-6">
           <p><span class="text-gray-500">Sala:</span> {{ selectedClass.roomName || selectedClass.room?.name }}</p>
@@ -91,8 +91,8 @@
         <div class="mt-3 text-right">
           <button @click="selectedClass = null" class="text-xs text-gray-500 hover:text-gray-300">Cerrar</button>
         </div>
-      </div>
-    </div>
+      </template>
+    </BottomSheet>
   </div>
 </template>
 
@@ -100,6 +100,7 @@
 import { ref, computed, onMounted } from 'vue'
 import classService from '@/services/classService'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const vista = ref('calendario')
 const loading = ref(true)

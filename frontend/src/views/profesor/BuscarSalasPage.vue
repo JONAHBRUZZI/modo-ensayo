@@ -147,16 +147,35 @@
                           <div
                             v-for="slot in getRoomSlotsForCell(room.id, day.date, block)"
                             :key="slot.id"
-                            class="rounded p-1.5 mb-0.5 cursor-pointer hover:opacity-80 border bg-green-500/15 border-green-500/30 text-xs transition-opacity"
-                            @click="confirmarAgendamiento(room, venue, slot)"
+                            :class="[
+                              'rounded p-1.5 mb-0.5 cursor-pointer border text-xs transition-all select-none',
+                              isSlotSelected(slot.id)
+                                ? 'bg-green-500/40 border-green-400 ring-1 ring-green-400'
+                                : 'bg-green-500/15 border-green-500/30 hover:bg-green-500/25'
+                            ]"
+                            @click.stop="toggleSlot(room, venue, slot)"
                           >
-                            <span class="text-green-300 text-[10px] block">Disponible</span>
+                            <span class="text-green-300 text-[10px] block">
+                              {{ isSlotSelected(slot.id) ? '✓ Seleccionado' : 'Disponible' }}
+                            </span>
                           </div>
                           <div v-if="!getRoomSlotsForCell(room.id, day.date, block).length" class="min-h-[28px]"></div>
                         </td>
                       </tr>
                     </tbody>
                   </table>
+                  <!-- Barra de selección -->
+                  <div v-if="selectedSlots.length && selectionRoom?.id === room.id" class="mt-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-between gap-3">
+                    <div class="text-sm">
+                      <span class="text-green-300 font-semibold">{{ selectedSlots.length }} bloque{{ selectedSlots.length > 1 ? 's' : '' }}</span>
+                      <span class="text-gray-400"> · {{ selectedSlots.length }}h · </span>
+                      <span class="text-primary font-semibold">${{ (selectedSlots.length * (room.pricePerHour || 0)).toLocaleString('es-CL') }}</span>
+                    </div>
+                    <div class="flex gap-2">
+                      <button @click.stop="selectedSlots = []" class="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5">Limpiar</button>
+                      <button @click.stop="abrirModal()" class="text-sm font-semibold px-4 py-1.5 rounded-xl bg-primary text-white hover:bg-primary/80 transition-colors">Pagar reserva</button>
+                    </div>
+                  </div>
                 </div>
                 <div v-else class="text-gray-500 text-sm py-2">Sin horarios disponibles en este rango.</div>
               </div>
@@ -168,47 +187,48 @@
     </div>
 
     <!-- Alerta identidad -->
-    <div v-if="alertaIdentidad" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-yellow-500/30 p-6 max-w-sm w-full mx-4">
-        <div class="flex items-start gap-3 mb-4">
-          <svg class="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-          </svg>
-          <div>
-            <h3 class="text-white font-semibold mb-1">Identidad no validada</h3>
-            <p class="text-gray-400 text-sm">Debes validar tu identidad antes de reservar una sala y crear clases.</p>
-          </div>
-        </div>
-        <div class="flex gap-3">
-          <button @click="alertaIdentidad = false" class="flex-1 px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cerrar</button>
-          <router-link to="/profile/identity" class="flex-1 text-center px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/80">Validar identidad</router-link>
+    <BottomSheet v-model="alertaIdentidad">
+      <div class="flex items-start gap-3 mb-4">
+        <svg class="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        <div>
+          <h3 class="text-white font-semibold mb-1">Identidad no validada</h3>
+          <p class="text-gray-400 text-sm">Debes validar tu identidad antes de reservar una sala y crear clases.</p>
         </div>
       </div>
-    </div>
+      <div class="flex gap-3">
+        <button @click="alertaIdentidad = false" class="flex-1 px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cerrar</button>
+        <router-link to="/profile/identity" class="flex-1 text-center px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/80">Validar identidad</router-link>
+      </div>
+    </BottomSheet>
 
-    <!-- ====== STEP 5: Modal de confirmacion ====== -->
-    <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
-      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold text-white mb-2">Confirmar Reserva</h3>
-        <div class="text-gray-400 text-sm space-y-2 mb-6">
-          <p><span class="text-gray-500">Sede:</span> {{ modal.venue?.name }}</p>
-          <p><span class="text-gray-500">Sala:</span> {{ modal.room?.name }} ({{ modal.room?.capacity }} personas)</p>
-          <p><span class="text-gray-500">Fecha:</span> {{ modal.slot ? formatDate(modal.slot.startTime) : '' }}</p>
-          <p><span class="text-gray-500">Horario:</span> {{ modal.slot ? formatTime(modal.slot.startTime) + ' - ' + formatTime(modal.slot.endTime) : '' }}</p>
-          <p class="text-primary font-semibold"><span class="text-gray-500">Precio:</span> ${{ modal.room?.pricePerHour?.toLocaleString() }} / hora</p>
-        </div>
-        <p class="text-white text-sm mb-6">Selecciona tu metodo de pago para confirmar la reserva:</p>
-        <div class="space-y-2 mb-6">
-          <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[var(--bg-base)] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
-            <span class="text-white text-sm font-medium">Transferencia Bancaria</span>
-            <p class="text-gray-500 text-xs">Pago simulado - se registrara la reserva</p>
-          </button>
-        </div>
-        <div class="flex space-x-3 justify-end">
-          <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
+    <!-- ====== STEP 5: Modal de confirmacion (bottom sheet) ====== -->
+    <BottomSheet v-model="modal.abierto">
+      <h3 class="text-lg font-semibold text-white mb-3">Confirmar Reserva</h3>
+      <div class="text-gray-400 text-sm space-y-1 mb-3">
+        <p><span class="text-gray-500">Sede:</span> {{ modal.venue?.name }}</p>
+        <p><span class="text-gray-500">Sala:</span> {{ modal.room?.name }} ({{ modal.room?.capacity }} personas)</p>
+      </div>
+      <div class="mb-3 space-y-1 max-h-36 overflow-y-auto pr-1">
+        <div v-for="s in modal.slots" :key="s.id" class="flex justify-between text-xs bg-white/5 rounded-lg px-3 py-2">
+          <span class="text-gray-300">{{ formatDate(s.startTime) }}</span>
+          <span class="text-gray-400">{{ formatTime(s.startTime) }} – {{ formatTime(s.endTime) }}</span>
         </div>
       </div>
-    </div>
+      <div class="flex justify-between text-sm mb-4 px-1">
+        <span class="text-gray-400">{{ modal.slots?.length }} bloque{{ modal.slots?.length > 1 ? 's' : '' }} · {{ modal.slots?.length }}h</span>
+        <span class="text-primary font-semibold">${{ ((modal.slots?.length || 0) * (modal.room?.pricePerHour || 0)).toLocaleString('es-CL') }}</span>
+      </div>
+      <p class="text-white text-sm mb-3">Selecciona tu metodo de pago:</p>
+      <div class="mb-4">
+        <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[var(--bg-base)] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
+          <span class="text-white text-sm font-medium">Transferencia Bancaria</span>
+          <p class="text-gray-500 text-xs">Pago simulado - se registrara la reserva</p>
+        </button>
+      </div>
+      <button @click="modal.abierto = false" class="w-full px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
+    </BottomSheet>
   </div>
 </template>
 
@@ -222,6 +242,7 @@ import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const toast = useToast()
 const route = useRoute()
@@ -236,7 +257,10 @@ const expandedVenue = ref(null)
 const expandedRoom = ref(null)
 const roomSlots = ref({})
 const roomLoading = ref(null)
-const modal = ref({ abierto: false, venue: null, room: null, slot: null, procesando: false })
+const selectedSlots = ref([])
+const selectionRoom = ref(null)
+const selectionVenue = ref(null)
+const modal = ref({ abierto: false, venue: null, room: null, slots: [], procesando: false })
 const filtros = ref({ region: '', comuna: '', disciplina: '', fechaDesde: '', fechaHasta: '', caracteristicas: [] })
 
 const roomWeekStarts = ref({})
@@ -250,7 +274,8 @@ const caracteristicasPorDisciplina = {
     { key: 'barraBallet', label: 'Barra ballet' },
     { key: 'pisoMadera', label: 'Piso madera' },
     { key: 'pisoFlotante', label: 'Piso flotante' },
-    { key: 'aireAcondicionado', label: 'Aire acondicionado' }
+    { key: 'aireAcondicionado', label: 'Aire acondicionado' },
+    { key: 'sonido', label: 'Equipo de música' }
   ],
   'Musica': [
     { key: 'insonorizado', label: 'Insonorizado' },
@@ -328,7 +353,7 @@ const calendarWeekDays = computed(() => {
     const d = new Date(monday)
     d.setDate(monday.getDate() + i)
     result.push({
-      date: d.toISOString().slice(0, 10),
+      date: d.toLocaleDateString('en-CA'),
       dateFormatted: d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }),
       label: dowLabels[i]
     })
@@ -362,8 +387,10 @@ function getRoomWeekLabel(roomId) {
 function getRoomSlotsForCell(roomId, dateStr, block) {
   const slots = roomSlots.value[roomId] || []
   return slots.filter(s => {
-    const slotDate = s.startTime?.slice(0, 10)
-    const slotHour = s.startTime?.slice(11, 13) + ':00'
+    if (!s.startTime) return false
+    const d = new Date(s.startTime)
+    const slotDate = d.toLocaleDateString('en-CA')
+    const slotHour = d.getHours().toString().padStart(2, '0') + ':00'
     return slotDate === dateStr && slotHour === block.start
   })
 }
@@ -406,7 +433,15 @@ function toggleVenue(id) {
 }
 
 async function toggleRoom(roomId) {
-  if (expandedRoom.value === roomId) { expandedRoom.value = null; return }
+  if (expandedRoom.value === roomId) {
+    expandedRoom.value = null
+    if (selectionRoom.value?.id === roomId) {
+      selectedSlots.value = []
+      selectionRoom.value = null
+      selectionVenue.value = null
+    }
+    return
+  }
   expandedRoom.value = roomId
   if (!roomSlots.value[roomId]) {
     await loadRoomCalendar(roomId)
@@ -423,6 +458,9 @@ async function buscar() {
   expandedVenue.value = null
   expandedRoom.value = null
   roomSlots.value = {}
+  selectedSlots.value = []
+  selectionRoom.value = null
+  selectionVenue.value = null
   try {
     const data = await classService.getVenues()
     let list = Array.isArray(data) ? data : data?.content || []
@@ -483,38 +521,73 @@ async function buscar() {
   loading.value = false
 }
 
-function confirmarAgendamiento(room, venue, slot) {
+function toggleSlot(room, venue, slot) {
+  if (selectionRoom.value?.id !== room.id) {
+    selectedSlots.value = []
+    selectionRoom.value = room
+    selectionVenue.value = venue
+  }
+  const idx = selectedSlots.value.findIndex(s => s.id === slot.id)
+  if (idx >= 0) {
+    selectedSlots.value.splice(idx, 1)
+  } else {
+    selectedSlots.value.push(slot)
+  }
+}
+
+function isSlotSelected(slotId) {
+  return selectedSlots.value.some(s => s.id === slotId)
+}
+
+function abrirModal() {
   if (!identidadValidada.value) {
     alertaIdentidad.value = true
     return
   }
-  modal.value = { abierto: true, venue, room, slot, procesando: false }
+  if (!selectedSlots.value.length) return
+  const sorted = [...selectedSlots.value].sort((a, b) => a.startTime.localeCompare(b.startTime))
+  modal.value = { abierto: true, venue: selectionVenue.value, room: selectionRoom.value, slots: sorted, procesando: false }
 }
 
 async function pagar(metodo) {
   modal.value.procesando = true
   try {
-    const blockId = modal.value.slot?.blockId || modal.value.slot?.id
-    if (blockId) {
-      const roomId = modal.value.room.id || modal.value.slot?.roomId
-      await scheduleService.bookSlot(roomId, blockId, borradorId.value || null)
-    } else if (borradorId.value) {
+    const slots = modal.value.slots || []
+    const room = modal.value.room
+    const roomId = room.id
+    const sortedSlots = [...slots].sort((a, b) => a.startTime.localeCompare(b.startTime))
+    const firstSlot = sortedSlots[0]
+
+    if (borradorId.value) {
+      // Flujo borrador existente: asignar sala y publicar (esto ya asigna rol TEACHER)
       await api.post(`/profesor/clases/${borradorId.value}/asignar-reserva`, {
-        roomId: modal.value.room.id,
-        startTime: modal.value.slot.startTime,
-        duration: 60
+        roomId,
+        startTime: firstSlot.startTime,
+        duration: slots.length * 60
       })
+      // Marcar los bloques restantes como ocupados
+      for (const slot of sortedSlots.slice(1)) {
+        const blockId = slot.blockId || slot.id
+        if (blockId) await scheduleService.bookSlot(roomId, blockId, borradorId.value)
+      }
     } else {
-      await api.post('/classes?draft=true', {
-        title: 'Reserva - ' + modal.value.room.name,
+      // Flujo independiente: crear clase draft con roomId → dispara asignarRolTeacher
+      const claseRes = await api.post('/classes?draft=true', {
+        title: 'Reserva - ' + room.name,
         discipline: null,
         level: 'BASICO',
-        capacity: modal.value.room.capacity,
-        duration: 60,
-        price: modal.value.room.pricePerHour || 0,
-        startTime: modal.value.slot.startTime,
-        roomId: modal.value.room.id
+        capacity: room.capacity,
+        duration: slots.length * 60,
+        price: room.pricePerHour || 0,
+        startTime: firstSlot.startTime,
+        roomId
       })
+      const claseId = claseRes.data?.id
+      // Marcar los bloques en room_schedule_blocks como ocupados
+      for (const slot of sortedSlots) {
+        const blockId = slot.blockId || slot.id
+        if (blockId) await scheduleService.bookSlot(roomId, blockId, claseId || null)
+      }
     }
     modal.value.abierto = false
     try {

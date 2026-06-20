@@ -11,7 +11,7 @@
         <p class="text-gray-400 text-sm mt-1">Todas las sedes registradas en el sistema</p>
       </div>
       <router-link to="/admin/roles"
-                   class="text-xs px-4 py-2 rounded-lg bg-yellow-500/10 text-yellow-300 border border-yellow-500/30 hover:bg-yellow-500/20 transition-colors">
+                   class="text-xs px-4 py-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 transition-colors font-medium">
         Ver solicitudes pendientes ({{ countPendientes }})
       </router-link>
     </div>

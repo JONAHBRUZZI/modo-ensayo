@@ -147,26 +147,24 @@
     </div>
 
     <!-- Modal confirmacion eliminar -->
-    <div v-if="borrandoId" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div class="bg-[var(--bg-overlay)] border border-gray-700 rounded-xl p-6 max-w-sm w-full mx-4">
-        <h3 class="text-white font-semibold mb-2">Eliminar borrador</h3>
-        <p class="text-gray-400 text-sm mb-6">
-          Estas seguro de eliminar este borrador?
-          <span v-if="borrandoConSala" class="text-yellow-400"> Se liberara la sala reservada.</span>
-          Esta accion no se puede deshacer.
-        </p>
-        <div class="flex space-x-3">
-          <button @click="eliminarBorrador" :disabled="eliminando"
-            class="btn-primary flex-1 bg-red-600 hover:bg-red-700 border-red-600">
-            {{ eliminando ? 'Eliminando...' : 'Si, eliminar' }}
-          </button>
-          <button @click="borrandoId = null"
-            class="flex-1 px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-[var(--bg-elevated)]">
-            Cancelar
-          </button>
-        </div>
+    <BottomSheet :model-value="!!borrandoId" @update:model-value="$event || (borrandoId = null)">
+      <h3 class="text-white font-semibold mb-2">Eliminar borrador</h3>
+      <p class="text-gray-400 text-sm mb-6">
+        Estas seguro de eliminar este borrador?
+        <span v-if="borrandoConSala" class="text-yellow-400"> Se liberara la sala reservada.</span>
+        Esta accion no se puede deshacer.
+      </p>
+      <div class="flex space-x-3">
+        <button @click="eliminarBorrador" :disabled="eliminando"
+          class="btn-primary flex-1 bg-red-600 hover:bg-red-700 border-red-600">
+          {{ eliminando ? 'Eliminando...' : 'Si, eliminar' }}
+        </button>
+        <button @click="borrandoId = null"
+          class="flex-1 px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-[var(--bg-elevated)]">
+          Cancelar
+        </button>
       </div>
-    </div>
+    </BottomSheet>
   </div>
 </template>
 
@@ -176,6 +174,7 @@ import classService from '@/services/classService'
 import api from '@/services/api'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
 import { useToast } from '@/composables/useToast'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const toast = useToast()
 

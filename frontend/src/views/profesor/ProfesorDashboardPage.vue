@@ -5,7 +5,7 @@
     :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
-    <h1 class="text-3xl font-bold text-white mb-2">Panel de Maestro</h1>
+    <h1 class="text-3xl font-bold text-white mb-2">Home</h1>
     <div class="flex items-center gap-3 mb-8">
       <p class="text-gray-400">Bienvenido, {{ displayName }}</p>
       <EstadoProfesorBadge :estado="estadoProfesor" />
@@ -155,6 +155,14 @@
       <router-link to="/profesor/clases-asignadas" class="card hover:border-primary/50 transition-colors group">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Asignadas</h3>
         <p class="text-gray-400 text-sm mt-2">Clases donde fuiste asignado como profesor.</p>
+      </router-link>
+      <router-link to="/profesor/calendario" class="card hover:border-primary/50 transition-colors group">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Calendario</h3>
+        <p class="text-gray-400 text-sm mt-2">Vista semanal de todas tus clases y reservas.</p>
+      </router-link>
+      <router-link to="/profesor/borradores" class="card hover:border-primary/50 transition-colors group">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Borradores</h3>
+        <p class="text-gray-400 text-sm mt-2">Clases en borrador pendientes de publicar.</p>
       </router-link>
     </div>
   </div>

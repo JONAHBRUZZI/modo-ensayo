@@ -1,66 +1,64 @@
 <template>
-  <div v-if="abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-       @click.self="cerrar">
-    <div class="bg-[var(--bg-overlay)] border border-gray-700 rounded-xl p-6 max-w-lg w-full">
-      <h3 class="text-[var(--text-primary)] font-semibold text-lg mb-1">Seleccionar Borrador</h3>
-      <p class="text-[var(--text-secondary)] text-sm mb-4">
-        Asigna la sala reservada a un borrador existente y publicalo.
-      </p>
+  <BottomSheet :model-value="abierto" @update:model-value="if (!$event) cerrar()">
+    <h3 class="text-[var(--text-primary)] font-semibold text-lg mb-1">Seleccionar Borrador</h3>
+    <p class="text-[var(--text-secondary)] text-sm mb-4">
+      Asigna la sala reservada a un borrador existente y publicalo.
+    </p>
 
-      <div v-if="loading" class="text-[var(--text-secondary)] text-sm py-4 text-center">
-        Cargando borradores...
-      </div>
-      <div v-else-if="borradores.length === 0" class="text-center py-4">
-        <p class="text-[var(--text-secondary)] text-sm">No tienes borradores sin sala disponibles.</p>
-        <router-link to="/profesor/crear-borrador" class="text-primary text-sm underline mt-2 inline-block">
-          Crear un borrador
-        </router-link>
-      </div>
-      <div v-else class="space-y-2 max-h-64 overflow-y-auto mb-4">
-        <button
-          v-for="b in borradores"
-          :key="b.id"
-          type="button"
-          @click="seleccionado = b"
-          :class="[
-            'w-full text-left p-3 rounded-xl border transition-colors',
-            seleccionado?.id === b.id
-              ? 'border-primary bg-primary/10'
-              : 'border-white/10 hover:border-white/20 bg-[var(--bg-base)]'
-          ]"
-        >
-          <p class="text-[var(--text-primary)] text-sm font-medium">{{ b.title }}</p>
-          <p class="text-[var(--text-secondary)] text-xs mt-0.5">
-            {{ b.discipline || 'Sin disciplina' }}
-            <span v-if="b.level"> · {{ b.level }}</span>
-            <span v-if="b.price != null"> · ${{ b.price?.toLocaleString('es-CL') }}</span>
-          </p>
-        </button>
-      </div>
-
-      <p v-if="errorMsg" class="text-red-400 text-sm mb-3">{{ errorMsg }}</p>
-
-      <div class="flex gap-3">
-        <button
-          type="button"
-          @click="asignar"
-          :disabled="!seleccionado || procesando"
-          class="btn-primary flex-1 text-sm"
-        >
-          {{ procesando ? 'Publicando...' : 'Asignar y Publicar' }}
-        </button>
-        <button type="button" @click="cerrar" class="btn-secondary text-sm px-4">
-          Cancelar
-        </button>
-      </div>
+    <div v-if="loading" class="text-[var(--text-secondary)] text-sm py-4 text-center">
+      Cargando borradores...
     </div>
-  </div>
+    <div v-else-if="borradores.length === 0" class="text-center py-4">
+      <p class="text-[var(--text-secondary)] text-sm">No tienes borradores sin sala disponibles.</p>
+      <router-link to="/profesor/crear-borrador" class="text-primary text-sm underline mt-2 inline-block">
+        Crear un borrador
+      </router-link>
+    </div>
+    <div v-else class="space-y-2 max-h-64 overflow-y-auto mb-4">
+      <button
+        v-for="b in borradores"
+        :key="b.id"
+        type="button"
+        @click="seleccionado = b"
+        :class="[
+          'w-full text-left p-3 rounded-xl border transition-colors',
+          seleccionado?.id === b.id
+            ? 'border-primary bg-primary/10'
+            : 'border-white/10 hover:border-white/20 bg-[var(--bg-base)]'
+        ]"
+      >
+        <p class="text-[var(--text-primary)] text-sm font-medium">{{ b.title }}</p>
+        <p class="text-[var(--text-secondary)] text-xs mt-0.5">
+          {{ b.discipline || 'Sin disciplina' }}
+          <span v-if="b.level"> · {{ b.level }}</span>
+          <span v-if="b.price != null"> · ${{ b.price?.toLocaleString('es-CL') }}</span>
+        </p>
+      </button>
+    </div>
+
+    <p v-if="errorMsg" class="text-red-400 text-sm mb-3">{{ errorMsg }}</p>
+
+    <div class="flex gap-3">
+      <button
+        type="button"
+        @click="asignar"
+        :disabled="!seleccionado || procesando"
+        class="btn-primary flex-1 text-sm"
+      >
+        {{ procesando ? 'Publicando...' : 'Asignar y Publicar' }}
+      </button>
+      <button type="button" @click="cerrar" class="btn-secondary text-sm px-4">
+        Cancelar
+      </button>
+    </div>
+  </BottomSheet>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import classService from '@/services/classService'
 import api from '@/services/api'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const props = defineProps({
   abierto: { type: Boolean, default: false },

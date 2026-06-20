@@ -79,8 +79,8 @@
     </div>
 
     <!-- Modal dia expandido -->
-    <div v-if="selectedDay" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="selectedDay = null">
-      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+    <BottomSheet :model-value="!!selectedDay" @update:model-value="if (!$event) selectedDay = null">
+      <template v-if="selectedDay">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-white">{{ formatDateFull(selectedDay.date) }}</h3>
           <button @click="selectedDay = null" class="text-gray-400 hover:text-white">
@@ -104,8 +104,8 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </BottomSheet>
   </div>
 </template>
 
@@ -114,6 +114,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import scheduleService from '@/services/scheduleService'
 import associateService from '@/services/associateService'
 import { formatTime } from '@/utils/dateFormatter'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const loading = ref(true)
 const enrollments = ref([])

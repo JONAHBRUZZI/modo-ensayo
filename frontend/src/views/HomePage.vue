@@ -295,7 +295,7 @@ const steps = [
 </script>
 
 <style scoped>
-.home { background: #0f1119; }
+.home { background: var(--bg-base); }
 
 /* =============== HERO =============== */
 .hero {
@@ -348,7 +348,7 @@ const steps = [
   border-radius: 20px;
   overflow: hidden;
   aspect-ratio: 4/3;
-  background: #0b0d14;
+  background: var(--bg-footer);
 }
 .hero-img {
   position: absolute;
@@ -395,7 +395,7 @@ const steps = [
 
 .hero-title {
   font-size: clamp(36px, 5vw, 52px);
-  font-weight: 700; color: white; line-height: 1.12;
+  font-weight: 700; color: var(--text-primary); line-height: 1.12;
   margin-bottom: 1.25rem;
 }
 .hero-title em {
@@ -406,7 +406,7 @@ const steps = [
 }
 
 .hero-sub {
-  color: #6B7280; font-size: 16px; line-height: 1.75;
+  color: var(--text-secondary); font-size: 16px; line-height: 1.75;
   margin-bottom: 2rem;
 }
 
@@ -421,41 +421,41 @@ const steps = [
 .btn-hero-primary:hover { background: #5a52d5; transform: translateY(-1px); }
 
 .btn-hero-secondary {
-  color: #9CA3AF; font-size: 14px; padding: 12px 18px;
-  border-radius: 12px; border: 1px solid #2a2d3e;
+  color: var(--text-secondary); font-size: 14px; padding: 12px 18px;
+  border-radius: 12px; border: 1px solid var(--border-default);
   transition: color 0.2s, border-color 0.2s;
 }
-.btn-hero-secondary:hover { color: white; border-color: #3a3d4e; }
+.btn-hero-secondary:hover { color: var(--text-primary); border-color: var(--border-default); }
 
 .stats-row {
   display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
   margin-top: 2.5rem; padding-top: 2rem;
-  border-top: 1px solid #1e2130;
+  border-top: 1px solid var(--border-subtle);
 }
 .stat-item { display: flex; flex-direction: column; }
 .stat-num {
-  font-size: 24px; font-weight: 700; color: white;
+  font-size: 24px; font-weight: 700; color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
-.stat-label { font-size: 12px; color: #4B5563; margin-top: 2px; }
-.stat-divider { width: 1px; height: 28px; background: #1e2130; }
+.stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.stat-divider { width: 1px; height: 28px; background: var(--border-subtle); }
 
 /* =============== FEATURES =============== */
 .features-section {
-  background: #0b0d14;
+  background: var(--bg-footer);
   padding: 3rem 0;
-  border-top: 1px solid #13161f;
+  border-top: 1px solid var(--border-subtle);
 }
 .section-eyebrow {
-  font-size: 12px; font-weight: 500; color: #4B5563;
+  font-size: 12px; font-weight: 500; color: var(--text-secondary);
   letter-spacing: 1px; text-transform: uppercase;
   margin-bottom: 1.5rem;
 }
 .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 
 .feat-card {
-  background: #111420;
-  border: 1px solid #1e2130;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 1.5rem;
   position: relative; overflow: hidden;
@@ -480,14 +480,14 @@ const steps = [
 .icon-green  { background: #10b9811a; color: #34d399; }
 .icon-amber  { background: #f59e0b1a; color: #fbbf24; }
 
-.feat-title { color: white; font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-.feat-desc  { color: #4B5563; font-size: 13px; line-height: 1.65; }
+.feat-title { color: var(--text-primary); font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.feat-desc  { color: var(--text-secondary); font-size: 13px; line-height: 1.65; }
 
 /* =============== HOW IT WORKS =============== */
 .steps-section {
-  background: #0f1119;
+  background: var(--bg-base);
   padding: 3rem 0;
-  border-top: 1px solid #13161f;
+  border-top: 1px solid var(--border-subtle);
 }
 .steps-grid {
   display: grid;
@@ -514,7 +514,7 @@ const steps = [
 .step-item { text-align: center; }
 .step-num {
   width: 40px; height: 40px;
-  background: #111420; border: 1px solid #2a2d3e;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
   margin: 0 auto 14px;
   font-size: 13px; font-weight: 600; color: #6C63FF;
@@ -522,17 +522,17 @@ const steps = [
   transition: background 0.2s, border-color 0.2s;
 }
 .step-item:hover .step-num { background: #6C63FF1a; border-color: #6C63FF44; }
-.step-title { color: white; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-.step-desc  { color: #4B5563; font-size: 12px; }
+.step-title { color: var(--text-primary); font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.step-desc  { color: var(--text-secondary); font-size: 12px; }
 
 /* =============== CTA FINAL =============== */
 .cta-section {
-  background: #0b0d14;
-  border-top: 1px solid #13161f;
+  background: var(--bg-footer);
+  border-top: 1px solid var(--border-subtle);
   padding: 4rem 0;
 }
-.cta-title { color: white; font-size: 28px; font-weight: 700; margin-bottom: 10px; }
-.cta-sub   { color: #6B7280; font-size: 15px; margin-bottom: 1.75rem; }
+.cta-title { color: var(--text-primary); font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+.cta-sub   { color: var(--text-secondary); font-size: 15px; margin-bottom: 1.75rem; }
 
 /* Pulsing glow on CTA button */
 .cta-pulse {

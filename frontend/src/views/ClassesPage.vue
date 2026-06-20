@@ -31,10 +31,10 @@
         />
         <div
           v-if="disciplineOpen && filteredDisciplines.length > 0"
-          class="absolute z-20 top-full left-0 right-0 mt-1 bg-[#111420] border border-[#1e2130] rounded-lg max-h-56 overflow-y-auto shadow-xl"
+          class="absolute z-20 top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg max-h-56 overflow-y-auto shadow-xl"
         >
           <div
-            class="px-3 py-2 text-xs text-gray-500 hover:bg-[#1a1d2e] cursor-pointer"
+            class="px-3 py-2 text-xs text-gray-500 hover:bg-[var(--bg-elevated)] cursor-pointer"
             @click="selectDiscipline('')"
           >Todas las disciplinas</div>
           <template v-for="g in filteredDisciplines" :key="g.category || 'otras'">
@@ -42,7 +42,7 @@
             <div
               v-for="item in g.items"
               :key="item"
-              class="px-3 py-1.5 text-sm text-gray-300 hover:bg-[#1a1d2e] hover:text-white cursor-pointer"
+              class="px-3 py-1.5 text-sm text-gray-300 hover:bg-[var(--bg-elevated)] hover:text-white cursor-pointer"
               @click="selectDiscipline(item)"
             >{{ item }}</div>
           </template>
@@ -93,7 +93,7 @@
         </div>
         <h3 class="text-base font-semibold text-white mb-2 group-hover:text-primary transition-colors">{{ c.title }}</h3>
         <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ c.description }}</p>
-        <div class="flex items-center justify-between text-xs text-gray-600 border-t border-[#1e2130] pt-3 mt-auto">
+        <div class="flex items-center justify-between text-xs text-gray-600 border-t border-[var(--border-subtle)] pt-3 mt-auto">
           <span>{{ formatDate(c.startTime) }}</span>
           <span class="text-primary/70 group-hover:text-primary transition-colors">Ver detalle &rarr;</span>
         </div>

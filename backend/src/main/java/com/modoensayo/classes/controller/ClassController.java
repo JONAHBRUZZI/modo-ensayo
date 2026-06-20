@@ -24,6 +24,7 @@ public class ClassController {
     public ResponseEntity<List<ClassResponse>> listPublished(
             @RequestParam(required = false) String disciplina,
             @RequestParam(required = false) String comuna,
+            @RequestParam(required = false) String region,
             @RequestParam(required = false) String fechaDesde,
             @RequestParam(required = false) String fechaHasta,
             @RequestParam(required = false) Double precioMin,
@@ -32,12 +33,12 @@ public class ClassController {
             @RequestParam(required = false) Integer edadMin,
             @RequestParam(required = false) Integer edadMax) {
 
-        boolean hasFilters = disciplina != null || comuna != null || fechaDesde != null
+        boolean hasFilters = disciplina != null || comuna != null || region != null || fechaDesde != null
                 || fechaHasta != null || precioMin != null || precioMax != null
                 || nivel != null || edadMin != null || edadMax != null;
 
         if (hasFilters) {
-            return ResponseEntity.ok(classService.search(disciplina, comuna, fechaDesde, fechaHasta,
+            return ResponseEntity.ok(classService.search(disciplina, comuna, region, fechaDesde, fechaHasta,
                     precioMin, precioMax, nivel, edadMin, edadMax));
         }
         return ResponseEntity.ok(classService.listPublished());

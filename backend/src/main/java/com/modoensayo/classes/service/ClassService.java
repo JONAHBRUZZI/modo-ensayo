@@ -90,7 +90,7 @@ public class ClassService {
         return toResponse(c);
     }
 
-    public List<ClassResponse> search(String disciplina, String comuna, String fechaDesde,
+    public List<ClassResponse> search(String disciplina, String comuna, String region, String fechaDesde,
                                        String fechaHasta, Double precioMin, Double precioMax,
                                        String nivel, Integer edadMin, Integer edadMax) {
         Specification<Class> spec = (root, query, cb) -> {
@@ -119,8 +119,13 @@ public class ClassService {
             if (precioMax != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("price"), precioMax));
             }
+            if (region != null && !region.isBlank()) {
+                predicates.add(cb.equal(cb.lower(venueJoin.get("region")), region.toLowerCase()));
+            }
             if (comuna != null && !comuna.isBlank()) {
-                predicates.add(cb.equal(cb.lower(venueJoin.get("city")), comuna.toLowerCase()));
+                Predicate cityMatch = cb.equal(cb.lower(venueJoin.get("city")), comuna.toLowerCase());
+                Predicate comunaMatch = cb.equal(cb.lower(venueJoin.get("comuna")), comuna.toLowerCase());
+                predicates.add(cb.or(cityMatch, comunaMatch));
             }
             if (edadMin != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("maxAge"), edadMin));
@@ -222,11 +227,23 @@ public class ClassService {
             throw new BusinessException("La sala ya esta reservada en ese horario. Elige otro horario disponible.");
         }
 
-        c.setRoom(room);
-        c.setStartTime(startTime);
-        c.setEndTime(endTime);
-        c.setDuration(dur);
-        c.setStatus(ClassStatus.PUBLISHED);
+        Class instancia = new Class();
+        instancia.setTitle(c.getTitle());
+        instancia.setDiscipline(c.getDiscipline());
+        instancia.setDisciplineCategory(c.getDisciplineCategory());
+        instancia.setLevel(c.getLevel());
+        instancia.setDescription(c.getDescription());
+        instancia.setCapacity(c.getCapacity());
+        instancia.setDuration(dur);
+        instancia.setPrice(c.getPrice());
+        instancia.setMinAge(c.getMinAge());
+        instancia.setMaxAge(c.getMaxAge());
+        instancia.setTeacherId(c.getTeacherId());
+        instancia.setTipoClase(c.getTipoClase());
+        instancia.setRoom(room);
+        instancia.setStartTime(startTime);
+        instancia.setEndTime(endTime);
+        instancia.setStatus(ClassStatus.PUBLISHED);
 
         // Asignar rol TEACHER al publicar (BORRADOR sin sala → ACTIVA)
         boolean rolAsignadoEnReserva = false;
@@ -239,7 +256,7 @@ public class ClassService {
             lastTeacherRoleAssigned.remove();
         }
 
-        return toResponse(classRepository.save(c));
+        return toResponse(classRepository.save(instancia));
     }
 
     @Transactional
@@ -546,7 +563,7 @@ public class ClassService {
     }
 
     private ClassResponse toResponse(Class c) {
-        return toResponse(c, Map.of());
+        return toResponse(c, new HashMap<>());
     }
 
     private ClassResponse toResponse(Class c, Map<UUID, Long> enrollmentCounts) {

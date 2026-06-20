@@ -169,7 +169,7 @@ class ClassServiceTest {
         when(roleRepository.findByName("TEACHER")).thenReturn(Optional.of(
                 Role.builder().id(2).name("TEACHER").build()));
         when(userRoleRepository.save(any())).thenReturn(null);
-        when(classRepository.save(any())).thenReturn(draftClass);
+        when(classRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(enrollmentRepository.countByClassIdIn(any())).thenReturn(List.of());
 
         Instant start = Instant.now().plusSeconds(3600);
@@ -178,6 +178,7 @@ class ClassServiceTest {
         assertNotNull(result);
         verify(classRepository).save(argThat(c ->
                 c.getStatus() == ClassStatus.PUBLISHED && c.getRoom() != null));
+        assertEquals(ClassStatus.DRAFT, draftClass.getStatus());
     }
 
     @Test

@@ -90,6 +90,8 @@ public class VenueAdminController {
             @AuthenticationPrincipal CustomUserDetails user,
             @RequestParam String nombre,
             @RequestParam String ciudad,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String comuna,
             @RequestParam String direccion,
             @RequestParam(required = false) String descripcion,
             @RequestParam(required = false) String telefono,
@@ -102,7 +104,7 @@ public class VenueAdminController {
             @RequestParam(value = "documentos", required = false) List<MultipartFile> documentos,
             @RequestParam(value = "tiposDocumento", required = false) List<String> tiposDocumento) throws java.io.IOException {
 
-        VenueRequest req = new VenueRequest(nombre, ciudad, direccion, descripcion,
+        VenueRequest req = new VenueRequest(nombre, ciudad, region, comuna, direccion, descripcion,
                 telefono, email, tipo, instagram, youtube, sitioWeb, facebook);
 
         VenueResponse venue = venueService.registrarSede(user.getUserId(), req);
@@ -162,27 +164,6 @@ public class VenueAdminController {
     public ResponseEntity<RoomResponse> createRoom(@AuthenticationPrincipal CustomUserDetails user,
                                                     @PathVariable UUID venueId, @RequestBody RoomRequest req) {
         return ResponseEntity.ok(venueService.createRoom(user.getUserId(), venueId, req));
-    }
-
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService.
-    @PostMapping("/rooms/{roomId}/availability")
-    public ResponseEntity<?> createAvailability(@AuthenticationPrincipal CustomUserDetails user,
-                                                 @PathVariable UUID roomId,
-                                                 @RequestBody RoomAvailabilityRequest req) {
-        return ResponseEntity.status(501).body("RoomAvailability removed. TODO: use VenueScheduleService.");
-    }
-
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService.
-    @GetMapping("/rooms/{roomId}/availability")
-    public ResponseEntity<List<RoomAvailabilityResponse>> getAvailability(@PathVariable UUID roomId) {
-        return ResponseEntity.ok(java.util.Collections.emptyList());
-    }
-
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService.
-    @DeleteMapping("/rooms/{roomId}/availability/{slotId}")
-    public ResponseEntity<?> deleteAvailability(@AuthenticationPrincipal CustomUserDetails user,
-                                                 @PathVariable UUID roomId, @PathVariable UUID slotId) {
-        return ResponseEntity.status(501).body("RoomAvailability removed. TODO: use VenueScheduleService.");
     }
 
     // ── Documentos de sede ──────────────────────────────────────────────────

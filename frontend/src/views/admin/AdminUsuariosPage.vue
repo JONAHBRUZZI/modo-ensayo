@@ -12,7 +12,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input v-model="busqueda" type="text" placeholder="Buscar por email o nombre..."
-               class="w-full bg-[#1a1d2e] border border-white/10 rounded-lg text-sm text-gray-200 pl-9 pr-3 py-2 focus:outline-none focus:border-primary/50" />
+               class="w-full bg-[var(--bg-elevated)] border border-white/10 rounded-lg text-sm text-gray-200 pl-9 pr-3 py-2 focus:outline-none focus:border-primary/50" />
       </div>
     </div>
 
@@ -43,7 +43,7 @@
           </div>
 
           <select @change="assignRole(u.id, $event.target.value); $event.target.value = ''"
-                  class="bg-[#1a1d2e] border border-gray-700 rounded-lg text-sm text-gray-300 px-2 py-1">
+                  class="bg-[var(--bg-elevated)] border border-gray-700 rounded-lg text-sm text-gray-300 px-2 py-1">
             <option value="">+ Rol</option>
             <option value="TEACHER">TEACHER</option>
             <option value="VENUE_ADMIN">VENUE_ADMIN</option>
@@ -72,7 +72,7 @@
     <div v-if="suspendTarget"
          class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
          @click.self="cerrarSuspender">
-      <div class="bg-[#161824] border border-yellow-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+      <div class="bg-[var(--bg-overlay)] border border-yellow-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,7 +104,7 @@
             {{ suspendiendo ? 'Suspendiendo...' : 'Suspender' }}
           </button>
           <button @click="cerrarSuspender" :disabled="suspendiendo"
-                  class="flex-1 px-4 py-2 rounded-lg bg-[#1a1d2e] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
+                  class="flex-1 px-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
             Cancelar
           </button>
         </div>
@@ -113,7 +113,7 @@
     <div v-if="usuarioAEliminar"
          class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
          @click.self="cerrarModal">
-      <div class="bg-[#161824] border border-red-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+      <div class="bg-[var(--bg-overlay)] border border-red-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,7 +145,7 @@
             {{ eliminando ? 'Eliminando...' : 'Si, eliminar' }}
           </button>
           <button @click="cerrarModal" :disabled="eliminando"
-                  class="flex-1 px-4 py-2 rounded-lg bg-[#1a1d2e] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
+                  class="flex-1 px-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
             Cancelar
           </button>
         </div>

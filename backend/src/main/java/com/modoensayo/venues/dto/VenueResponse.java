@@ -7,6 +7,8 @@ public record VenueResponse(
     UUID id,
     String name,
     String city,
+    String region,
+    String comuna,
     String address,
     String description,
     String phone,

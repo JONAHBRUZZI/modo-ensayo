@@ -25,6 +25,10 @@ public class Venue extends BaseEntity {
 
     private String city;
 
+    private String region;
+
+    private String comuna;
+
     private String address;
 
     private String description;

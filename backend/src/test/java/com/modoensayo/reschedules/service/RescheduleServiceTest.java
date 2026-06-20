@@ -20,7 +20,7 @@ import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.venues.domain.Room;
 import com.modoensayo.venues.domain.Venue;
 import com.modoensayo.venues.repository.VenueRepository;
-import com.modoensayo.venues.service.RoomAvailabilityService;
+import com.modoensayo.venues.repository.RoomScheduleBlockRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +51,7 @@ class RescheduleServiceTest {
     @Mock private PaymentRepository paymentRepository;
     @Mock private ClassRepository classRepository;
     @Mock private VenueRepository venueRepository;
-    @Mock private RoomAvailabilityService roomAvailabilityService;
+    @Mock private RoomScheduleBlockRepository roomScheduleBlockRepository;
 
     @InjectMocks private RescheduleService rescheduleService;
 

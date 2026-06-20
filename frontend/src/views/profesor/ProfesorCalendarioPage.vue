@@ -61,7 +61,7 @@
 
     <!-- Vista Lista -->
     <div v-else class="space-y-4">
-      <div v-for="c in sortedClasses" :key="c.id" class="card cursor-pointer hover:bg-[#1a1d2e]" @click="selectClass(c)">
+      <div v-for="c in sortedClasses" :key="c.id" class="card cursor-pointer hover:bg-[var(--bg-elevated)]" @click="selectClass(c)">
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-lg font-semibold text-white">{{ c.title }}</h3>
@@ -76,7 +76,7 @@
 
     <!-- Modal accion rapida -->
     <div v-if="selectedClass" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="selectedClass = null">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
+      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
         <h3 class="text-lg font-semibold text-white mb-2">{{ selectedClass.title }}</h3>
         <div class="text-gray-400 text-sm space-y-2 mb-6">
           <p><span class="text-gray-500">Sala:</span> {{ selectedClass.roomName || selectedClass.room?.name }}</p>

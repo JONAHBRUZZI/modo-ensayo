@@ -52,13 +52,6 @@ export default {
     return res.data
   },
 
-  async getRoomAvailability(roomId, afterTime) {
-    const res = await api.get(`/venues/rooms/${roomId}/availability`, {
-      params: { afterTime }
-    })
-    return res.data
-  },
-
   async markAttendance(classId, data) {
     const res = await api.post('/attendance', { classId, ...data })
     return res.data

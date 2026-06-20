@@ -95,25 +95,6 @@ export default {
     return res.data
   },
 
-  async createRoomAvailability(roomId, data) {
-    const res = await api.post(`/venue-admin/rooms/${roomId}/availability`, data)
-    return res.data
-  },
-
-  async getRoomAvailability(roomId) {
-    const res = await api.get(`/venue-admin/rooms/${roomId}/availability`)
-    return res.data
-  },
-
-  async getPublicRoomAvailability(roomId) {
-    const res = await api.get(`/venues/rooms/${roomId}/availability`)
-    return res.data
-  },
-
-  async deleteRoomAvailability(roomId, slotId) {
-    await api.delete(`/venue-admin/rooms/${roomId}/availability/${slotId}`)
-  },
-
   async updateVenueSocial(id, data) {
     const res = await api.patch(`/venue-admin/venues/${id}/social`, data)
     return res.data

@@ -12,7 +12,7 @@
       <p class="text-sm">Cargando...</p>
     </div>
     <div v-else-if="clases.length === 0" class="card text-center py-16">
-      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div class="w-14 h-14 bg-[var(--bg-elevated)] rounded-2xl flex items-center justify-center mx-auto mb-4">
         <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
@@ -36,7 +36,7 @@
     </div>
 
     <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
+      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
         <h3 class="text-lg font-semibold text-white mb-2">{{ modal.titulo }}</h3>
         <p class="text-gray-400 text-sm mb-6">{{ modal.mensaje }}</p>
         <div class="flex space-x-3 justify-end">

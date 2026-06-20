@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: modoensayo
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=200,expireAfterWrite=5m
+    cache-names:
+      - adminStats
+      - publishedClasses
+      - approvedVenues
+      - userProfile
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+jwt:
+  secret: ${JWT_SECRET:7Dt5OOsrW2R6v2Eyk2rqzQnmXcEe/agy0lTFWbja1ww=}

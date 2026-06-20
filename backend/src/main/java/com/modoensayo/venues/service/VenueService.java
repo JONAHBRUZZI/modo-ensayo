@@ -42,7 +42,8 @@ public class VenueService {
     @CacheEvict(value = "approvedVenues", allEntries = true)
     public VenueResponse create(VenueRequest req) {
         Venue v = Venue.builder()
-                .name(req.name()).city(req.city()).address(req.address())
+                .name(req.name()).city(req.city()).region(req.region()).comuna(req.comuna())
+                .address(req.address())
                 .description(req.description()).phone(req.phone()).email(req.email())
                 .status(EstadoSede.PENDIENTE_APROBACION).build();
         return toVenueResponse(venueRepository.save(v));
@@ -54,7 +55,8 @@ public class VenueService {
         validateIdentityVerified(userId);
         Venue v = Venue.builder()
                 .adminId(userId)
-                .name(req.name()).city(req.city()).address(req.address())
+                .name(req.name()).city(req.city()).region(req.region()).comuna(req.comuna())
+                .address(req.address())
                 .description(req.description()).phone(req.phone()).email(req.email())
                 .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
                 .status(EstadoSede.PENDIENTE_APROBACION).build();
@@ -71,7 +73,8 @@ public class VenueService {
     public VenueResponse createVenueAdmin(UUID adminId, VenueRequest req) {
         validateIdentityVerified(adminId);
         Venue v = Venue.builder()
-                .adminId(adminId).name(req.name()).city(req.city()).address(req.address())
+                .adminId(adminId).name(req.name()).city(req.city()).region(req.region()).comuna(req.comuna())
+                .address(req.address())
                 .description(req.description()).phone(req.phone()).email(req.email())
                 .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
                 .status(EstadoSede.APROBADA).build();
@@ -93,7 +96,9 @@ public class VenueService {
                 .orElse(null);
 
         if (v != null) {
-            v.setName(req.name()); v.setCity(req.city()); v.setAddress(req.address());
+            v.setName(req.name()); v.setCity(req.city());
+            v.setRegion(req.region()); v.setComuna(req.comuna());
+            v.setAddress(req.address());
             v.setDescription(req.description()); v.setPhone(req.phone()); v.setEmail(req.email());
             if (req.tipo() != null) v.setTipo(TipoSede.valueOf(req.tipo()));
             v.setInstagram(req.instagram()); v.setYoutube(req.youtube());
@@ -102,7 +107,8 @@ public class VenueService {
         } else {
             v = Venue.builder()
                     .adminId(adminId)
-                    .name(req.name()).city(req.city()).address(req.address())
+                    .name(req.name()).city(req.city()).region(req.region()).comuna(req.comuna())
+                    .address(req.address())
                     .description(req.description()).phone(req.phone()).email(req.email())
                     .tipo(req.tipo() != null ? TipoSede.valueOf(req.tipo()) : null)
                     .instagram(req.instagram()).youtube(req.youtube())
@@ -143,6 +149,8 @@ public class VenueService {
         }
         if (req.name() != null) v.setName(req.name());
         if (req.city() != null) v.setCity(req.city());
+        if (req.region() != null) v.setRegion(req.region());
+        if (req.comuna() != null) v.setComuna(req.comuna());
         if (req.address() != null) v.setAddress(req.address());
         if (req.description() != null) v.setDescription(req.description());
         if (req.phone() != null) v.setPhone(req.phone());
@@ -257,30 +265,14 @@ public class VenueService {
         return toRoomResponse(roomRepository.save(r));
     }
 
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
-    public List<RoomAvailabilityResponse> getRoomAvailability(UUID roomId) {
-        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
-    }
-
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
-    @Transactional
-    public RoomAvailabilityResponse createAvailability(UUID userId, UUID roomId, RoomAvailabilityRequest req) {
-        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
-    }
-
-    // TODO: RoomAvailability removed. Reimplement via VenueScheduleService when ready.
-    @Transactional
-    public void deleteAvailability(UUID userId, UUID availId) {
-        throw new UnsupportedOperationException("RoomAvailability has been removed. Use VenueScheduleService instead.");
-    }
-
     public VenueResponse toVenueResponsePublic(Venue v) {
         return toVenueResponse(v);
     }
 
     private VenueResponse toVenueResponse(Venue v) {
         return new VenueResponse(
-                v.getId(), v.getName(), v.getCity(), v.getAddress(),
+                v.getId(), v.getName(), v.getCity(), v.getRegion(), v.getComuna(),
+                v.getAddress(),
                 v.getDescription(), v.getPhone(), v.getEmail(),
                 v.getStatus().name(),
                 v.getTipo() != null ? v.getTipo().name() : null,

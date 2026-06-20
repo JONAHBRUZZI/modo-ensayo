@@ -32,8 +32,8 @@ const tooltip = computed(() => {
 const badgeClass = computed(() => {
   switch (estadoUpper.value) {
     case 'ACTIVO': return 'badge badge-green'
-    case 'DORMIDO': return 'badge bg-gray-600/30 text-gray-400 border border-gray-600/30'
-    case 'INACTIVO': return 'badge bg-gray-800/50 text-gray-500 border border-gray-700/30'
+    case 'DORMIDO': return 'badge bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+    case 'INACTIVO': return 'badge bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'
     default: return 'badge badge-blue'
   }
 })

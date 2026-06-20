@@ -4,6 +4,7 @@ import com.modoensayo.shared.exceptions.BusinessException;
 import com.modoensayo.shared.exceptions.ResourceNotFoundException;
 import com.modoensayo.venues.domain.Room;
 import com.modoensayo.venues.domain.RoomScheduleBlock;
+import com.modoensayo.venues.dto.RoomScheduleBlockDto;
 import com.modoensayo.venues.domain.VenueBlockConfig;
 import com.modoensayo.venues.domain.VenueSchedule;
 import com.modoensayo.venues.repository.RoomRepository;
@@ -109,38 +110,51 @@ public class VenueScheduleService {
         }
     }
 
-    public List<RoomScheduleBlock> getRoomSchedule(UUID roomId, Instant from, Instant to) {
-        return blockRepo.findByRoomIdAndStartTimeBetweenOrderByStartTime(roomId, from, to);
+    @Transactional(readOnly = true)
+    public List<RoomScheduleBlockDto> getRoomSchedule(UUID roomId, Instant from, Instant to) {
+        return blockRepo.findByRoomIdAndStartTimeBetweenOrderByStartTime(roomId, from, to)
+                .stream().map(this::toBlockDto).toList();
     }
 
-    public List<RoomScheduleBlock> getRoomsSchedule(List<UUID> roomIds, Instant from, Instant to) {
-        return blockRepo.findByRoomIdInAndStartTimeBetweenOrderByStartTime(roomIds, from, to);
+    @Transactional(readOnly = true)
+    public List<RoomScheduleBlockDto> getRoomsSchedule(List<UUID> roomIds, Instant from, Instant to) {
+        return blockRepo.findByRoomIdInAndStartTimeBetweenOrderByStartTime(roomIds, from, to)
+                .stream().map(this::toBlockDto).toList();
+    }
+
+    /** Convierte el bloque a DTO plano; accede a room.getName() dentro de la transaccion. */
+    public RoomScheduleBlockDto toBlockDto(RoomScheduleBlock b) {
+        return new RoomScheduleBlockDto(
+                b.getId(),
+                b.getRoom() != null ? b.getRoom().getId() : null,
+                b.getRoom() != null ? b.getRoom().getName() : null,
+                b.getStartTime(), b.getEndTime(), b.getStatus(), b.getClassId());
     }
 
     @Transactional
-    public RoomScheduleBlock markMaintenance(UUID blockId, String reason) {
+    public RoomScheduleBlockDto markMaintenance(UUID blockId, String reason) {
         RoomScheduleBlock block = blockRepo.findById(blockId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bloque no encontrado"));
         if (!"AVAILABLE".equals(block.getStatus())) {
             throw new BusinessException("Solo bloques disponibles pueden marcarse como mantencion");
         }
         block.setStatus("MAINTENANCE");
-        return blockRepo.save(block);
+        return toBlockDto(blockRepo.save(block));
     }
 
     @Transactional
-    public RoomScheduleBlock releaseMaintenance(UUID blockId) {
+    public RoomScheduleBlockDto releaseMaintenance(UUID blockId) {
         RoomScheduleBlock block = blockRepo.findById(blockId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bloque no encontrado"));
         if (!"MAINTENANCE".equals(block.getStatus())) {
             throw new BusinessException("Solo bloques en mantencion pueden liberarse");
         }
         block.setStatus("AVAILABLE");
-        return blockRepo.save(block);
+        return toBlockDto(blockRepo.save(block));
     }
 
     @Transactional
-    public RoomScheduleBlock bookSlot(UUID blockId, UUID classId) {
+    public RoomScheduleBlockDto bookSlot(UUID blockId, UUID classId) {
         RoomScheduleBlock block = blockRepo.findById(blockId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bloque no encontrado"));
         if (!"AVAILABLE".equals(block.getStatus())) {
@@ -148,7 +162,7 @@ public class VenueScheduleService {
         }
         block.setStatus("OCCUPIED");
         block.setClassId(classId);
-        return blockRepo.save(block);
+        return toBlockDto(blockRepo.save(block));
     }
 
     @Transactional

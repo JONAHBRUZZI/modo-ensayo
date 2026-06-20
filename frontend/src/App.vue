@@ -10,12 +10,17 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAuth } from './stores/auth'
+import { useTheme } from './composables/useTheme'
 import { decodeJwt } from '@/utils/jwt'
 import AppToast from './components/AppToast.vue'
 
 const { token } = useAuth()
+const { applyTheme } = useTheme()
 
-onMounted(() => { checkTokenExpiration() })
+onMounted(() => {
+  applyTheme()
+  checkTokenExpiration()
+})
 
 function checkTokenExpiration() {
   if (!token.value) return

@@ -7,6 +7,23 @@
 
     <div v-if="loading" class="text-center text-gray-400 py-20">Cargando...</div>
 
+    <!-- CTA: sin horario -->
+    <div v-else-if="!hayHorario" class="card text-center py-16 mb-6">
+      <div class="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold text-white mb-2">Sin horarios disponibles</h2>
+      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">
+        Tu sede aún no tiene un horario laboral configurado. Defínelo para que el sistema
+        genere automáticamente los bloques de disponibilidad de tus salas.
+      </p>
+      <button @click="showConfig = true" class="btn-primary text-base px-8 py-3">
+        Crear horario laboral
+      </button>
+    </div>
+
     <template v-else>
       <!-- Config section (collapsible) -->
       <div class="card mb-6">
@@ -215,6 +232,7 @@ const dayLabelsShort = { MONDAY: 'Lun', TUESDAY: 'Mar', WEDNESDAY: 'Mié', THURS
 const venue = ref(null)
 const rooms = ref([])
 const loading = ref(true)
+const hayHorario = ref(false)
 
 const showConfig = ref(false)
 const savingConfig = ref(false)
@@ -251,6 +269,20 @@ function getMonday(d) {
 
 function pad2(n) {
   return String(n).padStart(2, '0')
+}
+
+const ZONA_SEDE = 'America/Santiago'
+
+// Convierte un instante ISO (UTC) a su fecha (YYYY-MM-DD) y hora (HH:MM) en la
+// zona horaria de la sede, para que coincida con la grilla del horario laboral.
+function instantToLocalParts(iso) {
+  if (!iso) return { date: '', time: '' }
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ZONA_SEDE, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(new Date(iso)).reduce((a, x) => { a[x.type] = x.value; return a }, {})
+  const hour = p.hour === '24' ? '00' : p.hour
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${hour}:${p.minute}` }
 }
 
 function timeToMinutes(t) {
@@ -411,7 +443,7 @@ function onCellClick(day, block) {
     maintenanceConfirm.value = {
       action: 'release',
       message: '¿Liberar este horario de mantención?',
-      blockId: entry.blockId,
+      blockId: entry.id,
       roomId: selectedRoomId.value
     }
     return
@@ -420,7 +452,7 @@ function onCellClick(day, block) {
   maintenanceConfirm.value = {
     action: 'mark',
     message: '¿Marcar este horario como mantención?',
-    blockId: entry?.blockId,
+    blockId: entry?.id,
     roomId: selectedRoomId.value,
     date: day.date,
     startMin: block.start
@@ -473,6 +505,7 @@ async function saveAllConfig() {
     await scheduleService.saveBlockConfig(venue.value.id, cfg)
     await scheduleService.generateBlocks(venue.value.id)
 
+    hayHorario.value = schedules.length > 0
     configMsg.value = 'Configuración guardada y bloques regenerados correctamente.'
     configMsgType.value = 'success'
     await loadAllSchedules()
@@ -505,8 +538,8 @@ async function loadAllSchedules() {
       const entries = await scheduleService.getRoomSchedule(room.id, from, to)
       if (Array.isArray(entries)) {
         for (const entry of entries) {
-          const dateStr = entry.startTime?.slice(0, 10)
-          const timeStr = entry.startTime?.slice(11, 16)
+          // El bloque viene en UTC; la grilla usa la hora local de la sede.
+          const { date: dateStr, time: timeStr } = instantToLocalParts(entry.startTime)
           if (dateStr && timeStr) {
             const key = buildLookupKey(room.id, dateStr, timeStr)
             map[key] = { ...entry, roomId: room.id }
@@ -558,6 +591,7 @@ onMounted(async () => {
     }
 
     if (scheduleRes.status === 'fulfilled' && Array.isArray(scheduleRes.value)) {
+      hayHorario.value = scheduleRes.value.length > 0
       for (const s of scheduleRes.value) {
         if (scheduleDays[s.dayOfWeek]) {
           scheduleDays[s.dayOfWeek].enabled = true

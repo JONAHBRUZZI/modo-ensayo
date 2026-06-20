@@ -7,16 +7,11 @@
   >
     <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-white mb-1">Agendar Sala</h1>
+        <h1 class="text-3xl font-bold text-white mb-1">Buscar Salas</h1>
         <p class="text-gray-400">Encuentra la sala perfecta para tu clase.</p>
       </div>
-      <button @click="vistaCalendario = !vistaCalendario" class="btn-primary text-sm flex items-center gap-2">
-        <svg v-if="!vistaCalendario" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/><path d="M3 10h18M8 2v4M16 2v4" stroke-width="2" stroke-linecap="round"/></svg>
-        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-        {{ vistaCalendario ? 'Vista Lista' : 'Vista Calendario' }}
-      </button>
     </div>
-    <!-- Banner cuando asignamos sala a un borrador existente -->
+
     <div v-if="borradorId" class="bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
       <svg class="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -24,165 +19,157 @@
       <p class="text-blue-300 text-sm">Selecciona un horario para asignarlo a tu clase y publicarla.</p>
     </div>
 
-    <!-- Filtros -->
-    <div class="card mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      <select v-model="filtros.region" class="input-field text-sm py-2" @change="onRegionChange">
-        <option value="">TODAS las regiones</option>
-        <option v-for="r in regiones" :key="r" :value="r">{{ r }}</option>
-      </select>
-      <select v-model="filtros.comuna" class="input-field text-sm py-2" @change="buscar">
-        <option value="">TODAS las comunas</option>
-        <option v-for="c in comunasFiltradas" :key="c" :value="c">{{ c }}</option>
-      </select>
-      <select v-model="filtros.tipo" class="input-field text-sm py-2" @change="buscar">
-        <option value="">TODOS los tipos</option>
-        <option value="DANZA">Danza</option>
-        <option value="MUSICA">Música</option>
-      </select>
-      <div>
-        <label class="text-xs text-gray-500 mb-0.5 block">Desde</label>
-        <input v-model="filtros.fechaDesde" type="date" class="input-field text-sm py-2" @change="buscar" />
+    <!-- ====== STEP 1: Filtros ====== -->
+    <div class="card mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="text-xs text-gray-500 mb-0.5 block">Region</label>
+          <select v-model="filtros.region" class="input-field text-sm py-2" @change="onRegionChange">
+            <option value="">Todas las regiones</option>
+            <option v-for="r in regiones" :key="r" :value="r">{{ r }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 mb-0.5 block">Comuna</label>
+          <input v-model="filtros.comuna" type="text" class="input-field text-sm py-2" placeholder="Ej: Providencia" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 mb-0.5 block">Desde</label>
+          <input v-model="filtros.fechaDesde" type="date" class="input-field text-sm py-2" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 mb-0.5 block">Hasta</label>
+          <input v-model="filtros.fechaHasta" type="date" class="input-field text-sm py-2" />
+        </div>
       </div>
-      <div>
-        <label class="text-xs text-gray-500 mb-0.5 block">Hasta</label>
-        <input v-model="filtros.fechaHasta" type="date" class="input-field text-sm py-2" @change="buscar" />
-      </div>
-      <button @click="buscar" class="btn-primary text-sm">Buscar Salas</button>
-    </div>
 
-    <!-- Vista Calendario -->
-    <div v-if="vistaCalendario" class="space-y-4">
-      <!-- Filtros checkbox para calendario -->
-      <div class="card">
-        <p class="text-xs text-gray-500 mb-3">Filtrar salas:</p>
-        <div class="flex flex-wrap gap-4">
-          <label v-for="filtro in calendarFilters" :key="filtro.key" class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="filtro.checked" @change="onCalendarFilterChange" class="w-4 h-4 rounded border-dark-border bg-dark-bg text-primary focus:ring-primary/50" />
-            <span class="text-sm text-gray-300">{{ filtro.label }}</span>
+      <div class="mb-4">
+        <label class="text-xs text-gray-500 mb-1.5 block">Disciplina</label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="d in disciplinas"
+            :key="d"
+            type="button"
+            :class="[
+              'px-4 py-1.5 rounded-full text-sm font-medium border transition-colors',
+              filtros.disciplina === d
+                ? 'bg-primary/20 border-primary text-primary'
+                : 'border-white/10 text-gray-400 hover:border-white/30 hover:text-white bg-[var(--bg-elevated)]'
+            ]"
+            @click="toggleDisciplina(d)"
+          >
+            {{ d }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="filtros.disciplina" class="mb-4">
+        <label class="text-xs text-gray-500 mb-1.5 block">Caracteristicas</label>
+        <div class="flex flex-wrap gap-3">
+          <label v-for="c in caracteristicasFiltradas" :key="c.key" class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" v-model="filtros.caracteristicas" :value="c.key" class="w-4 h-4 rounded border-dark-border bg-dark-bg text-primary focus:ring-primary/50" />
+            <span class="text-sm text-gray-300">{{ c.label }}</span>
           </label>
         </div>
       </div>
 
-      <div v-if="calendarLoading" class="text-center text-gray-400 py-20">Cargando calendario...</div>
-      <div v-else-if="calendarSlots.length === 0" class="card text-center py-12"><p class="text-gray-400">No hay horarios disponibles con estos filtros.</p></div>
+      <button @click="buscar" class="btn-primary text-sm w-full sm:w-auto">Buscar</button>
+    </div>
 
-      <!-- Calendario semanal -->
-      <div v-else class="card overflow-x-auto">
-        <div class="flex items-center justify-between mb-4">
-          <button @click="prevCalendarWeek" class="text-sm text-gray-400 hover:text-white px-3 py-1 rounded hover:bg-dark-border">← Anterior</button>
-          <h3 class="text-white font-medium">{{ calendarWeekLabel }}</h3>
-          <button @click="nextCalendarWeek" class="text-sm text-gray-400 hover:text-white px-3 py-1 rounded hover:bg-dark-border">Siguiente →</button>
+    <!-- ====== STEP 2: Venues ====== -->
+    <div v-if="loading" class="text-center text-gray-400 py-20">Buscando salas disponibles...</div>
+    <div v-else-if="venues.length === 0" class="card text-center py-12"><p class="text-gray-400">No se encontraron salas con esos filtros.</p></div>
+    <div v-else class="space-y-4">
+      <div v-for="venue in venues" :key="venue.id" class="card">
+        <div @click="toggleVenue(venue.id)" class="cursor-pointer flex items-center justify-between">
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-white">{{ venue.name }}</h3>
+            <p class="text-gray-400 text-sm">{{ venue.address }}</p>
+            <p class="text-gray-500 text-xs mt-1">{{ venue.region || '' }}{{ venue.city ? ' . ' + venue.city : '' }}</p>
+            <p class="text-primary text-xs mt-0.5">{{ venue.rooms?.length || 0 }} sala(s) disponible(s)</p>
+          </div>
+          <svg :class="['w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-3', expandedVenue === venue.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </div>
 
-        <table class="w-full border-collapse">
-          <thead>
-            <tr>
-              <th class="w-24 p-2 text-left text-xs text-gray-500 font-medium"></th>
-              <th v-for="day in calendarWeekDays" :key="day.date" class="p-2 text-center text-xs font-medium text-gray-300 min-w-[120px]">
-                {{ day.label }}<br /><span class="font-normal opacity-60">{{ day.dateFormatted }}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="block in calendarTimeBlocks" :key="block.key">
-              <td class="p-2 text-xs text-gray-500 align-top whitespace-nowrap">{{ block.label }}</td>
-              <td v-for="day in calendarWeekDays" :key="day.date" class="p-1 align-top">
-                <div
-                  v-for="slot in getSlotsForCell(day.date, block)"
-                  :key="slot.id"
-                  :style="{ backgroundColor: getRoomColor(slot.roomId) + '20', borderColor: getRoomColor(slot.roomId) + '50' }"
-                  class="rounded p-1 mb-0.5 cursor-pointer hover:opacity-80 border text-xs transition-opacity"
-                  @click="openCalendarSlot(slot)"
-                >
-                  <span class="text-white text-[10px] block truncate">{{ slot.roomName }}</span>
-                  <span class="text-gray-400 text-[9px]">{{ slot.venueName }}</span>
-                </div>
-                <div v-if="!getSlotsForCell(day.date, block).length" class="min-h-[32px]"></div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- ====== STEP 3: Rooms ====== -->
+        <div v-if="expandedVenue === venue.id" class="mt-4 space-y-3">
+          <div v-if="venue.rooms?.length">
+            <div v-for="room in venue.rooms" :key="room.id" class="bg-[var(--bg-elevated)] rounded-xl p-4">
+              <div @click="toggleRoom(room.id)" class="cursor-pointer flex items-center justify-between">
+                <div class="flex-1">
+                  <p class="text-white font-medium">{{ room.name }}</p>
+                  <p class="text-gray-400 text-sm">
+                    Cap: {{ room.capacity }} pers.
+                    <span v-if="room.tamanoM2"> . {{ room.tamanoM2 }} m2</span>
+                    <span v-if="room.floorType"> . Piso {{ room.floorType }}</span>
+                  </p>
+                  <p class="text-primary text-sm font-medium mt-0.5">${{ room.pricePerHour?.toLocaleString() }} / hora</p>
 
-        <!-- Leyenda -->
-        <div class="flex items-center gap-6 mt-4 pt-4 border-t border-dark-border flex-wrap">
-          <span v-for="room in calendarRooms" :key="room.id" class="flex items-center gap-1.5 text-xs text-gray-400">
-            <span class="w-3 h-3 rounded-sm border" :style="{ backgroundColor: getRoomColor(room.id) + '40', borderColor: getRoomColor(room.id) + '60' }"></span>
-            {{ room.name }}
-          </span>
+                  <div v-if="getCaracteristicasDanza(room).length" class="mt-2">
+                    <span class="text-xs text-gray-500">Danza:</span>
+                    <div class="flex flex-wrap gap-1 mt-0.5">
+                      <span v-for="c in getCaracteristicasDanza(room)" :key="c" class="equip-tag">{{ c }}</span>
+                    </div>
+                  </div>
+                  <div v-if="getCaracteristicasMusica(room).length" class="mt-1">
+                    <span class="text-xs text-gray-500">Musica:</span>
+                    <div class="flex flex-wrap gap-1 mt-0.5">
+                      <span v-for="c in getCaracteristicasMusica(room)" :key="c" class="equip-tag">{{ c }}</span>
+                    </div>
+                  </div>
+                </div>
+                <svg :class="['w-4 h-4 text-gray-500 ml-3 flex-shrink-0 transition-transform', expandedRoom === room.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+
+              <!-- ====== STEP 4: Weekly Calendar ====== -->
+              <div v-if="expandedRoom === room.id" class="mt-3">
+                <div v-if="roomLoading === room.id" class="text-gray-500 text-sm py-4 text-center">Cargando disponibilidad...</div>
+                <div v-else-if="roomSlots[room.id]?.length" class="overflow-x-auto">
+                  <div class="flex items-center justify-between mb-3">
+                    <button @click.stop="prevRoomWeek(room.id)" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-dark-border">&larr; Anterior</button>
+                    <span class="text-xs text-gray-400 font-medium">{{ getRoomWeekLabel(room.id) }}</span>
+                    <button @click.stop="nextRoomWeek(room.id)" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-dark-border">Siguiente &rarr;</button>
+                  </div>
+
+                  <table class="w-full border-collapse">
+                    <thead>
+                      <tr>
+                        <th class="w-20 p-2 text-left text-xs text-gray-500 font-medium"></th>
+                        <th v-for="day in calendarWeekDays" :key="day.date" class="p-2 text-center text-xs font-medium text-gray-300 min-w-[100px]">
+                          {{ day.label }}<br /><span class="font-normal opacity-60">{{ day.dateFormatted }}</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="block in calendarTimeBlocks" :key="block.key">
+                        <td class="p-2 text-xs text-gray-500 align-top whitespace-nowrap">{{ block.label }}</td>
+                        <td v-for="day in calendarWeekDays" :key="day.date" class="p-1 align-top">
+                          <div
+                            v-for="slot in getRoomSlotsForCell(room.id, day.date, block)"
+                            :key="slot.id"
+                            class="rounded p-1.5 mb-0.5 cursor-pointer hover:opacity-80 border bg-green-500/15 border-green-500/30 text-xs transition-opacity"
+                            @click="confirmarAgendamiento(room, venue, slot)"
+                          >
+                            <span class="text-green-300 text-[10px] block">Disponible</span>
+                          </div>
+                          <div v-if="!getRoomSlotsForCell(room.id, day.date, block).length" class="min-h-[28px]"></div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-else class="text-gray-500 text-sm py-2">Sin horarios disponibles en este rango.</div>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-gray-500 text-sm">No hay salas en esta sede.</p>
         </div>
       </div>
     </div>
 
-    <!-- Vista Lista (original) -->
-    <template v-if="!vistaCalendario">
-      <div v-if="loading" class="text-center text-gray-400 py-20">Buscando salas disponibles...</div>
-      <div v-else-if="venues.length === 0" class="card text-center py-12"><p class="text-gray-400">No se encontraron salas con esos filtros.</p></div>
-      <div v-else class="space-y-4">
-        <div v-for="venue in venues" :key="venue.id" class="card">
-          <div @click="toggleVenue(venue.id)" class="cursor-pointer flex items-center justify-between">
-            <div>
-              <h3 class="text-lg font-semibold text-white">{{ venue.name }}</h3>
-              <p class="text-gray-400 text-sm">{{ venue.address }}, {{ venue.city }}</p>
-            </div>
-            <svg :class="['w-5 h-5 text-gray-400 transition-transform', expandedVenue === venue.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-
-          <div v-if="expandedVenue === venue.id" class="mt-4 space-y-3">
-            <div v-if="venue.rooms?.length">
-              <div v-for="room in venue.rooms" :key="room.id" class="bg-[#1a1d2e] rounded-xl p-4">
-                <div @click="toggleRoom(room.id)" class="cursor-pointer flex items-center justify-between">
-                  <div class="flex-1">
-                    <p class="text-white font-medium">{{ room.name }}</p>
-                    <p class="text-gray-400 text-sm">
-                      Cap: {{ room.capacity }} pers.
-                      <span v-if="room.tamanoM2"> · {{ room.tamanoM2 }} m²</span>
-                      <span v-if="room.floorType"> · Piso {{ room.floorType }}</span>
-                    </p>
-                    <p v-if="room.pricePerHour" class="text-primary text-sm font-medium mt-0.5">${{ room.pricePerHour?.toLocaleString() }} / hora</p>
-                    <div class="flex flex-wrap gap-1 mt-1.5">
-                      <span v-if="room.hasMirrors" class="equip-tag">Espejos</span>
-                      <span v-if="room.tieneBarraBallet" class="equip-tag">Barra ballet</span>
-                      <span v-if="room.tieneAireAcondicionado" class="equip-tag">Aire AC</span>
-                      <span v-if="room.tieneCalefaccion" class="equip-tag">Calefaccion</span>
-                      <span v-if="room.tieneInsonorizacion" class="equip-tag">Insonorizado</span>
-                      <span v-if="room.hasSound" class="equip-tag">Sonido</span>
-                      <span v-if="room.tieneAmplificacion" class="equip-tag">Amplificacion</span>
-                      <span v-if="room.tieneEntradaAuxiliar" class="equip-tag">AUX</span>
-                      <span v-if="room.tieneMicrofono" class="equip-tag">Microfono</span>
-                      <span v-if="room.tieneEquipoGrabacion" class="equip-tag">Grabacion</span>
-                      <span v-if="room.tienePiano" class="equip-tag">Piano</span>
-                      <span v-if="room.tieneGuitarra" class="equip-tag">Guitarra</span>
-                      <span v-if="room.tieneBateria" class="equip-tag">Bateria</span>
-                    </div>
-                  </div>
-                  <svg :class="['w-4 h-4 text-gray-500 ml-3 transition-transform', expandedRoom === room.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </div>
-
-                <div v-if="expandedRoom === room.id" class="mt-3">
-                  <div v-if="loadingSlots === room.id" class="text-gray-500 text-sm py-2">Cargando horarios...</div>
-                  <div v-else-if="roomSlots[room.id]?.length" class="space-y-2">
-                    <p class="text-xs text-gray-500 mb-2">Horarios disponibles:</p>
-                    <div v-for="slot in filteredSlots(room.id)" :key="slot.id" class="flex items-center justify-between bg-[#0d0f1a] rounded-lg p-3">
-                      <div>
-                        <p class="text-white text-sm">{{ formatDate(slot.startTime) }}</p>
-                        <p class="text-gray-400 text-xs">{{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}</p>
-                      </div>
-                      <button @click="confirmarAgendamiento(room, venue, slot)" class="btn-primary text-xs !py-1.5 !px-3">Agendar</button>
-                    </div>
-                  </div>
-                  <div v-else class="text-gray-500 text-sm py-2">Sin horarios disponibles en este rango</div>
-                </div>
-              </div>
-            </div>
-            <p v-else class="text-gray-500 text-sm">No hay salas en esta sede</p>
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- Alerta identidad no validada -->
+    <!-- Alerta identidad -->
     <div v-if="alertaIdentidad" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-yellow-500/30 p-6 max-w-sm w-full mx-4">
+      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-yellow-500/30 p-6 max-w-sm w-full mx-4">
         <div class="flex items-start gap-3 mb-4">
           <svg class="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -199,9 +186,9 @@
       </div>
     </div>
 
-    <!-- Modal de confirmacion -->
+    <!-- ====== STEP 5: Modal de confirmacion ====== -->
     <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
+      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
         <h3 class="text-lg font-semibold text-white mb-2">Confirmar Reserva</h3>
         <div class="text-gray-400 text-sm space-y-2 mb-6">
           <p><span class="text-gray-500">Sede:</span> {{ modal.venue?.name }}</p>
@@ -212,7 +199,7 @@
         </div>
         <p class="text-white text-sm mb-6">Selecciona tu metodo de pago para confirmar la reserva:</p>
         <div class="space-y-2 mb-6">
-          <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[#0d0f1a] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
+          <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[var(--bg-base)] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
             <span class="text-white text-sm font-medium">Transferencia Bancaria</span>
             <p class="text-gray-500 text-xs">Pago simulado - se registrara la reserva</p>
           </button>
@@ -226,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
@@ -237,40 +224,92 @@ import { useToast } from '@/composables/useToast'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
 
 const toast = useToast()
-
 const route = useRoute()
 const auth = useAuth()
 const { syncAtributos, setModo, puedeVerContextoProfesor, perfilProfesionalCompleto, identidadValidada } = auth
 
 const borradorId = computed(() => route.query.borradorId || null)
 const alertaIdentidad = ref(false)
-
 const venues = ref([])
 const loading = ref(true)
 const expandedVenue = ref(null)
 const expandedRoom = ref(null)
 const roomSlots = ref({})
-const loadingSlots = ref(null)
-const comunas = ref([])
+const roomLoading = ref(null)
 const modal = ref({ abierto: false, venue: null, room: null, slot: null, procesando: false })
-const filtros = ref({ region: '', comuna: '', tipo: '', fechaDesde: '', fechaHasta: '' })
+const filtros = ref({ region: '', comuna: '', disciplina: '', fechaDesde: '', fechaHasta: '', caracteristicas: [] })
 
-// ── Vista Calendario ──
-const vistaCalendario = ref(false)
-const calendarLoading = ref(false)
-const calendarSlots = ref([])
-const calendarRooms = ref([])
-const calendarCurrentWeekStart = ref(getMonday(new Date()))
+const roomWeekStarts = ref({})
+let roomWeekSlotsCache = {}
 
-const ROOM_COLORS = [
-  '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e',
-  '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4',
-  '#3b82f6', '#a855f7'
+const disciplinas = ['Danza', 'Musica', 'Teatro']
+
+const caracteristicasPorDisciplina = {
+  'Danza': [
+    { key: 'espejos', label: 'Espejos' },
+    { key: 'barraBallet', label: 'Barra ballet' },
+    { key: 'pisoMadera', label: 'Piso madera' },
+    { key: 'pisoFlotante', label: 'Piso flotante' },
+    { key: 'aireAcondicionado', label: 'Aire acondicionado' }
+  ],
+  'Musica': [
+    { key: 'insonorizado', label: 'Insonorizado' },
+    { key: 'sonido', label: 'Equipo de sonido' },
+    { key: 'amplificacion', label: 'Amplificacion' },
+    { key: 'piano', label: 'Piano' },
+    { key: 'guitarra', label: 'Guitarra' },
+    { key: 'bateria', label: 'Bateria' },
+    { key: 'grabacion', label: 'Grabacion' }
+  ],
+  'Teatro': [
+    { key: 'espejos', label: 'Espejos' },
+    { key: 'aireAcondicionado', label: 'Aire acondicionado' },
+    { key: 'calefaccion', label: 'Calefaccion' },
+    { key: 'sonido', label: 'Equipo de sonido' },
+    { key: 'amplificacion', label: 'Amplificacion' }
+  ]
+}
+
+const caracteristicasFiltradas = computed(() => {
+  return caracteristicasPorDisciplina[filtros.value.disciplina] || []
+})
+
+const regiones = [
+  'XV - Arica y Parinacota', 'I - Tarapaca', 'II - Antofagasta', 'III - Atacama',
+  'IV - Coquimbo', 'V - Valparaiso', 'RM - Metropolitana', "VI - O'Higgins",
+  'VII - Maule', 'XVI - Nuble', 'VIII - Biobio', 'IX - La Araucania',
+  'XIV - Los Rios', 'X - Los Lagos', 'XI - Aysen', 'XII - Magallanes'
 ]
 
-function getRoomColor(roomId) {
-  const idx = calendarRooms.value.findIndex(r => r.id === roomId)
-  return ROOM_COLORS[Math.abs(idx) % ROOM_COLORS.length]
+function toggleDisciplina(d) {
+  if (filtros.value.disciplina === d) {
+    filtros.value.disciplina = ''
+    filtros.value.caracteristicas = []
+  } else {
+    filtros.value.disciplina = d
+    filtros.value.caracteristicas = []
+  }
+}
+
+function getCaracteristicasDanza(room) {
+  const tags = []
+  if (room.hasMirrors) tags.push('Espejos')
+  if (room.tieneBarraBallet) tags.push('Barra ballet')
+  if (room.floorType) tags.push('Piso ' + room.floorType)
+  if (room.tieneAireAcondicionado) tags.push('Aire AC')
+  return tags
+}
+
+function getCaracteristicasMusica(room) {
+  const tags = []
+  if (room.tieneInsonorizacion) tags.push('Insonorizado')
+  if (room.hasSound) tags.push('Sonido')
+  if (room.tieneAmplificacion) tags.push('Amplificacion')
+  if (room.tienePiano) tags.push('Piano')
+  if (room.tieneGuitarra) tags.push('Guitarra')
+  if (room.tieneBateria) tags.push('Bateria')
+  if (room.tieneEquipoGrabacion) tags.push('Grabacion')
+  return tags
 }
 
 function getMonday(d) {
@@ -281,19 +320,10 @@ function getMonday(d) {
   return date
 }
 
-const calendarFilters = ref([
-  { key: 'danza', label: 'Danza', checked: false },
-  { key: 'musica', label: 'Música', checked: false },
-  { key: 'espejo', label: 'Con espejo', checked: false },
-  { key: 'sinEspejo', label: 'Sin espejo', checked: false },
-  { key: 'madera', label: 'Piso madera', checked: false },
-  { key: 'flotante', label: 'Piso flotante', checked: false }
-])
-
 const calendarWeekDays = computed(() => {
   const result = []
-  const monday = new Date(calendarCurrentWeekStart.value)
-  const dowLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+  const monday = new Date(getMonday(new Date()))
+  const dowLabels = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday)
     d.setDate(monday.getDate() + i)
@@ -306,143 +336,86 @@ const calendarWeekDays = computed(() => {
   return result
 })
 
-const calendarWeekLabel = computed(() => {
-  const monday = new Date(calendarCurrentWeekStart.value)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  return `Semana del ${monday.toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })} al ${sunday.toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })}`
-})
-
 const calendarTimeBlocks = computed(() => {
   const blocks = []
   for (let h = 8; h <= 21; h++) {
     const start = `${String(h).padStart(2, '0')}:00`
-    const end = `${String(h).padStart(2, '0')}:00`
-    blocks.push({ key: start + '-' + end, label: start, start, end })
+    blocks.push({ key: start, label: start, start })
   }
   return blocks
 })
 
-function getSlotsForCell(dateStr, block) {
-  return calendarSlots.value.filter(s => {
+function getRoomWeekStart(roomId) {
+  if (!roomWeekStarts.value[roomId]) {
+    roomWeekStarts.value[roomId] = getMonday(new Date())
+  }
+  return roomWeekStarts.value[roomId]
+}
+
+function getRoomWeekLabel(roomId) {
+  const monday = getRoomWeekStart(roomId)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  return `Semana del ${monday.toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })} al ${sunday.toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })}`
+}
+
+function getRoomSlotsForCell(roomId, dateStr, block) {
+  const slots = roomSlots.value[roomId] || []
+  return slots.filter(s => {
     const slotDate = s.startTime?.slice(0, 10)
     const slotHour = s.startTime?.slice(11, 13) + ':00'
     return slotDate === dateStr && slotHour === block.start
   })
 }
 
-function onCalendarFilterChange() {
-  loadCalendarData()
-}
-
-async function loadCalendarData() {
-  calendarLoading.value = true
+async function loadRoomCalendar(roomId) {
+  roomLoading.value = roomId
   try {
-    const from = calendarWeekDays.value[0].date + 'T00:00:00'
-    const to = calendarWeekDays.value[6].date + 'T23:59:59'
-    const data = await scheduleService.searchAvailableRooms(from, to)
-    let allSlots = Array.isArray(data) ? data : data?.content || []
-
-    const activeFilters = calendarFilters.value.filter(f => f.checked).map(f => f.key)
-    if (activeFilters.length > 0) {
-      allSlots = allSlots.filter(slot => {
-        let include = false
-        const t = (slot.roomType || slot.type || '').toLowerCase()
-        const ft = (slot.floorType || slot.tipoPiso || '').toLowerCase()
-        if (activeFilters.includes('danza') && t === 'danza') include = true
-        if (activeFilters.includes('musica') && t === 'musica') include = true
-        if (activeFilters.includes('espejo') && slot.hasMirrors) include = true
-        if (activeFilters.includes('sinEspejo') && !slot.hasMirrors) include = true
-        if (activeFilters.includes('madera') && (ft.includes('madera') || ft.includes('wood'))) include = true
-        if (activeFilters.includes('flotante') && (ft.includes('flotante') || ft.includes('floating'))) include = true
-        return include
-      })
-    }
-
-    const roomsMap = new Map()
-    for (const slot of allSlots) {
-      const rid = slot.roomId
-      if (rid && !roomsMap.has(rid)) {
-        roomsMap.set(rid, { id: rid, name: slot.roomName || '' })
-      }
-    }
-
-    calendarRooms.value = Array.from(roomsMap.values())
-    calendarSlots.value = allSlots
-  } catch { calendarSlots.value = [] }
-  calendarLoading.value = false
-}
-
-function openCalendarSlot(slot) {
-  confirmarAgendamiento(
-    slot.room || { id: slot.roomId, name: slot.roomName, capacity: slot.capacity, pricePerHour: slot.pricePerHour },
-    slot.venue || { name: slot.venueName },
-    slot
-  )
-}
-
-function prevCalendarWeek() {
-  const d = new Date(calendarCurrentWeekStart.value)
-  d.setDate(d.getDate() - 7)
-  calendarCurrentWeekStart.value = d
-  loadCalendarData()
-}
-
-function nextCalendarWeek() {
-  const d = new Date(calendarCurrentWeekStart.value)
-  d.setDate(d.getDate() + 7)
-  calendarCurrentWeekStart.value = d
-  loadCalendarData()
-}
-
-watch(vistaCalendario, (val) => {
-  if (val) loadCalendarData()
-})
-const regiones = [
-  'XV - Arica y Parinacota', 'I - Tarapaca', 'II - Antofagasta', 'III - Atacama',
-  'IV - Coquimbo', 'V - Valparaiso', 'RM - Metropolitana', "VI - O'Higgins",
-  'VII - Maule', 'XVI - Ñuble', 'VIII - Biobio', 'IX - La Araucania',
-  'XIV - Los Rios', 'X - Los Lagos', 'XI - Aysen', 'XII - Magallanes'
-]
-
-const comunasPorRegion = {
-  'XV - Arica y Parinacota': ['Arica', 'Camarones', 'Putre', 'General Lagos'],
-  'I - Tarapaca': ['Iquique', 'Alto Hospicio', 'Pozo Almonte', 'Camina', 'Colchane', 'Huara', 'Pica'],
-  'II - Antofagasta': ['Antofagasta', 'Mejillones', 'Sierra Gorda', 'Taltal', 'Calama', 'Ollague', 'San Pedro de Atacama', 'Tocopilla', 'Maria Elena'],
-  'III - Atacama': ['Copiapo', 'Caldera', 'Tierra Amarilla', 'Chanaral', 'Diego de Almagro', 'Vallenar', 'Alto del Carmen', 'Freirina', 'Huasco'],
-  'IV - Coquimbo': ['La Serena', 'Coquimbo', 'Andacollo', 'La Higuera', 'Paiguano', 'Vicuna', 'Illapel', 'Canela', 'Los Vilos', 'Salamanca', 'Ovalle', 'Combarbala', 'Monte Patria', 'Punitaqui', 'Rio Hurtado'],
-  'V - Valparaiso': ['Valparaiso', 'Vina del Mar', 'Concon', 'Quintero', 'Puchuncavi', 'Quilpue', 'Villa Alemana', 'Limache', 'Olmue', 'San Antonio', 'Cartagena', 'El Quisco', 'El Tabo', 'Algarrobo', 'Santo Domingo', 'San Felipe', 'Los Andes', 'Catemu', 'Llay-Llay', 'Panquehue', 'Putaendo', 'Santa Maria', 'Quillota', 'La Calera', 'Hijuelas', 'La Cruz', 'Nogales', 'Petorca', 'Cabildo', 'Papudo', 'La Ligua', 'Zapallar', 'Isla de Pascua', 'Juan Fernandez'],
-  'RM - Metropolitana': ['Santiago', 'Cerrillos', 'Cerro Navia', 'Conchali', 'El Bosque', 'Estacion Central', 'Huechuraba', 'Independencia', 'La Cisterna', 'La Florida', 'La Granja', 'La Pintana', 'La Reina', 'Las Condes', 'Lo Barnechea', 'Lo Espejo', 'Lo Prado', 'Macul', 'Maipu', 'Nuñoa', 'Pedro Aguirre Cerda', 'Peñalolen', 'Providencia', 'Pudahuel', 'Quilicura', 'Quinta Normal', 'Recoleta', 'Renca', 'San Joaquin', 'San Miguel', 'San Ramon', 'Vitacura', 'Puente Alto', 'Pirque', 'San Jose de Maipo', 'Colina', 'Lampa', 'Tiltil', 'San Bernardo', 'Buin', 'Calera de Tango', 'Paine', 'Melipilla', 'Alhue', 'Curacavi', 'Maria Pinto', 'San Pedro', 'Talagante', 'El Monte', 'Isla de Maipo', 'Padre Hurtado', 'Peñaflor'],
-  "VI - O'Higgins": ['Rancagua', 'Codegua', 'Coinco', 'Coltauco', 'Doñihue', 'Graneros', 'Las Cabras', 'Machali', 'Malloa', 'Mostazal', 'Olivar', 'Peumo', 'Pichidegua', 'Quinta de Tilcoco', 'Rengo', 'Requinoa', 'San Vicente', 'Pichilemu', 'La Estrella', 'Litueche', 'Marchihue', 'Navidad', 'Paredones', 'San Fernando', 'Chepica', 'Chimbarongo', 'Lolol', 'Nancagua', 'Placilla', 'Pumanque', 'Santa Cruz'],
-  'VII - Maule': ['Talca', 'Constitucion', 'Curepto', 'Empedrado', 'Maule', 'Pelarco', 'Pencahue', 'Rio Claro', 'San Clemente', 'San Rafael', 'Cauquenes', 'Chanco', 'Pelluhue', 'Curico', 'Hualañe', 'Licanten', 'Molina', 'Rauco', 'Romeral', 'Sagrada Familia', 'Teno', 'Vichuquen', 'Linares', 'Colbun', 'Longavi', 'Parral', 'Retiro', 'San Javier', 'Villa Alegre', 'Yerbas Buenas'],
-  'XVI - Ñuble': ['Chillan', 'Bulnes', 'Cobquecura', 'Coelemu', 'Coihueco', 'Chillan Viejo', 'El Carmen', 'Ninhue', 'Ñiquen', 'Pemuco', 'Pinto', 'Portezuelo', 'Quillon', 'Quirihue', 'Ranquil', 'San Carlos', 'San Fabian', 'San Ignacio', 'San Nicolas', 'Trehuaco', 'Yungay'],
-  'VIII - Biobio': ['Concepcion', 'Coronel', 'Chiguayante', 'Florida', 'Hualqui', 'Lota', 'Penco', 'San Pedro de la Paz', 'Santa Juana', 'Talcahuano', 'Tome', 'Hualpen', 'Lebu', 'Arauco', 'Cañete', 'Contulmo', 'Curanilahue', 'Los Alamos', 'Tirua', 'Los Angeles', 'Antuco', 'Cabrero', 'Laja', 'Mulchen', 'Nacimiento', 'Negrete', 'Quilaco', 'Quilleco', 'San Rosendo', 'Santa Barbara', 'Tucapel', 'Yumbel', 'Alto Biobio'],
-  'IX - La Araucania': ['Temuco', 'Carahue', 'Cunco', 'Curarrehue', 'Freire', 'Galvarino', 'Gorbea', 'Lautaro', 'Loncoche', 'Melipeuco', 'Nueva Imperial', 'Padre Las Casas', 'Perquenco', 'Pitrufquen', 'Pucon', 'Saavedra', 'Teodoro Schmidt', 'Tolten', 'Vilcun', 'Villarrica', 'Cholchol', 'Angol', 'Collipulli', 'Curacautin', 'Ercilla', 'Lonquimay', 'Los Sauces', 'Lumaco', 'Puren', 'Renaico', 'Traiguen', 'Victoria'],
-  'XIV - Los Rios': ['Valdivia', 'Corral', 'Lanco', 'Los Lagos', 'Mafil', 'Mariquina', 'Paillaco', 'Panguipulli', 'La Union', 'Futrono', 'Lago Ranco', 'Rio Bueno'],
-  'X - Los Lagos': ['Puerto Montt', 'Calbuco', 'Cochamo', 'Fresia', 'Frutillar', 'Los Muermos', 'Llanquihue', 'Maullin', 'Puerto Varas', 'Castro', 'Ancud', 'Chonchi', 'Curaco de Velez', 'Dalcahue', 'Puqueldon', 'Queilen', 'Quellon', 'Quemchi', 'Quinchao', 'Osorno', 'Puerto Octay', 'Purranque', 'Puyehue', 'Rio Negro', 'San Juan de la Costa', 'San Pablo', 'Chaiten', 'Futaleufu', 'Hualaihue', 'Palena'],
-  'XI - Aysen': ['Coyhaique', 'Lago Verde', 'Aysen', 'Cisnes', 'Guaitecas', 'Cochrane', 'O\'Higgins', 'Tortel', 'Chile Chico', 'Rio Ibañez'],
-  'XII - Magallanes': ['Punta Arenas', 'Laguna Blanca', 'Rio Verde', 'San Gregorio', 'Cabo de Hornos', 'Antartica', 'Porvenir', 'Primavera', 'Timaukel', 'Natales', 'Torres del Paine']
-}
-
-const comunasFiltradas = computed(() => {
-  if (filtros.value.region && comunasPorRegion[filtros.value.region]) {
-    return comunasPorRegion[filtros.value.region]
+    const monday = getRoomWeekStart(roomId)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    sunday.setHours(23, 59, 59, 999)
+    const slots = await scheduleService.getRoomSchedule(roomId, monday.toISOString(), sunday.toISOString())
+    // Solo los bloques disponibles son reservables en el buscador.
+    roomSlots.value[roomId] = (Array.isArray(slots) ? slots : []).filter(s => s.status === 'AVAILABLE')
+  } catch {
+    roomSlots.value[roomId] = []
   }
-  return comunas.value
-})
+  roomLoading.value = null
+}
 
-onMounted(async () => {
-  await syncAtributos()
-  await cargarComunas()
-  await buscar()
-})
+function prevRoomWeek(roomId) {
+  const current = getRoomWeekStart(roomId)
+  const d = new Date(current)
+  d.setDate(d.getDate() - 7)
+  roomWeekStarts.value[roomId] = d
+  loadRoomCalendar(roomId)
+}
 
-async function cargarComunas() {
-  try {
-    const data = await classService.getVenues()
-    const list = Array.isArray(data) ? data : data?.content || []
-    comunas.value = [...new Set(list.map(v => v.city).filter(Boolean))].sort()
-  } catch { comunas.value = [] }
+function nextRoomWeek(roomId) {
+  const current = getRoomWeekStart(roomId)
+  const d = new Date(current)
+  d.setDate(d.getDate() + 7)
+  roomWeekStarts.value[roomId] = d
+  loadRoomCalendar(roomId)
+}
+
+function toggleVenue(id) {
+  expandedVenue.value = expandedVenue.value === id ? null : id
+  expandedRoom.value = null
+}
+
+async function toggleRoom(roomId) {
+  if (expandedRoom.value === roomId) { expandedRoom.value = null; return }
+  expandedRoom.value = roomId
+  if (!roomSlots.value[roomId]) {
+    await loadRoomCalendar(roomId)
+  }
+}
+
+function onRegionChange() {
+  filtros.value.comuna = ''
+  buscar()
 }
 
 async function buscar() {
@@ -453,47 +426,61 @@ async function buscar() {
   try {
     const data = await classService.getVenues()
     let list = Array.isArray(data) ? data : data?.content || []
-    if (filtros.value.comuna) list = list.filter(v => v.city === filtros.value.comuna)
 
-    const venuesWithAvailableRooms = []
+    if (filtros.value.comuna) {
+      const q = filtros.value.comuna.toLowerCase()
+      list = list.filter(v => (v.city || '').toLowerCase().includes(q))
+    }
+
+    const venuesWithRooms = []
     for (const v of list) {
       try {
         const rooms = await venueService.getRooms(v.id)
-        const roomsWithSlots = []
-        for (const room of rooms) {
-          try {
-            const slots = await venueService.getPublicRoomAvailability(room.id)
-            const available = Array.isArray(slots) ? slots : []
-            let filtered = available
-            if (filtros.value.fechaDesde) {
-              filtered = filtered.filter(s => new Date(s.startTime) >= new Date(filtros.value.fechaDesde + 'T00:00:00'))
-            }
-            if (filtros.value.fechaHasta) {
-              filtered = filtered.filter(s => new Date(s.endTime) <= new Date(filtros.value.fechaHasta + 'T23:59:59'))
-            }
-            if (filtered.length > 0) {
-              roomsWithSlots.push(room)
-              roomSlots.value[room.id] = filtered
-            }
-          } catch (err) {
-            console.error('Error al cargar disponibilidad de sala', err)
-          }
+        let filteredRooms = rooms
+
+        if (filtros.value.caracteristicas.length > 0) {
+          filteredRooms = filteredRooms.filter(room => {
+            return filtros.value.caracteristicas.every(key => {
+              switch (key) {
+                case 'espejos': return room.hasMirrors
+                case 'barraBallet': return room.tieneBarraBallet
+                case 'pisoMadera': return (room.floorType || '').toLowerCase().includes('madera') || (room.floorType || '').toLowerCase().includes('wood')
+                case 'pisoFlotante': return (room.floorType || '').toLowerCase().includes('flotante') || (room.floorType || '').toLowerCase().includes('floating')
+                case 'aireAcondicionado': return room.tieneAireAcondicionado
+                case 'insonorizado': return room.tieneInsonorizacion
+                case 'sonido': return room.hasSound
+                case 'amplificacion': return room.tieneAmplificacion
+                case 'piano': return room.tienePiano
+                case 'guitarra': return room.tieneGuitarra
+                case 'bateria': return room.tieneBateria
+                case 'grabacion': return room.tieneEquipoGrabacion
+                case 'calefaccion': return room.tieneCalefaccion
+                default: return true
+              }
+            })
+          })
         }
-        if (roomsWithSlots.length > 0) {
-          venuesWithAvailableRooms.push({ ...v, rooms: roomsWithSlots })
+
+        if (filtros.value.disciplina) {
+          filteredRooms = filteredRooms.filter(room => {
+            const charDan = getCaracteristicasDanza(room).length
+            const charMus = getCaracteristicasMusica(room).length
+            if (filtros.value.disciplina === 'Danza') return charDan > 0
+            if (filtros.value.disciplina === 'Musica') return charMus > 0
+            return true
+          })
         }
-        } catch (err) {
-          console.error('Error al cargar salas de la sede', err)
+
+        if (filteredRooms.length > 0) {
+          venuesWithRooms.push({ ...v, rooms: filteredRooms, region: v.region || '' })
         }
+      } catch (err) {
+        console.error('Error al cargar salas de la sede', err)
+      }
     }
-    venues.value = venuesWithAvailableRooms
+    venues.value = venuesWithRooms
   } catch { venues.value = [] }
   loading.value = false
-}
-
-function onRegionChange() {
-  filtros.value.comuna = ''
-  buscar()
 }
 
 function confirmarAgendamiento(room, venue, slot) {
@@ -530,7 +517,6 @@ async function pagar(metodo) {
       })
     }
     modal.value.abierto = false
-    // Sincronizar atributos y roles (el backend puede haber asignado TEACHER en este paso)
     try {
       await syncAtributos()
       if (puedeVerContextoProfesor.value) {
@@ -539,10 +525,6 @@ async function pagar(metodo) {
     } catch (err) {
       console.error('Error al sincronizar atributos tras reserva', err)
     }
-    // Redirigir segun estado:
-    // 1) Con rol TEACHER y perfil incompleto → completar perfil profesional (notificación)
-    // 2) Con rol TEACHER y perfil completo → clases por asignar
-    // 3) Sin rol TEACHER → borradores (fallback)
     if (puedeVerContextoProfesor.value) {
       if (!perfilProfesionalCompleto.value) {
         window.location.href = '/profesor/perfil-profesional?primeraVez=true'
@@ -558,37 +540,10 @@ async function pagar(metodo) {
   modal.value.procesando = false
 }
 
-function toggleVenue(id) {
-  expandedVenue.value = expandedVenue.value === id ? null : id
-  expandedRoom.value = null
-}
-
-async function toggleRoom(roomId) {
-  if (expandedRoom.value === roomId) { expandedRoom.value = null; return }
-  expandedRoom.value = roomId
-  if (!roomSlots.value[roomId]) {
-    loadingSlots.value = roomId
-    try {
-      const slots = await venueService.getPublicRoomAvailability(roomId)
-      roomSlots.value[roomId] = Array.isArray(slots) ? slots : []
-    } catch {
-      roomSlots.value[roomId] = []
-    }
-    loadingSlots.value = null
-  }
-}
-
-function filteredSlots(roomId) {
-  const slots = roomSlots.value[roomId] || []
-  if (!filtros.value.fechaDesde && !filtros.value.fechaHasta) return slots
-  return slots.filter(s => {
-    const d = new Date(s.startTime).toISOString().split('T')[0]
-    if (filtros.value.fechaDesde && d < filtros.value.fechaDesde) return false
-    if (filtros.value.fechaHasta && d > filtros.value.fechaHasta) return false
-    return true
-  })
-}
-
+onMounted(async () => {
+  await syncAtributos()
+  await buscar()
+})
 </script>
 
 <style scoped>

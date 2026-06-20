@@ -205,34 +205,34 @@
       </div>
     </div>
 
-    <!-- ====== STEP 5: Modal de confirmacion ====== -->
-    <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
-      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold text-white mb-2">Confirmar Reserva</h3>
-        <div class="text-gray-400 text-sm space-y-2 mb-4">
+    <!-- ====== STEP 5: Modal de confirmacion (bottom sheet) ====== -->
+    <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-end justify-center z-50" @click.self="modal.abierto = false">
+      <div class="bg-[var(--bg-elevated)] rounded-t-2xl border-t border-x border-white/10 p-6 w-full max-w-lg">
+        <!-- Handle -->
+        <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4"></div>
+        <h3 class="text-lg font-semibold text-white mb-3">Confirmar Reserva</h3>
+        <div class="text-gray-400 text-sm space-y-1 mb-3">
           <p><span class="text-gray-500">Sede:</span> {{ modal.venue?.name }}</p>
           <p><span class="text-gray-500">Sala:</span> {{ modal.room?.name }} ({{ modal.room?.capacity }} personas)</p>
         </div>
-        <div class="mb-4 space-y-1 max-h-40 overflow-y-auto pr-1">
+        <div class="mb-3 space-y-1 max-h-36 overflow-y-auto pr-1">
           <div v-for="s in modal.slots" :key="s.id" class="flex justify-between text-xs bg-white/5 rounded-lg px-3 py-2">
             <span class="text-gray-300">{{ formatDate(s.startTime) }}</span>
             <span class="text-gray-400">{{ formatTime(s.startTime) }} – {{ formatTime(s.endTime) }}</span>
           </div>
         </div>
-        <div class="flex justify-between text-sm mb-6 px-1">
+        <div class="flex justify-between text-sm mb-4 px-1">
           <span class="text-gray-400">{{ modal.slots?.length }} bloque{{ modal.slots?.length > 1 ? 's' : '' }} · {{ modal.slots?.length }}h</span>
           <span class="text-primary font-semibold">${{ ((modal.slots?.length || 0) * (modal.room?.pricePerHour || 0)).toLocaleString('es-CL') }}</span>
         </div>
-        <p class="text-white text-sm mb-6">Selecciona tu metodo de pago para confirmar la reserva:</p>
-        <div class="space-y-2 mb-6">
+        <p class="text-white text-sm mb-3">Selecciona tu metodo de pago:</p>
+        <div class="mb-4">
           <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[var(--bg-base)] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
             <span class="text-white text-sm font-medium">Transferencia Bancaria</span>
             <p class="text-gray-500 text-xs">Pago simulado - se registrara la reserva</p>
           </button>
         </div>
-        <div class="flex space-x-3 justify-end">
-          <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
-        </div>
+        <button @click="modal.abierto = false" class="w-full px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
       </div>
     </div>
   </div>

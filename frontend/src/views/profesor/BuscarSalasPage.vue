@@ -553,19 +553,41 @@ async function pagar(metodo) {
   modal.value.procesando = true
   try {
     const slots = modal.value.slots || []
-    const roomId = modal.value.room.id
-    for (const slot of slots) {
-      const blockId = slot.blockId || slot.id
-      if (blockId) {
-        await scheduleService.bookSlot(roomId, blockId, borradorId.value || null)
-      }
-    }
-    if (!slots.some(s => s.blockId || s.id) && borradorId.value) {
+    const room = modal.value.room
+    const roomId = room.id
+    const sortedSlots = [...slots].sort((a, b) => a.startTime.localeCompare(b.startTime))
+    const firstSlot = sortedSlots[0]
+
+    if (borradorId.value) {
+      // Flujo borrador existente: asignar sala y publicar (esto ya asigna rol TEACHER)
       await api.post(`/profesor/clases/${borradorId.value}/asignar-reserva`, {
         roomId,
-        startTime: slots[0]?.startTime,
+        startTime: firstSlot.startTime,
         duration: slots.length * 60
       })
+      // Marcar los bloques restantes como ocupados
+      for (const slot of sortedSlots.slice(1)) {
+        const blockId = slot.blockId || slot.id
+        if (blockId) await scheduleService.bookSlot(roomId, blockId, borradorId.value)
+      }
+    } else {
+      // Flujo independiente: crear clase draft con roomId → dispara asignarRolTeacher
+      const claseRes = await api.post('/classes?draft=true', {
+        title: 'Reserva - ' + room.name,
+        discipline: null,
+        level: 'BASICO',
+        capacity: room.capacity,
+        duration: slots.length * 60,
+        price: room.pricePerHour || 0,
+        startTime: firstSlot.startTime,
+        roomId
+      })
+      const claseId = claseRes.data?.id
+      // Marcar los bloques en room_schedule_blocks como ocupados
+      for (const slot of sortedSlots) {
+        const blockId = slot.blockId || slot.id
+        if (blockId) await scheduleService.bookSlot(roomId, blockId, claseId || null)
+      }
     }
     modal.value.abierto = false
     try {

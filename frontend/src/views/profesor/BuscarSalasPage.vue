@@ -54,7 +54,7 @@
               'px-4 py-1.5 rounded-full text-sm font-medium border transition-colors',
               filtros.disciplina === d
                 ? 'bg-primary/20 border-primary text-primary'
-                : 'border-white/10 text-gray-400 hover:border-white/30 hover:text-white bg-[#1a1d2e]'
+                : 'border-white/10 text-gray-400 hover:border-white/30 hover:text-white bg-[var(--bg-elevated)]'
             ]"
             @click="toggleDisciplina(d)"
           >
@@ -94,7 +94,7 @@
         <!-- ====== STEP 3: Rooms ====== -->
         <div v-if="expandedVenue === venue.id" class="mt-4 space-y-3">
           <div v-if="venue.rooms?.length">
-            <div v-for="room in venue.rooms" :key="room.id" class="bg-[#1a1d2e] rounded-xl p-4">
+            <div v-for="room in venue.rooms" :key="room.id" class="bg-[var(--bg-elevated)] rounded-xl p-4">
               <div @click="toggleRoom(room.id)" class="cursor-pointer flex items-center justify-between">
                 <div class="flex-1">
                   <p class="text-white font-medium">{{ room.name }}</p>
@@ -169,7 +169,7 @@
 
     <!-- Alerta identidad -->
     <div v-if="alertaIdentidad" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-yellow-500/30 p-6 max-w-sm w-full mx-4">
+      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-yellow-500/30 p-6 max-w-sm w-full mx-4">
         <div class="flex items-start gap-3 mb-4">
           <svg class="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -188,7 +188,7 @@
 
     <!-- ====== STEP 5: Modal de confirmacion ====== -->
     <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
+      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
         <h3 class="text-lg font-semibold text-white mb-2">Confirmar Reserva</h3>
         <div class="text-gray-400 text-sm space-y-2 mb-6">
           <p><span class="text-gray-500">Sede:</span> {{ modal.venue?.name }}</p>
@@ -199,7 +199,7 @@
         </div>
         <p class="text-white text-sm mb-6">Selecciona tu metodo de pago para confirmar la reserva:</p>
         <div class="space-y-2 mb-6">
-          <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[#0d0f1a] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
+          <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[var(--bg-base)] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
             <span class="text-white text-sm font-medium">Transferencia Bancaria</span>
             <p class="text-gray-500 text-xs">Pago simulado - se registrara la reserva</p>
           </button>

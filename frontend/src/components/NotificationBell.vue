@@ -24,12 +24,12 @@
       leave-from-class="opacity-100 scale-100 translate-y-0"
       leave-to-class="opacity-0 scale-95 translate-y-1">
       <div v-if="showMenu"
-        class="absolute right-0 z-50 mt-2 w-80 bg-[#161824] border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+        class="absolute right-0 z-50 mt-2 w-80 bg-[var(--bg-overlay)] border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
 
         <!-- Cabecera -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-white/5">
           <div class="flex items-center gap-2">
-            <h3 class="text-sm font-semibold text-white">Notificaciónes</h3>
+            <h3 class="text-sm font-semibold text-[var(--text-primary)]">Notificaciónes</h3>
             <span v-if="unreadCount > 0"
               class="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full leading-none">
               {{ unreadCount }}
@@ -41,7 +41,7 @@
               Todo leído
             </button>
             <router-link to="/notificaciones" @click="showMenu = false"
-              class="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              class="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               Ver todo →
             </router-link>
           </div>
@@ -56,7 +56,7 @@
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </div>
-            <p class="text-xs text-gray-500">No tienes notificaciónes nuevas.</p>
+            <p class="text-xs text-[var(--text-secondary)]">No tienes notificaciónes nuevas.</p>
           </div>
 
           <ul v-else class="divide-y divide-white/5">
@@ -76,11 +76,11 @@
               <!-- Contenido -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between gap-1">
-                  <p class="text-xs font-semibold text-white leading-tight">{{ tituloNotif(n) }}</p>
+                  <p class="text-xs font-semibold text-[var(--text-primary)] leading-tight">{{ tituloNotif(n) }}</p>
                   <span v-if="!n.read" class="w-1.5 h-1.5 bg-indigo-400 rounded-full flex-shrink-0 mt-1"></span>
                 </div>
-                <p class="text-xs text-gray-400 mt-0.5 leading-relaxed line-clamp-2">{{ n.message }}</p>
-                <p class="text-[10px] text-gray-600 mt-1">{{ formatTime(n.createdAt) }}</p>
+                <p class="text-xs text-[var(--text-secondary)] mt-0.5 leading-relaxed line-clamp-2">{{ n.message }}</p>
+                <p class="text-[10px] text-[var(--text-secondary)] mt-1">{{ formatTime(n.createdAt) }}</p>
               </div>
             </li>
           </ul>
@@ -89,7 +89,7 @@
         <!-- Pie -->
         <div class="border-t border-white/5 px-4 py-2.5">
           <router-link to="/notificaciones" @click="showMenu = false"
-            class="flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-indigo-400 transition-colors">
+            class="flex items-center justify-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-indigo-400 transition-colors">
             Ver todas las notificaciónes
           </router-link>
         </div>

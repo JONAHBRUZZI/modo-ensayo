@@ -24,7 +24,7 @@
                 'px-4 py-2 rounded-lg text-sm transition-colors',
                 filtroActivo === t.value
                   ? 'bg-primary text-white'
-                  : 'bg-[#1a1d2e] text-gray-400 hover:text-white border border-white/10'
+                  : 'bg-[var(--bg-elevated)] text-gray-400 hover:text-white border border-white/10'
               ]">
         {{ t.label }}
         <span class="ml-2 text-xs opacity-70">({{ contarPorEstado(t.value) }})</span>
@@ -74,7 +74,7 @@
 
           <div class="flex flex-col gap-2 flex-shrink-0 min-w-[110px]">
             <router-link :to="'/admin/sedes/' + s.id + '/documentos'"
-                         class="text-xs px-3 py-1.5 rounded-lg bg-[#1a1d2e] border border-white/10 text-gray-300 hover:text-white text-center">
+                         class="text-xs px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-white/10 text-gray-300 hover:text-white text-center">
               Documentos
             </router-link>
             <button v-if="s.status === 'PENDIENTE_APROBACION'"
@@ -112,7 +112,7 @@
       <div v-if="modalAprobar.show" class="fixed inset-0 z-[9999] flex items-center justify-center">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="modalAprobar.show = false"></div>
         <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 scale-95 translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
-          <div v-if="modalAprobar.show" class="relative bg-[#111420] border border-[#2a2d3e] rounded-2xl p-6 max-w-md w-full mx-4">
+          <div v-if="modalAprobar.show" class="relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl p-6 max-w-md w-full mx-4">
             <div class="text-center">
               <div class="w-12 h-12 bg-green-500/15 border border-green-500/25 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +142,7 @@
       <div v-if="modalMotivo.show" class="fixed inset-0 z-[9999] flex items-center justify-center">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="modalMotivo.show = false"></div>
         <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 scale-95 translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
-          <div v-if="modalMotivo.show" class="relative bg-[#111420] border border-[#2a2d3e] rounded-2xl p-6 max-w-md w-full mx-4">
+          <div v-if="modalMotivo.show" class="relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl p-6 max-w-md w-full mx-4">
             <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
                  :class="modalMotivo.tipo === 'rechazar' ? 'bg-red-500/15 border border-red-500/25' : 'bg-orange-500/15 border border-orange-500/25'">
               <svg class="w-6 h-6" :class="modalMotivo.tipo === 'rechazar' ? 'text-red-400' : 'text-orange-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,7 +185,7 @@
       <div v-if="modalReactivar.show" class="fixed inset-0 z-[9999] flex items-center justify-center">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="modalReactivar.show = false"></div>
         <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 scale-95 translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
-          <div v-if="modalReactivar.show" class="relative bg-[#111420] border border-[#2a2d3e] rounded-2xl p-6 max-w-md w-full mx-4">
+          <div v-if="modalReactivar.show" class="relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl p-6 max-w-md w-full mx-4">
             <div class="text-center">
               <div class="w-12 h-12 bg-green-500/15 border border-green-500/25 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

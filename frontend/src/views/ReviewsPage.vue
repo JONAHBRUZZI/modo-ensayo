@@ -14,7 +14,7 @@
               @click="tab = t.value"
               :class="[
                 'px-4 py-2 rounded-lg text-sm transition-colors',
-                tab === t.value ? 'bg-primary text-white' : 'bg-[#1a1d2e] text-gray-400 hover:text-white border border-white/10'
+                tab === t.value ? 'bg-primary text-white' : 'bg-[var(--bg-elevated)] text-gray-400 hover:text-white border border-white/10'
               ]">
         {{ t.label }}
       </button>

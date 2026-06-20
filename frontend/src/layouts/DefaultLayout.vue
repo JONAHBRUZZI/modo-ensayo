@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-[#0f1119]">
+  <div class="min-h-screen flex flex-col bg-[var(--bg-base)]">
     <!-- Navbar -->
-    <nav class="sticky top-0 z-50 bg-[#0f1119]/95 backdrop-blur-sm border-b border-[#6C63FF22]">
+    <nav class="sticky top-0 z-50 bg-[var(--bg-base)] backdrop-blur-sm border-b border-[#6C63FF22]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
@@ -77,14 +77,14 @@
           <div class="flex items-center space-x-3">
             <template v-if="isAuthenticated">
               <!-- Context Switcher -->
-              <div v-if="puedeAlternarModo" class="hidden sm:flex items-center space-x-1 bg-[#1a1d2e] rounded-lg p-1">
+              <div v-if="puedeAlternarModo" class="hidden sm:flex items-center space-x-1 bg-[var(--bg-elevated)] rounded-lg p-1">
                 <button
                   v-for="mode in availableModes"
                   :key="mode.value"
                   @click="cambiarModo(mode.value)"
                   :class="[
                     'px-3 py-1 rounded-md text-sm transition-all',
-                    modoActual === mode.value ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
+                        modoActual === mode.value ? 'bg-primary text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   ]"
                 >
                   {{ mode.label }}
@@ -96,35 +96,40 @@
 
               <!-- User dropdown -->
               <div class="relative" ref="userMenuRef">
-                <button @click="showUserMenu = !showUserMenu" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-[#1a1d2e] transition-colors">
+                <button @click="showUserMenu = !showUserMenu" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors">
                   <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white" style="background: linear-gradient(135deg, #6C63FF, #9B8CFF);">
                     {{ displayName.charAt(0).toUpperCase() }}
                   </div>
                   <div class="hidden lg:block text-left">
-                    <div class="text-sm font-medium text-white">{{ displayName }}</div>
-                    <div class="text-xs text-gray-400">{{ user?.email }}</div>
+                    <div class="text-sm font-medium text-[var(--text-primary)]">{{ displayName }}</div>
+                    <div class="text-xs text-[var(--text-secondary)]">{{ user?.email }}</div>
                   </div>
                 </button>
 
-                <div v-if="showUserMenu" class="absolute right-0 mt-2 w-56 bg-[#161824] border border-gray-700 rounded-xl shadow-xl py-2">
+                <div v-if="showUserMenu" class="absolute right-0 mt-2 w-56 bg-[var(--bg-overlay)] border border-gray-700 rounded-xl shadow-xl py-2">
                   <div class="px-4 py-2 border-b border-gray-700">
-                    <div class="text-sm font-medium text-white">{{ displayName }}</div>
-                    <div class="text-xs text-gray-400">{{ user?.email }}</div>
+                    <div class="text-sm font-medium text-[var(--text-primary)]">{{ displayName }}</div>
+                    <div class="text-xs text-[var(--text-secondary)]">{{ user?.email }}</div>
                     <div class="mt-1">
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
                         {{ modeLabel }}
                       </span>
                     </div>
                   </div>
-                  <router-link to="/profile" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
+                  <router-link to="/profile" class="flex items-center px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Perfil
                   </router-link>
-                  <router-link to="/notificaciones" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
+                  <router-link to="/notificaciones" class="flex items-center px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                     Notificaciónes
                   </router-link>
-                  <button @click="handleLogout" class="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-[#1a1d2e]">
+                  <button @click="toggleTheme" class="flex items-center w-full px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]">
+                    <svg v-if="isDark" class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <svg v-else class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    {{ isDark ? 'Modo claro' : 'Modo oscuro' }}
+                  </button>
+                  <button @click="handleLogout" class="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-[var(--bg-elevated)]">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     Cerrar sesión
                   </button>
@@ -133,14 +138,14 @@
             </template>
 
             <template v-else>
-              <router-link to="/login" class="text-gray-300 hover:text-white transition-colors text-sm">Iniciar sesion</router-link>
+              <router-link to="/login" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm">Iniciar sesion</router-link>
               <router-link to="/register" class="btn-primary text-sm !py-2 !px-4">Registrarse</router-link>
             </template>
 
           <!-- Hamburger (mobile) -->
           <button
             @click="showMobileMenu = !showMobileMenu"
-            class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#1a1d2e] transition-colors"
+            class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[var(--bg-elevated)] transition-colors"
             aria-label="Abrir menú"
           >
             <svg v-if="!showMobileMenu" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,19 +169,19 @@
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 -translate-y-2"
     >
-      <div v-if="showMobileMenu" class="md:hidden bg-[#0f1119] border-b border-[#1e2130] px-4 pb-4 pt-2">
+      <div v-if="showMobileMenu" class="md:hidden bg-[var(--bg-base)] border-b border-[var(--border-subtle)] px-4 pb-4 pt-2">
         <div class="flex flex-col gap-1">
           <router-link to="/" class="nav-link-mobile" @click="showMobileMenu = false">Inicio</router-link>
           <router-link v-if="!isAuthenticated || modoActual === 'alumno'" to="/classes" class="nav-link-mobile" @click="showMobileMenu = false">Cronograma</router-link>
 
           <template v-if="isAuthenticated">
             <!-- Cambiar de contexto (movil) -->
-            <div v-if="puedeAlternarModo" class="flex items-center gap-1 bg-[#1a1d2e] rounded-lg p-1 mb-2">
+            <div v-if="puedeAlternarModo" class="flex items-center gap-1 bg-[var(--bg-elevated)] rounded-lg p-1 mb-2">
               <button v-for="mode in availableModes" :key="mode.value"
                       @click="cambiarModo(mode.value); showMobileMenu = false"
                       :class="[
                         'flex-1 px-2 py-1.5 rounded-md text-sm transition-all',
-                        modoActual === mode.value ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
+                    modoActual === mode.value ? 'bg-primary text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                       ]">
                 {{ mode.label }}
               </button>
@@ -220,8 +225,9 @@
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
               <router-link to="/cart" class="nav-link-mobile" @click="showMobileMenu = false">Carrito</router-link>
             </template>
-            <div class="h-px bg-[#1e2130] my-2"></div>
+            <div class="h-px bg-[var(--border-subtle)] my-2"></div>
             <router-link to="/profile" class="nav-link-mobile" @click="showMobileMenu = false">Mi Perfil</router-link>
+            <button @click="toggleTheme()" class="nav-link-mobile text-left">{{ isDark ? 'Modo claro' : 'Modo oscuro' }}</button>
             <button @click="handleLogout(); showMobileMenu = false" class="nav-link-mobile text-left text-red-400">Cerrar sesión</button>
           </template>
           <template v-else>
@@ -262,20 +268,20 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-[#0b0d14] border-t border-[#13161f] py-8">
+    <footer class="bg-[var(--bg-footer)] border-t border-[var(--border-subtle)] py-8">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row justify-between items-center">
           <div class="flex items-center space-x-2 mb-4 md:mb-0">
             <div class="w-6 h-6 rounded flex items-center justify-center" style="background: #6C63FF;">
               <span class="text-white text-xs font-bold">ME</span>
             </div>
-            <span class="text-gray-500 text-sm">Modo Ensayo &copy; {{ new Date().getFullYear() }}</span>
+            <span class="text-[var(--text-secondary)] text-sm">Modo Ensayo &copy; {{ new Date().getFullYear() }}</span>
           </div>
           <div class="flex space-x-6">
-            <router-link to="/" class="text-gray-500 hover:text-gray-300 text-sm">Inicio</router-link>
-            <router-link to="/classes" class="text-gray-500 hover:text-gray-300 text-sm">Clases</router-link>
-            <router-link to="/quiero-ser-profesor" class="text-gray-500 hover:text-gray-300 text-sm">Ser Profesor</router-link>
-            <router-link to="/quiero-gestionar-sede" class="text-gray-500 hover:text-gray-300 text-sm">Gestiónar Sede</router-link>
+            <router-link to="/" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">Inicio</router-link>
+            <router-link to="/classes" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">Clases</router-link>
+            <router-link to="/quiero-ser-profesor" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">Ser Profesor</router-link>
+            <router-link to="/quiero-gestionar-sede" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">Gestiónar Sede</router-link>
           </div>
         </div>
       </div>
@@ -287,12 +293,14 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import { useTheme } from '@/composables/useTheme'
 import paymentService from '@/services/paymentService'
 import NotificationBell from '@/components/NotificationBell.vue'
 
 const router = useRouter()
 const route = useRoute()
 const { user, isAuthenticated, isAdmin, isSede, isTeacher, identidadValidada, puedeAlternarModo, puedeVerContextoProfesor, puedeVerContextoSede, modoActual, displayName, setModo, logout, syncActividadMaestro, syncAtributos, reservasSinClaseCount, perfilProfesionalCompleto } = useAuth()
+const { isDark, toggle: toggleTheme } = useTheme()
 
 const mostrarBannerPerfilIncompleto = computed(() => {
   return modoActual.value === 'profesor'
@@ -371,7 +379,7 @@ watch(() => route.path, () => {
 
 <style scoped>
 .nav-link {
-  @apply px-3 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-[#1a1d2e] transition-all;
+  @apply px-3 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all;
 }
 
 .nav-link.router-link-active {
@@ -379,7 +387,7 @@ watch(() => route.path, () => {
 }
 
 .nav-link-mobile {
-  @apply block px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-[#1a1d2e] transition-all;
+  @apply block px-3 py-2.5 rounded-lg text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all;
 }
 
 .nav-link-mobile.router-link-active {

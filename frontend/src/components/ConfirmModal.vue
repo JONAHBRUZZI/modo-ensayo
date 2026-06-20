@@ -18,7 +18,7 @@
           leave-from-class="opacity-100 scale-100"
           leave-to-class="opacity-0 scale-95"
         >
-          <div v-if="show" class="relative bg-[#111420] border border-[#2a2d3e] rounded-2xl p-6 max-w-md w-full mx-4">
+          <div v-if="show" class="relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl p-6 max-w-md w-full mx-4">
             <div class="text-center">
               <div class="w-12 h-12 bg-red-500/15 border border-red-500/25 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,8 +26,8 @@
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                 </svg>
               </div>
-              <h3 class="text-base font-semibold text-white mb-2">{{ title }}</h3>
-              <p class="text-gray-400 text-sm mb-6 leading-relaxed">{{ message }}</p>
+              <h3 class="text-base font-semibold text-[var(--text-primary)] mb-2">{{ title }}</h3>
+              <p class="text-[var(--text-secondary)] text-sm mb-6 leading-relaxed">{{ message }}</p>
               <div class="flex justify-center gap-3">
                 <button @click="close" class="btn-secondary text-sm px-5">Cancelar</button>
                 <button @click="confirm" class="btn-danger text-sm px-5">{{ confirmText }}</button>

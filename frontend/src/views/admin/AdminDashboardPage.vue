@@ -162,7 +162,7 @@
           <div class="space-y-2">
             <div v-for="n in [5,4,3,2,1]" :key="n" class="flex items-center gap-3">
               <span class="text-yellow-400 text-xs w-8 flex-shrink-0">{{ n }}★</span>
-              <div class="flex-1 bg-[#1a1d2e] rounded-full h-3 overflow-hidden">
+              <div class="flex-1 bg-[var(--bg-elevated)] rounded-full h-3 overflow-hidden">
                 <div class="h-full rounded-full transition-all"
                      :class="n >= 4 ? 'bg-green-500' : n === 3 ? 'bg-yellow-500' : 'bg-red-500'"
                      :style="{ width: barPct(n) + '%' }"></div>
@@ -179,7 +179,7 @@
           <div class="space-y-3">
             <div v-for="(d, rol) in (sysStats.porRol || {})" :key="rol" class="flex items-center gap-3">
               <span class="text-gray-300 text-sm w-20 flex-shrink-0">{{ rol }}</span>
-              <div class="flex-1 bg-[#1a1d2e] rounded-full h-3 overflow-hidden">
+              <div class="flex-1 bg-[var(--bg-elevated)] rounded-full h-3 overflow-hidden">
                 <div class="h-full rounded-full bg-primary transition-all" :style="{ width: ((d.promedio || 0) / 5 * 100) + '%' }"></div>
               </div>
               <span class="text-white text-sm w-16 text-right flex-shrink-0">

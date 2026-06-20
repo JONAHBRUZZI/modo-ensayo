@@ -27,11 +27,11 @@
       :enter="{ opacity: 1, y: 0, transition: { duration: 380, delay: 260 } }"
       class="card text-left space-y-3 mb-6"
     >
-      <div class="flex justify-between text-sm py-1 border-b border-[#1e2130]">
+      <div class="flex justify-between text-sm py-1 border-b border-[var(--border-subtle)]">
         <span class="text-gray-500">N° de operación</span>
         <span class="text-white font-mono text-xs">{{ paymentId }}</span>
       </div>
-      <div class="flex justify-between text-sm py-1 border-b border-[#1e2130]">
+      <div class="flex justify-between text-sm py-1 border-b border-[var(--border-subtle)]">
         <span class="text-gray-500">Estado</span>
         <span class="text-green-400 font-semibold flex items-center gap-1.5">
           <span class="w-1.5 h-1.5 bg-green-400 rounded-full inline-block"></span>

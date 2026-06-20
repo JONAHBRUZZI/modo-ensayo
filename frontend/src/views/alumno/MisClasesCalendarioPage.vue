@@ -52,7 +52,7 @@
             <td
               v-for="(day, di) in week"
               :key="di"
-              :class="['p-1 align-top border border-dark-border min-w-[100px]', day.isCurrentMonth ? 'bg-[#0d0f1a]' : 'bg-dark-bg/30']"
+              :class="['p-1 align-top border border-dark-border min-w-[100px]', day.isCurrentMonth ? 'bg-[var(--bg-base)]' : 'bg-dark-bg/30']"
               @click="day.isCurrentMonth && day.classes.length && expandDay(day)"
             >
               <div class="min-h-[70px]">
@@ -80,7 +80,7 @@
 
     <!-- Modal dia expandido -->
     <div v-if="selectedDay" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="selectedDay = null">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <div class="bg-[var(--bg-elevated)] rounded-2xl border border-white/10 p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-white">{{ formatDateFull(selectedDay.date) }}</h3>
           <button @click="selectedDay = null" class="text-gray-400 hover:text-white">

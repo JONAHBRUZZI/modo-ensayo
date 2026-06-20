@@ -20,7 +20,7 @@
       </div>
 
       <!-- Pasos del proceso (siempre visible) -->
-      <div class="bg-[#161824] rounded-2xl border border-white/10 p-5 space-y-3">
+      <div class="bg-[var(--bg-overlay)] rounded-2xl border border-white/10 p-5 space-y-3">
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Proceso para registrar una Sede</p>
         <div v-for="(paso, i) in pasos" :key="i" class="flex items-start gap-3">
           <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold"

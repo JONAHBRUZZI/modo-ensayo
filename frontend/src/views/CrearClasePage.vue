@@ -49,7 +49,7 @@
         <button
           type="button"
           @click="abrirModalBorrador"
-          class="rounded-xl border border-white/10 bg-[#0d0f1a] hover:border-white/30 hover:bg-[#1a1d2e] p-4 text-left transition-colors"
+          class="rounded-xl border border-white/10 bg-[var(--bg-base)] hover:border-white/30 hover:bg-[var(--bg-elevated)] p-4 text-left transition-colors"
         >
           <div class="flex items-center gap-2 mb-1">
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

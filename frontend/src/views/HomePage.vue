@@ -395,7 +395,7 @@ const steps = [
 
 .hero-title {
   font-size: clamp(36px, 5vw, 52px);
-  font-weight: 700; color: white; line-height: 1.12;
+  font-weight: 700; color: var(--text-primary); line-height: 1.12;
   margin-bottom: 1.25rem;
 }
 .hero-title em {
@@ -425,7 +425,7 @@ const steps = [
   border-radius: 12px; border: 1px solid var(--border-default);
   transition: color 0.2s, border-color 0.2s;
 }
-.btn-hero-secondary:hover { color: white; border-color: var(--border-default); }
+.btn-hero-secondary:hover { color: var(--text-primary); border-color: var(--border-default); }
 
 .stats-row {
   display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
@@ -434,7 +434,7 @@ const steps = [
 }
 .stat-item { display: flex; flex-direction: column; }
 .stat-num {
-  font-size: 24px; font-weight: 700; color: white;
+  font-size: 24px; font-weight: 700; color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
@@ -480,7 +480,7 @@ const steps = [
 .icon-green  { background: #10b9811a; color: #34d399; }
 .icon-amber  { background: #f59e0b1a; color: #fbbf24; }
 
-.feat-title { color: white; font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.feat-title { color: var(--text-primary); font-size: 15px; font-weight: 600; margin-bottom: 6px; }
 .feat-desc  { color: var(--text-secondary); font-size: 13px; line-height: 1.65; }
 
 /* =============== HOW IT WORKS =============== */
@@ -522,7 +522,7 @@ const steps = [
   transition: background 0.2s, border-color 0.2s;
 }
 .step-item:hover .step-num { background: #6C63FF1a; border-color: #6C63FF44; }
-.step-title { color: white; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.step-title { color: var(--text-primary); font-size: 14px; font-weight: 500; margin-bottom: 4px; }
 .step-desc  { color: var(--text-secondary); font-size: 12px; }
 
 /* =============== CTA FINAL =============== */
@@ -531,7 +531,7 @@ const steps = [
   border-top: 1px solid var(--border-subtle);
   padding: 4rem 0;
 }
-.cta-title { color: white; font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+.cta-title { color: var(--text-primary); font-size: 28px; font-weight: 700; margin-bottom: 10px; }
 .cta-sub   { color: var(--text-secondary); font-size: 15px; margin-bottom: 1.75rem; }
 
 /* Pulsing glow on CTA button */

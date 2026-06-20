@@ -51,7 +51,7 @@
 
               <!-- Admin mode -->
               <template v-if="isAdmin && modoActual === 'admin'">
-                <router-link to="/admin" class="nav-link">Dashboard</router-link>
+                <router-link to="/admin" class="nav-link">Home</router-link>
                 <router-link to="/admin/roles" class="nav-link">Aprobaciones</router-link>
                 <router-link to="/admin/usuarios" class="nav-link">Usuarios</router-link>
                 <router-link to="/admin/sedes" class="nav-link">Sedes</router-link>
@@ -207,7 +207,7 @@
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
             </template>
             <template v-if="isAdmin && modoActual === 'admin'">
-              <router-link to="/admin" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
+              <router-link to="/admin" class="nav-link-mobile" @click="showMobileMenu = false">Home</router-link>
               <router-link to="/admin/roles" class="nav-link-mobile" @click="showMobileMenu = false">Aprobaciones</router-link>
               <router-link to="/admin/usuarios" class="nav-link-mobile" @click="showMobileMenu = false">Usuarios</router-link>
               <router-link to="/admin/sedes" class="nav-link-mobile" @click="showMobileMenu = false">Sedes</router-link>

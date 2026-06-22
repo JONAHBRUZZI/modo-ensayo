@@ -69,11 +69,13 @@
     </div>
 
     <ConfirmDialog
-      :visible="showConfirm"
+      :show="showConfirm"
+      type="success"
       title="Confirmar pago"
+      confirm-text="Pagar"
       :message="`¿Confirmas tu pago de $${total.toLocaleString('es-CL')}?`"
       @confirm="confirmarPago"
-      @cancel="showConfirm = false"
+      @close="showConfirm = false"
     />
   </div>
 </template>
@@ -114,6 +116,6 @@ function irAPagar() {
 async function confirmarPago() {
   checkingOut.value = true
   showConfirm.value = false
-  await router.push('/payment/checkout')
+  await router.push({ name: 'Checkout' })
 }
 </script>

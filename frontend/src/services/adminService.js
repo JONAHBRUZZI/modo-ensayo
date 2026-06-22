@@ -1,8 +1,73 @@
 import { supabase, invokeFunction, camelize } from './supabase'
 
 export default {
+  // Estadísticas del panel admin. Se calculan con consultas directas: el admin
+  // tiene acceso a estas tablas vía las políticas RLS (has_role('ADMIN')), así que
+  // no dependemos de la Edge Function admin-stats (que requiere despliegue manual).
   async getStats() {
-    return invokeFunction('admin-stats')
+    // Cuenta filas de una tabla aplicando un filtro opcional. Devuelve 0 si falla.
+    const contar = async (tabla, filtro) => {
+      let q = supabase.from(tabla).select('*', { count: 'exact', head: true })
+      if (filtro) q = filtro(q)
+      const { count, error } = await q
+      if (error) { console.error(`getStats: error contando ${tabla}`, error.message); return 0 }
+      return count ?? 0
+    }
+
+    const [usuarios, usuariosPendientes, sedes, sedesPendientes, pendientes, totalClases, clasesRealizadas] =
+      await Promise.all([
+        contar('profiles'),
+        contar('profiles', (q) => q.eq('identidad_validada', false)),
+        contar('venues'),
+        contar('venues', (q) => q.eq('status', 'PENDIENTE_APROBACION')),
+        contar('identity_verifications', (q) => q.eq('status', 'PENDING')),
+        contar('classes'),
+        contar('classes', (q) => q.eq('status', 'COMPLETED'))
+      ])
+
+    // Sedes agrupadas por estado (gráfico de barras).
+    const sedesPorEstado = {}
+    try {
+      const { data } = await supabase.from('venues').select('status')
+      for (const v of data || []) sedesPorEstado[v.status] = (sedesPorEstado[v.status] || 0) + 1
+    } catch { /* sin datos */ }
+
+    // Ingresos mensuales liberados (gráfico de línea; degrada si no hay datos).
+    const ingresosMensuales = []
+    try {
+      const { data } = await supabase.from('payments').select('amount, created_at').eq('status', 'RELEASED')
+      const porMes = {}
+      for (const p of data || []) {
+        const mes = (p.created_at || '').substring(0, 7) // YYYY-MM
+        if (mes) porMes[mes] = (porMes[mes] || 0) + Number(p.amount || 0)
+      }
+      for (const mes of Object.keys(porMes).sort()) ingresosMensuales.push({ mes, ingresos: porMes[mes] })
+    } catch { /* sin datos */ }
+
+    // Usuarios por rol (gráfico circular). Los roles viven en auth.users, así que
+    // se obtienen vía la Edge Function admin-users (que usa la Admin API).
+    const usuariosPorRol = {}
+    try {
+      const lista = await this.getUsers()
+      const arr = Array.isArray(lista) ? lista : (lista?.users || lista?.data || [])
+      for (const u of arr) {
+        const roles = u.roles || u.appMetadata?.roles || ['USER']
+        for (const r of roles) usuariosPorRol[r] = (usuariosPorRol[r] || 0) + 1
+      }
+    } catch { /* sin datos */ }
+
+    return {
+      usuarios,
+      usuariosPendientes,
+      sedes,
+      sedesPendientes,
+      pendientes,
+      totalClases,
+      clasesRealizadas,
+      sedesPorEstado,
+      ingresosMensuales,
+      usuariosPorRol
+    }
   },
 
   async getIdentityVerifications() {

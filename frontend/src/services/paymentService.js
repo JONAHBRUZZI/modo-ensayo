@@ -19,16 +19,27 @@ export default {
       discipline: cls.discipline,
       level: cls.level,
       price: cls.price,
-      beneficiary_type: beneficiaryType
+      // beneficiary_type es NOT NULL en la BD (default 'SELF'); nunca enviar null
+      beneficiary_type: beneficiaryType || 'SELF'
     }
     // Only include beneficiary_id if it has a value (avoid sending null for uuid columns)
     if (beneficiaryId) row.beneficiary_id = beneficiaryId
 
+    console.log('[addToCart] insertando en cart_items →', row)
     const { data, error } = await supabase
       .from('cart_items')
       .insert(row)
       .select('*').single()
-    if (error) throw error
+    if (error) {
+      console.error('[addToCart] error de Supabase →', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
+      throw error
+    }
+    console.log('[addToCart] insertado OK →', data)
     return camelize(data)
   },
 

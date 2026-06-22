@@ -119,11 +119,18 @@ onMounted(async () => {
 
 async function addToCart() {
   adding.value = true; msg.value = ''
+  // El 2º arg es beneficiaryType ('SELF'/'OTHER'), el 3º es beneficiaryId (uuid)
+  const beneficiaryId = selectedBeneficiary.value?.id || null
+  const beneficiaryType = beneficiaryId ? 'OTHER' : 'SELF'
+  console.log('[ClaseDetalle] addToCart click →', {
+    classId: clase.value?.id, beneficiaryType, beneficiaryId
+  })
   try {
-    await paymentService.addToCart(clase.value.id, selectedBeneficiary.value?.id || null)
+    await paymentService.addToCart(clase.value.id, beneficiaryType, beneficiaryId)
     msg.value = '¡Clase agregada al carrito!'
   } catch (e) {
-    msg.value = e.response?.data?.message || 'Error al agregar'
+    console.error('[ClaseDetalle] addToCart falló →', e)
+    msg.value = e?.message || e?.response?.data?.message || 'Error al agregar'
   } finally { adding.value = false }
 }
 </script>

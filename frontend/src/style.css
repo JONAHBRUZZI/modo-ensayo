@@ -123,6 +123,16 @@
   color: var(--text-primary);
 }
 
+/* Badges de estado: en modo oscuro usan texto pastel (-300) sobre un fondo
+   coloreado translúcido (bg-*-500/20). En modo claro ese fondo se aclara y el
+   texto pastel pierde contraste (ej. "VERIFICADA" casi invisible). Estos tokens
+   -300 solo se usan en badges sobre fondo translúcido, así que oscurecerlos en
+   modo claro es seguro y mejora el contraste sin afectar otros elementos. */
+.light .text-green-300 { color: #15803d; }   /* green-700 */
+.light .text-amber-300 { color: #b45309; }   /* amber-700 */
+.light .text-indigo-300 { color: #4338ca; }  /* indigo-700 */
+.light .text-red-300 { color: #b91c1c; }     /* red-700 */
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }

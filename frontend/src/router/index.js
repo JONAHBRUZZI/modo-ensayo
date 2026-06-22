@@ -284,7 +284,7 @@ const routes = [
         path: 'sede/registro',
         name: 'VenueRegistration',
         component: () => import('@/views/sede/VenueRegistrationPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, requiresIdentity: true }
       },
       {
         path: 'sede/sala-registro',

@@ -242,8 +242,8 @@
           </div>
         </div>
 
-        <!-- Sin solicitud -->
-        <div v-else>
+        <!-- Sin solicitud, identidad validada: clickable -->
+        <div v-else-if="identidadValidada">
           <router-link to="/sede/registro"
             class="card hover:border-emerald-500/50 transition-colors group flex items-start gap-3">
             <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
@@ -257,6 +257,21 @@
               <p class="text-gray-400 text-sm mt-1">Ofrece tu espacio para ensayos y clases.</p>
             </div>
           </router-link>
+        </div>
+
+        <!-- Sin solicitud, identidad NO validada: bloqueado pero visible -->
+        <div v-else
+          class="card opacity-40 cursor-not-allowed flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-emerald-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-gray-600">Registrar Sede / HomeStudio</h3>
+            <p class="text-gray-600 text-sm mt-1">Requiere identidad validada.</p>
+          </div>
         </div>
 
         <!-- ── MAESTRO / BUSCAR SALAS ── -->

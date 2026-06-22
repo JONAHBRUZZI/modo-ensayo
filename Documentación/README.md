@@ -22,7 +22,7 @@ Toda la documentación técnica, funcional y de planificación del proyecto.
 
 | Archivo | Contenido |
 |---|---|
-| [`A1-Despliegue-AWS.md`](./A1-Despliegue-AWS.md) | Despliegue con Terraform en AWS |
+| [`A1-Despliegue.md`](./A1-Despliegue.md) | Despliegue en Vercel + Supabase |
 | [`A2-Setup-Local.md`](./A2-Setup-Local.md) | Configuración del ambiente local |
 | [`A3-Flujo-Usuario-Sin-Validar.md`](./A3-Flujo-Usuario-Sin-Validar.md) | Detalle del flujo de usuario nuevo |
 

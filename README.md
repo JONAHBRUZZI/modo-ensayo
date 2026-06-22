@@ -19,7 +19,7 @@ Este repositorio está estructurado en tres áreas, según los lineamientos de l
 | [`Producto/`](./Producto/) | Artefactos del producto: scripts SQL, procedimientos almacenados, credenciales de prueba, capturas del sistema, referencias al código fuente |
 | [`Gestión/`](./Gestión/) | Gestión del equipo: responsabilidades, plan de trabajo, Git workflow, onboarding |
 
-El **código fuente** vive en `backend/`, `frontend/` e `infra/` en la raíz del repo y está documentado desde `Producto/README.md`.
+El **código fuente** vive en `frontend/` (Vue SPA) y `supabase/` (migraciones SQL y Edge Functions) en la raíz del repo.
 
 ---
 
@@ -43,22 +43,35 @@ El **código fuente** vive en `backend/`, `frontend/` e `infra/` en la raíz del
 | Capa | Tecnología |
 |---|---|
 | Frontend | Vue 3 (Composition API) + Vite + Tailwind CSS |
-| Backend | Spring Boot 3.2 + Java 21 + Spring Security + JWT |
-| Base de Datos | PostgreSQL 16 + Triggers + Procedimientos Almacenados |
-| Pagos | MercadoPago Checkout Pro (SDK Java) |
-| Infraestructura | Docker Compose (local) + AWS ECS Fargate + RDS + ALB (cloud) |
+| Backend | Supabase (PostgreSQL 16 + Auth + Storage + Realtime) |
+| Lógica de servidor | Supabase Edge Functions (Deno + TypeScript) |
+| Seguridad de datos | Row Level Security (RLS) en PostgreSQL |
+| Autenticación | Supabase Auth (email/password + Google OAuth, JWT) |
+| Pagos | MercadoPago Checkout Pro (vía Edge Functions) |
+| Hosting frontend | Vercel |
 | CI/CD | GitHub Actions |
+
+> El proyecto migró desde un backend Spring Boot a Supabase. El frontend Vue
+> habla directamente con Supabase (PostgREST + Auth + Storage) y delega la
+> lógica de negocio sensible a Edge Functions.
 
 ---
 
 ## Cómo correr el proyecto
 
-```bash
-# Levantar todo el stack
-docker compose up -d --build
+Requisitos: Node.js 22+, [Supabase CLI](https://supabase.com/docs/guides/cli) y una cuenta de Supabase.
 
-# Solo base de datos local (para desarrollo)
-docker compose up -d postgres pgadmin
+```bash
+# 1. Frontend
+cd frontend
+cp .env.example .env          # completar VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
+npm install
+npm run dev                   # servidor de desarrollo en http://localhost:3001
+
+# 2. (Opcional) Sincronizar/aplicar cambios de base de datos
+supabase link --project-ref <project-ref>
+supabase db push              # aplica las migraciones de supabase/migrations/
+supabase functions deploy     # despliega las Edge Functions de supabase/functions/
 ```
 
 Detalles en [`Documentación/A2-Setup-Local.md`](./Documentación/A2-Setup-Local.md).

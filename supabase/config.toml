@@ -434,3 +434,6 @@ verify_jwt = true
 
 [functions.admin-users]
 verify_jwt = true
+
+[functions.process-refunds]
+verify_jwt = true

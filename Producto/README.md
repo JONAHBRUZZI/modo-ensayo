@@ -12,32 +12,25 @@ Artefactos entregables del producto y referencias al código fuente.
 
 ## Código fuente del producto
 
-El código vive en las siguientes carpetas de la raíz del repo (mantenidas allí para no romper los pipelines de CI/CD):
+El código vive en las siguientes carpetas de la raíz del repo:
 
 | Componente | Ruta | Descripción |
 |---|---|---|
-| Backend | [`../backend/`](../backend/) | API REST Spring Boot 3.2 + Java 21 |
 | Frontend | [`../frontend/`](../frontend/) | SPA Vue 3 + Vite + Tailwind |
-| Infraestructura | [`../infra/`](../infra/) | Docker, Nginx, Terraform AWS, scripts SQL fuente |
-| Scripts de despliegue | [`../scripts/`](../scripts/) | Helpers de operación y despliegue |
-| Despliegue cloud | [`../deploy/`](../deploy/) | Configuración de despliegue en producción |
+| Backend (BaaS) | [`../supabase/`](../supabase/) | Migraciones SQL + Edge Functions (Supabase) |
 
-### Estructura del backend (package by feature)
+> **Nota**: el backend original (Spring Boot + Java) fue migrado a Supabase y ya
+> no existe en el repositorio. La lógica de negocio vive ahora en PostgreSQL
+> (RLS, funciones, triggers, cron) y en Edge Functions (Deno).
+
+### Estructura del backend Supabase
 
 ```
-backend/src/main/java/com/modoensayo/
-  admin/         Panel de administración
-  associates/    Gestión de asociados/familiares
-  auth/          Autenticación, JWT, registro/login
-  classes/       Clases, horarios, confirmaciones
-  notifications/ Notificaciones in-app
-  payments/      Carrito, MercadoPago, pagos retenidos
-  reschedules/   Reagendamiento con timeout 48h
-  reviews/       Reseñas y reputación
-  upload/        Upload seguro a Cloudinary/Supabase
-  users/         Perfil, roles, verificación identidad
-  venues/        Sedes, salas, documentos
-  shared/        Configuración, seguridad, excepciones
+supabase/
+  migrations/    Migraciones SQL versionadas (schema, RLS, cron, realtime, seed)
+  functions/     Edge Functions (Deno): create-class, book-slot, confirm-class,
+                 mercadopago-webhook, admin-stats, etc.
+  config.toml    Configuración del proyecto y verify_jwt por función
 ```
 
 ### Estructura del frontend (feature-sliced)
@@ -45,29 +38,22 @@ backend/src/main/java/com/modoensayo/
 ```
 frontend/src/
   components/    Componentes reutilizables (EstadoBadge, ConfirmModal, etc.)
-  features/      Módulos por dominio
-  hooks/         Composables Vue 3
+  composables/   Utilidades de Composition API (useToast, useTheme, etc.)
+  features/      Módulos por dominio (auth, cart, classes, payments, reschedules)
+  hooks/         Hooks (useNotifications)
   layouts/       DefaultLayout (navbar + footer)
-  pages/         Vistas/route components
   router/        Vue Router con guards (requiresAuth, requiresIdentity, etc.)
-  services/      Axios services (api, classService, paymentService, etc.)
-  stores/        Auth store (Pinia)
+  services/      Clientes de dominio sobre el SDK de Supabase (classService, etc.)
+  stores/        Auth store (singleton sobre Supabase Auth)
   views/         Vistas organizadas por contexto: alumno/, profesor/, sede/, admin/
 ```
 
-## Scripts de Base de Datos
+## Base de datos
 
-Los archivos en [`scripts-bd/`](./scripts-bd/) son copias de los scripts SQL fuente que viven en `../infra/postgres/init/`:
-
-| Script | Descripción |
-|---|---|
-| `01_schema.sql` | DDL de todas las tablas, índices, constraints |
-| `02_seed.sql` | Datos semilla iniciales (admin, roles, refund methods) |
-| `03_procedures.sql` | Procedimientos almacenados y triggers de negocio |
-| `04_venues_rooms_seed.sql` | Sedes y salas semilla (precondición MVP) |
-| `05_reschedules_enhance.sql` | Mejoras a la tabla de reagendamientos |
-
-Estos scripts se ejecutan automáticamente al levantar el contenedor PostgreSQL vía Docker Compose.
+El schema se gestiona con migraciones SQL versionadas en
+[`../supabase/migrations/`](../supabase/migrations/). La base hosteada de
+Supabase es la fuente de verdad; los cambios se sincronizan con la CLI
+(`supabase db push` / `supabase migration fetch`).
 
 ## Verificación del producto desplegado
 

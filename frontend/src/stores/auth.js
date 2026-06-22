@@ -233,12 +233,20 @@ export function useAuth() {
   }
 
   async function logout() {
+    // 1. Invalidar sesión en Supabase (esto borra sb-*-auth-token de localStorage)
     try {
-      await supabase.auth.signOut()
+      await supabase.auth.signOut({ scope: 'local' })
     } catch (err) {
-      console.error('Error al cerrar sesión', err)
+      console.error('Error al cerrar sesión en Supabase', err)
     }
+    // 2. Limpiar nuestro estado personalizado
     store.clearAuth()
+    // 3. Limpiar cualquier residuo de Supabase en localStorage por si signOut no lo hizo
+    const keysToRemove = Object.keys(localStorage).filter(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    )
+    keysToRemove.forEach((k) => localStorage.removeItem(k))
+    // 4. Redirigir (hard reload para limpiar estado in-memory)
     window.location.href = '/login'
   }
 

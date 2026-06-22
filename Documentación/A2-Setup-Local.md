@@ -1,31 +1,28 @@
-# Setup Local de Colaboracion (Frontend / Backend / Infra)
+# Setup Local
 
-Este documento explica como dejar el proyecto actualizado y funcionando en local para que cada desarrollador pueda trabajar sin romper el flujo del equipo.
+Cómo dejar el proyecto funcionando en local. Tras la migración a Supabase, ya no
+hay backend Java ni base de datos en Docker: el frontend Vue habla directamente
+con un proyecto Supabase hosteado.
 
-## 1) Estructura oficial del repo
-
-La estructura correcta es:
+## 1) Estructura del repo
 
 ```text
 modo-ensayo/
-  backend/
-  frontend/
-  infra/
-  docs/
-  docker-compose.yml
+  frontend/         # Vue 3 SPA (lo que se corre en local)
+  supabase/         # migraciones SQL + Edge Functions (se gestionan con la CLI)
+  Documentación/    # documentación del proyecto
+  Producto/         # artefactos del producto
+  Gestión/          # gestión del equipo
 ```
-
-No debe existir estructura duplicada como `backend/backend` o `frontend/frontend`.
 
 ## 2) Requisitos
 
 - Git
-- Docker Desktop (para base de datos/infra)
-- Java 21+
-- Node.js 20+
-- npm 10+
+- Node.js 22+ y npm 10+
+- [Supabase CLI](https://supabase.com/docs/guides/cli) (solo si vas a tocar schema o Edge Functions)
+- Una cuenta de Supabase con acceso al proyecto `modoensayo`
 
-## 3) Clonar y actualizar rama principal
+## 3) Clonar y actualizar
 
 ```powershell
 git clone <URL_DEL_REPO>
@@ -34,86 +31,27 @@ git checkout main
 git pull origin main
 ```
 
-## 4) Configuracion de entorno
+## 4) Configurar el frontend
 
-Crear archivo `.env` en la raiz tomando `.env.example` como base:
+Crear `frontend/.env` a partir del ejemplo:
 
 ```powershell
-copy .env.example .env
+copy frontend\.env.example frontend\.env
 ```
 
-Valores minimos recomendados:
+Completar con los valores públicos del proyecto (Supabase Dashboard → Project
+Settings → API):
 
 ```env
-POSTGRES_DB=modoensayo
-POSTGRES_USER=modoensayo
-POSTGRES_PASSWORD=modoensayo
-POSTGRES_PORT=5432
-
-PGADMIN_DEFAULT_EMAIL=admin@modoensayo.com
-PGADMIN_DEFAULT_PASSWORD=admin123
-PGADMIN_PORT=5050
-
-SPRING_PROFILES_ACTIVE=dev
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/modoensayo
-SPRING_DATASOURCE_USERNAME=modoensayo
-SPRING_DATASOURCE_PASSWORD=modoensayo
-
-BACKEND_PORT=8080
-FRONTEND_PORT=5173
-NGINX_PORT=80
-
-MERCADOPAGO_ACCESS_TOKEN=TEST-xxxxxxxxxxxxxxxxxxxx
-APP_BACKEND_URL=http://localhost:8080
-APP_FRONTEND_URL=http://localhost:5173
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxx
+VITE_API_BASE_URL=
 ```
 
-## 5) Levantar solo infraestructura base (recomendado para desarrollo)
+> La anon/publishable key es pública: el acceso real lo controla Row Level
+> Security en la base de datos.
 
-Desde la raiz:
-
-```powershell
-docker compose up -d postgres pgadmin
-```
-
-Ver estado:
-
-```powershell
-docker compose ps
-```
-
-## 6) Levantar backend local
-
-```powershell
-cd backend
-.\mvnw.cmd clean spring-boot:run
-```
-
-Backend esperado en: `http://localhost:8080`
-
-### Importante: variables de Mercado Pago para local
-
-Si levantas backend con Maven directo (sin Docker), debes exportar variables en la terminal antes de ejecutar Spring Boot.
-
-```powershell
-$env:MERCADOPAGO_ACCESS_TOKEN="TEST-xxxxxxxxxxxxxxxxxxxx"
-$env:APP_BACKEND_URL="http://localhost:8080"
-$env:APP_FRONTEND_URL="http://localhost:5173"
-```
-
-Luego recién:
-
-```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
-```
-
-Si no defines `MERCADOPAGO_ACCESS_TOKEN`, backend falla al iniciar con:
-`mercadopago.access-token no configurado`.
-
-## 7) Levantar frontend local
-
-En otra terminal:
+## 5) Correr el frontend
 
 ```powershell
 cd frontend
@@ -121,112 +59,64 @@ npm install
 npm run dev
 ```
 
-Frontend esperado en: `http://localhost:5173`
+Frontend en: `http://localhost:3001`
 
-## 8) Levantar todo con Docker (opcional)
+## 6) (Opcional) Trabajar con la base de datos / Edge Functions
 
-Si quieren correr stack completo por contenedores:
+Solo si vas a modificar el schema o las funciones:
 
 ```powershell
-docker compose up -d
+# Iniciar sesión y vincular el proyecto
+supabase login
+supabase link --project-ref <project-ref>
+
+# Aplicar migraciones locales al proyecto vinculado
+supabase db push
+
+# Traer el historial remoto de migraciones a local
+supabase migration fetch --yes
+
+# Desplegar Edge Functions
+supabase functions deploy
+
+# Generar tipos TypeScript desde el schema
+supabase gen types --linked > frontend/src/types/database.ts
 ```
 
-Servicios esperados:
+## 7) Reglas de trabajo
 
-- Postgres: `localhost:5432`
-- PgAdmin: `localhost:5050`
-- Backend: `localhost:8080`
-- Frontend container: `localhost:3000`
-- Nginx: `localhost:80`
-
-## 9) Reglas de trabajo por equipo
-
-### Frontend developer
+### Frontend
 - Trabaja en `frontend/src/**`
 - Antes de push:
 
 ```powershell
 cd frontend
+npm run lint
+npm run test
 npm run build
 ```
 
-### Backend developer
-- Trabaja en `backend/src/**`
-- Antes de push:
+### Base de datos / Edge Functions
+- Cambios de schema → nueva migración en `supabase/migrations/`
+- Tras un cambio DDL, revisar los advisors de seguridad y performance
+- La base hosteada es la fuente de verdad del historial de migraciones
 
-```powershell
-cd backend
-.\mvnw.cmd test
-```
-
-### Infra developer
-- Trabaja en `infra/**`, `docker-compose.yml`, `.env.example`
-- Validar con:
-
-```powershell
-docker compose config
-```
-
-## 10) Flujo Git recomendado
-
-1. Crear rama por tarea:
+## 8) Flujo Git recomendado
 
 ```powershell
 git checkout -b feature/nombre-corto
-```
-
-2. Commits pequenos y claros.
-3. Antes de push:
-
-```powershell
+# ...commits pequeños y claros...
 git pull --rebase origin main
-```
-
-4. Resolver conflictos localmente y luego:
-
-```powershell
 git push -u origin feature/nombre-corto
 ```
 
-## 11) Evitar conflictos masivos
+No commitear `node_modules`, `dist`, ni archivos `.env` con secretos.
 
-- No mover carpetas raiz (`backend`, `frontend`, `infra`) sin acuerdo del equipo.
-- No commitear `node_modules`, `target`, `.idea`, `.vite`, `dist`.
-- Si aparecen trackeados por error:
+## 9) Troubleshooting
 
-```powershell
-git rm -r --cached frontend/node_modules backend/target frontend/dist
-git commit -m "chore: remove generated artifacts from git"
-```
-
-## 12) Troubleshooting rapido
-
-### "Committing is not possible because you have unmerged files"
-
-```powershell
-git status
-```
-
-Resolver archivos con conflicto (`<<<<<<<`, `=======`, `>>>>>>>`), luego:
-
-```powershell
-git add .
-git commit
-```
-
-### Puerto 8080/5173 ocupado
-
-- Cerrar proceso que use el puerto o cambiar `BACKEND_PORT` / `FRONTEND_PORT`.
-
-### Docker no levanta Postgres
-
-- Revisar que Docker Desktop este encendido.
-- Revisar logs:
-
-```powershell
-docker compose logs postgres
-```
-
----
-
-Si cada developer sigue este archivo, todos deberian poder levantar el proyecto y trabajar en paralelo sin romper estructura ni flujos.
+- **`Faltan VITE_SUPABASE_URL...`**: no creaste/completaste `frontend/.env`.
+- **Puerto 3001 ocupado**: cierra el proceso o cambia el puerto en `vite.config.js`.
+- **`Could not find the '<columna>' column ... in the schema cache`**: el código
+  quedó desalineado con el schema; regenera tipos y revisa la migración.
+- **Queries colgadas en "Cargando..."**: revisa que no haya múltiples instancias
+  del cliente Supabase (debe usarse el singleton de `services/supabase.js`).

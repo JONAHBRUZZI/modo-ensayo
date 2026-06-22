@@ -8,8 +8,9 @@ export default {
       const roles: string[] = (userClaims!.appMetadata?.roles as string[]) ?? [];
       if (!roles.includes("ADMIN")) return Response.json({ error: "Forbidden" }, { status: 403 });
 
-      const [users, classes, venues, payments, identity, reviews, sessions] = await Promise.all([
+      const [users, usersWithoutIdentity, classes, venues, payments, identity, reviews, sessions] = await Promise.all([
         admin.from("profiles").select("*", { count: "exact", head: true }),
+        admin.from("profiles").select("*", { count: "exact", head: true }).eq("identidad_validada", false),
         admin.from("classes").select("status, price, capacity"),
         admin.from("venues").select("status"),
         admin.from("payments").select("status, amount"),
@@ -41,15 +42,18 @@ export default {
         : "0";
 
       return Response.json({
-        totalUsers: users.count ?? 0,
-        activeClasses: classesData.filter((c) => c.status === "PUBLISHED").length,
-        completedClasses: classesData.filter((c) => c.status === "COMPLETED").length,
-        pendingVenues: venuesData.filter((v) => v.status === "PENDIENTE_APROBACION").length,
-        pendingIdentity: identity.count ?? 0,
-        totalRevenue,
-        retainedTotal,
-        avgRating: parseFloat(avgRating),
-        conversionRate: parseFloat(conversionRate),
+        usuarios: users.count ?? 0,
+        usuariosPendientes: usersWithoutIdentity.count ?? 0,
+        sedes: venuesData.length,
+        sedesPendientes: venuesData.filter((v) => v.status === "PENDIENTE_APROBACION").length,
+        pendientes: identity.count ?? 0,
+        clases: classesData.length,
+        clasesActivas: classesData.filter((c) => c.status === "PUBLISHED").length,
+        clasesCompletadas: classesData.filter((c) => c.status === "COMPLETED").length,
+        totalIngresos: totalRevenue,
+        ingresoRetenido: retainedTotal,
+        calificacionPromedio: parseFloat(avgRating),
+        tasaConversion: parseFloat(conversionRate),
       });
 
     } catch (err) {

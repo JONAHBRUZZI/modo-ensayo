@@ -11,18 +11,30 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   )
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    // App de una sola pestaña: evitamos el lock de navigator.locks de supabase-js,
-    // que puede generar deadlocks (agravados por HMR/instancias múltiples) y dejaba
-    // queries colgadas en "Cargando...". Pass-through = ejecutar sin lock entre pestañas.
-    lock: async (_name, _acquireTimeout, fn) => fn()
-  }
-})
+// Singleton real: en dev (HMR) y con imports vía distintos specifiers
+// (`./supabase`, `@/services/supabase`) este módulo puede evaluarse más de una
+// vez y crear varios GoTrueClient bajo la misma storage key → "Multiple
+// GoTrueClient instances detected" y queries colgadas en "Cargando...".
+// Cacheando el cliente en globalThis garantizamos UNA sola instancia.
+function createSupabaseClient() {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce'
+      // Lock por defecto (navigator.locks): serializa el refresh de token entre
+      // llamadas concurrentes. NO usamos pass-through: sin serialización, las
+      // queries concurrentes en el mount disparaban refresh en paralelo →
+      // race de rotación del refresh token → queries colgadas en "Cargando...".
+      // El deadlock que motivó el pass-through lo causaban las instancias
+      // múltiples (ya resuelto con el singleton de globalThis arriba).
+    }
+  })
+}
+
+export const supabase = globalThis.__modoEnsayoSupabase__ ??
+  (globalThis.__modoEnsayoSupabase__ = createSupabaseClient())
 
 const SNAKE_RE = /_([a-z0-9])/g
 const toCamelKey = (k) => k.replace(SNAKE_RE, (_, c) => c.toUpperCase())

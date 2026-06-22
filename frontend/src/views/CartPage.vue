@@ -46,7 +46,7 @@
           </div>
         </div>
         <div class="flex items-center gap-4 shrink-0">
-          <span class="text-primary font-bold">${{ item.price?.toLocaleString() }}</span>
+          <span class="text-primary font-bold">${{ item.price?.toLocaleString('es-CL') }}</span>
           <button @click="removeItem(item.id)" class="text-gray-600 hover:text-red-400 transition-colors" aria-label="Eliminar">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
@@ -60,18 +60,18 @@
         class="card flex items-center justify-between border-primary/20"
       >
         <span class="text-white font-semibold">Total</span>
-        <span class="text-primary font-bold text-xl">${{ total.toLocaleString() }}</span>
+        <span class="text-primary font-bold text-xl">${{ total.toLocaleString('es-CL') }}</span>
       </div>
 
       <button @click="irAPagar" :disabled="checkingOut" class="btn-primary w-full text-base py-3">
-        {{ checkingOut ? 'Procesando...' : `Pagar $${total.toLocaleString()}` }}
+        {{ checkingOut ? 'Procesando...' : `Pagar $${total.toLocaleString('es-CL')}` }}
       </button>
     </div>
 
     <ConfirmDialog
       :visible="showConfirm"
       title="Confirmar pago"
-      :message="`¿Confirmas tu pago de $${total.toLocaleString()}?`"
+      :message="`¿Confirmas tu pago de $${total.toLocaleString('es-CL')}?`"
       @confirm="confirmarPago"
       @cancel="showConfirm = false"
     />

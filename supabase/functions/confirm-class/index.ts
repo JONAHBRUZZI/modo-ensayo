@@ -28,13 +28,35 @@ export default {
         return Response.json({ error: "No autorizado para esta sede" }, { status: 403 });
       }
 
+      // Fetch enrollments with student_id for both branches
+      const { data: enrollments } = await admin.from("enrollments")
+        .select("id, student_id").eq("class_id", body.classId).eq("status", "ACTIVE");
+
+      let refundPendingCount = 0;
+
       if (body.realized) {
-        const { data: enrollments } = await admin.from("enrollments")
-          .select("id").eq("class_id", body.classId).eq("status", "ACTIVE");
+        // Pagos RETAINED → RELEASED (comportamiento original, sin cambios funcionales)
         if (enrollments) {
           for (const e of enrollments) {
             await admin.from("payments").update({ status: "RELEASED" })
               .eq("enrollment_id", e.id).eq("status", "RETAINED");
+          }
+        }
+      } else {
+        // Pagos RETAINED → REFUND_PENDING (corrección G-07)
+        if (enrollments) {
+          for (const e of enrollments) {
+            const { data: updated } = await admin.from("payments").update({ status: "REFUND_PENDING" })
+              .eq("enrollment_id", e.id).eq("status", "RETAINED").select("id");
+            refundPendingCount += updated?.length ?? 0;
+
+            // Notificación al alumno
+            await admin.from("notifications").insert({
+              user_id: e.student_id,
+              title: "Clase suspendida",
+              message: "La clase fue suspendida. Se procesará tu reembolso.",
+              type: "CLASS_SUSPENDED",
+            });
           }
         }
       }
@@ -48,6 +70,7 @@ export default {
         action: body.realized ? "class.confirmed_realized" : "class.confirmed_not_realized",
         resource_type: "class",
         resource_id: body.classId,
+        ...(body.realized ? {} : { metadata: { payments_refund_pending: refundPendingCount } }),
       });
 
       logInfo(body.realized ? "class_confirmed" : "class_not_realized", { classId: body.classId });

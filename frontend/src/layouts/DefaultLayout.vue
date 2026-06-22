@@ -309,6 +309,11 @@ const modeLabel = computed(() => {
 })
 
 function handleLogout() {
+  // Clear auth state immediately to avoid race conditions with event listeners
+  localStorage.removeItem('auth_token')
+  localStorage.removeItem('auth_user')
+  localStorage.removeItem('auth_refresh_token')
+  localStorage.removeItem('modoActual')
   logout()
 }
 

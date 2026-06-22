@@ -142,19 +142,25 @@ function mapAtributos(d) {
 
 // Mantiene token + usuario sincronizados con la sesión de Supabase
 // (login, refresh automático del token, logout en otra pestaña, etc.).
-supabase.auth.onAuthStateChange(async (event, session) => {
+supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT' || !session) {
     store.clearAuth()
     return
   }
   store.setToken(session.access_token, session.refresh_token)
   if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-    try {
-      const u = await buildUserFromSession(session)
-      if (u) store.setUser(u)
-    } catch (err) {
-      console.error('Error al construir el usuario de la sesión', err)
-    }
+    // IMPORTANTE: el callback corre DENTRO del lock de auth (navigator.locks).
+    // No se puede hacer await de otras llamadas Supabase aquí (from/rpc también
+    // piden el lock) → deadlock que cuelga TODAS las queries en "Cargando...".
+    // Se difiere con setTimeout(0) para construir el usuario fuera del lock.
+    setTimeout(async () => {
+      try {
+        const u = await buildUserFromSession(session)
+        if (u) store.setUser(u)
+      } catch (err) {
+        console.error('Error al construir el usuario de la sesión', err)
+      }
+    }, 0)
   }
 })
 
@@ -233,12 +239,20 @@ export function useAuth() {
   }
 
   async function logout() {
+    // 1. Invalidar sesión en Supabase (esto borra sb-*-auth-token de localStorage)
     try {
-      await supabase.auth.signOut()
+      await supabase.auth.signOut({ scope: 'local' })
     } catch (err) {
-      console.error('Error al cerrar sesión', err)
+      console.error('Error al cerrar sesión en Supabase', err)
     }
+    // 2. Limpiar nuestro estado personalizado
     store.clearAuth()
+    // 3. Limpiar cualquier residuo de Supabase en localStorage por si signOut no lo hizo
+    const keysToRemove = Object.keys(localStorage).filter(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    )
+    keysToRemove.forEach((k) => localStorage.removeItem(k))
+    // 4. Redirigir (hard reload para limpiar estado in-memory)
     window.location.href = '/login'
   }
 

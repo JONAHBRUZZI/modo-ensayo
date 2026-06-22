@@ -1,261 +1,160 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding assistants when working with code in this repository.
+
+## Overview
+
+Modo Ensayo is a full-stack platform for managing artistic classes with
+conditional payments tied to class completion. The project originally used a
+Spring Boot (Java) backend and was **fully migrated to Supabase**. The Spring
+backend no longer exists in this repository.
+
+- **Frontend**: Vue 3 (Composition API) + Vite + Tailwind CSS (`frontend/`)
+- **Backend**: Supabase — PostgreSQL + Auth + Storage + Realtime + Edge Functions (`supabase/`)
+- **Payments**: MercadoPago Checkout Pro, integrated via Edge Functions
 
 ## Commands
-
-### Backend
-
-All commands run from the `backend/` directory using the Maven wrapper.
-
-```bash
-# Build
-./mvnw clean package           # Windows: mvnw.cmd clean package
-
-# Run (requires PostgreSQL running)
-./mvnw spring-boot:run
-
-# Run all tests
-./mvnw test
-
-# Run a specific test class
-./mvnw test -Dtest=AuthServiceTest
-
-# Run a specific test method
-./mvnw test -Dtest=AuthServiceTest#register_validInput_createsUser
-
-# Generate JaCoCo coverage report (target/site/jacoco/index.html)
-./mvnw clean test jacoco:report
-```
 
 ### Frontend
 
 All commands run from the `frontend/` directory.
 
 ```bash
-npm run dev      # Dev server at http://localhost:5173
-npm run build    # Production build
-npm run test     # Run Vitest tests once
-npm run test:watch  # Vitest in watch mode
+npm install        # install dependencies
+npm run dev        # dev server at http://localhost:3001
+npm run build      # production build
+npm run preview    # preview the production build
+npm run lint       # ESLint (flat config, eslint.config.js)
+npm run test       # Vitest run once
+npm run test:watch # Vitest watch mode
 ```
 
-### Docker Compose (recommended for local dev)
+### Supabase (CLI)
 
 ```bash
-# Full stack (backend + PostgreSQL + pgAdmin)
-docker compose up -d --build
-
-# Database only (then run backend via Maven or frontend via npm)
-docker compose up -d postgres pgadmin
+supabase link --project-ref <project-ref>   # link the workspace to a hosted project
+supabase db push                            # apply local migrations to the linked project
+supabase migration fetch --yes              # pull remote migration history locally
+supabase functions deploy                   # deploy all Edge Functions
+supabase functions deploy <name>            # deploy a single Edge Function
+supabase gen types --linked > frontend/src/types/database.ts  # generate TS types
 ```
 
-Backend runs on `http://localhost:8080`, frontend dev server on `http://localhost:5173`, PostgreSQL on `localhost:5432`, pgAdmin on `http://localhost:5050`.
+The linked project ref is stored in `supabase/.temp/project-ref`.
 
 ## Architecture
 
-This is a full-stack platform for managing artistic classes with conditional payments tied to class completion.
+### Frontend (`frontend/src/`)
 
-### Backend
+Vue 3 SPA. Talks directly to Supabase (PostgREST + Auth + Storage + Realtime)
+and calls Edge Functions for sensitive business logic.
 
-Java 21 / Spring Boot 3.2 REST API. Main source root: `backend/src/main/java/com/modoensayo/`.
+#### Service layer (`services/`)
 
-#### Domain modules
+One module per domain (`classService.js`, `venueService.js`,
+`paymentService.js`, `adminService.js`, etc.). All import the singleton client
+from `services/supabase.js` and use one of three access paths:
 
-Each top-level package is a self-contained domain with its own controller → service → repository stack:
+- **PostgREST** — `supabase.from('table')...` for RLS-scoped CRUD
+- **Edge Functions** — `invokeFunction(name, { method, body })` for privileged
+  business operations (create class, book slot, confirm class, payments, etc.)
+- **RPC** — `supabase.rpc('get_my_attributes')` and similar PostgreSQL functions
 
-| Package | Responsibility |
-|---|---|
-| `auth/` | JWT authentication, registration, login |
-| `users/` | User entity, roles, professional profiles, identity verification |
-| `admin/` | Admin panel endpoints, platform statistics, role management |
-| `classes/` | Class lifecycle (creation, scheduling, status history, completion) |
-| `payments/` | MercadoPago Checkout Pro integration, cart, enrollment |
-| `venues/` | Venue/room CRUD, availability windows, schedule blocks |
-| `reschedules/` | Reschedule request/response workflow, timeout processing |
-| `notifications/` | In-app notification delivery |
-| `attendance/` | Attendance tracking |
-| `reviews/` | Student/teacher review system |
-| `associates/` | Associate management |
-| `shared/` | Cross-cutting concerns (see below) |
+`services/supabase.js` exposes:
+- `supabase` — singleton client (cached on `globalThis` to avoid multiple
+  GoTrueClient instances under HMR)
+- `camelize(value)` — recursively converts snake_case keys → camelCase so views
+  written for the old Spring API (camelCase) keep working
+- `currentUserId()` — reads the `sub` claim from the JWT in localStorage
+- `invokeFunction(name, options)` — invokes an Edge Function and normalizes
+  errors to the axios-style shape (`error.response = { status, data }`) the
+  views expect
 
-#### Shared infrastructure (`shared/`)
+#### Auth store (`stores/auth.js`)
 
-- `config/` — `BaseEntity` (all entities extend this for `createdAt`/`updatedAt`), data seeders, Caffeine cache setup, `StringListConverter` (JPA converter for `List<String>` fields)
-- `exceptions/` — `GlobalExceptionHandler` (centralised `@RestControllerAdvice`)
-- `security/` — JWT filter and utilities
-- `storage/` — `UnifiedStorageService` abstracts local filesystem vs. Supabase storage (toggled via `STORAGE_PROVIDER` env var)
-- `controller/` — File upload/access endpoints
+A class-based singleton (not Pinia) backed by Supabase Auth. Holds `token`,
+`user`, and `modoActual` (active role context: `'alumno' | 'profesor' | 'sede'`).
 
-#### Layered conventions
+- `login` / `register` / `googleLogin` wrap `supabase.auth.signInWithPassword`,
+  `signUp`, `signInWithIdToken`
+- `supabase.auth.onAuthStateChange` keeps token + user in sync (auto refresh,
+  cross-tab logout)
+- Roles come from the `app_metadata.roles` JWT claim
+- Derived attributes (identity validation, active bookings, teacher state, etc.)
+  come from the `get_my_attributes` RPC, normalized by `mapAtributos`
+- Keeps the same `localStorage` contract as the Spring version
+  (`auth_token`, `auth_user`, `modoActual`) so the router and views are unchanged
 
-- **Entities** extend `BaseEntity` and carry JPA annotations
-- **Repositories** extend `JpaRepository`; custom queries use JPQL `@Query`
-- **Services** are `@Transactional` for writes; complex workflows use `@Scheduled` tasks (e.g., `ScheduleBlockRegenerator`)
-- **Controllers** are `@RestController`; input validated with Bean Validation (`@Valid`)
-- **DTOs** — separate request/response records; Jackson configured for non-null serialisation and ISO-8601 dates
-
-#### Key integrations
-
-- **Authentication:** Spring Security + JJWT 0.12.3 (stateless JWT)
-- **Payments:** MercadoPago SDK Java 2.1.24
-- **Caching:** Caffeine (`adminStats`, `publishedClasses`, `approvedVenues`, `userProfile` — 200 entries, 5 min TTL)
-- **Rate limiting:** Bucket4j 0.7.6
-- **Storage:** Local filesystem or Supabase (set `STORAGE_PROVIDER=supabase`)
-
-### Frontend
-
-Vue 3 (Composition API) + Vite + Tailwind CSS. Source root: `frontend/src/`.
-
-#### Role-based views
-
-The platform has four roles. Views are split by role under `src/views/`:
+#### Role-based views (`views/`)
 
 | Directory | Role |
 |---|---|
-| `views/alumno/` | Student — browse/enroll in classes, calendar, payments history |
-| `views/profesor/` | Teacher — manage own classes, drafts, calendar, metrics, scheduling |
-| `views/sede/` | Venue manager — room scheduling, class confirmations, calendar, metrics |
+| `views/alumno/` | Student — browse/enroll, calendar, payment history |
+| `views/profesor/` | Teacher — manage classes, drafts, calendar, metrics |
+| `views/sede/` | Venue manager — room scheduling, confirmations, metrics |
 | `views/admin/` | Admin — users, venues, dynamic role management |
 
-Top-level views (`views/*.vue`) are shared (login, register, cart, home, etc.).
+Top-level `views/*.vue` are shared (login, register, cart, home, etc.).
+Route guards in `router/index.js` read the auth store via `decodeJwt` to enforce
+`requiresAuth` and role-specific routes.
 
-#### Service layer
+#### Other conventions
 
-`src/services/` contains one Axios module per domain (`classService.js`, `venueService.js`, `paymentService.js`, etc.) that all import from `src/services/api.js`. The `api.js` singleton:
-- Attaches the JWT from `localStorage` on every request
-- Handles 401 responses by clearing auth state and redirecting to `/login`
-- Triggers `auth.syncAtributos()` when the backend signals a role/attribute change via `atributosActualizados: true`
-
-#### Auth store
-
-`src/stores/auth.js` is a custom class-based singleton (not Pinia). It holds `token`, `user`, and `modoActual` (the active role context: `'alumno'` | `'profesor'` | `'sede'`). Guards in `src/router/index.js` read it via `decodeJwt` to enforce `requiresAuth` and role-specific routes.
-
-#### Feature modules
-
-`src/features/` contains self-contained feature slices (`auth/`, `cart/`, `classes/`, `payments/`, `reschedules/`) with their own components and logic.
-
-#### Other frontend conventions
-
-- `src/composables/` — reusable Composition API utilities (`useToast`, `usePlacesAutocomplete`)
-- `src/hooks/useNotifications.js` — polling-based notification hook
-- `src/layouts/DefaultLayout.vue` — single shared shell layout
+- `composables/` — reusable Composition API utilities (`useToast`, `useTheme`,
+  `usePlacesAutocomplete`)
+- `hooks/useNotifications.js` — notification hook
+- `features/` — self-contained feature slices (`auth`, `cart`, `classes`,
+  `payments`, `reschedules`)
+- `layouts/DefaultLayout.vue` — single shared shell
 - No Pinia; no global state beyond the auth store singleton
+
+### Supabase backend (`supabase/`)
+
+#### Migrations (`migrations/`)
+
+Versioned SQL migrations applied in order: extensions → enums → helpers →
+tables → table-dependent RLS helpers → RLS policies → storage → cron functions →
+realtime → seed data, plus incremental migrations. The hosted database is the
+**source of truth** for migration history; sync local changes with the CLI.
+
+#### Edge Functions (`functions/`)
+
+13 Deno/TypeScript functions for privileged business logic, e.g.:
+`create-class`, `book-slot`, `confirm-class`, `assign-reserva`,
+`propose-reschedule`, `teacher-decision`, `student-decision`, `create-review`,
+`register-venue`, `admin-approve-venue`, `admin-stats`, `admin-users`,
+`generate-blocks`, `mercadopago-create-preference`, `mercadopago-webhook`.
+
+- Shared helpers live in `functions/_shared/`
+- `config.toml` sets `verify_jwt` per function (webhooks `false`, the rest `true`)
+- Functions use the service-role client to bypass RLS where needed; never expose
+  the service key to the Vue frontend
 
 ## Configuration
 
-Key environment variables (copy `.env.example` to `.env`):
+### Frontend env (`frontend/.env`, copy from `.env.example`)
 
 | Variable | Purpose |
 |---|---|
-| `SPRING_DATASOURCE_URL` | PostgreSQL JDBC URL |
-| `SPRING_DATASOURCE_USERNAME` / `_PASSWORD` | DB credentials |
-| `JWT_SECRET` | JWT signing key |
-| `MERCADOPAGO_ACCESS_TOKEN` | Payment gateway token |
-| `STORAGE_PROVIDER` | `local` or `supabase` |
-| `SUPABASE_URL` / `SUPABASE_KEY` | Required when `STORAGE_PROVIDER=supabase` |
-| `APP_FRONTEND_URL` / `APP_BACKEND_URL` | CORS and callback URLs |
-| `VITE_API_BASE_URL` | Frontend: backend origin (empty = same origin via proxy) |
+| `VITE_SUPABASE_URL` | Supabase project URL (public) |
+| `VITE_SUPABASE_ANON_KEY` | Anon/publishable key (public, RLS-protected) |
+| `VITE_API_BASE_URL` | Legacy; unused — kept empty during transition |
 
-Schema is managed by `hibernate.ddl-auto: update` — no Flyway/Liquibase. Data seeders in `shared/config/` populate reference data on startup.
+### Edge Functions secrets (set via `supabase secrets set`)
+
+`MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `APP_FRONTEND_URL`.
+On the Supabase platform the `SUPABASE_*` keys are auto-provisioned.
 
 ## Testing
-
-### Backend
-
-- **Unit tests:** service layer, mocked repositories/externals with Mockito (`@ExtendWith(MockitoExtension.class)`)
-- **Integration tests:** full Spring context + MockMvc + H2 in-memory DB (`@ActiveProfiles("test")`)
-- Tests live in `backend/src/test/java/com/modoensayo/`, mirroring the main package structure, with integration tests under `integration/`
-- JaCoCo minimum coverage threshold: **25%** (configured in `pom.xml`)
-- `TestDataSeeder` utility class handles consistent test data creation for integration tests
 
 ### Frontend
 
 - Vitest + `@vue/test-utils` + jsdom
-- Test files live alongside views (e.g., `CartPage.test.js`, `PaymentSuccessPage.test.js`)
+- Test files live alongside views (e.g., `views/CartPage.test.js`,
+  `views/PaymentSuccessPage.test.js`)
+- Run with `npm test` from `frontend/`
 
-## Supabase Migration
+### Database
 
-**Status**: Implementation — schema validated locally, pending cloud deploy
-
-### Local structure (`supabase/`)
-
-- `migrations/` — 10 SQL migrations (extensions → enums → helpers → tables → table-dependent helpers → RLS → storage → cron → realtime → seed). Validated against real Postgres via `supabase start` (27 tables, 27 with RLS, 85 policies, 13 enums, 13 functions, 6 cron jobs, 5 buckets).
-- `functions/` — 13 Edge Functions (Deno) using the official **`@supabase/server`** SDK (`withSupabase`). `ctx.supabase` is RLS-scoped, `ctx.supabaseAdmin` bypasses RLS. CORS + auth + error handling are handled by the wrapper. Shared `_shared/logger.ts` for structured logs.
-- `config.toml` — per-function `verify_jwt` (webhook `false`, rest `true`).
-
-> **`@supabase/server`**: imported in Deno via `npm:@supabase/server` (no `npm install` — never add it to the Vue frontend, which would expose the secret key). On Supabase Platform the `SUPABASE_*` keys are auto-provisioned; locally an older CLI may need them wired in `supabase/functions/.env`.
-
-### Deploy to cloud (`modoensayo`, ref `remznaanexwgzeeupctv`)
-
-```bash
-supabase login                                    # account that owns modoensayo
-supabase link --project-ref remznaanexwgzeeupctv
-supabase db push                                  # apply 10 migrations
-supabase functions deploy                         # deploy 13 functions
-supabase secrets set MERCADOPAGO_ACCESS_TOKEN=... MERCADOPAGO_WEBHOOK_SECRET=... APP_FRONTEND_URL=...
-```
-
-### MCP Integration
-
-The project uses **Mercado Pago MCP Server** for payment system validation during the Supabase migration. Available commands (via Claude Code):
-
-```bash
-# Agentes IA pueden ejecutar:
-mpag_search_mcp_documentation           # Buscar docs de Mercado Pago
-mpag_create_test_user                   # Crear usuarios de prueba sandbox
-mpag_configure_webhooks                 # Configurar notificaciones webhook
-mpag_improve_integration                # Validación pre-producción de Edge Functions
-```
-
-**Setup MCP locally** (for testing):
-```bash
-cd ~
-git clone https://github.com/mercadopago/mcp-server-mercadopago
-cd mcp-server-mercadopago
-npm install
-npm run dev
-```
-
-Configure in `~/.claude/settings.json` (or Claude Desktop `claude_desktop_config.json`):
-```json
-{
-  "mcpServers": {
-    "mercadopago": {
-      "command": "node",
-      "args": ["/path/to/mcp-server-mercadopago/dist/index.js"],
-      "env": {
-        "MERCADOPAGO_ACCESS_TOKEN": "YOUR_ACCESS_TOKEN",
-        "MERCADOPAGO_WEBHOOK_SECRET": "YOUR_WEBHOOK_SECRET"
-      }
-    }
-  }
-}
-```
-
-### Migration Plan & Documentation
-
-**Status**: ✅ Planning Phase (Ready for Staging Execution)
-
-Core Documents:
-- [`PLAN_MIGRACION_SUPABASE.md`](./PLAN_MIGRACION_SUPABASE.md) — Original comprehensive plan (schema, RLS, Edge Functions, storage, seed data)
-- [`PLAN_MIGRACION_SUPABASE_REFINED.md`](./PLAN_MIGRACION_SUPABASE_REFINED.md) — Enhanced plan with testing strategy, data migration, feature flags, monitoring, rollback procedures
-- [`PLAN_MIGRACION_VALIDATION_REPORT.md`](./PLAN_MIGRACION_VALIDATION_REPORT.md) — Strict validation audit (92/100 score, 10 critical checkpoints)
-- [`MIGRATION_DELIVERY_SUMMARY.md`](./MIGRATION_DELIVERY_SUMMARY.md) — Executive summary, action plan, success criteria
-
-**What's Covered**:
-- ✅ 27 tables with RLS policies (94 policies total)
-- ✅ 13 Edge Functions (Deno/TypeScript) with error handling & retry logic
-- ✅ Payment flow via MercadoPago → Supabase webhooks
-- ✅ Testing strategy (Unit, Integration, E2E, Data validation)
-- ✅ Gradual rollout timeline (12-day plan with 10 checkpoints)
-- ✅ Feature flag implementation for transparent backend switching
-- ✅ Performance analysis (EXPLAIN ANALYZE, query optimization)
-- ✅ Monitoring & observability (dashboard, alerts, metrics)
-- ✅ Rollback procedures (3 scenarios, <5m recovery)
-- ✅ Pre-production checklist (50+ items)
-
-**Quick Navigation**:
-- Planning phase details → [`PLAN_MIGRACION_SUPABASE_REFINED.md`](./PLAN_MIGRACION_SUPABASE_REFINED.md) Section 4 (Feature Flags)
-- Testing requirements → [`PLAN_MIGRACION_SUPABASE_REFINED.md`](./PLAN_MIGRACION_SUPABASE_REFINED.md) Section 2
-- Validation status → [`PLAN_MIGRACION_VALIDATION_REPORT.md`](./PLAN_MIGRACION_VALIDATION_REPORT.md) Executive Summary
-- Action plan → [`MIGRATION_DELIVERY_SUMMARY.md`](./MIGRATION_DELIVERY_SUMMARY.md) Next Steps
+- Validate schema changes against the linked project and run `get_advisors`
+  (security + performance) after DDL changes

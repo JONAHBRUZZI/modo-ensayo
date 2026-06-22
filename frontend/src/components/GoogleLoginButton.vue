@@ -17,7 +17,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 
-const CLIENT_ID = '837997938835-ki42ei5m2mbhkrsbcd5bvtfj362p2kah.apps.googleusercontent.com'
+const CLIENT_ID = '1034687757204-20rtvk66bio2nbhju1imdmcv5skfe600.apps.googleusercontent.com'
 
 const router = useRouter()
 const { googleLogin } = useAuth()

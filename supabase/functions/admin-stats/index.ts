@@ -19,6 +19,12 @@ export default {
         admin.from("payment_sessions").select("status"),
       ]);
 
+      // Validar errores en queries
+      if (users.error) logError("users_query_error", users.error);
+      if (usersWithoutIdentity.error) logError("users_without_identity_error", usersWithoutIdentity.error);
+      if (identity.error) logError("identity_query_error", identity.error);
+      if (venues.error) logError("venues_query_error", venues.error);
+
       const classesData = classes.data ?? [];
       const paymentsData = payments.data ?? [];
       const venuesData = venues.data ?? [];

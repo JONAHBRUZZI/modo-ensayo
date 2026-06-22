@@ -142,19 +142,25 @@ function mapAtributos(d) {
 
 // Mantiene token + usuario sincronizados con la sesión de Supabase
 // (login, refresh automático del token, logout en otra pestaña, etc.).
-supabase.auth.onAuthStateChange(async (event, session) => {
+supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT' || !session) {
     store.clearAuth()
     return
   }
   store.setToken(session.access_token, session.refresh_token)
   if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-    try {
-      const u = await buildUserFromSession(session)
-      if (u) store.setUser(u)
-    } catch (err) {
-      console.error('Error al construir el usuario de la sesión', err)
-    }
+    // IMPORTANTE: el callback corre DENTRO del lock de auth (navigator.locks).
+    // No se puede hacer await de otras llamadas Supabase aquí (from/rpc también
+    // piden el lock) → deadlock que cuelga TODAS las queries en "Cargando...".
+    // Se difiere con setTimeout(0) para construir el usuario fuera del lock.
+    setTimeout(async () => {
+      try {
+        const u = await buildUserFromSession(session)
+        if (u) store.setUser(u)
+      } catch (err) {
+        console.error('Error al construir el usuario de la sesión', err)
+      }
+    }, 0)
   }
 })
 

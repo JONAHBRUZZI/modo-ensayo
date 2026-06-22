@@ -13,7 +13,7 @@ export default {
         admin.from("classes").select("status, price, capacity"),
         admin.from("venues").select("status"),
         admin.from("payments").select("status, amount"),
-        admin.from("identity_verifications").select("status"),
+        admin.from("identity_verifications").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
         admin.from("reviews").select("score"),
         admin.from("payment_sessions").select("status"),
       ]);
@@ -21,7 +21,6 @@ export default {
       const classesData = classes.data ?? [];
       const paymentsData = payments.data ?? [];
       const venuesData = venues.data ?? [];
-      const identityData = identity.data ?? [];
       const reviewsData = reviews.data ?? [];
       const sessionsData = sessions.data ?? [];
 
@@ -46,7 +45,7 @@ export default {
         activeClasses: classesData.filter((c) => c.status === "PUBLISHED").length,
         completedClasses: classesData.filter((c) => c.status === "COMPLETED").length,
         pendingVenues: venuesData.filter((v) => v.status === "PENDIENTE_APROBACION").length,
-        pendingIdentity: identityData.filter((i) => i.status === "PENDING").length,
+        pendingIdentity: identity.count ?? 0,
         totalRevenue,
         retainedTotal,
         avgRating: parseFloat(avgRating),

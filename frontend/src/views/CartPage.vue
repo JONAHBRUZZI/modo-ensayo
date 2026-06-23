@@ -63,20 +63,10 @@
         <span class="text-primary font-bold text-xl">${{ total.toLocaleString('es-CL') }}</span>
       </div>
 
-      <button @click="irAPagar" :disabled="checkingOut" class="btn-primary w-full text-base py-3">
+      <button @click="irACheckout" :disabled="checkingOut" class="btn-primary w-full text-base py-3">
         {{ checkingOut ? 'Procesando...' : `Pagar $${total.toLocaleString('es-CL')}` }}
       </button>
     </div>
-
-    <ConfirmDialog
-      :show="showConfirm"
-      type="success"
-      title="Confirmar pago"
-      confirm-text="Pagar"
-      :message="`¿Confirmas tu pago de $${total.toLocaleString('es-CL')}?`"
-      @confirm="confirmarPago"
-      @close="showConfirm = false"
-    />
   </div>
 </template>
 
@@ -84,13 +74,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import paymentService from '@/services/paymentService'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const router = useRouter()
 const items = ref([])
 const loading = ref(true)
 const checkingOut = ref(false)
-const showConfirm = ref(false)
 const total = computed(() => items.value.reduce((sum, i) => sum + (i.price || 0), 0))
 
 onMounted(async () => {
@@ -109,13 +97,8 @@ async function removeItem(id) {
   }
 }
 
-function irAPagar() {
-  showConfirm.value = true
-}
-
-async function confirmarPago() {
+async function irACheckout() {
   checkingOut.value = true
-  showConfirm.value = false
   await router.push({ name: 'Checkout' })
 }
 </script>

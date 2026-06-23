@@ -5,20 +5,22 @@ const NOT_MIGRATED = (name, extra = '') => {
 }
 
 function mapVenueBody(data) {
+  // `|| undefined` convierte strings vacíos a undefined: los campos opcionales
+  // (email/url) no se envían vacíos, evitando que el Zod del Edge Function falle.
   return {
     name: data.name,
-    city: data.city ?? undefined,
-    region: data.region ?? undefined,
-    comuna: data.comuna ?? undefined,
-    address: data.address ?? undefined,
-    description: data.description ?? undefined,
-    phone: data.phone ?? undefined,
-    email: data.email ?? undefined,
-    tipo: data.tipo ?? 'SEDE',
-    instagram: data.instagram ?? undefined,
-    youtube: data.youtube ?? undefined,
-    sitioWeb: data.sitioWeb ?? data.sitio_web ?? undefined,
-    facebook: data.facebook ?? undefined
+    city: data.city || undefined,
+    region: data.region || undefined,
+    comuna: data.comuna || undefined,
+    address: data.address || undefined,
+    description: data.description || undefined,
+    phone: data.phone || undefined,
+    email: data.email || undefined,
+    tipo: data.tipo || 'SEDE',
+    instagram: data.instagram || undefined,
+    youtube: data.youtube || undefined,
+    sitioWeb: data.sitioWeb || data.sitio_web || undefined,
+    facebook: data.facebook || undefined
   }
 }
 

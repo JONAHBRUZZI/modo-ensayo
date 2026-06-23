@@ -124,13 +124,15 @@
               <!-- ====== STEP 4: Weekly Calendar ====== -->
               <div v-if="expandedRoom === room.id" class="mt-3">
                 <div v-if="roomLoading === room.id" class="text-gray-500 text-sm py-4 text-center">Cargando disponibilidad...</div>
-                <div v-else-if="roomSlots[room.id]?.length" class="overflow-x-auto">
+                <div v-else class="overflow-x-auto">
+                  <!-- Navegación de semana: siempre visible para poder revisar otras semanas -->
                   <div class="flex items-center justify-between mb-3">
                     <button @click.stop="prevRoomWeek(room.id)" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-dark-border">&larr; Anterior</button>
                     <span class="text-xs text-gray-400 font-medium">{{ getRoomWeekLabel(room.id) }}</span>
                     <button @click.stop="nextRoomWeek(room.id)" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-dark-border">Siguiente &rarr;</button>
                   </div>
 
+                  <template v-if="roomSlots[room.id]?.length">
                   <table class="w-full border-collapse">
                     <thead>
                       <tr>
@@ -176,8 +178,15 @@
                       <button @click.stop="abrirModal()" class="text-sm font-semibold px-4 py-1.5 rounded-xl bg-primary text-white hover:bg-primary/80 transition-colors">Pagar reserva</button>
                     </div>
                   </div>
+                  </template>
+
+                  <!-- Sin disponibilidad esta semana: mensaje claro, conservando la navegación -->
+                  <div v-else class="text-center py-8 px-4 rounded-xl bg-[var(--bg-base)] border border-white/5">
+                    <svg class="w-9 h-9 text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <p class="text-gray-300 text-sm font-medium">Esta sala no tiene horarios disponibles</p>
+                    <p class="text-gray-500 text-xs mt-1">La sede aún no ha publicado su disponibilidad para esta semana. Prueba con otra semana.</p>
+                  </div>
                 </div>
-                <div v-else class="text-gray-500 text-sm py-2">Sin horarios disponibles en este rango.</div>
               </div>
             </div>
           </div>
@@ -346,7 +355,10 @@ function getMonday(d) {
 
 const calendarWeekDays = computed(() => {
   const result = []
-  const monday = new Date(getMonday(new Date()))
+  // Las columnas siguen la semana seleccionada de la sala expandida (no la semana
+  // actual fija), para que Anterior/Siguiente muestre los días correctos.
+  const base = (expandedRoom.value && roomWeekStarts.value[expandedRoom.value]) || new Date()
+  const monday = new Date(getMonday(new Date(base)))
   const dowLabels = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday)

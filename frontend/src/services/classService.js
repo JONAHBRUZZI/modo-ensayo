@@ -14,7 +14,9 @@ function mapClassBody(data) {
     price: data.price,
     minAge: data.minAge ?? undefined,
     maxAge: data.maxAge ?? undefined,
-    startTime: data.startTime ?? undefined,
+    // El input datetime-local entrega 'YYYY-MM-DDTHH:mm' (sin segundos ni zona);
+    // se normaliza a ISO completo porque la Edge Function valida con z.datetime().
+    startTime: data.startTime ? new Date(data.startTime).toISOString() : undefined,
     roomId: data.roomId ?? undefined
   }
 }

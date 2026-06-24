@@ -1,6 +1,62 @@
 import { withSupabase } from "npm:@supabase/server";
 import { logInfo, logError } from "../_shared/logger.ts";
 
+// deno-lint-ignore no-explicit-any
+type Admin = any;
+
+// Materializa una reserva de sala pagada: asigna/crea la clase, ocupa los bloques
+// (HELD -> OCCUPIED) y asegura el rol TEACHER del profesor. El split del dinero ya
+// lo hizo MercadoPago (el cobro se generó con el token de la sede + marketplace_fee).
+async function materializeRoomReservation(admin: Admin, session: { id: string; owner_id: string }, cart: {
+  roomId: string; roomName: string; blockIds: string[]; borradorId?: string | null; amount: number;
+}) {
+  const blockIds: string[] = cart.blockIds || [];
+  const ownerId = session.owner_id;
+  if (blockIds.length === 0) return;
+
+  const { data: blocks } = await admin
+    .from("room_schedule_blocks")
+    .select("id,start_time,end_time")
+    .in("id", blockIds).order("start_time", { ascending: true });
+  if (!blocks || blocks.length === 0) return;
+
+  const firstStart = blocks[0].start_time;
+  const lastEnd = blocks[blocks.length - 1].end_time;
+  const durationMin = blockIds.length * 60;
+
+  let classId: string | null = cart.borradorId ?? null;
+  if (classId) {
+    // Asigna sala/horario al borrador existente y lo publica.
+    await admin.from("classes").update({
+      room_id: cart.roomId, start_time: firstStart, end_time: lastEnd, status: "PUBLISHED",
+    }).eq("id", classId).eq("teacher_id", ownerId);
+  } else {
+    // Crea un borrador de reserva (el profesor lo completa luego).
+    const { data: nueva } = await admin.from("classes").insert({
+      title: `Reserva - ${cart.roomName}`,
+      level: "BASICO", capacity: 1, duration: durationMin, price: cart.amount,
+      start_time: firstStart, end_time: lastEnd,
+      room_id: cart.roomId, teacher_id: ownerId,
+      status: "DRAFT", tipo_clase: "PROPIA",
+    }).select("id").single();
+    classId = nueva?.id ?? null;
+  }
+
+  // Ocupa los bloques reservados y limpia el hold temporal.
+  await admin.from("room_schedule_blocks")
+    .update({ status: "OCCUPIED", class_id: classId, held_until: null, held_by: null })
+    .in("id", blockIds);
+
+  // Asegura el rol TEACHER del profesor (no bloquear la reserva si falla).
+  try {
+    const { data: u } = await admin.auth.admin.getUserById(ownerId);
+    const roles: string[] = (u?.user?.app_metadata?.roles as string[]) ?? [];
+    if (!roles.includes("TEACHER")) {
+      await admin.auth.admin.updateUserById(ownerId, { app_metadata: { roles: [...roles, "TEACHER"] } });
+    }
+  } catch (_e) { /* best-effort */ }
+}
+
 // auth: "none" — MercadoPago no envía JWT. Verificamos via HMAC SHA-256.
 // Recordar: verify_jwt = false para esta función en supabase/config.toml.
 export default {
@@ -65,43 +121,43 @@ export default {
         return new Response("ok", { status: 200 }); // idempotente
       }
 
-      const cart = session.cart_snapshot as {
-        items: Array<{
-          classId: string;
-          price: number;
-          beneficiaryType?: string;
-          beneficiaryId?: string | null;
-        }>
-      };
+      // deno-lint-ignore no-explicit-any
+      const cart = session.cart_snapshot as any;
 
-      for (const item of cart.items) {
-        const { data: cls } = await admin.from("classes")
-          .select("id,status,capacity").eq("id", item.classId).single();
-        if (!cls || cls.status !== "PUBLISHED") continue;
+      if (cart?.type === "ROOM_RESERVATION") {
+        // Arriendo de sala: materializa la reserva (clase + bloques OCCUPIED).
+        await materializeRoomReservation(admin, session, cart);
+      } else {
+        // Inscripción a clases (flujo original): crea enrollments + payments.
+        for (const item of cart.items) {
+          const { data: cls } = await admin.from("classes")
+            .select("id,status,capacity").eq("id", item.classId).single();
+          if (!cls || cls.status !== "PUBLISHED") continue;
 
-        const { count } = await admin.from("enrollments")
-          .select("*", { count: "exact", head: true })
-          .eq("class_id", item.classId).eq("status", "ACTIVE");
-        if (count && count >= cls.capacity) continue;
+          const { count } = await admin.from("enrollments")
+            .select("*", { count: "exact", head: true })
+            .eq("class_id", item.classId).eq("status", "ACTIVE");
+          if (count && count >= cls.capacity) continue;
 
-        const { data: enrollment } = await admin.from("enrollments").insert({
-          class_id: item.classId,
-          student_id: session.owner_id,
-          beneficiary_type: item.beneficiaryType || "SELF",
-          beneficiary_id: item.beneficiaryId ?? session.owner_id,
-          status: "ACTIVE",
-        }).select("id").single();
+          const { data: enrollment } = await admin.from("enrollments").insert({
+            class_id: item.classId,
+            student_id: session.owner_id,
+            beneficiary_type: item.beneficiaryType || "SELF",
+            beneficiary_id: item.beneficiaryId ?? session.owner_id,
+            status: "ACTIVE",
+          }).select("id").single();
 
-        if (enrollment) {
-          await admin.from("payments").insert({
-            enrollment_id: enrollment.id,
-            amount: item.price,
-            status: "RETAINED",
-          });
+          if (enrollment) {
+            await admin.from("payments").insert({
+              enrollment_id: enrollment.id,
+              amount: item.price,
+              status: "RETAINED",
+            });
+          }
         }
+        await admin.from("cart_items").delete().eq("owner_id", session.owner_id);
       }
 
-      await admin.from("cart_items").delete().eq("owner_id", session.owner_id);
       await admin.from("payment_sessions").update({
         status: "APPROVED",
         mercado_pago_payment_id: String(paymentId),
@@ -110,12 +166,15 @@ export default {
 
       await admin.from("audit_logs").insert({
         actor_id: session.owner_id,
-        action: "payment.approved",
+        action: cart?.type === "ROOM_RESERVATION" ? "room_reservation.paid" : "payment.approved",
         resource_type: "payment_session",
         resource_id: session.id,
         metadata: {
           payment_id: paymentId,
-          amount: cart.items.reduce((a, b) => a + b.price, 0),
+          amount: cart?.type === "ROOM_RESERVATION"
+            ? cart.amount
+            : cart.items.reduce((a: number, b: { price: number }) => a + b.price, 0),
+          ...(cart?.type === "ROOM_RESERVATION" ? { marketplace_fee: cart.marketplaceFee } : {}),
         },
       });
 

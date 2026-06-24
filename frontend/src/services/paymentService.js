@@ -78,6 +78,13 @@ export default {
     return invokeFunction('mp-connect-start', { method: 'POST' })
   },
 
+  // Crea la preferencia de pago (con split) para arrendar una sala. Devuelve
+  // { initPoint } al que se redirige al profesor. La reserva se materializa en
+  // el webhook al aprobarse el pago.
+  async reserveRoomPreference(roomId, blockIds, borradorId = null) {
+    return invokeFunction('reserve-room-preference', { body: { roomId, blockIds, borradorId } })
+  },
+
   async createMercadoPagoPreference() {
     const { items: cart } = await this.getCart()
     const items = cart.map((c) => ({

@@ -105,13 +105,14 @@
                   </p>
                   <p class="text-primary text-sm font-medium mt-0.5">${{ room.pricePerHour?.toLocaleString() }} / hora</p>
 
-                  <div v-if="getCaracteristicasDanza(room).length" class="mt-2">
+                  <!-- Caracteristicas: solo informativas, no interactivas (click.stop evita togglear la sala). -->
+                  <div v-if="getCaracteristicasDanza(room).length" class="mt-2" @click.stop>
                     <span class="text-xs text-gray-500">Danza:</span>
                     <div class="flex flex-wrap gap-1 mt-0.5">
                       <span v-for="c in getCaracteristicasDanza(room)" :key="c" class="equip-tag">{{ c }}</span>
                     </div>
                   </div>
-                  <div v-if="getCaracteristicasMusica(room).length" class="mt-1">
+                  <div v-if="getCaracteristicasMusica(room).length" class="mt-1" @click.stop>
                     <span class="text-xs text-gray-500">Musica:</span>
                     <div class="flex flex-wrap gap-1 mt-0.5">
                       <span v-for="c in getCaracteristicasMusica(room)" :key="c" class="equip-tag">{{ c }}</span>
@@ -632,6 +633,6 @@ onMounted(async () => {
 
 <style scoped>
 .equip-tag {
-  @apply text-xs text-gray-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded;
+  @apply text-xs text-gray-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded cursor-default select-none;
 }
 </style>

@@ -437,3 +437,13 @@ verify_jwt = true
 
 [functions.process-refunds]
 verify_jwt = true
+
+# MercadoPago Connect (marketplace) — vinculación de cuenta de sede y reserva con split
+[functions.mp-connect-start]
+verify_jwt = true
+
+[functions.mp-connect-callback]
+verify_jwt = false
+
+[functions.reserve-room-preference]
+verify_jwt = true

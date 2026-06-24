@@ -59,6 +59,25 @@ export default {
     if (error) throw error
   },
 
+  // --- MercadoPago Connect (marketplace) ---
+
+  // Estado de vinculación de la cuenta MercadoPago del gestor de sede.
+  // Lee la vista segura mp_seller_status (sin exponer tokens).
+  async getMpAccountStatus() {
+    const uid = await currentUserId()
+    if (!uid) return null
+    const { data, error } = await supabase
+      .from('mp_seller_status').select('*').eq('user_id', uid).maybeSingle()
+    if (error) throw error
+    return camelize(data)
+  },
+
+  // Inicia el OAuth de MercadoPago Connect: devuelve la URL de autorización a la
+  // que se debe redirigir al gestor para vincular su cuenta.
+  async startMpConnect() {
+    return invokeFunction('mp-connect-start', { method: 'POST' })
+  },
+
   async createMercadoPagoPreference() {
     const { items: cart } = await this.getCart()
     const items = cart.map((c) => ({

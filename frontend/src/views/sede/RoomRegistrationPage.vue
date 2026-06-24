@@ -150,6 +150,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
+import scheduleService from '@/services/scheduleService'
 
 const router = useRouter()
 // identidadValidada se valida UNA sola vez al registrar el usuario.
@@ -217,6 +218,12 @@ async function submit() {
       tieneGuitarra: form.tieneGuitarra,
       tieneBateria: form.tieneBateria
     })
+
+    // La sala hereda el horario de la sede: se generan sus bloques de
+    // disponibilidad inmediatamente (best-effort; el cron y el calendario de la
+    // sede también regeneran si esto fallara).
+    try { await scheduleService.generateBlocks() } catch { /* se regenerará luego */ }
+
     msg.value = 'Sala registrada correctamente'
     msgType.value = 'success'
     setTimeout(() => router.push('/sede/salas'), 1500)

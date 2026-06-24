@@ -14,7 +14,7 @@
         <h3 class="text-lg font-semibold text-white mb-2">{{ sala.name }}</h3>
         <p class="text-gray-400 text-sm">Capacidad: {{ sala.capacity }} | Tipo: {{ sala.type }}</p>
         <div class="mt-4 flex space-x-2">
-          <router-link :to="'/sede/salas/' + sala.id + '/agenda'" class="btn-primary text-sm">Agenda</router-link>
+          <router-link :to="{ name: 'SedeCalendario', query: { sala: sala.id } }" class="btn-primary text-sm">Agenda</router-link>
         </div>
       </div>
     </div>

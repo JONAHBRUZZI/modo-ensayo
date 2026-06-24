@@ -219,8 +219,11 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import venueService from '@/services/venueService'
 import scheduleService from '@/services/scheduleService'
+
+const route = useRoute()
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 const dayLabels = {
@@ -588,6 +591,13 @@ onMounted(async () => {
 
     if (roomsRes.status === 'fulfilled') {
       rooms.value = Array.isArray(roomsRes.value) ? roomsRes.value : []
+    }
+
+    // Pre-seleccionar la sala si viene en la URL (?sala=:id), p.ej. al pulsar
+    // "Agenda" desde la lista de salas.
+    const salaParam = route.query.sala
+    if (salaParam && rooms.value.some(r => r.id === salaParam)) {
+      selectedRoomId.value = salaParam
     }
 
     if (scheduleRes.status === 'fulfilled' && Array.isArray(scheduleRes.value)) {

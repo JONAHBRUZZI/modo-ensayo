@@ -98,19 +98,11 @@
             <input v-model="form.comuna" required class="input-field" placeholder="ej: Providencia" />
           </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">
-              Ciudad <span class="text-red-400">*</span>
-            </label>
-            <input v-model="form.city" required class="input-field" placeholder="ej: Santiago" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">
-              Dirección <span class="text-red-400">*</span>
-            </label>
-            <input ref="addressInput" v-model="form.address" required class="input-field" placeholder="ej: Av. Italia 1234, Providencia" />
-          </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">
+            Dirección <span class="text-red-400">*</span>
+          </label>
+          <input ref="addressInput" v-model="form.address" required class="input-field" placeholder="ej: Av. Italia 1234" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Referencia o indicaciones de acceso</label>
@@ -553,7 +545,9 @@ async function submit() {
       description: form.description,
       region: form.region,
       comuna: form.comuna,
-      city: form.city,
+      // En Chile la ciudad coincide con la comuna; se completa para las búsquedas
+      // que filtran/muestran por city.
+      city: form.comuna,
       address: form.address,
       phone: form.phone,
       email: form.email,

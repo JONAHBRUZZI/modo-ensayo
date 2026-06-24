@@ -73,6 +73,7 @@ export default {
   async getIdentityVerifications() {
     const { data, error } = await supabase
       .from('identity_verifications').select('*')
+      .eq('status', 'PENDING')
       .order('created_at', { ascending: false })
     if (error) throw error
     return camelize(data)

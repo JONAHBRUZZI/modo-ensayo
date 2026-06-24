@@ -81,21 +81,27 @@
     <div v-else-if="venues.length === 0" class="card text-center py-12"><p class="text-gray-400">No se encontraron salas con esos filtros.</p></div>
     <div v-else class="space-y-4">
       <div v-for="venue in venues" :key="venue.id" class="card">
-        <div @click="toggleVenue(venue.id)" class="cursor-pointer flex items-center justify-between">
+        <div class="flex items-start justify-between gap-3">
           <div class="flex-1">
             <h3 class="text-lg font-semibold text-white">{{ venue.name }}</h3>
             <p class="text-gray-400 text-sm">{{ venue.address }}</p>
             <p class="text-gray-500 text-xs mt-1">{{ venue.region || '' }}{{ venue.city ? ' . ' + venue.city : '' }}</p>
             <p class="text-primary text-xs mt-0.5">{{ venue.rooms?.length || 0 }} sala(s) disponible(s)</p>
           </div>
-          <svg :class="['w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-3', expandedVenue === venue.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          <button
+            @click="toggleVenue(venue.id)"
+            class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/40 text-primary text-sm font-medium hover:bg-primary/10 transition-colors whitespace-nowrap"
+          >
+            <span>{{ expandedVenue === venue.id ? 'Ocultar salas' : 'Ver salas disponibles' }}</span>
+            <svg :class="['w-4 h-4 transition-transform', expandedVenue === venue.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
         </div>
 
         <!-- ====== STEP 3: Rooms ====== -->
         <div v-if="expandedVenue === venue.id" class="mt-4 space-y-3">
           <div v-if="venue.rooms?.length">
             <div v-for="room in venue.rooms" :key="room.id" class="bg-[var(--bg-elevated)] rounded-xl p-4">
-              <div @click="toggleRoom(room.id)" class="cursor-pointer flex items-center justify-between">
+              <div class="flex items-start justify-between gap-3">
                 <div class="flex-1">
                   <p class="text-white font-medium">{{ room.name }}</p>
                   <p class="text-gray-400 text-sm">
@@ -105,21 +111,27 @@
                   </p>
                   <p class="text-primary text-sm font-medium mt-0.5">${{ room.pricePerHour?.toLocaleString() }} / hora</p>
 
-                  <!-- Caracteristicas: solo informativas, no interactivas (click.stop evita togglear la sala). -->
-                  <div v-if="getCaracteristicasDanza(room).length" class="mt-2" @click.stop>
+                  <!-- Caracteristicas: solo informativas. -->
+                  <div v-if="getCaracteristicasDanza(room).length" class="mt-2">
                     <span class="text-xs text-gray-500">Danza:</span>
                     <div class="flex flex-wrap gap-1 mt-0.5">
                       <span v-for="c in getCaracteristicasDanza(room)" :key="c" class="equip-tag">{{ c }}</span>
                     </div>
                   </div>
-                  <div v-if="getCaracteristicasMusica(room).length" class="mt-1" @click.stop>
+                  <div v-if="getCaracteristicasMusica(room).length" class="mt-1">
                     <span class="text-xs text-gray-500">Musica:</span>
                     <div class="flex flex-wrap gap-1 mt-0.5">
                       <span v-for="c in getCaracteristicasMusica(room)" :key="c" class="equip-tag">{{ c }}</span>
                     </div>
                   </div>
                 </div>
-                <svg :class="['w-4 h-4 text-gray-500 ml-3 flex-shrink-0 transition-transform', expandedRoom === room.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <button
+                  @click="toggleRoom(room.id)"
+                  class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/15 text-gray-300 text-sm font-medium hover:bg-white/5 hover:text-white transition-colors whitespace-nowrap"
+                >
+                  <span>{{ expandedRoom === room.id ? 'Ocultar horarios' : 'Horarios de la sala' }}</span>
+                  <svg :class="['w-4 h-4 transition-transform', expandedRoom === room.id && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
               </div>
 
               <!-- ====== STEP 4: Weekly Calendar ====== -->

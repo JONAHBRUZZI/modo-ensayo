@@ -95,15 +95,15 @@
             <label class="block text-sm font-medium text-gray-300 mb-1">
               Comuna <span class="text-red-400">*</span>
             </label>
-            <input v-model="form.comuna" required class="input-field" placeholder="ej: Providencia, Las Condes" />
+            <input v-model="form.comuna" required class="input-field" placeholder="ej: Providencia" />
           </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">
-              Ciudad / Comuna <span class="text-red-400">*</span>
+              Ciudad <span class="text-red-400">*</span>
             </label>
-            <input v-model="form.city" required class="input-field" placeholder="ej: Santiago, Providencia" />
+            <input v-model="form.city" required class="input-field" placeholder="ej: Santiago" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">

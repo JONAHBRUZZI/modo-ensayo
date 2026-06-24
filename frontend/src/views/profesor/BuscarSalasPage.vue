@@ -416,7 +416,15 @@ async function loadRoomCalendar(roomId) {
     sunday.setHours(23, 59, 59, 999)
     const slots = await scheduleService.getRoomSchedule(roomId, monday.toISOString(), sunday.toISOString())
     // Solo los bloques disponibles son reservables en el buscador.
-    roomSlots.value[roomId] = (Array.isArray(slots) ? slots : []).filter(s => s.status === 'AVAILABLE')
+    const disponibles = (Array.isArray(slots) ? slots : []).filter(s => s.status === 'AVAILABLE')
+    // Deduplicar por hora de inicio: defensa ante bloques duplicados en la BD
+    // (el generador puede duplicar si aún no existe el constraint UNIQUE).
+    const vistos = new Set()
+    roomSlots.value[roomId] = disponibles.filter(s => {
+      if (vistos.has(s.startTime)) return false
+      vistos.add(s.startTime)
+      return true
+    })
   } catch {
     roomSlots.value[roomId] = []
   }

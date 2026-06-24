@@ -34,8 +34,10 @@
                 <router-link to="/sede/salas" class="nav-link">Salas</router-link>
                 <router-link to="/sede/calendario" class="nav-link">Calendario</router-link>
                 <router-link to="/sede/mis-clases" class="nav-link">Clases</router-link>
-                <router-link to="/sede/crear-clase" class="nav-link">Crear Clase</router-link>
-                <router-link to="/sede/clases-por-confirmar" class="nav-link">Confirmar</router-link>
+                <router-link to="/sede/clases-por-confirmar" class="nav-link relative">
+                  Confirmar
+                  <span v-if="sedeConfirmarCount > 0" class="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{{ sedeConfirmarCount }}</span>
+                </router-link>
                 <router-link to="/sede/profesores" class="nav-link">Profesores</router-link>
                 <router-link to="/sede/metricas" class="nav-link">Métricas</router-link>
                 <router-link to="/sede/configuracion" class="nav-link">Config</router-link>
@@ -188,8 +190,10 @@
               <router-link to="/sede/salas" class="nav-link-mobile" @click="showMobileMenu = false">Salas</router-link>
               <router-link to="/sede/calendario" class="nav-link-mobile" @click="showMobileMenu = false">Calendario</router-link>
               <router-link to="/sede/mis-clases" class="nav-link-mobile" @click="showMobileMenu = false">Clases</router-link>
-              <router-link to="/sede/crear-clase" class="nav-link-mobile" @click="showMobileMenu = false">Crear Clase</router-link>
-              <router-link to="/sede/clases-por-confirmar" class="nav-link-mobile" @click="showMobileMenu = false">Confirmar</router-link>
+              <router-link to="/sede/clases-por-confirmar" class="nav-link-mobile relative" @click="showMobileMenu = false">
+                Confirmar
+                <span v-if="sedeConfirmarCount > 0" class="ml-2 bg-yellow-500 text-black text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{{ sedeConfirmarCount }}</span>
+              </router-link>
               <router-link to="/sede/profesores" class="nav-link-mobile" @click="showMobileMenu = false">Profesores</router-link>
               <router-link to="/sede/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
               <router-link to="/sede/configuracion" class="nav-link-mobile" @click="showMobileMenu = false">Config</router-link>
@@ -276,6 +280,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
 import paymentService from '@/services/paymentService'
+import venueService from '@/services/venueService'
 import NotificationBell from '@/components/NotificationBell.vue'
 
 const router = useRouter()
@@ -294,6 +299,7 @@ const showUserMenu = ref(false)
 const showMobileMenu = ref(false)
 const userMenuRef = ref(null)
 const cartCount = ref(0)
+const sedeConfirmarCount = ref(0)
 
 const availableModes = computed(() => {
   const modes = [{ value: 'alumno', label: 'Alumno' }]
@@ -344,10 +350,21 @@ async function loadCartCount() {
   }
 }
 
+async function loadSedeConfirmarCount() {
+  if (modoActual.value !== 'sede' || !puedeVerContextoSede.value) return
+  try {
+    const pending = await venueService.getPendingClasses()
+    sedeConfirmarCount.value = Array.isArray(pending) ? pending.length : 0
+  } catch {
+    sedeConfirmarCount.value = 0
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   if (isAuthenticated.value) {
     loadCartCount()
+    loadSedeConfirmarCount()
     syncActividadMaestro()
     syncAtributos()
   }
@@ -358,7 +375,10 @@ onBeforeUnmount(() => {
 })
 
 watch(() => route.path, () => {
-  if (isAuthenticated.value) loadCartCount()
+  if (isAuthenticated.value) {
+    loadCartCount()
+    loadSedeConfirmarCount()
+  }
   showMobileMenu.value = false
 })
 </script>

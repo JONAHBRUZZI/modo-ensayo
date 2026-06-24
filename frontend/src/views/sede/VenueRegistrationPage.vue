@@ -288,7 +288,8 @@
 
       <p v-if="error" class="text-red-400 text-sm text-center bg-red-500/10 rounded-lg p-3">{{ error }}</p>
 
-      <button type="submit" :disabled="enviando" class="btn-primary w-full py-3 text-base font-semibold">
+      <button type="submit" :disabled="enviando" class="btn-primary w-full py-3 text-base font-semibold flex items-center justify-center gap-2">
+        <span v-if="enviando" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
         {{ enviando ? 'Enviando solicitud...' : 'Enviar solicitud de registro' }}
       </button>
     </form>
@@ -557,17 +558,17 @@ async function submit() {
     })
     if (!venue?.id) throw new Error('No se pudo crear la sede.')
 
-    // 2. Guardar el horario base de la sede (heredado por todas sus salas).
+    // 2-3. Horario, config de bloques y documentos son independientes entre sí
+    // (solo necesitan el id de la sede): se ejecutan en paralelo para no sumar
+    // los tiempos de cada llamada.
     const schedules = scheduleDays
       .filter(d => horario[d].enabled)
       .map(d => ({ dayOfWeek: d, openTime: horario[d].desde, closeTime: horario[d].hasta }))
-    await scheduleService.saveSchedule(venue.id, schedules)
-    await scheduleService.saveBlockConfig(venue.id, {
-      blockDurationMin: duracionBloque.value, gapBetweenBlocksMin: 0
-    })
-
-    // 3. Subir documentos adjuntos (la sede ya existe, así pasa la RLS de Storage).
-    await subirDocumentos(venue.id)
+    await Promise.all([
+      scheduleService.saveSchedule(venue.id, schedules),
+      scheduleService.saveBlockConfig(venue.id, { blockDurationMin: duracionBloque.value, gapBetweenBlocksMin: 0 }),
+      subirDocumentos(venue.id),
+    ])
 
     enviado.value = true
   } catch (e) {

@@ -21,14 +21,23 @@ export default {
       const body = BodySchema.parse(await req.json());
 
       if (body.action === "list") {
-        const { data: list, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-        if (error) throw error;
-        const ids = list.users.map((u) => u.id);
+        // Colectar todos los usuarios paginando de a 1000 para no truncar silenciosamente
+        const allAuthUsers: any[] = [];
+        let page = 1;
+        const perPage = 1000;
+        while (true) {
+          const { data: list, error } = await admin.auth.admin.listUsers({ page, perPage });
+          if (error) throw error;
+          allAuthUsers.push(...list.users);
+          if (list.users.length < perPage) break;
+          page++;
+        }
+        const ids = allAuthUsers.map((u) => u.id);
         const { data: profiles } = await admin.from("profiles")
           .select("id, full_name, social_name, phone, identidad_estado, tiene_sede_aprobada")
           .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
         const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
-        const users = list.users.map((u) => ({
+        const users = allAuthUsers.map((u: any) => ({
           id: u.id,
           email: u.email,
           roles: (u.app_metadata?.roles as string[]) ?? [],

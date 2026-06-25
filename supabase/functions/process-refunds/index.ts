@@ -115,15 +115,19 @@ async function processPaymentRefund(admin: any, payment: PaymentRow): Promise<vo
       throw new Error(`Refund method ${profile.preferred_refund_method_id} not found for student ${studentId}`);
     }
 
-    // Registro de la devolución bancaria (el pago se marca como procesado)
-    refundChannel = "bank";
-    refundReference = `bank_transfer:${refundMethod.id}`;
-    logInfo("refund_bank_registered", {
+    // La integración bancaria real aún no está implementada.
+    // Lanzar para mantener el pago en REFUND_PENDING y evitar marcarlo
+    // REFUNDED sin haber transferido dinero. Requiere atención manual.
+    logWarn("refund_bank_not_implemented", "Bank transfer required but not implemented", {
       paymentId: payment.id,
       studentId,
       refundMethodId: refundMethod.id,
       bank: refundMethod.bank,
     });
+    throw new Error(
+      `Bank refund not implemented: payment ${payment.id} requires manual bank transfer ` +
+      `(${refundMethod.bank}) for student ${studentId}. Payment left in REFUND_PENDING.`
+    );
   } else {
     // Canal MercadoPago: resolver el mercado_pago_payment_id vía payment_sessions
     const mpPaymentId = await resolveMercadoPagoPaymentId(admin, studentId, classId);

@@ -14,13 +14,22 @@ const BodySchema = z.object({
 export default {
   fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
     try {
-      const admin = ctx.supabaseAdmin;
+      const { supabaseAdmin: admin, userClaims } = ctx;
+      const userId = userClaims!.id;
+      const roles: string[] = (userClaims!.appMetadata?.roles as string[]) ?? [];
+
+      const isTeacher = roles.includes("TEACHER");
+      const isVenueAdmin = roles.includes("VENUE_ADMIN");
+      if (!isTeacher && !isVenueAdmin) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+
       const body = BodySchema.parse(await req.json());
 
       // El bloque debe existir y estar disponible (evita doble reserva)
       const { data: block, error: blkErr } = await admin
         .from("room_schedule_blocks")
-        .select("id,status")
+        .select("id,status,room_id")
         .eq("id", body.blockId)
         .single();
       if (blkErr || !block) {
@@ -28,6 +37,25 @@ export default {
       }
       if (block.status !== "AVAILABLE") {
         return Response.json({ error: "El bloque ya no está disponible" }, { status: 409 });
+      }
+
+      // VENUE_ADMIN: solo puede reservar bloques en salas de su sede
+      if (isVenueAdmin && !isTeacher) {
+        const { data: room } = await admin.from("rooms")
+          .select("venues(admin_id)").eq("id", block.room_id).single();
+        const venueAdminId = (room as any)?.venues?.admin_id;
+        if (venueAdminId !== userId) {
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        }
+      }
+
+      // TEACHER: si se pasa classId, debe ser el dueño de esa clase
+      if (isTeacher && body.classId) {
+        const { data: cls } = await admin.from("classes")
+          .select("teacher_id").eq("id", body.classId).single();
+        if (!cls || cls.teacher_id !== userId) {
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        }
       }
 
       const { data: updated, error } = await admin

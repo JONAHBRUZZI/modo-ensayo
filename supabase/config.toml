@@ -435,7 +435,14 @@ verify_jwt = true
 [functions.admin-users]
 verify_jwt = true
 
+# Invocadas por pg_cron via pg_net con service_role key (JWT válido).
+# verify_jwt = true es correcto aquí: la service_role key genera un JWT que
+# Supabase verifica normalmente. El handler usa auth: "service_role".
 [functions.process-refunds]
+verify_jwt = true
+
+# Invocada por pg_cron via pg_net con service_role key (JWT válido).
+[functions.process-payouts]
 verify_jwt = true
 
 # MercadoPago Connect (marketplace) — vinculación de cuenta de sede y reserva con split
@@ -447,3 +454,10 @@ verify_jwt = false
 
 [functions.reserve-room-preference]
 verify_jwt = true
+
+[functions.mp-oauth-start]
+verify_jwt = true
+
+# MercadoPago redirige aquí sin JWT; la identidad se valida vía `state`.
+[functions.mp-oauth-callback]
+verify_jwt = false

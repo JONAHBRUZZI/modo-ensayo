@@ -65,41 +65,44 @@ export default {
       const body = await req.text();
 
       const secret = Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET");
-      if (secret) {
-        const signature = req.headers.get("x-signature");
-        const requestId = req.headers.get("x-request-id");
-        if (!signature || !requestId) {
-          logError("webhook_signature_missing", new Error("Missing signature headers"));
-          return new Response("Forbidden", { status: 403 });
-        }
-
-        let ts: string | null = null;
-        let v1: string | null = null;
-        for (const part of signature.split(",")) {
-          const [k, val] = part.split("=").map((s) => s.trim());
-          if (k === "ts") ts = val;
-          if (k === "v1") v1 = val;
-        }
-        if (!ts || !v1) return new Response("Forbidden", { status: 403 });
-
-        const url = new URL(req.url);
-        const dataId = url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "";
-        const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
-        const encoder = new TextEncoder();
-        const key = await crypto.subtle.importKey(
-          "raw", encoder.encode(secret),
-          { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-        );
-        const expected = Array.from(
-          new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(manifest)))
-        ).map((b) => b.toString(16).padStart(2, "0")).join("");
-
-        if (expected !== v1) {
-          logError("webhook_signature_invalid", new Error("HMAC verification failed"));
-          return new Response("Forbidden", { status: 403 });
-        }
-        logInfo("webhook_signature_verified", { requestId });
+      if (!secret) {
+        logError("webhook_secret_missing", new Error("MERCADOPAGO_WEBHOOK_SECRET not configured"));
+        return new Response("Internal Server Error", { status: 500 });
       }
+
+      const signature = req.headers.get("x-signature");
+      const requestId = req.headers.get("x-request-id");
+      if (!signature || !requestId) {
+        logError("webhook_signature_missing", new Error("Missing signature headers"));
+        return new Response("Forbidden", { status: 403 });
+      }
+
+      let ts: string | null = null;
+      let v1: string | null = null;
+      for (const part of signature.split(",")) {
+        const [k, val] = part.split("=").map((s) => s.trim());
+        if (k === "ts") ts = val;
+        if (k === "v1") v1 = val;
+      }
+      if (!ts || !v1) return new Response("Forbidden", { status: 403 });
+
+      const url = new URL(req.url);
+      const dataId = url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "";
+      const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        "raw", encoder.encode(secret),
+        { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+      );
+      const expected = Array.from(
+        new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(manifest)))
+      ).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+      if (expected !== v1) {
+        logError("webhook_signature_invalid", new Error("HMAC verification failed"));
+        return new Response("Forbidden", { status: 403 });
+      }
+      logInfo("webhook_signature_verified", { requestId });
 
       const payload = JSON.parse(body);
       const paymentId = payload.data?.id;

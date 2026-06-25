@@ -37,25 +37,15 @@ export default {
         return Response.json({ error: "Conflicto de horario en la sala" }, { status: 409 });
       }
 
-      const { data: cls, error: clsErr } = await admin.from("classes").insert({
-        title: draft.title,
-        discipline: draft.discipline,
-        discipline_category: draft.discipline_category,
-        level: draft.level,
-        description: draft.description,
-        capacity: draft.capacity,
+      // Publicar el draft existente en vez de crear una fila nueva
+      const { data: cls, error: clsErr } = await admin.from("classes").update({
         duration: body.duration,
-        price: draft.price,
-        min_age: draft.min_age,
-        max_age: draft.max_age,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
         room_id: body.roomId,
-        teacher_id: userId,
         status: "PUBLISHED",
-        tipo_clase: draft.tipo_clase,
-      }).select("*").single();
-      if (clsErr) throw clsErr;
+      }).eq("id", body.classId).eq("teacher_id", userId).eq("status", "DRAFT").select("*").single();
+      if (clsErr || !cls) throw clsErr ?? new Error("Error publicando el borrador");
 
       await admin.from("room_schedule_blocks")
         .update({ status: "OCCUPIED", class_id: cls.id })
@@ -80,7 +70,7 @@ export default {
         metadata: { draftId: body.classId, roomId: body.roomId },
       });
 
-      logInfo("reserva_asignada", { classId: cls.id, teacherId: userId, roomId: body.roomId });
+      logInfo("reserva_asignada", { classId: body.classId, teacherId: userId, roomId: body.roomId });
       return Response.json({ ...cls, ...(atributosActualizados ? { atributosActualizados: true } : {}) });
 
     } catch (err) {

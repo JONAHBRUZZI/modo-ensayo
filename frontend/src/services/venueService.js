@@ -1,8 +1,7 @@
 import { supabase, currentUserId, invokeFunction, camelize } from './supabase'
 
-const NOT_MIGRATED = (name, extra = '') => {
-  throw { response: { status: 501, data: { message: `"${name}" pendiente de migración${extra ? ': ' + extra : ''}` } } }
-}
+const NOT_MIGRATED = (name, extra = '') =>
+  Promise.reject({ response: { status: 501, data: { message: `"${name}" pendiente de migración${extra ? ': ' + extra : ''}` } } })
 
 function mapVenueBody(data) {
   // `|| undefined` convierte strings vacíos a undefined: los campos opcionales
@@ -268,7 +267,49 @@ export default {
   // - getVenueMetrics/getVenueProfessors: requieren agregación server-side.
   getVenueClasses() { return NOT_MIGRATED('getVenueClasses', 'RLS de classes para admin de sede') },
   getPendingClasses() { return NOT_MIGRATED('getPendingClasses', 'RLS de classes para admin de sede') },
-  registrarVenueConDocumentos() { return NOT_MIGRATED('registrarVenueConDocumentos', 'flujo de Storage') },
+  async registrarVenueConDocumentos(fd) {
+    const userId = await currentUserId()
+
+    // 1. Subir cada archivo a Storage bajo {userId}/{uuid}.ext
+    const documentPaths = []
+    const files = fd.getAll('documentos')
+    const tipos = fd.getAll('tiposDocumento')
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const tipo = tipos[i]
+      const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin'
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`
+
+      const { error: upErr } = await supabase.storage
+        .from('venue-documents')
+        .upload(path, file, { contentType: file.type, upsert: false })
+
+      if (upErr) {
+        throw { response: { status: 500, data: { message: `Error al subir documento: ${upErr.message}` } } }
+      }
+
+      documentPaths.push({ path, tipo, nombre: file.name, tipoArchivo: file.type })
+    }
+
+    // 2. Crear la sede con los paths ya subidos (el EF inserta venue_documents)
+    return invokeFunction('register-venue', {
+      body: {
+        name: fd.get('nombre'),
+        city: fd.get('ciudad') || undefined,
+        region: fd.get('region') || undefined,
+        comuna: fd.get('comuna') || undefined,
+        address: fd.get('direccion') || undefined,
+        description: fd.get('descripcion') || undefined,
+        phone: fd.get('teléfono') || undefined,
+        email: fd.get('email') || undefined,
+        tipo: fd.get('tipo') || 'SEDE',
+        instagram: fd.get('instagram') || undefined,
+        sitioWeb: fd.get('sitioWeb') || undefined,
+        documentPaths,
+      }
+    })
+  },
   deleteVenueDocument() { return NOT_MIGRATED('deleteVenueDocument', 'falta policy DELETE') },
   deletePhoto() { return NOT_MIGRATED('deletePhoto', 'falta policy DELETE') },
   getVenueMetrics() { return NOT_MIGRATED('getVenueMetrics', 'agregación server-side') },

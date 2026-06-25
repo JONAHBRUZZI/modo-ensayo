@@ -7,7 +7,7 @@ const BodySchema = z.object({
   // nullable/opcional: el flujo "reservar sala" crea drafts sin disciplina
   discipline: z.string().min(1).nullish(),
   disciplineCategory: z.string().min(1).nullish(),
-  level: z.enum(["BASICO","INTERMEDIO","AVANZADO"]),
+  level: z.enum(["BASICO","INTERMEDIO","AVANZADO"]).nullish(),
   description: z.string().max(2000).optional(),
   capacity: z.number().int().positive().max(500),
   duration: z.number().int().positive(),
@@ -35,6 +35,19 @@ export default {
         }
       }
 
+      // Guard Marketplace: para PUBLICAR (no borrador) el profesor debe tener
+      // MercadoPago conectado — al confirmarse la clase se le liquida el pago.
+      if (!body.draft) {
+        const { data: seller } = await admin.from("mp_seller_accounts")
+          .select("status").eq("user_id", userId).maybeSingle();
+        if (!seller || seller.status !== "CONNECTED") {
+          return Response.json({
+            error: "Debes conectar tu cuenta de MercadoPago antes de publicar una clase",
+            code: "MP_NOT_CONNECTED",
+          }, { status: 409 });
+        }
+      }
+
       if (body.roomId && body.startTime) {
         const start = new Date(body.startTime);
         const end = new Date(start.getTime() + body.duration * 60000);
@@ -56,7 +69,7 @@ export default {
         title: body.title,
         discipline: body.discipline ?? null,
         discipline_category: body.disciplineCategory ?? null,
-        level: body.level,
+        level: body.level ?? null,
         description: body.description ?? null,
         capacity: body.capacity,
         duration: body.duration,

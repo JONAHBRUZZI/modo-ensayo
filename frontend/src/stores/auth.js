@@ -200,12 +200,17 @@ export function useAuth() {
   })
 
   async function login(email, password) {
+    console.log('[auth] login → intentando signInWithPassword para', email)
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw normalizeAuthError(error)
+    if (error) {
+      console.error('[auth] login → error de Supabase', { status: error.status, message: error.message })
+      throw normalizeAuthError(error)
+    }
     store.setToken(data.session.access_token, data.session.refresh_token)
     const u = await buildUserFromSession(data.session)
     store.setUser(u)
     setModo('alumno')
+    console.log('[auth] login → OK', { userId: u?.id, roles: u?.roles })
     return u
   }
 

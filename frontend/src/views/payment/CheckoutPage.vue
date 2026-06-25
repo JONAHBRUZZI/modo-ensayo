@@ -98,8 +98,15 @@ onMounted(async () => {
   try {
     const data = await paymentService.getCart()
     items.value = data?.items || []
-    if (items.value.length === 0) router.push('/cart')
-  } catch { items.value = [] }
+    console.log('[Checkout] montado → items en carrito:', items.value.length)
+    if (items.value.length === 0) {
+      console.warn('[Checkout] carrito vacío al montar → redirigiendo a /cart (no verás la pantalla de pago)')
+      router.push('/cart')
+    }
+  } catch (e) {
+    console.error('[Checkout] error al cargar carrito en mount →', e)
+    items.value = []
+  }
 })
 
 async function procesarPago() {
@@ -108,16 +115,20 @@ async function procesarPago() {
   try {
     procesando.value = true
     const resultado = await paymentService.createMercadoPagoPreference()
+    console.log('[Checkout] resultado de createMercadoPagoPreference →', resultado)
     if (resultado?.initPoint) {
+      console.log('[Checkout] redirigiendo a MercadoPago →', resultado.initPoint)
       window.location.href = resultado.initPoint
       return
     }
+    console.warn('[Checkout] no llegó initPoint; mostrando pantalla de completado sin redirección')
     completadoItems.value = resultado?.items || []
     procesando.value = false
     completado.value = true
   } catch (e) {
+    console.error('[Checkout] error al procesar el pago →', e)
     procesando.value = false
-    error.value = e?.response?.data?.message || 'Error al procesar el pago'
+    error.value = e?.response?.data?.error || e?.response?.data?.message || e?.message || 'Error al procesar el pago'
   } finally {
     enviando.value = false
   }

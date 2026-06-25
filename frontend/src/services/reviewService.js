@@ -2,9 +2,8 @@ import { supabase, currentUserId, invokeFunction, camelize } from './supabase'
 
 // Las vistas consumen estos métodos como respuestas axios (usan `res.data`),
 // por eso devolvemos siempre { data }.
-const NOT_MIGRATED = (name) => {
-  throw { response: { status: 501, data: { message: `"${name}" requiere una Edge Function/RPC aún no migrada` } } }
-}
+const NOT_MIGRATED = (name) =>
+  Promise.reject({ response: { status: 501, data: { message: `"${name}" requiere una Edge Function/RPC aún no migrada` } } })
 
 export const reviewService = {
   async getMine() {

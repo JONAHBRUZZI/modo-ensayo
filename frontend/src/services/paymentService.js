@@ -45,12 +45,19 @@ export default {
 
   async getCart() {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.id) return { items: [] }
+    if (!session?.user?.id) {
+      console.log('[getCart] sin sesión → carrito vacío')
+      return { items: [] }
+    }
     const uid = session.user.id
     const { data, error } = await supabase
       .from('cart_items').select('*').eq('owner_id', uid)
       .order('created_at', { ascending: false })
-    if (error) throw error
+    if (error) {
+      console.error('[getCart] error de Supabase →', { message: error.message, code: error.code })
+      throw error
+    }
+    console.log('[getCart] items cargados →', data?.length ?? 0)
     return { items: camelize(data) }
   },
 
@@ -96,7 +103,19 @@ export default {
       beneficiaryType: c.beneficiaryType || 'SELF',
       beneficiaryId: c.beneficiaryId || null
     }))
-    return invokeFunction('mercadopago-create-preference', { body: { items } })
+    console.log('[createPreference] invocando mercadopago-create-preference con items →', items)
+    try {
+      const res = await invokeFunction('mercadopago-create-preference', { body: { items } })
+      console.log('[createPreference] respuesta de la Edge Function →', res)
+      return res
+    } catch (err) {
+      console.error('[createPreference] la Edge Function falló →', {
+        status: err?.response?.status,
+        data: err?.response?.data,
+        message: err?.message
+      })
+      throw err
+    }
   },
 
   async getMyEnrollments() {

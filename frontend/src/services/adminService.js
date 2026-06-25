@@ -133,6 +133,24 @@ export default {
     return camelize(data)
   },
 
+  async getVenueDocuments(venueId) {
+    const { data, error } = await supabase
+      .from('venue_documents').select('*').eq('venue_id', venueId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return camelize(data)
+  },
+
+  async reviewDocument(docId, action, motivo = null) {
+    const estado = action === 'approve' ? 'APROBADO' : 'RECHAZADO'
+    const patch = { estado }
+    if (estado === 'RECHAZADO' && motivo) patch.motivo_rechazo = motivo
+    const { data, error } = await supabase
+      .from('venue_documents').update(patch).eq('id', docId).select('*').single()
+    if (error) throw error
+    return camelize(data)
+  },
+
   // ── Gestión de usuarios (Edge Function admin-users, requiere Admin API) ──
   async getUsers() {
     return invokeFunction('admin-users', { body: { action: 'list' } })

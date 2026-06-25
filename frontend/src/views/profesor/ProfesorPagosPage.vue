@@ -47,15 +47,41 @@
         </div>
       </div>
     </div>
+
+    <!-- Liquidaciones a tu cuenta MercadoPago -->
+    <h2 class="text-xl font-bold text-white mt-12 mb-4">Liquidaciones</h2>
+    <div v-if="payouts.length === 0" class="card text-center py-10">
+      <p class="text-gray-400">Aún no hay liquidaciones.</p>
+      <p class="text-gray-500 text-sm mt-2">Se generan cuando se confirma una clase realizada y se pagan a tu MercadoPago.</p>
+    </div>
+    <div v-else class="space-y-3">
+      <div v-for="po in payouts" :key="po.id" class="card flex items-center justify-between">
+        <div>
+          <h3 class="text-white font-medium">{{ po.class?.title || 'Clase' }}</h3>
+          <p class="text-gray-500 text-xs mt-1">
+            Bruto ${{ Number(po.grossAmount).toLocaleString('es-CL') }} ·
+            Comisión ${{ Number(po.commissionAmount).toLocaleString('es-CL') }}
+          </p>
+        </div>
+        <div class="text-right flex items-center space-x-4">
+          <p class="text-green-400 font-semibold">${{ Number(po.netAmount).toLocaleString('es-CL') }}</p>
+          <span :class="payoutStatusClass(po.status)" class="text-xs font-medium px-2 py-1 rounded-full">
+            {{ payoutStatusLabel(po.status) }}
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
+import sellerService from '@/services/sellerService'
 import { formatDate } from '@/utils/dateFormatter'
 
 const pagos = ref([])
+const payouts = ref([])
 const resumen = ref({ totalRetenido: 0, totalLiberadoMes: 0, totalLiberadoAcumulado: 0 })
 const loading = ref(true)
 
@@ -67,8 +93,27 @@ onMounted(async () => {
   } catch (e) {
     pagos.value = []
   }
+  try {
+    payouts.value = await sellerService.getPayouts()
+  } catch (e) {
+    payouts.value = []
+  }
   loading.value = false
 })
+
+function payoutStatusLabel(status) {
+  const labels = { PENDING: 'Pendiente', PAID: 'Pagado', FAILED: 'Fallido' }
+  return labels[status] || status
+}
+
+function payoutStatusClass(status) {
+  const classes = {
+    PENDING: 'bg-yellow-500/20 text-yellow-400',
+    PAID: 'bg-green-500/20 text-green-400',
+    FAILED: 'bg-red-500/20 text-red-400'
+  }
+  return classes[status] || 'bg-gray-500/20 text-gray-400'
+}
 
 function statusLabel(status) {
   const labels = { RETAINED: 'Retenido', RELEASED: 'Liberado', REFUND_PENDING: 'En devolucion', REFUNDED: 'Devuelto', FAILED: 'Fallido' }

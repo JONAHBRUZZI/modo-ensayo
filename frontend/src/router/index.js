@@ -317,6 +317,12 @@ const routes = [
         meta: { requiresAuth: true, roles: ['ADMIN'] }
       },
       {
+        path: 'admin/sedes/:venueId/documentos',
+        name: 'AdminVenueDocumentos',
+        component: () => import('@/views/admin/AdminVenueDocumentosPage.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN'] }
+      },
+      {
         path: 'admin/roles',
         name: 'RolesManagement',
         component: () => import('@/views/admin/DynamicRolesPage.vue'),

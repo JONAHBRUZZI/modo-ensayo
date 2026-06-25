@@ -7,7 +7,7 @@ function mapClassBody(data) {
     title: data.title,
     discipline: data.discipline ?? null,
     disciplineCategory: data.disciplineCategory ?? data.category ?? data.discipline_category ?? null,
-    level: data.level,
+    level: data.level || undefined,
     description: data.description ?? undefined,
     capacity: data.capacity,
     duration: data.duration,

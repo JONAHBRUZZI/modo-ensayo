@@ -20,7 +20,7 @@ export default {
       const body = BodySchema.parse(await req.json());
 
       const { data: cls } = await admin.from("classes")
-        .select("id, status, room:rooms(venue:venues(admin_id))").eq("id", body.classId).single();
+        .select("id, status, teacher_id, room:rooms(venue:venues(admin_id))").eq("id", body.classId).single();
       if (!cls) return Response.json({ error: "Clase no encontrada" }, { status: 404 });
 
       const venueAdminId = (cls as any).room?.venue?.admin_id;
@@ -33,13 +33,39 @@ export default {
         .select("id, student_id").eq("class_id", body.classId).eq("status", "ACTIVE");
 
       let refundPendingCount = 0;
+      let payoutsCreated = 0;
 
       if (body.realized) {
-        // Pagos RETAINED → RELEASED (comportamiento original, sin cambios funcionales)
+        // Pagos RETAINED → RELEASED + crear liquidación al profesor (Marketplace).
+        // La comisión de la plataforma se descuenta del bruto; el neto se le paga
+        // al profesor vía process-payouts. UNIQUE(payment_id) hace idempotente el payout.
+        const { data: setting } = await admin.from("app_settings")
+          .select("value").eq("key", "marketplace_commission_pct").single();
+        const commissionPct = Number(setting?.value ?? 10);
+        const teacherId = (cls as any).teacher_id;
+
         if (enrollments) {
           for (const e of enrollments) {
-            await admin.from("payments").update({ status: "RELEASED" })
-              .eq("enrollment_id", e.id).eq("status", "RETAINED");
+            const { data: released } = await admin.from("payments")
+              .update({ status: "RELEASED" })
+              .eq("enrollment_id", e.id).eq("status", "RETAINED")
+              .select("id, amount");
+
+            for (const p of released ?? []) {
+              const gross = Number(p.amount);
+              const commission = Math.round(gross * commissionPct) / 100;
+              const net = gross - commission;
+              const { error: poErr } = await admin.from("teacher_payouts").upsert({
+                payment_id: p.id,
+                teacher_id: teacherId,
+                class_id: body.classId,
+                gross_amount: gross,
+                commission_amount: commission,
+                net_amount: net,
+                status: "PENDING",
+              }, { onConflict: "payment_id", ignoreDuplicates: true });
+              if (!poErr) payoutsCreated++;
+            }
           }
         }
       } else {
@@ -70,7 +96,9 @@ export default {
         action: body.realized ? "class.confirmed_realized" : "class.confirmed_not_realized",
         resource_type: "class",
         resource_id: body.classId,
-        ...(body.realized ? {} : { metadata: { payments_refund_pending: refundPendingCount } }),
+        ...(body.realized
+          ? { metadata: { payouts_created: payoutsCreated } }
+          : { metadata: { payments_refund_pending: refundPendingCount } }),
       });
 
       logInfo(body.realized ? "class_confirmed" : "class_not_realized", { classId: body.classId });

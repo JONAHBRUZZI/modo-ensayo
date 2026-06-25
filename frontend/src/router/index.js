@@ -186,7 +186,7 @@ const routes = [
         path: 'profesor/registro',
         name: 'TeacherRegistration',
         component: () => import('@/views/profesor/TeacherRegistrationPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, requiresIdentity: true }
       },
       {
         path: 'profesor/asistencia/:classId',
@@ -289,7 +289,7 @@ const routes = [
         path: 'sede/sala-registro',
         name: 'RoomRegistration',
         component: () => import('@/views/sede/RoomRegistrationPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {
         path: 'sede/calendario',

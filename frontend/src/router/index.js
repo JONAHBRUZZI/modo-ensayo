@@ -198,7 +198,7 @@ const routes = [
         path: 'profesor/crear-clase',
         name: 'ProfesorCrearClase',
         component: () => import('@/views/CrearClasePage.vue'),
-        meta: { requiresAuth: true, requiresIdentity: true }
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       {
         path: 'profesor/calendario',
@@ -210,8 +210,7 @@ const routes = [
         path: 'profesor/borradores',
         name: 'ProfesorBorradores',
         component: () => import('@/views/profesor/ProfesorBorradoresPage.vue'),
-        // Sin roles: un usuario con identidad validada puede tener borradores antes de tener rol TEACHER
-        meta: { requiresAuth: true, requiresIdentity: true }
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       {
         path: 'profesor/clases-por-asignar',
@@ -223,7 +222,7 @@ const routes = [
         path: 'profesor/crear-borrador',
         name: 'ProfesorCrearBorrador',
         component: () => import('@/views/profesor/ProfesorCrearBorradorPage.vue'),
-        meta: { requiresAuth: true, requiresIdentity: true }
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       // Sede routes
       {

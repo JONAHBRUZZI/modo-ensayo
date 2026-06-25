@@ -61,13 +61,14 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import authStore from '@/stores/auth'
+import { useAuth } from '@/stores/auth'
 
 const route = useRoute()
+const { modoActual } = useAuth()
 const paymentId = computed(() => route.query.payment_id)
 const externalReference = computed(() => route.query.external_reference)
 
-const esReserva = computed(() => authStore.modoActual === 'profesor')
+const esReserva = computed(() => modoActual.value === 'profesor')
 
 const subtitulo = computed(() =>
   esReserva.value

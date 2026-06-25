@@ -17,7 +17,7 @@
       :enter="{ opacity: 1, y: 0, transition: { duration: 400, delay: 150 } }"
     >
       <h1 class="text-3xl font-bold text-white mb-2">¡Pago exitoso!</h1>
-      <p class="text-gray-400 mb-6">Tu inscripción ha sido procesada correctamente.</p>
+      <p class="text-gray-400 mb-6">{{ subtitulo }}</p>
     </div>
 
     <div
@@ -49,12 +49,10 @@
       :initial="{ opacity: 0 }"
       :enter="{ opacity: 1, transition: { duration: 400, delay: 360 } }"
     >
-      <p class="text-gray-600 text-sm mb-8">
-        Los pagos quedan retenidos hasta que el administrador de sede confirme la realización de cada clase.
-      </p>
+      <p class="text-gray-600 text-sm mb-8">{{ nota }}</p>
       <div class="flex flex-col sm:flex-row gap-3 justify-center">
-        <router-link to="/alumno/mis-clases" class="btn-primary">Ver mis clases</router-link>
-        <router-link to="/alumno/pagos" class="btn-secondary">Historial de pagos</router-link>
+        <router-link :to="linkPrimario.ruta" class="btn-primary">{{ linkPrimario.texto }}</router-link>
+        <router-link :to="linkSecundario.ruta" class="btn-secondary">{{ linkSecundario.texto }}</router-link>
       </div>
     </div>
   </div>
@@ -63,7 +61,35 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import authStore from '@/stores/auth'
+
 const route = useRoute()
 const paymentId = computed(() => route.query.payment_id)
 const externalReference = computed(() => route.query.external_reference)
+
+const esReserva = computed(() => authStore.modoActual === 'profesor')
+
+const subtitulo = computed(() =>
+  esReserva.value
+    ? 'Tu reserva de sala ha sido procesada. Revisa tu calendario para ver los bloques asignados.'
+    : 'Tu inscripción ha sido procesada correctamente.'
+)
+
+const nota = computed(() =>
+  esReserva.value
+    ? 'La sala ya está reservada a tu nombre. Si no tenías un borrador de clase, se creó uno que puedes editar.'
+    : 'Los pagos quedan retenidos hasta que el administrador de sede confirme la realización de cada clase.'
+)
+
+const linkPrimario = computed(() =>
+  esReserva.value
+    ? { ruta: '/profesor/calendario', texto: 'Ver mi calendario' }
+    : { ruta: '/alumno/mis-clases', texto: 'Ver mis clases' }
+)
+
+const linkSecundario = computed(() =>
+  esReserva.value
+    ? { ruta: '/classes', texto: 'Buscar más salas' }
+    : { ruta: '/alumno/pagos', texto: 'Historial de pagos' }
+)
 </script>

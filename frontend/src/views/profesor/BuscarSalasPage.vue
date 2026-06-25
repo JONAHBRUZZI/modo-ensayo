@@ -242,14 +242,11 @@
         <span class="text-gray-400">{{ modal.slots?.length }} bloque{{ modal.slots?.length > 1 ? 's' : '' }} · {{ modal.slots?.length }}h</span>
         <span class="text-primary font-semibold">${{ ((modal.slots?.length || 0) * (modal.room?.pricePerHour || 0)).toLocaleString('es-CL') }}</span>
       </div>
-      <p class="text-white text-sm mb-3">Selecciona tu metodo de pago:</p>
-      <div class="mb-4">
-        <button @click="pagar('transferencia')" :disabled="modal.procesando" class="w-full text-left px-4 py-3 bg-[var(--bg-base)] rounded-xl border border-white/10 hover:border-primary/50 transition-colors">
-          <span class="text-white text-sm font-medium">Transferencia Bancaria</span>
-          <p class="text-gray-500 text-xs">Pago simulado - se registrara la reserva</p>
-        </button>
-      </div>
-      <button @click="modal.abierto = false" class="w-full px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
+      <button @click="pagar" :disabled="modal.procesando" class="w-full px-4 py-3 mb-3 rounded-xl bg-[#009ee3] hover:bg-[#0089c7] text-white text-sm font-semibold transition-colors disabled:opacity-60">
+        {{ modal.procesando ? 'Redirigiendo a MercadoPago...' : 'Pagar con MercadoPago' }}
+      </button>
+      <p class="text-gray-500 text-xs text-center mb-3">Serás redirigido a MercadoPago para completar el pago de forma segura.</p>
+      <button @click="modal.abierto = false" :disabled="modal.procesando" class="w-full px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
     </BottomSheet>
   </div>
 </template>
@@ -260,6 +257,7 @@ import { useRoute } from 'vue-router'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 import scheduleService from '@/services/scheduleService'
+import paymentService from '@/services/paymentService'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
@@ -268,7 +266,7 @@ import BottomSheet from '@/components/BottomSheet.vue'
 const toast = useToast()
 const route = useRoute()
 const auth = useAuth()
-const { syncAtributos, setModo, puedeVerContextoProfesor, perfilProfesionalCompleto, identidadValidada } = auth
+const { syncAtributos, identidadValidada } = auth
 
 const borradorId = computed(() => route.query.borradorId || null)
 const alertaIdentidad = ref(false)
@@ -581,68 +579,28 @@ function abrirModal() {
   modal.value = { abierto: true, venue: selectionVenue.value, room: selectionRoom.value, slots: sorted, procesando: false }
 }
 
-async function pagar(metodo) {
+// Inicia el pago de la reserva con MercadoPago: crea la preferencia (con split a
+// la sede) y redirige al checkout. La reserva se materializa en el webhook cuando
+// MercadoPago aprueba el pago; los bloques quedan en HELD mientras tanto.
+async function pagar() {
   modal.value.procesando = true
   try {
     const slots = modal.value.slots || []
     const room = modal.value.room
-    const roomId = room.id
-    const sortedSlots = [...slots].sort((a, b) => a.startTime.localeCompare(b.startTime))
-    const firstSlot = sortedSlots[0]
+    const blockIds = slots.map(s => s.blockId || s.id).filter(Boolean)
+    if (!blockIds.length) throw new Error('sin bloques')
 
-    if (borradorId.value) {
-      // Flujo borrador existente: asignar sala y publicar (esto ya asigna rol TEACHER)
-      await classService.assignReserva(borradorId.value, {
-        roomId,
-        startTime: firstSlot.startTime,
-        duration: slots.length * 60
-      })
-      // Marcar los bloques restantes como ocupados
-      for (const slot of sortedSlots.slice(1)) {
-        const blockId = slot.blockId || slot.id
-        if (blockId) await scheduleService.bookSlot(roomId, blockId, borradorId.value)
-      }
-    } else {
-      // Flujo independiente: crear clase draft con roomId → dispara asignarRolTeacher
-      const claseRes = await classService.createBorrador({
-        title: 'Reserva - ' + room.name,
-        discipline: null,
-        level: 'BASICO',
-        capacity: room.capacity,
-        duration: slots.length * 60,
-        price: room.pricePerHour || 0,
-        startTime: firstSlot.startTime,
-        roomId
-      })
-      const claseId = claseRes?.id
-      // Marcar los bloques en room_schedule_blocks como ocupados
-      for (const slot of sortedSlots) {
-        const blockId = slot.blockId || slot.id
-        if (blockId) await scheduleService.bookSlot(roomId, blockId, claseId || null)
-      }
-    }
-    modal.value.abierto = false
-    try {
-      await syncAtributos()
-      if (puedeVerContextoProfesor.value) {
-        setModo('profesor')
-      }
-    } catch (err) {
-      console.error('Error al sincronizar atributos tras reserva', err)
-    }
-    if (puedeVerContextoProfesor.value) {
-      if (!perfilProfesionalCompleto.value) {
-        window.location.href = '/profesor/perfil-profesional?primeraVez=true'
-      } else {
-        window.location.href = '/profesor/clases-por-asignar'
-      }
-    } else {
-      window.location.href = '/profesor/borradores'
-    }
+    const { initPoint } = await paymentService.reserveRoomPreference(
+      room.id, blockIds, borradorId.value || null
+    )
+    if (initPoint) { window.location.href = initPoint; return }
+    throw new Error('sin initPoint')
   } catch (e) {
-    toast.error(e?.response?.data?.message || 'Error al procesar la reserva')
+    modal.value.procesando = false
+    toast.error(
+      e?.response?.data?.error || e?.response?.data?.message || 'No se pudo iniciar el pago de la reserva'
+    )
   }
-  modal.value.procesando = false
 }
 
 onMounted(async () => {

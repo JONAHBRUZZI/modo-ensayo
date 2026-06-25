@@ -178,7 +178,13 @@ export default {
         },
       });
 
-      logInfo("payment_processed", { sessionId: session.id, paymentId, items: cart.items.length });
+      logInfo("payment_processed", {
+        sessionId: session.id, paymentId,
+        type: cart?.type ?? "CLASS_ENROLLMENT",
+        ...(cart?.type === "ROOM_RESERVATION"
+          ? { blocks: cart.blockIds?.length ?? 0 }
+          : { items: cart.items?.length ?? 0 }),
+      });
       return new Response("ok", { status: 200 });
 
     } catch (err) {

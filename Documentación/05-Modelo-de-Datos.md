@@ -154,6 +154,8 @@ Bloques de agenda generados por sala.
 | start_time, end_time | timestamptz | |
 | status | `block_status` | DEFAULT 'AVAILABLE' |
 | class_id | uuid | FK → classes(id) |
+| held_until | timestamptz | Hasta cuándo está reservado temporalmente (HELD) |
+| held_by | uuid | FK → auth.users(id); usuario que inició el pago |
 
 ### `room_maintenances`
 | Columna | Tipo | Notas |
@@ -323,11 +325,51 @@ Catálogo de disciplinas (semilla).
 | labels | jsonb | DEFAULT '{}' |
 | recorded_at | timestamptz | |
 
-## 7. Enums (tipos definidos)
+## 7. Marketplace MercadoPago Connect (arriendo de salas)
+
+Cuando un profesor arrienda una sala, el pago se hace con **split automático**: la
+sede recibe el monto directo en su cuenta de MercadoPago y la plataforma retiene
+una comisión configurable. Cada sede vincula su cuenta vía OAuth.
+
+### `mp_seller_accounts`
+Cuenta de MercadoPago vinculada del gestor de sede (1 por usuario). Los tokens
+**nunca** se exponen al frontend; solo las Edge Functions los leen.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| user_id | uuid | PK, FK → auth.users(id) |
+| mp_user_id | text | ID del vendedor en MercadoPago |
+| access_token | text | Token del vendedor (solo service role) |
+| refresh_token | text | Para renovar el access_token |
+| token_expires_at | timestamptz | |
+| scope | text | Scopes otorgados por MP |
+| public_key | text | Clave pública del vendedor |
+| status | text | CONNECTED / DISCONNECTED / ERROR |
+| connected_at | timestamptz | DEFAULT now() |
+| updated_at | timestamptz | |
+
+Vista pública segura: `mp_seller_status` — expone solo `user_id`, `mp_user_id`,
+`status`, `connected_at` y `has_token` (boolean). Sin tokens.
+
+### `mp_oauth_states`
+State temporal del flujo OAuth (anti-CSRF). Se borra al completar el callback.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| state | text | PK |
+| user_id | uuid | FK → auth.users(id) |
+| created_at | timestamptz | DEFAULT now() |
+
+### `app_settings` (clave relevante)
+| key | Tipo de valor | Descripción |
+|-----|---------------|-------------|
+| `room_reservation_commission_pct` | numeric (0–100) | Comisión de la plataforma sobre el arriendo. Default: 0 |
+
+## 8. Enums (tipos definidos)
 
 | Enum | Valores |
 |---|---|
-| `block_status` | AVAILABLE, OCCUPIED, MAINTENANCE |
+| `block_status` | AVAILABLE, HELD, OCCUPIED, MAINTENANCE |
 | `class_status` | DRAFT, PUBLISHED, IN_PROGRESS, FULL, CANCELLED, COMPLETED, SUSPENDED, POR_VALIDAR |
 | `estado_sede` | PENDIENTE_APROBACION, APROBADA, RECHAZADA, SUSPENDIDA |
 | `nivel_clase` | BASICO, INTERMEDIO, AVANZADO |
@@ -341,14 +383,15 @@ Catálogo de disciplinas (semilla).
 | `tipo_piso` | MADERA, FLOTANTE, CERAMICO, VINILO, CEMENTO, ALFOMBRA, OTRO |
 | `tipo_sede` | SEDE, HOME_STUDIO |
 
-## 8. Seguridad y lógica en la base de datos
+## 9. Seguridad y lógica en la base de datos
 
 - **RLS**: todas las tablas de `public` tienen Row Level Security habilitado. El
   frontend usa la clave anon/publishable y solo accede a lo que las políticas
   permiten. Las operaciones privilegiadas pasan por Edge Functions con la clave
   de servicio.
 - **Funciones / triggers**: `handle_new_user` (crea `profiles` al registrarse),
-  `get_my_attributes` (atributos derivados del usuario), más helpers de RLS y
+  `get_my_attributes` (atributos derivados del usuario), `release_expired_holds`
+  (libera bloques HELD vencidos cada 5 min vía `pg_cron`), más helpers de RLS y
   jobs de `pg_cron` para tareas programadas (regeneración de bloques, timeouts
   de reagendamiento, etc.).
 - **Migraciones**: el schema se versiona en `supabase/migrations/`. La base

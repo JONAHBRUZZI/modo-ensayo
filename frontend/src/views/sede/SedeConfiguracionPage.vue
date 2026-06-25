@@ -185,6 +185,31 @@
         </div>
       </div>
 
+      <!-- Cobros con MercadoPago (solo sedes aprobadas) -->
+      <div v-if="venue.status === 'APROBADA'" class="card space-y-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-white font-medium">Cobros con MercadoPago</h3>
+            <p class="text-gray-500 text-xs mt-1">
+              Vincula tu cuenta de MercadoPago para recibir los pagos por arriendo de tus salas directamente en ella.
+            </p>
+          </div>
+          <span v-if="mpConectado" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/30 whitespace-nowrap">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Conectada
+          </span>
+          <span v-else class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/15 text-gray-400 border border-white/10 whitespace-nowrap">
+            No conectada
+          </span>
+        </div>
+        <p v-if="mpConectado" class="text-sm text-gray-400">
+          Tu cuenta está vinculada. Los profesores que arrienden tus salas pagarán por MercadoPago y el dinero llegará a tu cuenta.
+        </p>
+        <button v-else @click="conectarMercadoPago" :disabled="conectandoMp" class="btn-primary">
+          {{ conectandoMp ? 'Redirigiendo a MercadoPago...' : 'Conectar MercadoPago' }}
+        </button>
+      </div>
+
       <!-- Redes sociales y contacto web (siempre editable) -->
       <form @submit.prevent="saveSocial" class="card space-y-4">
         <h3 class="text-white font-medium">Redes sociales y contacto web</h3>
@@ -242,18 +267,45 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import venueService from '@/services/venueService'
+import paymentService from '@/services/paymentService'
 import uploadService from '@/services/uploadService'
 import { reviewService } from '@/services/reviewService'
+import { useToast } from '@/composables/useToast'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
 
 const { attachAutocomplete } = usePlacesAutocomplete()
 const addressInput = ref(null)
+const route = useRoute()
+const router = useRouter()
+const toast = useToast()
 
 const venue = ref(null)
 const loading = ref(true)
 const venueRating = ref(null)
+
+// Estado de vinculación con MercadoPago
+const mpStatus = ref(null)
+const mpConectado = computed(() => mpStatus.value?.status === 'CONNECTED' && mpStatus.value?.hasToken)
+const conectandoMp = ref(false)
+
+async function cargarMpStatus() {
+  try { mpStatus.value = await paymentService.getMpAccountStatus() } catch { mpStatus.value = null }
+}
+
+async function conectarMercadoPago() {
+  conectandoMp.value = true
+  try {
+    const { authUrl } = await paymentService.startMpConnect()
+    if (authUrl) window.location.href = authUrl
+    else throw new Error('sin authUrl')
+  } catch (e) {
+    conectandoMp.value = false
+    toast.error(e?.response?.data?.error || 'No se pudo iniciar la conexión con MercadoPago')
+  }
+}
 
 const camposVerificados = computed(() => {
   if (!venue.value) return []
@@ -337,6 +389,16 @@ onMounted(async () => {
     formDatos.address = place.formatted_address
     if (place.city && !formDatos.city) formDatos.city = place.city
   })
+
+  // Estado de la cuenta MercadoPago y feedback del retorno OAuth.
+  cargarMpStatus()
+  if (route.query.mp === 'ok') {
+    toast.success('Cuenta de MercadoPago vinculada correctamente')
+    router.replace({ query: {} })
+  } else if (route.query.mp === 'error') {
+    toast.error('No se pudo vincular la cuenta de MercadoPago. Intenta nuevamente.')
+    router.replace({ query: {} })
+  }
 })
 
 async function saveDatos() {

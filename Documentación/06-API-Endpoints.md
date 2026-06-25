@@ -74,8 +74,11 @@ Definidas en `supabase/functions/`. `verify_jwt` se configura por función en
 | `admin-approve-venue` | Aprobar/rechazar sede (admin) |
 | `admin-stats` | Estadísticas de la plataforma (admin) |
 | `admin-users` | Gestión de usuarios y roles (admin) |
-| `mercadopago-create-preference` | Crear preferencia de pago en MercadoPago |
-| `mercadopago-webhook` | Webhook de notificaciones de pago (sin JWT) |
+| `mercadopago-create-preference` | Crear preferencia de pago (inscripción a clases) |
+| `mercadopago-webhook` | Webhook de notificaciones de pago (sin JWT); discrimina entre inscripción y reserva de sala |
+| `mp-connect-start` | Inicia OAuth de MercadoPago Connect; genera state anti-CSRF y devuelve URL de autorización |
+| `mp-connect-callback` | Callback OAuth (sin JWT); valida state, canjea code→tokens y guarda cuenta del vendedor |
+| `reserve-room-preference` | Crea preferencia de arriendo de sala con split automático a la cuenta MercadoPago de la sede |
 
 ---
 

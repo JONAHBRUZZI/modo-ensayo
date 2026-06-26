@@ -29,7 +29,7 @@
                 <router-link to="/profesor/clases-asignadas" class="nav-link">Asignadas</router-link>
                 <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
                 <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
-                <router-link to="/profesor/métricas" class="nav-link">Métricas</router-link>
+                <router-link to="/profesor/metricas" class="nav-link">Métricas</router-link>
                 <router-link to="/profesor/pagos" class="nav-link">Pagos</router-link>
               </template>
 
@@ -115,7 +115,7 @@
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Perfil
                   </router-link>
-                  <router-link to="/notificaciónes" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
+                  <router-link to="/notificaciones" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                     Notificaciónes
                   </router-link>
@@ -170,7 +170,7 @@
               <router-link to="/profesor/clases-propias" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
               <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile" @click="showMobileMenu = false">Por Asignar</router-link>
               <router-link to="/profesor/buscar-salas" class="nav-link-mobile" @click="showMobileMenu = false">Agendar Sala</router-link>
-              <router-link to="/profesor/métricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+              <router-link to="/profesor/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
             </template>
             <template v-if="puedeVerContextoSede && modoActual === 'sede'">
               <router-link to="/sede/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Panel</router-link>
@@ -231,21 +231,59 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-[#0b0d14] border-t border-[#13161f] py-8">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row justify-between items-center">
-          <div class="flex items-center space-x-2 mb-4 md:mb-0">
-            <div class="w-6 h-6 rounded flex items-center justify-center" style="background: #6C63FF;">
-              <span class="text-white text-xs font-bold">ME</span>
+    <footer class="bg-[#0b0d14] border-t border-[#1e2130]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+
+          <!-- Columna 1: Logo + descripción -->
+          <div>
+            <div class="flex items-center space-x-2 mb-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, #6C63FF, #9B8CFF);">
+                <span class="text-white font-bold text-xs tracking-wide">ME</span>
+              </div>
+              <span class="text-white font-semibold text-base">Modo <span class="text-primary">Ensayo</span></span>
             </div>
-            <span class="text-gray-500 text-sm">Modo Ensayo &copy; {{ new Date().getFullYear() }}</span>
+            <p class="text-gray-500 text-sm leading-relaxed">
+              Plataforma chilena que conecta alumnos, maestros y salas de ensayo en un solo lugar. Reserva, aprende y crece.
+            </p>
           </div>
-          <div class="flex space-x-6">
-            <router-link to="/" class="text-gray-500 hover:text-gray-300 text-sm">Inicio</router-link>
-            <router-link to="/classes" class="text-gray-500 hover:text-gray-300 text-sm">Clases</router-link>
-            <router-link to="/quiero-ser-profesor" class="text-gray-500 hover:text-gray-300 text-sm">Ser Profesor</router-link>
-            <router-link to="/quiero-gestiónar-sede" class="text-gray-500 hover:text-gray-300 text-sm">Gestiónar Sede</router-link>
+
+          <!-- Columna 2: Navegación -->
+          <div>
+            <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">Plataforma</h3>
+            <ul class="space-y-2">
+              <li><router-link to="/" class="text-gray-500 hover:text-white text-sm transition-colors">Inicio</router-link></li>
+              <li><router-link to="/classes" class="text-gray-500 hover:text-white text-sm transition-colors">Cronograma de clases</router-link></li>
+              <li><router-link to="/quiero-ser-profesor" class="text-gray-500 hover:text-white text-sm transition-colors">Quiero ser Maestro</router-link></li>
+              <li><router-link to="/quiero-gestionar-sede" class="text-gray-500 hover:text-white text-sm transition-colors">Quiero gestionar una Sede</router-link></li>
+            </ul>
           </div>
+
+          <!-- Columna 3: Acceso -->
+          <div>
+            <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">Acceso</h3>
+            <ul class="space-y-2">
+              <li><router-link to="/login" class="text-gray-500 hover:text-white text-sm transition-colors">Iniciar sesión</router-link></li>
+              <li><router-link to="/register" class="text-gray-500 hover:text-white text-sm transition-colors">Crear cuenta gratis</router-link></li>
+            </ul>
+            <div class="mt-6">
+              <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Disciplinas</h3>
+              <div class="flex flex-wrap gap-2">
+                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Ballet</span>
+                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Cueca</span>
+                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Danza</span>
+                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Música</span>
+                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Teatro</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Barra inferior -->
+        <div class="border-t border-[#1e2130] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span class="text-gray-600 text-xs">© {{ new Date().getFullYear() }} Modo Ensayo. Todos los derechos reservados.</span>
+          <span class="text-gray-700 text-xs">Hecho en Chile 🇨🇱</span>
         </div>
       </div>
     </footer>

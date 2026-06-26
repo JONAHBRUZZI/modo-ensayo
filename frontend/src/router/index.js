@@ -48,7 +48,7 @@ const routes = [
         component: () => import('@/pages/acceso/QuieroSerProfesorPage.vue')
       },
       {
-        path: 'quiero-gestiónar-sede',
+        path: 'quiero-gestionar-sede',
         name: 'QuieroGestiónarSede',
         component: () => import('@/pages/acceso/QuieroGestionarSedePage.vue')
       },
@@ -83,7 +83,7 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
-        path: 'notificaciónes',
+        path: 'notificaciones',
         name: 'Notificaciónes',
         component: () => import('@/views/NotificacionesPage.vue'),
         meta: { requiresAuth: true }
@@ -158,7 +158,7 @@ const routes = [
         meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       {
-        path: 'profesor/métricas',
+        path: 'profesor/metricas',
         name: 'ProfesorMétricas',
         component: () => import('@/views/profesor/ProfesorMetricasPage.vue'),
         meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }

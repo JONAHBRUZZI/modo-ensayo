@@ -84,8 +84,10 @@
           </router-link>
         </template>
 
-        <router-link to="/" class="w-full flex justify-center text-xs text-gray-600 hover:text-gray-400 transition-colors pt-1">
-          ← Volver al inicio
+        <router-link to="/"
+          class="w-full flex items-center justify-center gap-1.5 pt-4 border-t border-[var(--border-subtle)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          Volver al inicio
         </router-link>
       </div>
     </div>

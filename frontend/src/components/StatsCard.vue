@@ -2,7 +2,7 @@
   <div class="card">
     <div class="flex items-start justify-between">
       <div>
-        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{{ label }}</p>
+        <p class="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">{{ label }}</p>
         <p class="text-3xl font-bold" :class="valueClass">{{ value }}</p>
       </div>
       <div v-if="icon" :class="['w-10 h-10 rounded-xl flex items-center justify-center text-lg', iconBgClass]">
@@ -23,7 +23,7 @@ const props = defineProps({
 })
 
 const tones = {
-  white:  { bg: 'bg-[#1a1d2e]',         text: 'text-white'       },
+  white:  { bg: 'bg-[var(--bg-elevated)]', text: 'text-[var(--text-primary)]' },
   indigo: { bg: 'bg-primary/15',         text: 'text-primary'     },
   green:  { bg: 'bg-green-500/15',       text: 'text-green-400'   },
   yellow: { bg: 'bg-yellow-500/15',      text: 'text-yellow-400'  },

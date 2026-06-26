@@ -10,23 +10,28 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAuth } from './stores/auth'
+import { useTheme } from './composables/useTheme'
+import { decodeJwt } from '@/utils/jwt'
 import AppToast from './components/AppToast.vue'
 
 const { token } = useAuth()
+const { applyTheme } = useTheme()
 
-onMounted(() => { checkTokenExpiration() })
+onMounted(() => {
+  applyTheme()
+  checkTokenExpiration()
+})
 
 function checkTokenExpiration() {
   if (!token.value) return
-  try {
-    const payload = JSON.parse(atob(token.value.split('.')[1]))
-    if (payload.exp * 1000 < Date.now()) {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
-      localStorage.removeItem('auth_refresh_token')
-      window.location.href = '/login'
-    }
-  } catch {}
+  const payload = decodeJwt(token.value)
+  if (!payload) return
+  if (payload.exp * 1000 < Date.now()) {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    localStorage.removeItem('auth_refresh_token')
+    window.location.href = '/login'
+  }
 }
 </script>
 

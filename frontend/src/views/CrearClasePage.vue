@@ -49,7 +49,7 @@
         <button
           type="button"
           @click="abrirModalBorrador"
-          class="rounded-xl border border-white/10 bg-[#0d0f1a] hover:border-white/30 hover:bg-[#1a1d2e] p-4 text-left transition-colors"
+          class="rounded-xl border border-white/10 bg-[var(--bg-base)] hover:border-white/30 hover:bg-[var(--bg-elevated)] p-4 text-left transition-colors"
         >
           <div class="flex items-center gap-2 mb-1">
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,13 +86,12 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Disciplina *</label>
-          <select v-model="form.discipline" required class="input-field">
-            <option value="">Seleccionar</option>
-            <option value="CUECA">Cueca</option><option value="BALLET">Ballet</option><option value="DANZA">Danza</option>
-            <option>TEATRO</option><option>CANTO</option><option>GUITARRA</option>
-            <option>BATERIA</option><option>BAJO</option><option>PIANO</option>
-            <option>VIOLIN</option><option>SAXOFON</option><option>OTRO</option>
-          </select>
+          <input v-model="form.discipline" required class="input-field" placeholder="Ej: Guitarra, Ballet, Karate..." list="discipline-list" autocomplete="off" />
+          <datalist id="discipline-list">
+            <optgroup v-for="g in disciplineGroups" :key="g.category || 'otras'" :label="g.label">
+              <option v-for="item in g.items" :key="item" :value="item" />
+            </optgroup>
+          </datalist>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Nivel *</label>
@@ -172,7 +171,6 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
-import api from '@/services/api'
 import { useAuth } from '@/stores/auth'
 import BorradorSelector from '@/components/BorradorSelector.vue'
 
@@ -192,11 +190,13 @@ const error = ref('')
 const creating = ref(false)
 const isEditing = ref(false)
 const editingClassId = ref(null)
+const disciplineGroups = ref([])
 
 const modalBorrador = ref(false)
 
 onMounted(async () => {
   try { venues.value = await classService.getVenues() } catch { venues.value = [] }
+  try { const data = await classService.getDisciplines(); disciplineGroups.value = Array.isArray(data) ? data : [] } catch { disciplineGroups.value = [] }
 
   if (route.query.edit) {
     // Modo publicar borrador: sala y horario son fijos
@@ -224,7 +224,9 @@ onMounted(async () => {
           duration: cls.duration || null
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error('Error al cargar datos del borrador', err)
+    }
   } else {
     // Modo crear directo (sin reserva previa)
     if (route.query.roomId) form.value.roomId = route.query.roomId
@@ -248,7 +250,7 @@ async function handleCreate() {
   try {
     if (isEditing.value) {
       // Publicar borrador — sala y horario vienen del DRAFT original, no del formulario
-      await api.put('/classes/' + editingClassId.value + '/publish', {
+      await classService.publishClass(editingClassId.value, {
         title: form.value.title,
         discipline: form.value.discipline,
         level: form.value.level,

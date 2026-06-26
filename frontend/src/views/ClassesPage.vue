@@ -15,19 +15,54 @@
       :initial="{ opacity: 0, y: 12 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 380, delay: 80 } }"
       class="card mb-8 grid grid-cols-2 md:grid-cols-4 gap-3"
+      @keydown.enter="buscar"
     >
-      <select v-model="filtros.disciplina" class="input-field text-sm py-2">
-        <option value="">Todas las disciplinas</option>
-        <option v-for="d in disciplinas" :key="d" :value="d">{{ d }}</option>
-      </select>
+      <!-- Buscador de disciplina -->
+      <div class="relative" ref="disciplineRef">
+        <input
+          v-model="disciplineQuery"
+          class="input-field text-sm py-2 w-full"
+          placeholder="Buscar disciplina..."
+          autocomplete="off"
+          @focus="disciplineOpen = true"
+          @input="disciplineOpen = true"
+          @keydown.escape="disciplineOpen = false"
+          @keydown.enter.stop.prevent="onDisciplineEnter"
+        />
+        <div
+          v-if="disciplineOpen && filteredDisciplines.length > 0"
+          class="absolute z-20 top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg max-h-56 overflow-y-auto shadow-xl"
+        >
+          <div
+            class="px-3 py-2 text-xs text-gray-500 hover:bg-[var(--bg-elevated)] cursor-pointer"
+            @click="selectDiscipline('')"
+          >Todas las disciplinas</div>
+          <template v-for="g in filteredDisciplines" :key="g.category || 'otras'">
+            <div class="px-3 pt-2 pb-0.5 text-[10px] text-gray-600 uppercase tracking-wider">{{ g.label }}</div>
+            <div
+              v-for="item in g.items"
+              :key="item"
+              class="px-3 py-1.5 text-sm text-gray-300 hover:bg-[var(--bg-elevated)] hover:text-white cursor-pointer"
+              @click="selectDiscipline(item)"
+            >{{ item }}</div>
+          </template>
+        </div>
+      </div>
+
       <select v-model="filtros.nivel" class="input-field text-sm py-2">
         <option value="">Todos los niveles</option>
         <option v-for="n in niveles" :key="n" :value="n">{{ n }}</option>
       </select>
       <input v-model="filtros.comuna" class="input-field text-sm py-2" placeholder="Comuna" />
-      <div class="col-span-2 md:col-span-1 flex space-x-2">
-        <input v-model="filtros.precioMax" type="number" class="input-field text-sm py-2" placeholder="Precio máx." />
-        <button @click="buscar" class="btn-primary text-sm px-4">Buscar</button>
+      <div class="col-span-2 md:col-span-1 flex flex-col gap-2">
+        <div class="flex space-x-2">
+          <input v-model.number="filtros.edadMin" type="number" class="input-field text-sm py-2" placeholder="Edad min." min="0" max="99" />
+          <input v-model.number="filtros.edadMax" type="number" class="input-field text-sm py-2" placeholder="Edad max." min="0" max="99" />
+        </div>
+        <div class="flex space-x-2">
+          <input v-model.number="filtros.precioMax" type="number" class="input-field text-sm py-2" placeholder="Precio max." />
+          <button @click="buscar" class="btn-primary text-sm px-4">Buscar</button>
+        </div>
       </div>
     </div>
 
@@ -37,7 +72,7 @@
     </div>
     <div v-else-if="classes.length === 0" class="card text-center py-20">
       <p class="text-gray-400 mb-2">No hay clases disponibles en este momento.</p>
-      <p class="text-gray-600 text-sm">Intenta ajustar los filtros de búsqueda.</p>
+      <p class="text-gray-600 text-sm">Intenta ajustar los filtros de busqueda.</p>
     </div>
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       <div
@@ -58,9 +93,9 @@
         </div>
         <h3 class="text-base font-semibold text-white mb-2 group-hover:text-primary transition-colors">{{ c.title }}</h3>
         <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ c.description }}</p>
-        <div class="flex items-center justify-between text-xs text-gray-600 border-t border-[#1e2130] pt-3 mt-auto">
+        <div class="flex items-center justify-between text-xs text-gray-600 border-t border-[var(--border-subtle)] pt-3 mt-auto">
           <span>{{ formatDate(c.startTime) }}</span>
-          <span class="text-primary/70 group-hover:text-primary transition-colors">Ver detalle →</span>
+          <span class="text-primary/70 group-hover:text-primary transition-colors">Ver detalle &rarr;</span>
         </div>
       </div>
     </div>
@@ -68,18 +103,71 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '@/services/classService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const router = useRouter()
 const classes = ref([])
 const loading = ref(true)
-const disciplinas = ['CUECA', 'BALLET', 'DANZA', 'TEATRO', 'MUSICA', 'OTRO']
+const disciplineGroups = ref([])
 const niveles = ['BASICO', 'INTERMEDIO', 'AVANZADO']
-const filtros = reactive({ disciplina: '', nivel: '', comuna: '', precioMax: null })
+const filtros = reactive({ disciplina: '', nivel: '', comuna: '', precioMax: null, edadMin: null, edadMax: null })
 
-onMounted(() => buscar())
+const disciplineQuery = ref('')
+const disciplineOpen = ref(false)
+const disciplineRef = ref(null)
+
+watch(disciplineQuery, (val) => {
+  filtros.disciplina = val
+})
+
+const filteredDisciplines = computed(() => {
+  const q = disciplineQuery.value.trim().toLowerCase()
+  if (!q) return disciplineGroups.value
+
+  return disciplineGroups.value
+    .map(g => {
+      const filtered = g.items.filter(item => item.toLowerCase().includes(q))
+      return filtered.length > 0 ? { ...g, items: filtered } : null
+    })
+    .filter(Boolean)
+})
+
+function selectDiscipline(name) {
+  disciplineQuery.value = name
+  filtros.disciplina = name
+  disciplineOpen.value = false
+  buscar()
+}
+
+function onDisciplineEnter() {
+  disciplineOpen.value = false
+  buscar()
+}
+
+function handleClickOutside(e) {
+  if (disciplineRef.value && !disciplineRef.value.contains(e.target)) {
+    disciplineOpen.value = false
+  }
+}
+
+onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
+  await Promise.all([buscar(), loadDisciplines()])
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+async function loadDisciplines() {
+  try {
+    const data = await classService.getDisciplines()
+    disciplineGroups.value = Array.isArray(data) ? data : []
+  } catch { disciplineGroups.value = [] }
+}
 
 async function buscar() {
   loading.value = true
@@ -89,6 +177,8 @@ async function buscar() {
     if (filtros.nivel) params.nivel = filtros.nivel
     if (filtros.comuna) params.comuna = filtros.comuna
     if (filtros.precioMax) params.precioMax = filtros.precioMax
+    if (filtros.edadMin) params.edadMin = filtros.edadMin
+    if (filtros.edadMax) params.edadMax = filtros.edadMax
     const data = await classService.getClasses(params)
     classes.value = Array.isArray(data) ? data : data.content || []
   } catch {
@@ -100,10 +190,5 @@ async function buscar() {
 
 function goToClass(id) { router.push(`/alumno/clases/${id}`) }
 
-function formatDate(date) {
-  if (!date) return ''
-  return new Date(date).toLocaleDateString('es-CL', {
-    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-  })
-}
+
 </script>

@@ -12,7 +12,7 @@
       <p class="text-sm">Cargando...</p>
     </div>
     <div v-else-if="clases.length === 0" class="card text-center py-16">
-      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div class="w-14 h-14 bg-[var(--bg-elevated)] rounded-2xl flex items-center justify-center mx-auto mb-4">
         <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
@@ -35,24 +35,24 @@
       </div>
     </div>
 
-    <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold text-white mb-2">{{ modal.titulo }}</h3>
-        <p class="text-gray-400 text-sm mb-6">{{ modal.mensaje }}</p>
-        <div class="flex space-x-3 justify-end">
-          <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
-          <button @click="ejecutarConfirmacion" :disabled="modal.enviando" class="px-4 py-2 rounded-xl text-white text-sm font-medium" :class="modal.confirmandoRealizada ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'">
-            {{ modal.enviando ? 'Procesando...' : 'Si, confirmar' }}
-          </button>
-        </div>
+    <BottomSheet v-model="modal.abierto">
+      <h3 class="text-lg font-semibold text-white mb-2">{{ modal.titulo }}</h3>
+      <p class="text-gray-400 text-sm mb-6">{{ modal.mensaje }}</p>
+      <div class="flex space-x-3 justify-end">
+        <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
+        <button @click="ejecutarConfirmacion" :disabled="modal.enviando" class="px-4 py-2 rounded-xl text-white text-sm font-medium" :class="modal.confirmandoRealizada ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'">
+          {{ modal.enviando ? 'Procesando...' : 'Si, confirmar' }}
+        </button>
       </div>
-    </div>
+    </BottomSheet>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import venueService from '@/services/venueService'
+import { formatDate } from '@/utils/dateFormatter'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const clases = ref([])
 const loading = ref(true)
@@ -92,6 +92,4 @@ async function ejecutarConfirmacion() {
   }
   modal.enviando = false
 }
-
-function formatDate(d) { return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '' }
 </script>

@@ -21,7 +21,7 @@
       :enter="{ opacity: 1, scale: 1, transition: { duration: 350 } }"
       class="card text-center py-16"
     >
-      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div class="w-14 h-14 bg-[var(--bg-elevated)] rounded-2xl flex items-center justify-center mx-auto mb-4">
         <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
       </div>
       <p class="text-gray-400 mb-1">Tu carrito está vacío</p>
@@ -46,7 +46,7 @@
           </div>
         </div>
         <div class="flex items-center gap-4 shrink-0">
-          <span class="text-primary font-bold">${{ item.price?.toLocaleString() }}</span>
+          <span class="text-primary font-bold">${{ item.price?.toLocaleString('es-CL') }}</span>
           <button @click="removeItem(item.id)" class="text-gray-600 hover:text-red-400 transition-colors" aria-label="Eliminar">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
@@ -60,11 +60,11 @@
         class="card flex items-center justify-between border-primary/20"
       >
         <span class="text-white font-semibold">Total</span>
-        <span class="text-primary font-bold text-xl">${{ total.toLocaleString() }}</span>
+        <span class="text-primary font-bold text-xl">${{ total.toLocaleString('es-CL') }}</span>
       </div>
 
-      <button @click="irAPagar" :disabled="checkingOut" class="btn-primary w-full text-base py-3">
-        {{ checkingOut ? 'Procesando...' : `Pagar $${total.toLocaleString()}` }}
+      <button @click="irACheckout" :disabled="checkingOut" class="btn-primary w-full text-base py-3">
+        {{ checkingOut ? 'Procesando...' : `Pagar $${total.toLocaleString('es-CL')}` }}
       </button>
     </div>
   </div>
@@ -92,15 +92,13 @@ async function removeItem(id) {
   try {
     await paymentService.removeFromCart(id)
     items.value = items.value.filter(i => i.id !== id)
-  } catch {}
+  } catch (err) {
+    console.error('Error al eliminar item del carrito', err)
+  }
 }
 
-async function irAPagar() {
+async function irACheckout() {
   checkingOut.value = true
-  try {
-    const res = await paymentService.checkout()
-    if (res?.initPoint) window.location.href = res.initPoint
-    else router.push('/alumno/mis-clases')
-  } catch { checkingOut.value = false }
+  await router.push({ name: 'Checkout' })
 }
 </script>

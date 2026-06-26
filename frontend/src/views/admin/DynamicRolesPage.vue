@@ -11,7 +11,7 @@
       <p class="text-sm">Cargando...</p>
     </div>
     <div v-else-if="verifications.length === 0" class="card text-center py-16">
-      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div class="w-14 h-14 bg-[var(--bg-elevated)] rounded-2xl flex items-center justify-center mx-auto mb-4">
         <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
         </svg>
@@ -46,7 +46,7 @@
 
     <h2 class="text-2xl font-bold text-white mt-12 mb-6">Sedes Pendientes de Aprobacion</h2>
     <div v-if="pendingVenues.length === 0" class="card text-center py-12">
-      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div class="w-14 h-14 bg-[var(--bg-elevated)] rounded-2xl flex items-center justify-center mx-auto mb-4">
         <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
         </svg>
@@ -63,22 +63,20 @@
       </div>
     </div>
 
-    <div v-if="modal.abierto" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="modal.abierto = false">
-      <div class="bg-[#1a1d2e] rounded-2xl border border-white/10 p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold text-white mb-2">{{ modal.titulo }}</h3>
-        <p class="text-gray-400 text-sm mb-4">{{ modal.mensaje }}</p>
-        <div v-if="modal.accion === 'venue-reject' || modal.accion === 'identity-reject'" class="mb-4">
-          <label class="block text-sm text-gray-400 mb-1">Motivo (requerido):</label>
-          <textarea v-model="modal.motivo" rows="2" class="input-field" placeholder="Explica el motivo del rechazo..."></textarea>
-        </div>
-        <div class="flex space-x-3 justify-end">
-          <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
-          <button @click="ejecutarAccion" :disabled="modal.enviando" class="px-4 py-2 rounded-xl text-white text-sm font-medium" :class="modal.esAprobacion ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'">
-            {{ modal.enviando ? 'Procesando...' : 'Si, confirmar' }}
-          </button>
-        </div>
+    <BottomSheet v-model="modal.abierto">
+      <h3 class="text-lg font-semibold text-white mb-2">{{ modal.titulo }}</h3>
+      <p class="text-gray-400 text-sm mb-4">{{ modal.mensaje }}</p>
+      <div v-if="modal.accion === 'venue-reject' || modal.accion === 'identity-reject'" class="mb-4">
+        <label class="block text-sm text-gray-400 mb-1">Motivo (requerido):</label>
+        <textarea v-model="modal.motivo" rows="2" class="input-field" placeholder="Explica el motivo del rechazo..."></textarea>
       </div>
-    </div>
+      <div class="flex space-x-3 justify-end">
+        <button @click="modal.abierto = false" class="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm">Cancelar</button>
+        <button @click="ejecutarAccion" :disabled="modal.enviando" class="px-4 py-2 rounded-xl text-white text-sm font-medium" :class="modal.esAprobacion ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'">
+          {{ modal.enviando ? 'Procesando...' : 'Si, confirmar' }}
+        </button>
+      </div>
+    </BottomSheet>
   </div>
 </template>
 
@@ -87,7 +85,8 @@ import { ref, reactive, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { useToast } from '@/composables/useToast'
-import api from '@/services/api'
+import uploadService from '@/services/uploadService'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const toast = useToast()
 
@@ -107,13 +106,9 @@ onMounted(async () => {
 
 async function verDocumento(url) {
   try {
-    const docPath = url.startsWith('/api/') ? url.substring(4) : url
-    const res = await api.get(docPath, { responseType: 'blob' })
-    const ext = url.split('.').pop()?.toLowerCase()
-    const mime = ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/*'
-    const blob = new Blob([res.data], { type: mime })
-    const blobUrl = URL.createObjectURL(blob)
-    window.open(blobUrl, '_blank')
+    const viewUrl = await uploadService.resolveDocUrl(url)
+    if (!viewUrl) throw new Error('sin url')
+    window.open(viewUrl, '_blank')
   } catch {
     toast.error('No se pudo cargar el documento')
   }

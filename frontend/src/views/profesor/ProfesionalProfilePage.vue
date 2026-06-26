@@ -181,18 +181,43 @@
         </router-link>
       </div>
     </form>
+
+    <!-- Reseñas recibidas -->
+    <div class="card space-y-4 mt-8">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Reseñas recibidas</h2>
+        <span v-if="reviews.length" class="text-yellow-400 text-sm font-semibold">
+          ★ {{ promedioReviews.toFixed(1) }} <span class="text-gray-500 font-normal">({{ reviews.length }})</span>
+        </span>
+      </div>
+      <div v-if="reviews.length === 0" class="text-gray-500 text-sm">
+        Aún no tienes reseñas. Aparecerán aquí cuando tus alumnos evalúen tus clases.
+      </div>
+      <div v-else class="space-y-3">
+        <div v-for="r in reviews" :key="r.id" class="border-t border-white/5 pt-3">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-white text-sm font-medium">{{ r.authorName || 'Alumno' }}</span>
+            <span class="text-yellow-400 text-sm">{{ '★'.repeat(r.score) }}{{ '☆'.repeat(5 - r.score) }}</span>
+          </div>
+          <p v-if="r.comment" class="text-gray-400 text-sm">{{ r.comment }}</p>
+          <p class="text-gray-600 text-xs mt-1">{{ formatDate(r.createdAt) }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import api from '@/services/api'
+import professionalProfileService from '@/services/professionalProfileService'
 import { useAuth } from '@/stores/auth'
+import { reviewService } from '@/services/reviewService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const router = useRouter()
 const route = useRoute()
-const { syncAtributos, perfilProfesionalCompleto, puedeVerContextoProfesor } = useAuth()
+const { user, syncAtributos, perfilProfesionalCompleto, puedeVerContextoProfesor } = useAuth()
 
 const primeraVez = computed(() => route.query.primeraVez === 'true')
 const hasTeacherRole = computed(() => puedeVerContextoProfesor.value)
@@ -221,6 +246,13 @@ const form = reactive({
 const saving = ref(false)
 const msg = ref('')
 const msgType = ref('')
+const reviews = ref([])
+
+const promedioReviews = computed(() => {
+  if (!reviews.value.length) return 0
+  return reviews.value.reduce((sum, r) => sum + r.score, 0) / reviews.value.length
+})
+
 
 const iniciales = computed(() => {
   const nombre = form.socialName || form.fullName || ''
@@ -229,21 +261,29 @@ const iniciales = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await api.get('/profesor/perfil')
-    if (res.data) {
-      Object.assign(form, res.data)
-      // Garantizar que los arrays siempre sean arrays
+    const data = await professionalProfileService.getMine()
+    if (data) {
+      Object.assign(form, data)
       if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
       if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
+      // Cargar reseñas del profesor usando su ID de usuario (= teacherId de las clases).
+      // No usar res.data.id: ese es el id del perfil profesional, no el del usuario.
+      const teacherId = user.value?.id
+      if (teacherId) {
+        const rev = await reviewService.getByTeacher(teacherId).then(r => r.data).catch(() => [])
+        reviews.value = Array.isArray(rev) ? rev : []
+      }
     }
-  } catch {}
+  } catch (err) {
+    console.error('Error al cargar perfil profesional', err)
+  }
 })
 
 async function save() {
   saving.value = true
   msg.value = ''
   try {
-    const res = await api.put('/profesor/perfil', {
+    const data = await professionalProfileService.save({
       especialidad: form.especialidad,
       nivelEnsenanza: form.nivelEnsenanza,
       experienceYears: form.experienceYears,
@@ -259,11 +299,13 @@ async function save() {
       sitioWeb: form.sitioWeb,
       linkedin: form.linkedin
     })
-    Object.assign(form, res.data)
+    Object.assign(form, data)
     if (!Array.isArray(form.disciplinasSecundarias)) form.disciplinasSecundarias = []
     if (!Array.isArray(form.tipoFormacion)) form.tipoFormacion = []
     // Refrescar atributos (perfilProfesionalCompleto puede haber cambiado)
-    try { await syncAtributos() } catch {}
+    try { await syncAtributos() } catch (err) {
+      console.error('Error al sincronizar atributos del perfil', err)
+    }
     msg.value = primeraVez.value
       ? 'Perfil guardado. Te llevamos a configurar tu clase...'
       : 'Perfil guardado correctamente'

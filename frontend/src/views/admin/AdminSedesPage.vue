@@ -11,7 +11,7 @@
         <p class="text-gray-400 text-sm mt-1">Todas las sedes registradas en el sistema</p>
       </div>
       <router-link to="/admin/roles"
-                   class="text-xs px-4 py-2 rounded-lg bg-yellow-500/10 text-yellow-300 border border-yellow-500/30 hover:bg-yellow-500/20 transition-colors">
+                   class="text-xs px-4 py-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 transition-colors font-medium">
         Ver solicitudes pendientes ({{ countPendientes }})
       </router-link>
     </div>
@@ -24,7 +24,7 @@
                 'px-4 py-2 rounded-lg text-sm transition-colors',
                 filtroActivo === t.value
                   ? 'bg-primary text-white'
-                  : 'bg-[#1a1d2e] text-gray-400 hover:text-white border border-white/10'
+                  : 'bg-[var(--bg-elevated)] text-gray-400 hover:text-white border border-white/10'
               ]">
         {{ t.label }}
         <span class="ml-2 text-xs opacity-70">({{ contarPorEstado(t.value) }})</span>
@@ -51,7 +51,7 @@
               </span>
             </div>
 
-            <p class="text-gray-400 text-sm mt-1">{{ s.address || 'Sin direccion' }}<span v-if="s.city"> · {{ s.city }}</span></p>
+            <p class="text-gray-400 text-sm mt-1">{{ s.address || 'Sin direccion' }}<span v-if="s.city"> · {{ s.city }}</span><span v-if="s.region"> · {{ s.region }}</span><span v-if="s.comuna"> · {{ s.comuna }}</span></p>
 
             <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-400">
               <p v-if="s.adminFullName"><span class="text-gray-500">Admin:</span> <span class="text-white">{{ s.adminFullName }}</span> <span class="text-gray-500">({{ s.adminEmail }})</span></p>
@@ -74,7 +74,7 @@
 
           <div class="flex flex-col gap-2 flex-shrink-0 min-w-[110px]">
             <router-link :to="'/admin/sedes/' + s.id + '/documentos'"
-                         class="text-xs px-3 py-1.5 rounded-lg bg-[#1a1d2e] border border-white/10 text-gray-300 hover:text-white text-center">
+                         class="text-xs px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-white/10 text-gray-300 hover:text-white text-center">
               Documentos
             </router-link>
             <button v-if="s.status === 'PENDIENTE_APROBACION'"
@@ -104,18 +104,126 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal: confirmar aprobar -->
+  <Teleport to="body">
+    <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="modalAprobar.show" class="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="modalAprobar.show = false"></div>
+        <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 scale-95 translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
+          <div v-if="modalAprobar.show" class="relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-green-500/15 border border-green-500/25 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <h3 class="text-base font-semibold text-white mb-2">Aprobar sede</h3>
+              <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+                ¿Confirmas la aprobación de <span class="text-white font-medium">{{ modalAprobar.sede?.name }}</span>?
+                El administrador de la sede será notificado.
+              </p>
+              <div class="flex justify-center gap-3">
+                <button @click="modalAprobar.show = false" class="btn-secondary text-sm px-5">Cancelar</button>
+                <button @click="confirmarAprobar" class="text-sm px-5 py-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 transition-colors font-medium">Aprobar sede</button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Modal: rechazo con motivo -->
+  <Teleport to="body">
+    <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="modalMotivo.show" class="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="modalMotivo.show = false"></div>
+        <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 scale-95 translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
+          <div v-if="modalMotivo.show" class="relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
+                 :class="modalMotivo.tipo === 'rechazar' ? 'bg-red-500/15 border border-red-500/25' : 'bg-orange-500/15 border border-orange-500/25'">
+              <svg class="w-6 h-6" :class="modalMotivo.tipo === 'rechazar' ? 'text-red-400' : 'text-orange-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+              </svg>
+            </div>
+            <h3 class="text-base font-semibold text-white mb-1 text-center">
+              {{ modalMotivo.tipo === 'rechazar' ? 'Rechazar sede' : 'Suspender sede' }}
+            </h3>
+            <p class="text-gray-400 text-sm mb-4 text-center">
+              <span class="text-white font-medium">{{ modalMotivo.sede?.name }}</span>
+            </p>
+            <label class="block text-sm text-gray-300 mb-2">
+              {{ modalMotivo.tipo === 'rechazar' ? 'Motivo del rechazo *' : 'Motivo de la suspensión (opcional)' }}
+            </label>
+            <textarea v-model="modalMotivo.motivo" rows="3" class="input-field text-sm mb-4"
+              :placeholder="modalMotivo.tipo === 'rechazar' ? 'Ej: Falta documentación legal, dirección no verificada...' : 'Ej: Problemas con el espacio, revisión de cumplimiento...'"
+            ></textarea>
+            <p v-if="modalMotivo.error" class="text-red-400 text-xs mb-3">{{ modalMotivo.error }}</p>
+            <div class="flex justify-end gap-3">
+              <button @click="modalMotivo.show = false" class="btn-secondary text-sm px-5">Cancelar</button>
+              <button @click="confirmarMotivo"
+                class="text-sm px-5 py-2 rounded-lg font-medium transition-colors border"
+                :class="modalMotivo.tipo === 'rechazar'
+                  ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border-red-500/30'
+                  : 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 border-orange-500/30'">
+                {{ modalMotivo.tipo === 'rechazar' ? 'Rechazar sede' : 'Suspender sede' }}
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Modal: confirmar reactivar -->
+  <Teleport to="body">
+    <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="modalReactivar.show" class="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="modalReactivar.show = false"></div>
+        <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 scale-95 translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
+          <div v-if="modalReactivar.show" class="relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-green-500/15 border border-green-500/25 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+              </div>
+              <h3 class="text-base font-semibold text-white mb-2">Reactivar sede</h3>
+              <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+                ¿Confirmas la reactivación de <span class="text-white font-medium">{{ modalReactivar.sede?.name }}</span>?
+                Volverá a aparecer disponible para reservas.
+              </p>
+              <div class="flex justify-center gap-3">
+                <button @click="modalReactivar.show = false" class="btn-secondary text-sm px-5">Cancelar</button>
+                <button @click="confirmarReactivar" class="text-sm px-5 py-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 transition-colors font-medium">Reactivar</button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import { useToast } from '@/composables/useToast'
+import { formatDate } from '@/utils/dateFormatter'
 
 const toast = useToast()
 
 const sedes = ref([])
 const loading = ref(true)
 const filtroActivo = ref('TODOS')
+
+const modalAprobar = reactive({ show: false, sede: null })
+const modalReactivar = reactive({ show: false, sede: null })
+const modalMotivo = reactive({ show: false, sede: null, tipo: 'rechazar', motivo: '', error: '' })
 
 const tabs = [
   { value: 'TODOS', label: 'Todas' },
@@ -152,44 +260,68 @@ async function cargar() {
   loading.value = false
 }
 
-async function aprobar(sede) {
-  if (!confirm(`Aprobar la sede "${sede.name}"?`)) return
+function aprobar(sede) {
+  modalAprobar.sede = sede
+  modalAprobar.show = true
+}
+
+async function confirmarAprobar() {
+  modalAprobar.show = false
   try {
-    await adminService.approveVenue(sede.id)
+    await adminService.approveVenue(modalAprobar.sede.id)
+    toast.success?.('Sede aprobada correctamente')
     await cargar()
   } catch (e) {
     toast.error(e?.response?.data?.message || 'Error al aprobar la sede')
   }
 }
 
-async function rechazar(sede) {
-  const motivo = prompt(`Motivo del rechazo de "${sede.name}":`)
-  if (motivo === null) return
+function rechazar(sede) {
+  modalMotivo.sede = sede
+  modalMotivo.tipo = 'rechazar'
+  modalMotivo.motivo = ''
+  modalMotivo.error = ''
+  modalMotivo.show = true
+}
+
+function suspender(sede) {
+  modalMotivo.sede = sede
+  modalMotivo.tipo = 'suspender'
+  modalMotivo.motivo = ''
+  modalMotivo.error = ''
+  modalMotivo.show = true
+}
+
+async function confirmarMotivo() {
+  if (modalMotivo.tipo === 'rechazar' && !modalMotivo.motivo.trim()) {
+    modalMotivo.error = 'El motivo es obligatorio para rechazar una sede.'
+    return
+  }
+  modalMotivo.show = false
   try {
-    await adminService.rejectVenue(sede.id, motivo || 'No especificado')
+    if (modalMotivo.tipo === 'rechazar') {
+      await adminService.rejectVenue(modalMotivo.sede.id, modalMotivo.motivo.trim() || 'No especificado')
+      toast.success?.('Sede rechazada')
+    } else {
+      await adminService.toggleVenue(modalMotivo.sede.id, modalMotivo.motivo.trim())
+      toast.success?.('Sede suspendida')
+    }
     await cargar()
   } catch (e) {
-    toast.error(e?.response?.data?.message || 'Error al rechazar la sede')
+    toast.error(e?.response?.data?.message || 'Error al procesar la acción')
   }
 }
 
-// Suspende una sede APROBADA (reversible). Pide motivo opcional.
-async function suspender(sede) {
-  const motivo = prompt(`Motivo de la suspension de "${sede.name}":\n(opcional, pero recomendado para que el Admin de Sede lo entienda)`)
-  if (motivo === null) return  // cancelado
-  try {
-    await adminService.toggleVenue(sede.id, motivo || '')
-    await cargar()
-  } catch (e) {
-    toast.error(e?.response?.data?.message || 'Error al suspender la sede')
-  }
+function reactivar(sede) {
+  modalReactivar.sede = sede
+  modalReactivar.show = true
 }
 
-// Reactiva una sede SUSPENDIDA (vuelve a APROBADA).
-async function reactivar(sede) {
-  if (!confirm(`Reactivar la sede "${sede.name}"? Volvera a poder recibir reservas.`)) return
+async function confirmarReactivar() {
+  modalReactivar.show = false
   try {
-    await adminService.toggleVenue(sede.id, '')
+    await adminService.toggleVenue(modalReactivar.sede.id, '')
+    toast.success?.('Sede reactivada correctamente')
     await cargar()
   } catch (e) {
     toast.error(e?.response?.data?.message || 'Error al reactivar la sede')
@@ -218,10 +350,5 @@ function estadoClase(s) {
   if (s === 'RECHAZADA') return 'bg-red-500/10 text-red-300 border-red-500/30'
   if (s === 'SUSPENDIDA') return 'bg-orange-500/10 text-orange-300 border-orange-500/30'
   return 'bg-gray-500/10 text-gray-300 border-gray-500/30'
-}
-
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 </script>

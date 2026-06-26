@@ -69,23 +69,23 @@
         <h3 class="text-white font-medium">Equipamiento del espacio</h3>
         <div class="grid grid-cols-2 gap-y-2">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.hasMirrors" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.hasMirrors" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Espejos</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneBarraBallet" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneBarraBallet" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Barra de ballet</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneAireAcondicionado" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneAireAcondicionado" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Aire acondicionado</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneCalefaccion" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneCalefaccion" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Calefaccion</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneInsonorizacion" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneInsonorizacion" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Insonorizacion</span>
           </label>
         </div>
@@ -96,23 +96,23 @@
         <h3 class="text-white font-medium">Equipamiento audio / video</h3>
         <div class="grid grid-cols-2 gap-y-2">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.hasSound" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.hasSound" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Sistema de sonido</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneAmplificacion" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneAmplificacion" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Amplificacion</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneEntradaAuxiliar" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneEntradaAuxiliar" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Entrada auxiliar (AUX)</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneMicrofono" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneMicrofono" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Microfono</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneEquipoGrabacion" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneEquipoGrabacion" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Equipo de grabacion</span>
           </label>
         </div>
@@ -123,15 +123,15 @@
         <h3 class="text-white font-medium">Instrumentos disponibles</h3>
         <div class="grid grid-cols-3 gap-y-2">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tienePiano" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tienePiano" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Piano / Teclado</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneGuitarra" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneGuitarra" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Guitarra</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.tieneBateria" class="rounded border-gray-600 bg-[#1a1d2e] text-primary" />
+            <input type="checkbox" v-model="form.tieneBateria" class="rounded border-gray-600 bg-[var(--bg-elevated)] text-primary" />
             <span class="text-gray-300 text-sm">Bateria</span>
           </label>
         </div>
@@ -150,6 +150,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
+import scheduleService from '@/services/scheduleService'
 
 const router = useRouter()
 // identidadValidada se valida UNA sola vez al registrar el usuario.
@@ -217,6 +218,12 @@ async function submit() {
       tieneGuitarra: form.tieneGuitarra,
       tieneBateria: form.tieneBateria
     })
+
+    // La sala hereda el horario de la sede: se generan sus bloques de
+    // disponibilidad inmediatamente (best-effort; el cron y el calendario de la
+    // sede también regeneran si esto fallara).
+    try { await scheduleService.generateBlocks() } catch { /* se regenerará luego */ }
+
     msg.value = 'Sala registrada correctamente'
     msgType.value = 'success'
     setTimeout(() => router.push('/sede/salas'), 1500)

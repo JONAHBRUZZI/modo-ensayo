@@ -4,6 +4,7 @@ export default {
     './index.html',
     './src/**/*.{vue,js,ts,jsx,tsx}'
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -19,6 +20,22 @@ export default {
           700: '#3e3899',
           800: '#282366',
           900: '#110f33'
+        },
+        surface: {
+          base: 'var(--bg-base)',
+          card: 'var(--bg-surface)',
+          elevated: 'var(--bg-elevated)',
+          overlay: 'var(--bg-overlay)',
+          footer: 'var(--bg-footer)',
+          input: 'var(--bg-input)',
+        },
+        border: {
+          subtle: 'var(--border-subtle)',
+          DEFAULT: 'var(--border-default)',
+        },
+        text: {
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
         }
       }
     }

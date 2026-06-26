@@ -1,54 +1,59 @@
 import { ref, computed } from 'vue'
-import api from '@/services/api'
+import { supabase } from '@/services/supabase'
+import { decodeJwt } from '@/utils/jwt'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+// ============================================================================
+// Auth store — respaldado por Supabase Auth.
+// Mantiene el mismo contrato de localStorage que la versión Spring Boot
+// (`auth_token` = access_token JWT, `auth_user` = objeto usuario, `modoActual`)
+// para que el router y el resto de la app sigan funcionando sin cambios.
+// ============================================================================
 
-// Auth store class
+const DEFAULT_ATRIBUTOS = {
+  identidadValidada: false,
+  identidadEnRevision: false,
+  identidadRechazada: false,
+  tieneReservasActivas: false,
+  tieneAsignacionesActivas: false,
+  reservasSinClase: false,
+  reservasSinClaseCount: 0,
+  perfilProfesionalCompleto: false,
+  hasRoleTeacher: false,
+  tieneSedeAprobada: false,
+  estadoSolicitudSede: null,
+  motivoRechazoSede: null,
+  estadoProfesor: 'INACTIVO'
+}
+
 class AuthStore {
   constructor() {
     this.token = ref(localStorage.getItem('auth_token') || null)
-    this.user = ref(parseUser())
+    this.user = ref(parseStoredUser())
     this.modoActual = ref(localStorage.getItem('modoActual') || 'alumno')
   }
 
   setToken(token, refreshToken = null) {
     this.token.value = token
-    localStorage.setItem('auth_token', token)
-    if (refreshToken) {
-      localStorage.setItem('auth_refresh_token', refreshToken)
-    }
+    if (token) localStorage.setItem('auth_token', token)
+    else localStorage.removeItem('auth_token')
+    if (refreshToken) localStorage.setItem('auth_refresh_token', refreshToken)
+  }
+
+  setUser(user) {
+    this.user.value = user
+    if (user) localStorage.setItem('auth_user', JSON.stringify(user))
+    else localStorage.removeItem('auth_user')
   }
 
   getToken() {
     return this.token.value
   }
 
-  getRefreshToken() {
-    return localStorage.getItem('auth_refresh_token')
-  }
-
-  setUser(user) {
-    this.user.value = user
-    localStorage.setItem('auth_user', JSON.stringify(user))
-  }
-
-  getUser() {
-    return this.user.value
-  }
-
   isAuthenticated() {
     if (!this.token.value) return false
-    try {
-      const payload = jwtDecode(this.token.value)
-      return payload.exp * 1000 > Date.now()
-    } catch {
-      return false
-    }
-  }
-
-  hasRole(roles) {
-    if (!this.user.value?.roles) return false
-    return roles.some((r) => this.user.value.roles.includes(r))
+    const payload = decodeJwt(this.token.value)
+    if (!payload) return false
+    return payload.exp * 1000 > Date.now()
   }
 
   clearAuth() {
@@ -58,21 +63,9 @@ class AuthStore {
     localStorage.removeItem('auth_user')
     localStorage.removeItem('auth_refresh_token')
   }
-
-  logout() {
-    this.clearAuth()
-  }
 }
 
-function jwtDecode(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]))
-  } catch {
-    return {}
-  }
-}
-
-function parseUser() {
+function parseStoredUser() {
   try {
     const raw = localStorage.getItem('auth_user')
     if (!raw) return null
@@ -85,21 +78,91 @@ function parseUser() {
       phone: u.phone,
       roles: u.roles || ['USER'],
       enabled: u.enabled !== false,
-      atributosActivos: u.atributosActivos || {
-        identidadValidada: false,
-        identidadEnRevision: false,
-        tieneReservasActivas: false,
-        tieneAsignacionesActivas: false,
-        hasRoleTeacher: false,
-        estadoProfesor: 'INACTIVO'
-      }
+      atributosActivos: { ...DEFAULT_ATRIBUTOS, ...(u.atributosActivos || {}) }
     }
   } catch {
     return null
   }
 }
 
+function rolesFromSession(session) {
+  const roles = session?.user?.app_metadata?.roles
+  return Array.isArray(roles) && roles.length > 0 ? roles : ['USER']
+}
+
 const store = new AuthStore()
+
+/**
+ * Construye el objeto de usuario a partir de la sesión Supabase:
+ * roles desde app_metadata (JWT), datos desde `profiles`, derivados desde la RPC.
+ * @param {import('@supabase/supabase-js').Session} session
+ */
+async function buildUserFromSession(session) {
+  if (!session?.user) return null
+  const authUser = session.user
+  const roles = rolesFromSession(session)
+
+  const [{ data: profile }, { data: attrs }] = await Promise.all([
+    supabase.from('profiles').select('full_name, social_name, phone').eq('id', authUser.id).maybeSingle(),
+    supabase.rpc('get_my_attributes')
+  ])
+
+  return {
+    id: authUser.id,
+    email: authUser.email,
+    fullName: profile?.full_name || authUser.user_metadata?.full_name || authUser.email,
+    socialName: profile?.social_name || null,
+    phone: profile?.phone || null,
+    roles,
+    enabled: true,
+    atributosActivos: mapAtributos(attrs)
+  }
+}
+
+/** Normaliza la respuesta de get_my_attributes() al shape `atributosActivos`. */
+function mapAtributos(d) {
+  if (!d || d.error) return { ...DEFAULT_ATRIBUTOS }
+  const estado = d.identidadEstado
+  return {
+    identidadValidada: d.identidadValidada === true,
+    identidadEnRevision: estado === 'PENDIENTE' || estado === 'PENDING',
+    identidadRechazada: estado === 'RECHAZADO' || estado === 'REJECTED',
+    tieneReservasActivas: d.tieneReservasActivas === true,
+    tieneAsignacionesActivas: d.tieneAsignacionesActivas === true,
+    reservasSinClase: d.reservasSinClase === true,
+    reservasSinClaseCount: d.reservasSinClaseCount || 0,
+    perfilProfesionalCompleto: d.perfilProfesionalCompleto === true,
+    hasRoleTeacher: d.hasRoleTeacher === true,
+    tieneSedeAprobada: d.tieneSedeAprobada === true,
+    estadoSolicitudSede: d.estadoSolicitudSede || null,
+    motivoRechazoSede: d.motivoRechazoSede || null,
+    estadoProfesor: d.estadoProfesor || 'INACTIVO'
+  }
+}
+
+// Mantiene token + usuario sincronizados con la sesión de Supabase
+// (login, refresh automático del token, logout en otra pestaña, etc.).
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT' || !session) {
+    store.clearAuth()
+    return
+  }
+  store.setToken(session.access_token, session.refresh_token)
+  if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+    // IMPORTANTE: el callback corre DENTRO del lock de auth (navigator.locks).
+    // No se puede hacer await de otras llamadas Supabase aquí (from/rpc también
+    // piden el lock) → deadlock que cuelga TODAS las queries en "Cargando...".
+    // Se difiere con setTimeout(0) para construir el usuario fuera del lock.
+    setTimeout(async () => {
+      try {
+        const u = await buildUserFromSession(session)
+        if (u) store.setUser(u)
+      } catch (err) {
+        console.error('Error al construir el usuario de la sesión', err)
+      }
+    }, 0)
+  }
+})
 
 export function useAuth() {
   const token = store.token
@@ -124,10 +187,7 @@ export function useAuth() {
     return roles.includes('TEACHER') || roles.includes('VENUE_ADMIN') || roles.includes('ADMIN')
   })
 
-  // Botón Maestro: permanente una vez que el usuario tiene rol TEACHER (spec Sección 8)
-  const puedeVerContextoProfesor = computed(() => {
-    return user.value?.atributosActivos?.hasRoleTeacher || false
-  })
+  const puedeVerContextoProfesor = computed(() => user.value?.atributosActivos?.hasRoleTeacher || false)
   const puedeVerContextoSede = computed(() => user.value?.roles?.includes('VENUE_ADMIN') || false)
 
   const isAdmin = computed(() => user.value?.roles?.includes('ADMIN') || false)
@@ -140,48 +200,59 @@ export function useAuth() {
   })
 
   async function login(email, password) {
-    const res = await api.post('/auth/login', { email, password })
-    const { token: t, refreshToken: rt, user: u } = res.data
-    store.setToken(t, rt)
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw normalizeAuthError(error)
+    store.setToken(data.session.access_token, data.session.refresh_token)
+    const u = await buildUserFromSession(data.session)
     store.setUser(u)
     setModo('alumno')
     return u
   }
 
   async function googleLogin(credential) {
-    const res = await api.post('/auth/google', { credential })
-    const { token: t, refreshToken: rt, user: u } = res.data
-    store.setToken(t, rt)
+    // `credential` = ID token de Google Identity Services (One Tap / botón GIS).
+    const { data, error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: credential })
+    if (error) throw normalizeAuthError(error)
+    store.setToken(data.session.access_token, data.session.refresh_token)
+    const u = await buildUserFromSession(data.session)
     store.setUser(u)
     setModo('alumno')
     return u
   }
 
   async function register(fullName, email, password, phone, rut) {
-    const res = await api.post('/auth/register', {
-      fullName,
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      phone,
-      rut
+      options: { data: { full_name: fullName, phone: phone || '', rut: rut || '' } }
     })
-    const { token: t, refreshToken: rt, user: u } = res.data
-    store.setToken(t, rt)
+    if (error) throw normalizeAuthError(error)
+    // Si el proyecto exige confirmación de email, no habrá sesión todavía.
+    if (!data.session) {
+      return { requiresEmailConfirmation: true, email }
+    }
+    store.setToken(data.session.access_token, data.session.refresh_token)
+    const u = await buildUserFromSession(data.session)
     store.setUser(u)
     setModo('alumno')
     return u
   }
 
   async function logout() {
+    // 1. Invalidar sesión en Supabase (esto borra sb-*-auth-token de localStorage)
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${store.getToken()}` }
-      })
-    } catch {
-      // ignore
+      await supabase.auth.signOut({ scope: 'local' })
+    } catch (err) {
+      console.error('Error al cerrar sesión en Supabase', err)
     }
-    store.logout()
+    // 2. Limpiar nuestro estado personalizado
+    store.clearAuth()
+    // 3. Limpiar cualquier residuo de Supabase en localStorage por si signOut no lo hizo
+    const keysToRemove = Object.keys(localStorage).filter(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    )
+    keysToRemove.forEach((k) => localStorage.removeItem(k))
+    // 4. Redirigir (hard reload para limpiar estado in-memory)
     window.location.href = '/login'
   }
 
@@ -191,119 +262,70 @@ export function useAuth() {
   }
 
   function updateUserAttributes(attrs) {
-    if (user.value) {
-      user.value.atributosActivos = { ...user.value.atributosActivos, ...attrs }
-      const raw = JSON.parse(localStorage.getItem('auth_user') || '{}')
-      raw.atributosActivos = { ...raw.atributosActivos, ...attrs }
-      localStorage.setItem('auth_user', JSON.stringify(raw))
-    }
-  }
-
-  async function syncActividadMaestro() {
-    try {
-      const res = await api.get('/users/me/actividad-maestro')
-      if (res.data) {
-        updateUserAttributes({
-          tieneReservasActivas: res.data.tieneReservasActivas,
-          tieneAsignacionesActivas: res.data.tieneAsignacionesActivas
-        })
-      }
-    } catch {
-      // silencioso — no crítico
-    }
-  }
-
-  async function syncIdentityStatus() {
-    try {
-      const res = await api.get('/users/me/identity-verification')
-      if (res.data) {
-        const status = res.data.status
-        updateUserAttributes({
-          identidadValidada: status === 'APPROVED',
-          identidadEnRevision: status === 'PENDING',
-          identidadRechazada: status === 'REJECTED'
-        })
-      }
-    } catch {
-      updateUserAttributes({ identidadValidada: false, identidadEnRevision: false, identidadRechazada: false })
-    }
+    if (!user.value) return
+    const merged = { ...user.value, atributosActivos: { ...user.value.atributosActivos, ...attrs } }
+    store.setUser(merged)
   }
 
   async function syncAtributos() {
     try {
-      const res = await api.get('/users/me/atributos')
-      if (res.data) {
-        updateUserAttributes({
-          identidadValidada: res.data.identidadValidada,
-          identidadEnRevision: res.data.identidadEstado === 'PENDING' || res.data.identidadEstado === 'PENDIENTE',
-          identidadRechazada: res.data.identidadEstado === 'REJECTED' || res.data.identidadEstado === 'RECHAZADA',
-          tieneReservasActivas: res.data.tieneReservasActivas,
-          tieneAsignacionesActivas: res.data.tieneAsignacionesActivas,
-          tieneSedeAprobada: res.data.tieneSedeAprobada,
-          estadoSolicitudSede: res.data.estadoSolicitudSede || null,
-          motivoRechazoSede: res.data.motivoRechazoSede || null,
-          reservasSinClase: res.data.reservasSinClase,
-          reservasSinClaseCount: res.data.reservasSinClaseCount || 0,
-          perfilProfesionalCompleto: res.data.perfilProfesionalCompleto || false,
-          hasRoleTeacher: res.data.hasRoleTeacher || false,
-          estadoProfesor: res.data.estadoProfesor || 'INACTIVO'
-        })
-        if (res.data.hasRoleTeacher && user.value && !user.value.roles.includes('TEACHER')) {
-          user.value.roles.push('TEACHER')
-          localStorage.setItem('auth_user', JSON.stringify(user.value))
-        }
-        if (res.data.tieneSedeAprobada && user.value && !user.value.roles.includes('VENUE_ADMIN')) {
-          user.value.roles.push('VENUE_ADMIN')
-          localStorage.setItem('auth_user', JSON.stringify(user.value))
+      const { data, error } = await supabase.rpc('get_my_attributes')
+      if (error) throw error
+      updateUserAttributes(mapAtributos(data))
+      // Reflejar roles emergentes (TEACHER / VENUE_ADMIN) sin re-login.
+      if (user.value) {
+        const roles = user.value.roles || []
+        const next = [...roles]
+        if (data?.hasRoleTeacher && !next.includes('TEACHER')) next.push('TEACHER')
+        if (data?.tieneSedeAprobada && !next.includes('VENUE_ADMIN')) next.push('VENUE_ADMIN')
+        if (next.length !== roles.length) {
+          store.setUser({ ...user.value, roles: next })
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error('Error al sincronizar atributos de usuario', err)
+    }
+  }
+
+  // Las versiones específicas delegan en el superset (una sola RPC, datos consistentes).
+  async function syncIdentityStatus() {
+    await syncAtributos()
+  }
+
+  async function syncActividadMaestro() {
+    await syncAtributos()
   }
 
   async function refreshProfile() {
     try {
-      const res = await api.get('/users/me')
-      if (res.data) {
-        const d = res.data
-        const merged = {
-          id: d.id,
-          email: d.email,
-          fullName: d.fullName,
-          socialName: d.socialName,
-          phone: d.phone,
-          roles: d.roles || ['USER'],
-          enabled: d.enabled !== false,
-          atributosActivos: {
-            ...(user.value?.atributosActivos || {}),
-            identidadValidada: d.identidadValidada || false,
-            identidadEnRevision: d.identidadEnRevision || false
-          }
-        }
-        store.setUser(merged)
-      }
-    } catch { /* silencioso */ }
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const u = await buildUserFromSession(session)
+      if (u) store.setUser(u)
+    } catch (err) {
+      console.error('Error al refrescar el perfil', err)
+    }
   }
 
   async function updateUserProfile(data) {
-    const res = await api.put('/users/me', data)
-    store.setUser(res.data)
-    return res.data
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('No autenticado')
+    const patch = {}
+    if (data.fullName !== undefined) patch.full_name = data.fullName
+    if (data.socialName !== undefined) patch.social_name = data.socialName
+    if (data.phone !== undefined) patch.phone = data.phone
+    const { error } = await supabase.from('profiles').update(patch).eq('id', session.user.id)
+    if (error) throw error
+    const u = await buildUserFromSession(session)
+    store.setUser(u)
+    return u
   }
 
   async function refreshToken() {
     try {
-      const rt = store.getRefreshToken()
-      if (!rt) return false
-      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${rt}`
-        }
-      })
-      if (!res.ok) return false
-      const data = await res.json()
-      store.setToken(data.token, data.refreshToken)
+      const { data, error } = await supabase.auth.refreshSession()
+      if (error || !data.session) return false
+      store.setToken(data.session.access_token, data.session.refresh_token)
       return true
     } catch {
       return false
@@ -347,5 +369,13 @@ export function useAuth() {
     syncAtributos,
     syncActividadMaestro,
     refreshProfile
+  }
+}
+
+/** Convierte un AuthError de Supabase al shape estilo-axios que las vistas esperan. */
+function normalizeAuthError(error) {
+  return {
+    response: { status: error.status || 400, data: { message: error.message } },
+    message: error.message
   }
 }

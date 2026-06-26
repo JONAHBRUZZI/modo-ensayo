@@ -10,7 +10,7 @@ const props = defineProps({ status: { type: String, default: '' } })
 const MAP = {
   ACTIVE:              { label: 'Activo',        cls: 'badge-green'  },
   APPROVED:            { label: 'Aprobado',       cls: 'badge-green'  },
-  COMPLETED:           { label: 'Completado',     cls: 'badge-green'  },
+  COMPLETED:           { label: 'Realizada',      cls: 'badge-blue'   },
   REALIZED:            { label: 'Realizado',      cls: 'badge-green'  },
   ENABLED:             { label: 'Habilitado',     cls: 'badge-green'  },
   PUBLISHED:           { label: 'Publicado',      cls: 'badge-green'  },

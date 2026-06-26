@@ -20,7 +20,7 @@
       <div>
         <p class="text-yellow-300 text-sm font-medium">Identidad no validada</p>
         <p class="text-gray-400 text-sm">Necesitas validar tu identidad para crear clases.</p>
-        <router-link to="/alumno/validación-identidad" class="text-primary text-sm underline mt-1 inline-block">Validar ahora</router-link>
+        <router-link to="/profile/identity" class="text-primary text-sm underline mt-1 inline-block">Validar ahora</router-link>
       </div>
     </div>
 
@@ -35,13 +35,12 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Disciplina *</label>
-          <select v-model="form.discipline" required class="input-field">
-            <option value="">Seleccionar</option>
-            <option value="CUECA">Cueca</option><option value="BALLET">Ballet</option><option value="DANZA">Danza</option>
-            <option>TEATRO</option><option>CANTO</option><option>GUITARRA</option>
-            <option>BATERIA</option><option>BAJO</option><option>PIANO</option>
-            <option>VIOLIN</option><option>SAXOFON</option><option>OTRO</option>
-          </select>
+          <input v-model="form.discipline" required class="input-field" placeholder="Ej: Guitarra, Ballet, Karate..." list="discipline-list" autocomplete="off" />
+          <datalist id="discipline-list">
+            <optgroup v-for="g in disciplineGroups" :key="g.category || 'otras'" :label="g.label">
+              <option v-for="item in g.items" :key="item" :value="item" />
+            </optgroup>
+          </datalist>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Nivel *</label>
@@ -107,18 +106,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '@/services/classService'
 import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
-// identidadValidada se valida UNA sola vez al registrar el usuario.
-// Todos los contextos (profesor, sede, alumno) leen el mismo estado desde el store.
 const { identidadValidada } = useAuth()
 
 const loading = ref(false)
 const error = ref('')
+const disciplineGroups = ref([])
+
+onMounted(async () => {
+  try {
+    const data = await classService.getDisciplines()
+    disciplineGroups.value = Array.isArray(data) ? data : []
+  } catch { disciplineGroups.value = [] }
+})
 
 const form = ref({
   title: '',

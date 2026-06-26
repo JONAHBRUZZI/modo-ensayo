@@ -38,7 +38,7 @@ function alertClass(type) {
     case 'success': return 'bg-green-900/90 border-green-500/30 text-green-100'
     case 'error': return 'bg-red-900/90 border-red-500/30 text-red-100'
     case 'warning': return 'bg-yellow-900/90 border-yellow-500/30 text-yellow-100'
-    default: return 'bg-[#1a1d2e] border-white/10 text-gray-200'
+    default: return 'bg-[var(--bg-elevated)] border-white/10 text-[var(--text-primary)]'
   }
 }
 

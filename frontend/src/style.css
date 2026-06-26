@@ -2,9 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ================================
+   CSS Custom Properties - Themes
+   ================================ */
+:root {
+  --bg-base: #0f1119;
+  --bg-surface: #111420;
+  --bg-elevated: #1a1d2e;
+  --bg-overlay: #161824;
+  --bg-footer: #0b0d14;
+  --bg-input: #1a1d2e;
+  --border-subtle: #1e2130;
+  --border-default: #2a2d3e;
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  --scrollbar-track: #0f1119;
+  --scrollbar-thumb: #1e2130;
+  --scrollbar-thumb-hover: #2a2d3e;
+}
+
+.light {
+  --bg-base: #f7f4ec;
+  --bg-surface: #fffdf8;
+  --bg-elevated: #f0ede4;
+  --bg-overlay: #ece9e0;
+  --bg-footer: #e8e5db;
+  --bg-input: #f0ede4;
+  --border-subtle: #e0ddd4;
+  --border-default: #ccc9bf;
+  --text-primary: #211d16;
+  --text-secondary: #7a7060;
+  --scrollbar-track: #f7f4ec;
+  --scrollbar-thumb: #d6d3ca;
+  --scrollbar-thumb-hover: #c0bdb4;
+}
+
 @layer base {
   body {
-    @apply bg-[#0f1119] text-white;
+    background: var(--bg-base);
+    color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
@@ -18,7 +54,16 @@
   }
 
   .btn-secondary {
-    @apply bg-[#1a1d2e] hover:bg-[#22253a] text-white font-medium py-2.5 px-5 rounded-xl transition-all duration-200 border border-[#2a2d3e];
+    @apply font-medium py-2.5 px-5 rounded-xl transition-all duration-200;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+  }
+  .btn-secondary:hover {
+    background: #22253a;
+  }
+  .light .btn-secondary:hover {
+    background: #e8e5db;
   }
 
   .btn-danger {
@@ -26,13 +71,17 @@
   }
 
   .input-field {
-    @apply w-full bg-[#1a1d2e] border border-[#2a2d3e] rounded-xl px-4 py-3 text-white placeholder-gray-600
+    @apply w-full rounded-xl px-4 py-3 placeholder-gray-500
            focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
   }
 
   .card {
-    @apply bg-[#111420] rounded-2xl border border-[#1e2130] p-6 relative overflow-hidden
-           transition-all duration-200;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    @apply rounded-2xl p-6 relative overflow-hidden transition-all duration-200;
   }
   .card::before {
     content: '';
@@ -53,28 +102,42 @@
   .badge-purple { @apply bg-primary/15 text-primary-300 ring-1 ring-primary/20; }
 }
 
+@layer utilities {
+  .bg-surface-base { background: var(--bg-base); }
+  .bg-surface-card { background: var(--bg-surface); }
+  .bg-surface-elevated { background: var(--bg-elevated); }
+  .bg-surface-overlay { background: var(--bg-overlay); }
+  .bg-surface-footer { background: var(--bg-footer); }
+  .border-theme-subtle { border-color: var(--border-subtle); }
+  .border-theme-default { border-color: var(--border-default); }
+  .text-theme-primary { color: var(--text-primary); }
+  .text-theme-secondary { color: var(--text-secondary); }
+}
+
+/* En modo claro, text-white sobre fondos que cambian a beige sería invisible.
+   Este override lo convierte al color de texto del tema. Los elementos con
+   bg coloreado (gradientes, bg-primary, bg-red-*) siguen siendo legibles porque
+   el fondo permanece de color. Los componentes que usan @apply text-white en
+   style.css (btn-primary, btn-danger) NO son afectados por este selector. */
+.light .text-white {
+  color: var(--text-primary);
+}
+
+/* Badges de estado: en modo oscuro usan texto pastel (-300) sobre un fondo
+   coloreado translúcido (bg-*-500/20). En modo claro ese fondo se aclara y el
+   texto pastel pierde contraste (ej. "VERIFICADA" casi invisible). Estos tokens
+   -300 solo se usan en badges sobre fondo translúcido, así que oscurecerlos en
+   modo claro es seguro y mejora el contraste sin afectar otros elementos. */
+.light .text-green-300 { color: #15803d; }   /* green-700 */
+.light .text-amber-300 { color: #b45309; }   /* amber-700 */
+.light .text-indigo-300 { color: #4338ca; }  /* indigo-700 */
+.light .text-red-300 { color: #b91c1c; }     /* red-700 */
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #0f1119; }
-::-webkit-scrollbar-thumb { background: #1e2130; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #2a2d3e; }
-
-/* Session timeout modal */
-.session-timeout-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 9999;
-}
-.session-timeout-modal {
-  background: #111420;
-  border: 1px solid #2a2d3e;
-  border-radius: 1rem;
-  padding: 2rem;
-  max-width: 400px; width: 90%;
-  text-align: center;
-}
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* Accessibility: respeta la preferencia del sistema de movimiento reducido */
 @media (prefers-reduced-motion: reduce) {

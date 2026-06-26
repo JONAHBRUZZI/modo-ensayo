@@ -88,6 +88,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
+import { formatearRut as formatearRutUtil, validateRut as validateRutUtil } from '@/utils/rutValidator'
 import userService from '@/services/userService'
 import uploadService from '@/services/uploadService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
@@ -117,39 +118,23 @@ const minBirthDate = computed(() => {
 })
 
 onMounted(async () => {
-  try { verification.value = await userService.getIdentityVerification() } catch {}
+  try { verification.value = await userService.getIdentityVerification() } catch (err) {
+    console.error('Error al cargar verificación de identidad', err)
+  }
 })
 
 function handleFile(e) { file.value = e.target.files[0] }
 
 function formatearRut() {
-  // Cualquier edicion del RUT limpia el error de duplicado para permitir reintentar
   if (msgType.value === 'error') { msg.value = ''; msgType.value = '' }
   if (form.documentType !== 'RUT' || !form.documentNumber) return
-  let valor = form.documentNumber.replace(/[^0-9kK]/g, '')
-  if (valor.length < 2) { form.documentNumber = valor; return }
-  const dv = valor.slice(-1)
-  let cuerpo = valor.slice(0, -1)
-  cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  form.documentNumber = cuerpo + '-' + dv
+  form.documentNumber = formatearRutUtil(form.documentNumber)
 }
 
 function validarRut() {
   rutError.value = ''
   if (form.documentType !== 'RUT' || !form.documentNumber) return
-  const rut = form.documentNumber.replace(/[^0-9kK]/g, '')
-  if (rut.length < 2) { rutError.value = 'RUT invalido'; return }
-  const dv = rut.slice(-1).toUpperCase()
-  const cuerpo = rut.slice(0, -1)
-  let suma = 0
-  let multiplo = 2
-  for (let i = cuerpo.length - 1; i >= 0; i--) {
-    suma += parseInt(cuerpo[i]) * multiplo
-    multiplo = multiplo < 7 ? multiplo + 1 : 2
-  }
-  const dvEsperado = 11 - (suma % 11)
-  const dvCalculado = dvEsperado === 11 ? '0' : dvEsperado === 10 ? 'K' : dvEsperado.toString()
-  if (dv !== dvCalculado) rutError.value = 'RUT invalido: el digito verificador no coincide'
+  if (!validateRutUtil(form.documentNumber)) rutError.value = 'RUT invalido: el digito verificador no coincide'
 }
 
 async function upload() {

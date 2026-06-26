@@ -1,371 +1,402 @@
 # Modelo de Datos · Modo Ensayo
 
-> **Versión:** 2.0 — Actualizado al 30-may-2026
-> **Motor:** PostgreSQL 16
-> **Tablas:** 22 entidades principales
+> **Motor:** PostgreSQL 16 (Supabase)
+> **Esquema:** `public` (27 tablas) + `auth` (gestionado por Supabase Auth)
+> **Seguridad:** Row Level Security (RLS) habilitado en todas las tablas
+> **Generado a partir del schema real del proyecto hosteado.**
 
-## 1. Diagrama Entidad-Relación (conceptual)
+## 1. Identidad y autenticación
 
-```mermaid
-erDiagram
-    USERS ||--o{ USER_ROLES : "tiene"
-    ROLES ||--o{ USER_ROLES : "asignado"
-    USERS ||--o| PROFESSIONAL_PROFILES : "puede tener"
-    USERS ||--o{ IDENTITY_VERIFICATIONS : "valida"
-    USERS ||--o{ ASSOCIATES : "tiene"
-    USERS ||--o{ REFUND_METHODS : "configura"
+La identidad la gestiona **Supabase Auth** en el esquema `auth` (`auth.users`).
+No existen tablas propias `users` / `roles` / `user_roles`: los roles viajan en
+el claim `app_metadata.roles` del JWT. Cada usuario tiene un registro espejo en
+`public.profiles` creado por el trigger `handle_new_user`.
 
-    USERS ||--o{ VENUES : "admin"
-    VENUES ||--o{ ROOMS : "contiene"
-    VENUES ||--o{ VENUE_DOCUMENTS : "respalda"
-    VENUES ||--o{ VENUE_PHOTOS : "muestra"
+### `profiles`
+PK `id` = `auth.users.id`.
 
-    ROOMS ||--o{ CLASSES : "alberga"
-    USERS ||--o{ CLASSES : "dicta"
-    CLASSES ||--o{ ENROLLMENTS : "inscribe"
-    CLASSES ||--o{ CART_ITEMS : "agrega a"
-    CLASSES ||--o{ CLASS_STATUS_HISTORY : "audita"
-
-    ENROLLMENTS ||--o{ PAYMENTS : "genera"
-    PAYMENTS ||--o{ PAYMENT_ITEMS : "agrupa"
-    CONSOLIDATED_PAYMENTS ||--o{ PAYMENT_ITEMS : "contiene"
-
-    CLASSES ||--o{ RESCHEDULES : "reagenda"
-    RESCHEDULES ||--o{ RESCHEDULE_RESPONSES : "responde"
-
-    USERS ||--o{ REVIEWS : "evalua"
-    CLASSES ||--o{ REVIEWS : "es evaluada"
-
-    USERS ||--o{ NOTIFICATIONS : "recibe"
-```
-
-## 2. Tablas principales
-
-### 2.1 Usuarios y autenticación
-
-#### `users`
-| Columna | Tipo | Constraints |
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK, DEFAULT uuid_generate_v4() |
-| email | TEXT | UNIQUE, NOT NULL |
-| password_hash | TEXT | NOT NULL |
-| full_name | TEXT | NOT NULL |
-| social_name | TEXT | |
-| rut | TEXT | UNIQUE |
-| phone | TEXT | |
-| identidad_validada | BOOLEAN | DEFAULT false |
-| identidad_estado | TEXT | CHECK IN ('SIN_VALIDAR','PENDING','APROBADO','REJECTED') |
-| tiene_sede_aprobada | BOOLEAN | DEFAULT false |
-| modo_actual | TEXT | DEFAULT 'alumno' |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK, FK → auth.users(id) |
+| full_name | text | NOT NULL |
+| social_name | text | |
+| phone | text | |
+| rut | text | |
+| identidad_validada | bool | DEFAULT false |
+| identidad_estado | text | DEFAULT 'SIN_VALIDAR' |
+| tiene_sede_aprobada | bool | DEFAULT false |
+| preferred_refund_method_id | uuid | FK → refund_methods(id) |
+| created_at / updated_at | timestamptz | |
 
-#### `roles`
-| Columna | Tipo | Constraints |
+### `professional_profiles`
+Perfil de profesor. PK `id` = `auth.users.id`.
+
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL | PK |
-| name | TEXT | UNIQUE, NOT NULL ('USER','TEACHER','VENUE_ADMIN','ADMIN') |
+| id | uuid | PK / FK → auth.users(id) |
+| description, biografia, especialidad, specialty | text | |
+| disciplina_principal | text | |
+| disciplinas_secundarias | text[] | DEFAULT '{}' |
+| nivel_ensenanza, formacion, detalle_formacion | text | |
+| tipo_formacion | text[] | DEFAULT '{}' |
+| experience_years | int | |
+| instagram, youtube, sitio_web, linkedin | text | |
+| photo_url | text | |
+| average_rating | numeric | |
 
-#### `user_roles`
-| Columna | Tipo | Constraints |
+### `identity_verifications`
+| Columna | Tipo | Notas |
 |---|---|---|
-| user_id | UUID | PK, FK → users(id) ON DELETE CASCADE |
-| role_id | INT | PK, FK → roles(id) ON DELETE CASCADE |
+| id | uuid | PK |
+| user_id | uuid | FK → auth.users(id) |
+| document_url, document_type, document_number | text | |
+| full_name | text | |
+| birth_date | date | |
+| status | text | DEFAULT 'PENDING' |
+| reviewed_by | uuid | |
 
-#### `identity_verifications`
-| Columna | Tipo | Constraints |
+### `associates`
+Beneficiarios/familiares a cargo de un usuario.
+
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| user_id | UUID | FK → users(id) |
-| document_type | TEXT | (RUT, PASAPORTE, etc.) |
-| document_number | TEXT | |
-| document_url | TEXT | NOT NULL |
-| status | TEXT | CHECK IN ('PENDING','APPROVED','REJECTED') |
-| reviewed_by | UUID | FK → users(id) |
-| rejection_reason | TEXT | |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| owner_id | uuid | FK → auth.users(id) |
+| name | text | NOT NULL |
+| email, relationship, rut | text | |
+| birth_date | date | |
+| status | text | DEFAULT 'ACTIVE' |
 
-#### `professional_profiles` (NUEVO)
-| Columna | Tipo | Constraints |
+### `refund_methods`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| user_id | UUID | UNIQUE, FK → users(id) |
-| description | TEXT | |
-| biografia | TEXT | |
-| especialidad | TEXT | |
-| disciplina_principal | TEXT | |
-| disciplinas_secundarias | TEXT | (lista separada por `\|\|`) |
-| nivel_ensenanza | TEXT | |
-| formacion | TEXT | |
-| tipo_formacion | TEXT | (lista separada por `\|\|`) |
-| detalle_formacion | TEXT | |
-| experience_years | INT | |
-| instagram | TEXT | |
-| youtube | TEXT | |
-| sitio_web | TEXT | |
-| linkedin | TEXT | |
-| photo_url | TEXT | |
-| average_rating | NUMERIC(3,2) | |
+| id | uuid | PK |
+| user_id | uuid | FK → auth.users(id) |
+| bank, account_type, account_number, account_holder, rut | text | datos bancarios |
 
-#### `associates`
-| Columna | Tipo | Constraints |
+## 2. Sedes y salas
+
+### `venues`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| owner_id | UUID | FK → users(id) ON DELETE CASCADE |
-| name | TEXT | NOT NULL |
-| relation | TEXT | (hijo, hermano, pareja, etc.) |
-| birth_date | DATE | |
-| rut | TEXT | |
+| id | uuid | PK |
+| admin_id | uuid | FK → auth.users(id) |
+| name | text | NOT NULL |
+| city, region, comuna, address, description | text | |
+| image_url, phone, email | text | |
+| status | `estado_sede` | DEFAULT 'PENDIENTE_APROBACION' |
+| tipo | `tipo_sede` | DEFAULT 'SEDE' |
+| rejection_reason | text | |
+| instagram, youtube, sitio_web, facebook | text | |
 
-#### `refund_methods`
-| Columna | Tipo | Constraints |
+### `rooms`
+Salas de una sede, con un amplio set de atributos de equipamiento.
+
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| user_id | UUID | FK → users(id) |
-| method | TEXT | (TRANSFERENCIA_BANCARIA, MERCADOPAGO, etc.) |
-| details | JSONB | |
-| is_preferred | BOOLEAN | DEFAULT false |
+| id | uuid | PK |
+| venue_id | uuid | FK → venues(id) |
+| name | text | NOT NULL |
+| capacity, tamano_m2 | int | |
+| tipo_piso | `tipo_piso` | |
+| floor_type, type, equipment, image_url | text | |
+| price_per_hour | numeric | |
+| activa | bool | DEFAULT true |
+| has_mirrors, has_sound, tiene_barra_ballet, tiene_aire_acondicionado, tiene_calefaccion, tiene_insonorizacion, tiene_amplificacion, tiene_entrada_auxiliar, tiene_microfono, tiene_equipo_grabacion, tiene_piano, tiene_guitarra, tiene_bateria | bool | DEFAULT false |
 
-### 2.2 Sedes y salas
-
-#### `venues`
-| Columna | Tipo | Constraints |
+### `venue_documents`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| admin_id | UUID | FK → users(id) |
-| name | TEXT | NOT NULL |
-| tipo_sede | TEXT | ('SEDE', 'HOME_STUDIO') |
-| address | TEXT | |
-| comuna | TEXT | |
-| region | TEXT | |
-| description | TEXT | |
-| phone | TEXT | |
-| email | TEXT | |
-| status | TEXT | CHECK IN ('PENDIENTE','APROBADA','RECHAZADA') |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| venue_id | uuid | FK → venues(id) |
+| file_url | text | NOT NULL |
+| tipo | `tipo_documento_sede` | NOT NULL |
+| nombre, tipo_archivo | text | |
+| estado | text | DEFAULT 'PENDIENTE' |
+| motivo_rechazo | text | |
 
-#### `rooms`
-| Columna | Tipo | Constraints |
+### `venue_photos`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| venue_id | UUID | FK → venues(id) ON DELETE CASCADE |
-| name | TEXT | |
-| capacity | INT | NOT NULL |
-| floor_type | TEXT | |
-| has_mirrors | BOOLEAN | DEFAULT false |
-| has_sound | BOOLEAN | DEFAULT false |
-| has_ballet_bar | BOOLEAN | DEFAULT false |
-| has_air_conditioning | BOOLEAN | DEFAULT false |
-| has_natural_light | BOOLEAN | DEFAULT false |
-| lighting | TEXT | |
-| wall_color | TEXT | |
-| price_per_hour | INT | |
+| id | uuid | PK |
+| owner_id | uuid | venue o room |
+| owner_type | text | DEFAULT 'VENUE' ('VENUE'/'ROOM') |
+| photo_url | text | NOT NULL |
+| alt_text | text | |
+| display_order | int | DEFAULT 0 |
+| principal | bool | DEFAULT false |
 
-#### `venue_documents` (NUEVO)
-| Columna | Tipo | Constraints |
+### `venue_schedules`
+Horario de apertura por día.
+
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| venue_id | UUID | FK → venues(id) |
-| nombre | TEXT | |
-| tipo_archivo | TEXT | (MIME type) |
-| file_url | TEXT | NOT NULL |
-| estado | TEXT | DEFAULT 'PENDIENTE' |
-| motivo_rechazo | TEXT | |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| venue_id | uuid | FK → venues(id) |
+| day_of_week | text | |
+| open_time, close_time | time | |
 
-#### `venue_photos` (NUEVO)
-| Columna | Tipo | Constraints |
+### `venue_block_configs`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| owner_id | UUID | (puede ser venue o room) |
-| owner_type | TEXT | ('VENUE', 'ROOM') |
-| photo_url | TEXT | NOT NULL |
-| alt_text | TEXT | |
-| display_order | INT | DEFAULT 0 |
-| principal | BOOLEAN | DEFAULT false |
+| id | uuid | PK |
+| venue_id | uuid | FK → venues(id) |
+| block_duration_min | int | DEFAULT 60 |
+| gap_between_blocks_min | int | DEFAULT 15 |
 
-#### `room_availability`
-| Columna | Tipo | Constraints |
+### `room_schedule_blocks`
+Bloques de agenda generados por sala.
+
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| room_id | UUID | FK → rooms(id) ON DELETE CASCADE |
-| start_time | TIMESTAMPTZ | |
-| end_time | TIMESTAMPTZ | |
+| id | uuid | PK |
+| room_id | uuid | FK → rooms(id) |
+| start_time, end_time | timestamptz | |
+| status | `block_status` | DEFAULT 'AVAILABLE' |
+| class_id | uuid | FK → classes(id) |
+| held_until | timestamptz | Hasta cuándo está reservado temporalmente (HELD) |
+| held_by | uuid | FK → auth.users(id); usuario que inició el pago |
 
-### 2.3 Clases
-
-#### `classes`
-| Columna | Tipo | Constraints |
+### `room_maintenances`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| room_id | UUID | FK → rooms(id) |
-| teacher_id | UUID | FK → users(id) |
-| venue_id | UUID | FK → venues(id) |
-| title | TEXT | |
-| discipline | TEXT | |
-| level | TEXT | |
-| description | TEXT | |
-| capacity | INT | |
-| duration | INT | (minutos) |
-| price | INT | |
-| min_age | INT | |
-| max_age | INT | |
-| start_time | TIMESTAMPTZ | |
-| end_time | TIMESTAMPTZ | |
-| status | TEXT | CHECK IN ('DRAFT','PUBLISHED','IN_PROGRESS','COMPLETED','POR_VALIDAR','REALIZADA','NO_REALIZADA','CANCELLED','SUSPENDED','FULL') |
-| tipo_clase | TEXT | CHECK IN ('PROPIA','ASIGNADA') |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| room_id | uuid | FK → rooms(id) |
+| start_time, end_time | timestamptz | |
+| reason | text | |
+| created_by | uuid | |
 
-#### `class_status_history`
-| Columna | Tipo | Constraints |
+## 3. Clases y asistencia
+
+### `classes`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| class_id | UUID | FK → classes(id) ON DELETE CASCADE |
-| previous_status | TEXT | |
-| new_status | TEXT | |
-| changed_by | UUID | FK → users(id) |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| title | text | NOT NULL |
+| discipline, discipline_category | text | |
+| level | `nivel_clase` | NOT NULL |
+| description | text | |
+| capacity, duration | int | NOT NULL |
+| price | numeric | NOT NULL |
+| min_age, max_age | int | |
+| start_time, end_time | timestamptz | |
+| room_id | uuid | FK → rooms(id) |
+| teacher_id | uuid | FK → auth.users(id), NOT NULL |
+| status | `class_status` | DEFAULT 'DRAFT' |
+| tipo_clase | `tipo_clase` | DEFAULT 'PROPIA' |
 
-#### `enrollments`
-| Columna | Tipo | Constraints |
+### `class_status_history`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| class_id | UUID | FK → classes(id) |
-| beneficiary_type | TEXT | ('USER', 'ASSOCIATE') |
-| beneficiary_id | UUID | |
-| owner_id | UUID | FK → users(id) (quien pagó) |
-| status | TEXT | DEFAULT 'ACTIVE' |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
-| | | UNIQUE (class_id, beneficiary_type, beneficiary_id) |
+| id | uuid | PK |
+| class_id | uuid | FK → classes(id) |
+| previous_status, new_status | text | |
+| changed_by | uuid | |
 
-### 2.4 Carrito y pagos
-
-#### `cart_items`
-| Columna | Tipo | Constraints |
+### `enrollments`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| owner_id | UUID | FK → users(id) |
-| class_id | UUID | FK → classes(id) |
-| beneficiary_type | TEXT | |
-| beneficiary_id | UUID | |
-| class_title | TEXT | (denormalizado) |
-| price | INT | (denormalizado) |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| class_id | uuid | FK → classes(id) |
+| student_id | uuid | FK → auth.users(id) |
+| beneficiary_type | text | DEFAULT 'SELF' |
+| beneficiary_id | uuid | |
+| status | text | DEFAULT 'ACTIVE' |
 
-#### `payments`
-| Columna | Tipo | Constraints |
+### `attendances`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| enrollment_id | UUID | FK → enrollments(id) |
-| amount | INT | NOT NULL |
-| status | TEXT | CHECK IN ('RETAINED','RELEASED','REFUND_PENDING','REFUNDED','FAILED') |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| class_id | uuid | FK → classes(id) |
+| beneficiary_id | uuid | |
+| beneficiary_type | text | DEFAULT 'SELF' |
+| present | bool | NOT NULL |
+| marked_by | text | |
 
-#### `consolidated_payments`
-| Columna | Tipo | Constraints |
+## 4. Carrito y pagos
+
+### `cart_items`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| user_id | UUID | FK → users(id) |
-| total_amount | INT | |
-| mercadopago_preference_id | TEXT | |
-| mercadopago_payment_id | TEXT | |
-| status | TEXT | DEFAULT 'PENDING' |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| owner_id | uuid | FK → auth.users(id) |
+| class_id | uuid | FK → classes(id) |
+| class_title, discipline, level | text | denormalizado |
+| price | numeric | |
+| beneficiary_type | text | DEFAULT 'SELF' |
+| beneficiary_id | uuid | |
 
-#### `payment_items`
-| Columna | Tipo | Constraints |
+### `payment_sessions`
+Sesión de checkout contra MercadoPago.
+
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| consolidated_payment_id | UUID | FK → consolidated_payments(id) |
-| payment_id | UUID | FK → payments(id) |
+| id | uuid | PK |
+| owner_id | uuid | FK → auth.users(id) |
+| external_reference | text | NOT NULL |
+| preference_id | text | |
+| cart_snapshot | jsonb | DEFAULT '{}' |
+| status | `payment_session_status` | DEFAULT 'PENDING' |
+| mercado_pago_payment_id | text | |
+| processed_at | timestamptz | |
 
-### 2.5 Reagendamiento
+### `payments`
+Pago retenido por inscripción (se libera cuando la clase se realiza).
 
-#### `reschedules`
-| Columna | Tipo | Constraints |
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| class_id | UUID | FK → classes(id) |
-| proposed_time | TIMESTAMPTZ | |
-| proposed_room_id | UUID | FK → rooms(id) |
-| status | TEXT | ('PROPUESTO','ACEPTADO_MAESTRO','RECHAZADO_MAESTRO','EN_DECISION_ALUMNOS','REAGENDADO','CANCELLED') |
-| proposed_by | UUID | FK → users(id) |
-| teacher_decision_at | TIMESTAMPTZ | |
-| timeout_at | TIMESTAMPTZ | (proposed_time + 48h para alumnos) |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| enrollment_id | uuid | FK → enrollments(id) |
+| amount | numeric | NOT NULL |
+| status | `payment_status` | DEFAULT 'RETAINED' |
 
-#### `reschedule_responses`
-| Columna | Tipo | Constraints |
+## 5. Reagendamiento
+
+### `reschedules`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| reschedule_id | UUID | FK → reschedules(id) |
-| user_id | UUID | FK → users(id) |
-| response | TEXT | ('ACEPTADO','RECHAZADO','TIMEOUT') |
-| responded_at | TIMESTAMPTZ | |
+| id | uuid | PK |
+| class_id | uuid | FK → classes(id) |
+| teacher_id | uuid | FK → auth.users(id) |
+| proposed_time | timestamptz | NOT NULL |
+| reason | text | |
+| status | `reschedule_status` | DEFAULT 'PROPOSED' |
+| response_deadline | timestamptz | |
+| new_class_id | uuid | FK → classes(id) |
 
-### 2.6 Reseñas y notificaciones
-
-#### `reviews` (NUEVO)
-| Columna | Tipo | Constraints |
+### `reschedule_responses`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| class_id | UUID | FK → classes(id) |
-| target_id | UUID | (usuario evaluado) |
-| target_type | TEXT | ('CLASS','TEACHER','VENUE') |
-| reviewer_id | UUID | FK → users(id) |
-| score | INT | CHECK BETWEEN 1 AND 5 |
-| comment | TEXT | |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| reschedule_id | uuid | FK → reschedules(id) |
+| user_id | uuid | FK → auth.users(id) |
+| response_type | `response_type` | |
+| responded_at | timestamptz | |
 
-#### `notifications`
-| Columna | Tipo | Constraints |
+## 6. Reseñas, notificaciones y operación
+
+### `reviews`
+| Columna | Tipo | Notas |
 |---|---|---|
-| id | UUID | PK |
-| user_id | UUID | FK → users(id) |
-| type | TEXT | (RESCHEDULE_NOTIFY, IDENTITY_APPROVED, CLASS_CONFIRMED, etc.) |
-| message | TEXT | |
-| data | JSONB | |
-| read | BOOLEAN | DEFAULT false |
-| created_at | TIMESTAMPTZ | DEFAULT now() |
+| id | uuid | PK |
+| class_id | uuid | FK → classes(id) |
+| reviewer_id | uuid | FK → auth.users(id) |
+| target_type | `review_target_type` | NOT NULL |
+| target_id | uuid | NOT NULL |
+| score | int | NOT NULL (1–5) |
+| comment | text | |
 
-## 3. Triggers y procedimientos almacenados
+### `notifications`
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | uuid | PK |
+| user_id | uuid | FK → auth.users(id) |
+| title, message | text | NOT NULL |
+| type | text | |
+| read | bool | DEFAULT false |
 
-### `trg_class_status_change`
-Registra automáticamente cada cambio de estado de una clase en `class_status_history` con timestamp y usuario.
+### `discipline_catalog`
+Catálogo de disciplinas (semilla).
 
-### `trg_release_payment`
-Cuando una clase pasa a `REALIZADA` (o COMPLETED), libera automáticamente todos los pagos asociados de `RETAINED` a `RELEASED`.
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | uuid | PK |
+| name, category | text | NOT NULL |
+| active | bool | DEFAULT true |
+| sort_order | int | DEFAULT 0 |
 
-### `trg_check_capacity`
-Antes de insertar una inscripción, verifica que la clase no esté llena. Lanza error `'La clase está llena'` si se excede la capacidad.
+### `audit_logs`
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | bigint | PK |
+| actor_id | uuid | |
+| action, resource_type, resource_id | text | NOT NULL |
+| old_values, new_values | jsonb | |
+| metadata | jsonb | DEFAULT '{}' |
+| ip | inet | |
+| user_agent | text | |
 
-### `trg_update_average_rating`
-Cuando se inserta una review, recalcula el `average_rating` del Maestro/Sede afectado.
+### `system_metrics`
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | uuid | PK |
+| metric_name | text | NOT NULL |
+| metric_value | numeric | NOT NULL |
+| labels | jsonb | DEFAULT '{}' |
+| recorded_at | timestamptz | |
 
-### `get_user_roles(uuid)`
-Función utilitaria que retorna los roles activos de un usuario.
+## 7. Marketplace MercadoPago Connect (arriendo de salas)
 
-### `get_class_metrics(uuid)`
-Función que retorna métricas de una clase (cupos vendidos, pagos retenidos, ingresos potenciales).
+Cuando un profesor arrienda una sala, el pago se hace con **split automático**: la
+sede recibe el monto directo en su cuenta de MercadoPago y la plataforma retiene
+una comisión configurable. Cada sede vincula su cuenta vía OAuth.
 
-## 4. Índices recomendados
+### `mp_seller_accounts`
+Cuenta de MercadoPago vinculada del gestor de sede (1 por usuario). Los tokens
+**nunca** se exponen al frontend; solo las Edge Functions los leen.
 
-```sql
-CREATE INDEX idx_classes_status ON classes(status);
-CREATE INDEX idx_classes_discipline_status ON classes(discipline, status);
-CREATE INDEX idx_classes_start_time ON classes(start_time) WHERE status = 'PUBLISHED';
-CREATE INDEX idx_enrollments_class ON enrollments(class_id);
-CREATE INDEX idx_payments_status ON payments(status);
-CREATE INDEX idx_room_availability_room_time ON room_availability(room_id, start_time);
-```
+| Columna | Tipo | Notas |
+|---|---|---|
+| user_id | uuid | PK, FK → auth.users(id) |
+| mp_user_id | text | ID del vendedor en MercadoPago |
+| access_token | text | Token del vendedor (solo service role) |
+| refresh_token | text | Para renovar el access_token |
+| token_expires_at | timestamptz | |
+| scope | text | Scopes otorgados por MP |
+| public_key | text | Clave pública del vendedor |
+| status | text | CONNECTED / DISCONNECTED / ERROR |
+| connected_at | timestamptz | DEFAULT now() |
+| updated_at | timestamptz | |
 
-## 5. Scripts de inicialización
+Vista pública segura: `mp_seller_status` — expone solo `user_id`, `mp_user_id`,
+`status`, `connected_at` y `has_token` (boolean). Sin tokens.
 
-Los scripts SQL fuente están en [`../infra/postgres/init/`](../infra/postgres/init/) y copia en [`../Producto/scripts-bd/`](../Producto/scripts-bd/):
+### `mp_oauth_states`
+State temporal del flujo OAuth (anti-CSRF). Se borra al completar el callback.
 
-1. `01_schema.sql` — DDL de todas las tablas
-2. `02_seed.sql` — Datos iniciales (admin, roles)
-3. `03_procedures.sql` — Triggers y stored procedures
-4. `04_venues_rooms_seed.sql` — Sedes y salas de prueba
-5. `05_reschedules_enhance.sql` — Mejoras a reschedules
+| Columna | Tipo | Notas |
+|---|---|---|
+| state | text | PK |
+| user_id | uuid | FK → auth.users(id) |
+| created_at | timestamptz | DEFAULT now() |
 
-PostgreSQL los ejecuta automáticamente al levantar el contenedor por primera vez.
+### `app_settings` (clave relevante)
+| key | Tipo de valor | Descripción |
+|-----|---------------|-------------|
+| `room_reservation_commission_pct` | numeric (0–100) | Comisión de la plataforma sobre el arriendo. Default: 0 |
+
+## 8. Enums (tipos definidos)
+
+| Enum | Valores |
+|---|---|
+| `block_status` | AVAILABLE, HELD, OCCUPIED, MAINTENANCE |
+| `class_status` | DRAFT, PUBLISHED, IN_PROGRESS, FULL, CANCELLED, COMPLETED, SUSPENDED, POR_VALIDAR |
+| `estado_sede` | PENDIENTE_APROBACION, APROBADA, RECHAZADA, SUSPENDIDA |
+| `nivel_clase` | BASICO, INTERMEDIO, AVANZADO |
+| `payment_session_status` | PENDING, APPROVED, FAILED |
+| `payment_status` | RETAINED, RELEASED, REFUND_PENDING, REFUNDED, FAILED |
+| `reschedule_status` | PROPOSED, TEACHER_ACCEPTED, TEACHER_REJECTED, COMPLETED |
+| `response_type` | ACCEPTED, REJECTED, TIMEOUT, RECHAZADO_AUTOMATICO |
+| `review_target_type` | CLASS, VENUE, STUDENT |
+| `tipo_clase` | PROPIA, ASIGNADA |
+| `tipo_documento_sede` | RUT_EMPRESA, CEDULA_IDENTIDAD, INICIO_ACTIVIDADES_F4415, CERTIFICADO_SITUACION_TRIBUTARIA, CONTRATO_ARRIENDO, COMPROBANTE_DOMICILIO, PERMISO_MUNICIPAL, CARPETA_TRIBUTARIA_ELECTRONICA, ESCRITURA_CONSTITUCION, AUTORIZACION_NOTARIAL_PROPIETARIO, CERTIFICADO_IVA, PATENTE_COMERCIAL, RESOLUCION_SANITARIA, OTRO |
+| `tipo_piso` | MADERA, FLOTANTE, CERAMICO, VINILO, CEMENTO, ALFOMBRA, OTRO |
+| `tipo_sede` | SEDE, HOME_STUDIO |
+
+## 9. Seguridad y lógica en la base de datos
+
+- **RLS**: todas las tablas de `public` tienen Row Level Security habilitado. El
+  frontend usa la clave anon/publishable y solo accede a lo que las políticas
+  permiten. Las operaciones privilegiadas pasan por Edge Functions con la clave
+  de servicio.
+- **Funciones / triggers**: `handle_new_user` (crea `profiles` al registrarse),
+  `get_my_attributes` (atributos derivados del usuario), `release_expired_holds`
+  (libera bloques HELD vencidos cada 5 min vía `pg_cron`), más helpers de RLS y
+  jobs de `pg_cron` para tareas programadas (regeneración de bloques, timeouts
+  de reagendamiento, etc.).
+- **Migraciones**: el schema se versiona en `supabase/migrations/`. La base
+  hosteada es la fuente de verdad; se sincroniza con la CLI.
+
+> El schema histórico previo (tablas `users`/`roles`/`user_roles`,
+> `consolidated_payments`, etc. del backend Spring Boot) quedó obsoleto con la
+> migración a Supabase. Este documento refleja el schema actual real.

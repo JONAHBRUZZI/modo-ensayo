@@ -27,11 +27,25 @@
             <option value="AMIGO">Amigo/a</option>
             <option value="OTRO">Otro</option>
           </select>
+          <select
+            v-if="form.relationship === 'OTRO'"
+            v-model="form.relationshipOtro"
+            required
+            class="input-field mt-2"
+          >
+            <option value="">Especificar relación</option>
+            <option value="PRIMO">Primo/a</option>
+            <option value="HERMANO">Hermano/a</option>
+            <option value="SOBRINO">Sobrino/a</option>
+            <option value="AHIJADO">Ahijado</option>
+            <option value="AHIJADA">Ahijada</option>
+          </select>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Fecha de nacimiento *</label>
-            <input type="date" v-model="form.birthDate" required class="input-field" />
+            <input type="date" v-model="form.birthDate" required class="input-field" @change="validarEdadConRelacion" />
+            <p v-if="birthDateError" class="text-xs text-red-400 mt-1">{{ birthDateError }}</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">RUT *</label>
@@ -60,7 +74,7 @@
       <div v-for="a in associates" :key="a.id" class="card flex items-center justify-between">
         <div>
           <p class="text-white font-medium">{{ a.name || a.email || 'Sin nombre' }}</p>
-          <p class="text-gray-400 text-sm">{{ a.relationship || '' }}<span v-if="a.birthDate"> · {{ formatDate(a.birthDate) }}</span></p>
+          <p class="text-gray-400 text-sm">{{ a.relationship || '' }}<span v-if="a.birthDate"> · {{ formatDate(a.birthDate) }} ({{ calcularEdad(a.birthDate) }} años)</span></p>
           <p v-if="a.rut" class="text-gray-500 text-xs">RUT: {{ a.rut }}</p>
         </div>
         <button @click="confirmDelete(a)" class="text-red-400 hover:text-red-300">
@@ -83,12 +97,15 @@
 import { ref, reactive, onMounted } from 'vue'
 import associateService from '@/services/associateService'
 import ConfirmModal from '@/components/ConfirmModal.vue'
+import { formatearRut as formatearRutUtil, validateRut as validateRutUtil } from '@/utils/rutValidator'
+import { formatDate } from '@/utils/dateFormatter'
 
 const associates = ref([])
 const loading = ref(true)
 const showForm = ref(false)
-const form = reactive({ name: '', relationship: '', birthDate: '', rut: '', email: '' })
+const form = reactive({ name: '', relationship: '', relationshipOtro: '', birthDate: '', rut: '', email: '' })
 const rutError = ref('')
+const birthDateError = ref('')
 const creating = ref(false)
 const showConfirm = ref(false)
 const associateToDelete = ref(null)
@@ -110,51 +127,72 @@ async function loadAssociates() {
 }
 
 async function createAssociate() {
-  if (rutError.value) return
+  validarEdadConRelacion()
+  if (rutError.value || birthDateError.value) return
   creating.value = true
   try {
+    const relationship = form.relationship === 'OTRO' ? form.relationshipOtro.trim() : form.relationship
     await associateService.createAssociate({
       name: form.name,
-      relationship: form.relationship,
+      relationship,
       birthDate: form.birthDate || null,
       rut: form.rut || null,
       email: form.email || null
     })
-    Object.assign(form, { name: '', relationship: '', birthDate: '', rut: '', email: '' })
+    Object.assign(form, { name: '', relationship: '', relationshipOtro: '', birthDate: '', rut: '', email: '' })
     rutError.value = ''
+    birthDateError.value = ''
     showForm.value = false
     await loadAssociates()
-  } catch {} finally {
+  } catch (err) {
+    console.error('Error al crear asociado', err)
+  } finally {
     creating.value = false
   }
 }
 
 function formatearRut() {
-  if (!form.rut) return
-  let valor = form.rut.replace(/[^0-9kK]/g, '')
-  if (valor.length < 2) { form.rut = valor; return }
-  const dv = valor.slice(-1)
-  let cuerpo = valor.slice(0, -1)
-  cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  form.rut = cuerpo + '-' + dv
+  form.rut = formatearRutUtil(form.rut)
 }
 
 function validarRut() {
   rutError.value = ''
   if (!form.rut) return
-  const rut = form.rut.replace(/[^0-9kK]/g, '')
-  if (rut.length < 2) { rutError.value = 'RUT invalido'; return }
-  const dv = rut.slice(-1).toUpperCase()
-  const cuerpo = rut.slice(0, -1)
-  let suma = 0
-  let multiplo = 2
-  for (let i = cuerpo.length - 1; i >= 0; i--) {
-    suma += parseInt(cuerpo[i]) * multiplo
-    multiplo = multiplo < 7 ? multiplo + 1 : 2
+  if (!validateRutUtil(form.rut)) rutError.value = 'RUT invalido: digito verificador no coincide'
+}
+
+function validarEdadConRelacion() {
+  birthDateError.value = ''
+  if (!form.birthDate) return
+  const edad = calcularEdad(form.birthDate)
+  if (edad === null) return
+  if (edad < 0) {
+    birthDateError.value = 'La fecha de nacimiento no puede ser futura.'
+    return
   }
-  const dvEsperado = 11 - (suma % 11)
-  const dvCalculado = dvEsperado === 11 ? '0' : dvEsperado === 10 ? 'K' : dvEsperado.toString()
-  if (dv !== dvCalculado) rutError.value = 'RUT invalido: digito verificador no coincide'
+  if (edad > 100) {
+    birthDateError.value = 'La fecha de nacimiento parece incorrecta.'
+    return
+  }
+  const rel = form.relationship === 'OTRO' ? form.relationshipOtro : form.relationship
+  const limites = {
+    HIJO:    { max: 35, msg: 'Un hijo/a no puede tener más de 35 años.' },
+    AHIJADO: { max: 30, msg: 'Un ahijado no puede tener más de 30 años.' },
+    AHIJADA: { max: 30, msg: 'Una ahijada no puede tener más de 30 años.' },
+    SOBRINO: { max: 40, msg: 'Un sobrino/a no puede tener más de 40 años.' },
+  }
+  const limite = limites[rel]
+  if (limite && edad > limite.max) birthDateError.value = limite.msg
+}
+
+function calcularEdad(fechaNacimiento) {
+  if (!fechaNacimiento) return null
+  const hoy = new Date()
+  const nac = new Date(fechaNacimiento)
+  let edad = hoy.getFullYear() - nac.getFullYear()
+  const m = hoy.getMonth() - nac.getMonth()
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--
+  return edad
 }
 
 function confirmDelete(associate) {
@@ -167,11 +205,9 @@ async function deleteAssociate() {
     await associateService.deleteAssociate(associateToDelete.value.id)
     showConfirm.value = false
     await loadAssociates()
-  } catch {}
+  } catch (err) {
+    console.error('Error al eliminar asociado', err)
+  }
 }
 
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })
-}
 </script>

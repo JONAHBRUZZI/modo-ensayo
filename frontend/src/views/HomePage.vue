@@ -4,6 +4,12 @@
     <!-- HERO -->
     <section class="hero">
       <div class="hero-glow" aria-hidden="true"></div>
+
+      <!-- Particle layer -->
+      <div class="hero-particles" aria-hidden="true">
+        <span v-for="n in 12" :key="n" class="particle" :style="{ left: particleX(n), animationDelay: (n * 0.4) + 's', animationDuration: (4 + (n % 3)) + 's' }" />
+      </div>
+
       <div class="hero-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="hero-grid">
 
@@ -15,7 +21,7 @@
               class="hero-eyebrow"
             >
               <span class="eyebrow-dot" aria-hidden="true"></span>
-              Plataforma de danza y música en Chile
+              Plataforma de danza y musica en Chile
             </div>
 
             <h1
@@ -23,7 +29,7 @@
               :enter="{ opacity: 1, y: 0, transition: { duration: 550, delay: 80 } }"
               class="hero-title"
             >
-              Tu <em>arte</em> encuentra<br>su espacio aquí
+              Tu <em>arte</em> encuentra<br>su espacio aqui
             </h1>
 
             <p
@@ -132,9 +138,9 @@
     <!-- FEATURES -->
     <section class="features-section">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <p class="section-eyebrow">¿Qué puedes hacer?</p>
+        <p class="section-eyebrow">&iquest;Que puedes hacer?</p>
         <div class="features-grid">
-          <div
+          <router-link
             v-for="(feat, i) in features"
             :key="feat.title"
             v-motion :initial="{ opacity: 0, y: 28 }"
@@ -144,7 +150,7 @@
             <div :class="['feat-icon', feat.iconClass]" aria-hidden="true" v-html="feat.icon"></div>
             <h3 class="feat-title">{{ feat.title }}</h3>
             <p class="feat-desc">{{ feat.desc }}</p>
-          </div>
+          </router-link>
         </div>
       </div>
     </section>
@@ -247,6 +253,7 @@ const features = [
     desc: 'Encuentra salas equipadas en tu ciudad y reserva en minutos.',
     iconClass: 'icon-purple',
     icon: `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>`,
+    to: isAuthenticated.value ? '/classes' : '/login',
   },
   {
     title: 'Pagos seguros',
@@ -260,7 +267,7 @@ const features = [
     iconClass: 'icon-amber',
     icon: `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
   },
-]
+])
 
 // Cómo funciona con tabs
 const activeTab = ref('alumno')
@@ -293,7 +300,7 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 </script>
 
 <style scoped>
-.home { background: #0f1119; }
+.home { background: var(--bg-base); }
 
 /* HERO */
 .hero { position: relative; overflow: hidden; padding: 5rem 0 3.5rem; }
@@ -330,9 +337,12 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 .btn-hero-secondary:hover { color: white; border-color: #3a3d4e; }
 .stats-row { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid #1e2130; }
 .stat-item { display: flex; flex-direction: column; }
-.stat-num { font-size: 24px; font-weight: 700; color: white; }
-.stat-label { font-size: 12px; color: #4B5563; margin-top: 2px; }
-.stat-divider { width: 1px; height: 28px; background: #1e2130; }
+.stat-num {
+  font-size: 24px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.stat-divider { width: 1px; height: 28px; background: var(--border-subtle); }
 
 /* ABOUT */
 .about-section { background: #0b0d14; padding: 4rem 0; border-top: 1px solid #13161f; }
@@ -380,8 +390,8 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 .step-item { text-align: center; }
 .step-num { width: 40px; height: 40px; background: #111420; border: 1px solid #2a2d3e; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 13px; font-weight: 600; color: #6C63FF; position: relative; z-index: 1; transition: background 0.2s, border-color 0.2s; }
 .step-item:hover .step-num { background: #6C63FF1a; border-color: #6C63FF44; }
-.step-title { color: white; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-.step-desc  { color: #4B5563; font-size: 12px; }
+.step-title { color: var(--text-primary); font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.step-desc  { color: var(--text-secondary); font-size: 12px; }
 
 /* CTA FINAL */
 .cta-section { background: #0b0d14; border-top: 1px solid #13161f; padding: 4rem 0; }

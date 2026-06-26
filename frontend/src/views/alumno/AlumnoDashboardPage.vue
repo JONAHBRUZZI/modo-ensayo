@@ -5,8 +5,7 @@
     :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
-    <h1 class="text-3xl font-bold text-white mb-2">Mi Espacio</h1>
-    <p class="text-gray-400 mb-8">Bienvenido, {{ displayName }}</p>
+    <h1 class="text-3xl font-bold text-[var(--text-primary)] mb-8">Hola, {{ displayName }}</h1>
 
     <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
@@ -31,7 +30,7 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Mis Clases</h3>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Mis Clases</h3>
             <p class="text-gray-400 text-sm mt-1">Clases en las que estás inscrito y su estado.</p>
           </div>
         </div>
@@ -46,7 +45,7 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Explorar Clases</h3>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Explorar Clases</h3>
             <p class="text-gray-400 text-sm mt-1">Busca y reserva clases de cualquier disciplina.</p>
           </div>
         </div>
@@ -61,7 +60,7 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Historial de Pagos</h3>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Historial de Pagos</h3>
             <p class="text-gray-400 text-sm mt-1">Revisa tus pagos y comprobantes.</p>
           </div>
         </div>
@@ -76,8 +75,23 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Asociados</h3>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Asociados</h3>
             <p class="text-gray-400 text-sm mt-1">Gestióna personas que inscriben a tus clases.</p>
+          </div>
+        </div>
+      </router-link>
+
+      <router-link to="/alumno/mis-clases/calendario" class="card hover:border-primary/50 transition-colors group">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-[var(--text-primary)] group-hover:text-primary transition-colors">Calendario</h3>
+            <p class="text-gray-400 text-sm mt-1">Tus clases próximas en vista de calendario.</p>
           </div>
         </div>
       </router-link>
@@ -228,8 +242,8 @@
           </div>
         </div>
 
-        <!-- Sin solicitud -->
-        <div v-else>
+        <!-- Sin solicitud, identidad validada: clickable -->
+        <div v-else-if="identidadValidada">
           <router-link to="/sede/registro"
             class="card hover:border-emerald-500/50 transition-colors group flex items-start gap-3">
             <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
@@ -243,6 +257,21 @@
               <p class="text-gray-400 text-sm mt-1">Ofrece tu espacio para ensayos y clases.</p>
             </div>
           </router-link>
+        </div>
+
+        <!-- Sin solicitud, identidad NO validada: bloqueado pero visible -->
+        <div v-else
+          class="card opacity-40 cursor-not-allowed flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-emerald-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-gray-600">Registrar Sede / HomeStudio</h3>
+            <p class="text-gray-600 text-sm mt-1">Requiere identidad validada.</p>
+          </div>
         </div>
 
         <!-- ── MAESTRO / BUSCAR SALAS ── -->
@@ -292,7 +321,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
-import api from '@/services/api'
+import userService from '@/services/userService'
 
 const router = useRouter()
 const { displayName, identidadValidada, identidadEnRevision, identidadRechazada,
@@ -304,9 +333,10 @@ const stats = ref({ totalClases: 0, próximas: 0 })
 onMounted(async () => {
   syncAtributos()
   try {
-    const res = await api.get('/users/me/stats')
-    stats.value = res.data
-  } catch {}
+    stats.value = await userService.getStudentStats()
+  } catch (err) {
+    console.error('Error al cargar estadísticas del alumno', err)
+  }
 })
 
 function irAMiSede() {

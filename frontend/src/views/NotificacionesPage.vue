@@ -11,7 +11,7 @@
       <p class="text-sm">Cargando...</p>
     </div>
     <div v-else-if="notifications.length === 0" class="card text-center py-16">
-      <div class="w-14 h-14 bg-[#1a1d2e] rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div class="w-14 h-14 bg-[var(--bg-elevated)] rounded-2xl flex items-center justify-center mx-auto mb-4">
         <svg class="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
@@ -37,6 +37,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import rescheduleService from '@/services/rescheduleService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const notifications = ref([])
 const loading = ref(true)
@@ -49,8 +50,5 @@ onMounted(async () => {
   loading.value = false
 })
 
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-}
+
 </script>

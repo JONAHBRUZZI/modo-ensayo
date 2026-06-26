@@ -5,7 +5,7 @@
     :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
-    <h1 class="text-3xl font-bold text-white mb-2">Panel de Maestro</h1>
+    <h1 class="text-3xl font-bold text-white mb-2">Home</h1>
     <div class="flex items-center gap-3 mb-8">
       <p class="text-gray-400">Bienvenido, {{ displayName }}</p>
       <EstadoProfesorBadge :estado="estadoProfesor" />
@@ -156,6 +156,14 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Asignadas</h3>
         <p class="text-gray-400 text-sm mt-2">Clases donde fuiste asignado como profesor.</p>
       </router-link>
+      <router-link to="/profesor/calendario" class="card hover:border-primary/50 transition-colors group">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Calendario</h3>
+        <p class="text-gray-400 text-sm mt-2">Vista semanal de todas tus clases y reservas.</p>
+      </router-link>
+      <router-link to="/profesor/borradores" class="card hover:border-primary/50 transition-colors group">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Borradores</h3>
+        <p class="text-gray-400 text-sm mt-2">Clases en borrador pendientes de publicar.</p>
+      </router-link>
     </div>
   </div>
 </template>
@@ -165,7 +173,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
-import api from '@/services/api'
+import professionalProfileService from '@/services/professionalProfileService'
+import { formatDate } from '@/utils/dateFormatter'
 
 const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
 
@@ -217,12 +226,12 @@ onMounted(async () => {
 
   // Cargar rating promedio
   try {
-    const profile = await api.get('/users/me/professional-profile')
-    if (profile.data?.averageRating) averageRating.value = profile.data.averageRating
-  } catch {}
+    const profile = await professionalProfileService.getMine()
+    if (profile?.averageRating) averageRating.value = profile.averageRating
+  } catch (err) {
+    console.error('Error al cargar rating del profesor', err)
+  }
 })
 
-function formatDate(d) {
-  return d ? new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
-}
+
 </script>

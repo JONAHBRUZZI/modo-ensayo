@@ -5,15 +5,28 @@
     :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
-    <h1 class="text-3xl font-bold text-white mb-8">Gestión de Usuarios</h1>
+    <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+      <h1 class="text-3xl font-bold text-white">Gestión de Usuarios</h1>
+      <div class="relative w-full sm:w-80">
+        <svg class="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input v-model="busqueda" type="text" placeholder="Buscar por email o nombre..."
+               class="w-full bg-[var(--bg-elevated)] border border-white/10 rounded-lg text-sm text-gray-200 pl-9 pr-3 py-2 focus:outline-none focus:border-primary/50" />
+      </div>
+    </div>
 
     <div v-if="loading" class="text-center text-gray-500 py-20">
       <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
       <p class="text-sm">Cargando...</p>
     </div>
 
+    <div v-else-if="usuariosFiltrados.length === 0" class="card text-center py-12">
+      <p class="text-gray-400">No se encontraron usuarios para "{{ busqueda }}".</p>
+    </div>
+
     <div v-else class="space-y-4">
-      <div v-for="u in users" :key="u.id" class="card flex items-center justify-between flex-wrap gap-3">
+      <div v-for="u in usuariosFiltrados" :key="u.id" class="card flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center space-x-4 min-w-0">
           <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold flex-shrink-0">
             {{ (u.fullName || u.email || 'U').charAt(0).toUpperCase() }}
@@ -30,7 +43,7 @@
           </div>
 
           <select @change="assignRole(u.id, $event.target.value); $event.target.value = ''"
-                  class="bg-[#1a1d2e] border border-gray-700 rounded-lg text-sm text-gray-300 px-2 py-1">
+                  class="bg-[var(--bg-elevated)] border border-gray-700 rounded-lg text-sm text-gray-300 px-2 py-1">
             <option value="">+ Rol</option>
             <option value="TEACHER">TEACHER</option>
             <option value="VENUE_ADMIN">VENUE_ADMIN</option>
@@ -56,11 +69,9 @@
     </div>
 
     <!-- Modal de confirmacion de suspension con motivo -->
-    <div v-if="suspendTarget"
-         class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
-         @click.self="cerrarSuspender">
-      <div class="bg-[#161824] border border-yellow-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-        <div class="flex items-start gap-3">
+    <BottomSheet :model-value="!!suspendTarget" @update:model-value="$event || cerrarSuspender()">
+      <template v-if="suspendTarget">
+        <div class="flex items-start gap-3 mb-4">
           <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 4l8 14H4l8-14z"/>
@@ -75,7 +86,7 @@
           </div>
         </div>
 
-        <div>
+        <div class="mb-4">
           <label class="block text-sm font-medium text-gray-300 mb-1">
             Motivo de suspension <span class="text-red-400">*</span>
           </label>
@@ -91,17 +102,16 @@
             {{ suspendiendo ? 'Suspendiendo...' : 'Suspender' }}
           </button>
           <button @click="cerrarSuspender" :disabled="suspendiendo"
-                  class="flex-1 px-4 py-2 rounded-lg bg-[#1a1d2e] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
+                  class="flex-1 px-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
             Cancelar
           </button>
         </div>
-      </div>
-    </div>
-    <div v-if="usuarioAEliminar"
-         class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
-         @click.self="cerrarModal">
-      <div class="bg-[#161824] border border-red-500/30 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-        <div class="flex items-start gap-3">
+      </template>
+    </BottomSheet>
+
+    <BottomSheet :model-value="!!usuarioAEliminar" @update:model-value="$event || cerrarModal()">
+      <template v-if="usuarioAEliminar">
+        <div class="flex items-start gap-3 mb-4">
           <div class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -117,14 +127,14 @@
           </div>
         </div>
 
-        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
           <p class="text-yellow-300 text-xs">
             Esta accion es <strong>irreversible</strong>. Se eliminaran tambien sus roles asignados,
             verificación de identidad, asociados, perfil profesional y notificaciónes.
           </p>
         </div>
 
-        <p v-if="errorEliminar" class="text-red-400 text-sm">{{ errorEliminar }}</p>
+        <p v-if="errorEliminar" class="text-red-400 text-sm mb-3">{{ errorEliminar }}</p>
 
         <div class="flex gap-3">
           <button @click="confirmarEliminacion" :disabled="eliminando"
@@ -132,24 +142,36 @@
             {{ eliminando ? 'Eliminando...' : 'Si, eliminar' }}
           </button>
           <button @click="cerrarModal" :disabled="eliminando"
-                  class="flex-1 px-4 py-2 rounded-lg bg-[#1a1d2e] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
+                  class="flex-1 px-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-white/10 text-gray-300 hover:text-white hover:border-white/20 transition-colors disabled:opacity-50">
             Cancelar
           </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </BottomSheet>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { useToast } from '@/composables/useToast'
+import BottomSheet from '@/components/BottomSheet.vue'
 
 const toast = useToast()
 const users = ref([])
 const loading = ref(true)
+
+// Busqueda por email o nombre (HU22)
+const busqueda = ref('')
+const usuariosFiltrados = computed(() => {
+  const q = busqueda.value.trim().toLowerCase()
+  if (!q) return users.value
+  return users.value.filter(u =>
+    (u.email || '').toLowerCase().includes(q) ||
+    (u.fullName || '').toLowerCase().includes(q)
+  )
+})
 
 // Estado del modal de eliminacion
 const usuarioAEliminar = ref(null)

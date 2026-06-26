@@ -75,57 +75,84 @@
         </button>
       </form>
 
-      <!-- Sede aprobada: datos estructurales solo lectura -->
-      <div v-else class="card">
-        <div class="flex items-start gap-3 mb-4">
-          <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
+      <!-- Sede aprobada: datos verificados -->
+      <div v-else class="card space-y-5">
+        <!-- Banner verificado -->
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/25">
+          <div class="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
           <div>
-            <p class="text-green-400 font-medium">Sede verificada y aprobada</p>
-            <p class="text-gray-500 text-sm">Los datos estructurales (nombre, direccion) no pueden modificarse. Contacta al Administrador General si necesitas cambios.</p>
+            <p class="text-green-400 font-semibold text-sm">Sede verificada y aprobada por el Administrador General</p>
+            <p class="text-gray-500 text-xs mt-0.5">Los datos registrados fueron revisados y validados. Si necesitas modificar datos estructurales, contacta al Administrador General.</p>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div><span class="text-gray-500">Descripción:</span> <span class="text-gray-300">{{ venue.description || '—' }}</span></div>
-          <div><span class="text-gray-500">Teléfono:</span> <span class="text-gray-300">{{ venue.phone || '—' }}</span></div>
-          <div><span class="text-gray-500">Email:</span> <span class="text-gray-300">{{ venue.email || '—' }}</span></div>
+
+        <!-- Datos verificados -->
+        <div>
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Datos registrados y verificados</h4>
+          <div class="space-y-2">
+            <div v-for="campo in camposVerificados" :key="campo.label"
+                 class="flex items-start justify-between py-2 border-b border-white/5 last:border-0">
+              <span class="text-gray-500 text-sm w-32 flex-shrink-0">{{ campo.label }}</span>
+              <div class="flex items-center gap-2 flex-1 justify-end">
+                <span class="text-gray-200 text-sm text-right">{{ campo.valor }}</span>
+                <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Documentos de la sede -->
       <div class="card space-y-4">
-        <h3 class="text-white font-medium">Documentos de la sede</h3>
-        <p class="text-gray-500 text-xs">Sube permisos, certificados o documentos requeridos para la aprobación. El Admin General los revisará.</p>
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="text-white font-medium">Documentos de la sede</h3>
+            <p v-if="venue.status === 'APROBADA'" class="text-green-400 text-xs mt-1">✓ Todos los documentos fueron revisados y aprobados</p>
+            <p v-else class="text-gray-500 text-xs mt-1">Sube permisos, certificados o documentos requeridos para la aprobación. El Admin General los revisará.</p>
+          </div>
+        </div>
 
         <!-- Lista de documentos existentes -->
         <div v-if="documentos.length > 0" class="space-y-2">
           <div v-for="doc in documentos" :key="doc.id"
-               class="flex items-center justify-between p-3 bg-dark-bg rounded-lg border border-dark-border">
+               class="flex items-center justify-between p-3 bg-dark-bg rounded-lg border"
+               :class="venue.status === 'APROBADA' ? 'border-green-500/30' : 'border-dark-border'">
             <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg :class="{
+                'text-green-400': venue.status === 'APROBADA' || doc.estado === 'APROBADO',
+                'text-yellow-500': venue.status !== 'APROBADA' && doc.estado === 'PENDIENTE',
+                'text-red-400': doc.estado === 'RECHAZADO'
+              }" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
               <div>
                 <p class="text-sm text-white">{{ doc.nombre || 'Documento' }}</p>
                 <span :class="{
-                  'text-yellow-400': doc.estado === 'PENDIENTE',
-                  'text-green-400': doc.estado === 'APROBADO',
+                  'text-yellow-400': venue.status !== 'APROBADA' && doc.estado === 'PENDIENTE',
+                  'text-green-400': venue.status === 'APROBADA' || doc.estado === 'APROBADO',
                   'text-red-400': doc.estado === 'RECHAZADO'
-                }" class="text-xs">{{ doc.estado }}</span>
+                }" class="text-xs font-medium">
+                  {{ venue.status === 'APROBADA' ? 'APROBADO' : doc.estado }}
+                </span>
                 <span v-if="doc.motivoRechazo" class="text-xs text-red-400 ml-2">— {{ doc.motivoRechazo }}</span>
               </div>
             </div>
             <div class="flex items-center gap-2">
               <a :href="doc.fileUrl" target="_blank" class="text-primary text-xs hover:underline">Ver</a>
-              <button @click="eliminarDocumento(doc.id)" class="text-red-400 text-xs hover:underline">Eliminar</button>
+              <button v-if="venue.status !== 'APROBADA'" @click="eliminarDocumento(doc.id)" class="text-red-400 text-xs hover:underline">Eliminar</button>
             </div>
           </div>
         </div>
         <p v-else class="text-gray-500 text-sm">No hay documentos subidos aún.</p>
 
-        <!-- Subir nuevo documento -->
-        <div class="border border-dark-border rounded-lg p-4 space-y-3">
+        <!-- Subir nuevo documento (solo si no aprobada) -->
+        <div v-if="venue.status !== 'APROBADA'" class="border border-dark-border rounded-lg p-4 space-y-3">
           <p class="text-sm text-gray-300 font-medium">Subir documento</p>
           <div>
             <label class="block text-xs text-gray-400 mb-1">Tipo de documento</label>
@@ -156,6 +183,31 @@
           </button>
           <p v-if="msgDoc" :class="msgDocType === 'error' ? 'text-red-400' : 'text-green-400'" class="text-xs">{{ msgDoc }}</p>
         </div>
+      </div>
+
+      <!-- Cobros con MercadoPago (solo sedes aprobadas) -->
+      <div v-if="venue.status === 'APROBADA'" class="card space-y-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-white font-medium">Cobros con MercadoPago</h3>
+            <p class="text-gray-500 text-xs mt-1">
+              Vincula tu cuenta de MercadoPago para recibir los pagos por arriendo de tus salas directamente en ella.
+            </p>
+          </div>
+          <span v-if="mpConectado" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/30 whitespace-nowrap">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Conectada
+          </span>
+          <span v-else class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/15 text-gray-400 border border-white/10 whitespace-nowrap">
+            No conectada
+          </span>
+        </div>
+        <p v-if="mpConectado" class="text-sm text-gray-400">
+          Tu cuenta está vinculada. Los profesores que arrienden tus salas pagarán por MercadoPago y el dinero llegará a tu cuenta.
+        </p>
+        <button v-else @click="conectarMercadoPago" :disabled="conectandoMp" class="btn-primary">
+          {{ conectandoMp ? 'Redirigiendo a MercadoPago...' : 'Conectar MercadoPago' }}
+        </button>
       </div>
 
       <!-- Redes sociales y contacto web (siempre editable) -->
@@ -214,18 +266,58 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import venueService from '@/services/venueService'
-import api from '@/services/api'
+import paymentService from '@/services/paymentService'
+import uploadService from '@/services/uploadService'
+import { reviewService } from '@/services/reviewService'
+import { useToast } from '@/composables/useToast'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
 
 const { attachAutocomplete } = usePlacesAutocomplete()
 const addressInput = ref(null)
+const route = useRoute()
+const router = useRouter()
+const toast = useToast()
 
 const venue = ref(null)
 const loading = ref(true)
 const venueRating = ref(null)
+
+// Estado de vinculación con MercadoPago
+const mpStatus = ref(null)
+const mpConectado = computed(() => mpStatus.value?.status === 'CONNECTED' && mpStatus.value?.hasToken)
+const conectandoMp = ref(false)
+
+async function cargarMpStatus() {
+  try { mpStatus.value = await paymentService.getMpAccountStatus() } catch { mpStatus.value = null }
+}
+
+async function conectarMercadoPago() {
+  conectandoMp.value = true
+  try {
+    const { authUrl } = await paymentService.startMpConnect()
+    if (authUrl) window.location.href = authUrl
+    else throw new Error('sin authUrl')
+  } catch (e) {
+    conectandoMp.value = false
+    toast.error(e?.response?.data?.error || 'No se pudo iniciar la conexión con MercadoPago')
+  }
+}
+
+const camposVerificados = computed(() => {
+  if (!venue.value) return []
+  return [
+    { label: 'Nombre', valor: venue.value.name },
+    { label: 'Tipo', valor: venue.value.tipo === 'HOME_STUDIO' ? 'Home Studio' : 'Sede' },
+    { label: 'Ciudad', valor: venue.value.city },
+    { label: 'Dirección', valor: venue.value.address },
+    { label: 'Teléfono', valor: venue.value.phone || '—' },
+    { label: 'Email', valor: venue.value.email || '—' },
+  ].filter(c => c.valor)
+})
 
 // Formulario datos estructurales
 const formDatos = reactive({ name: '', city: '', address: '', description: '', phone: '', email: '' })
@@ -250,8 +342,12 @@ onMounted(async () => {
   try {
     const venues = await venueService.getMyVenues()
     const vArr = Array.isArray(venues) ? venues : venues?.content || []
-    if (vArr.length > 0) {
-      venue.value = vArr[0]
+    const prioridad = ['APROBADA', 'SUSPENDIDA', 'PENDIENTE_APROBACION', 'RECHAZADA']
+    const sorted = [...vArr].sort((a, b) =>
+      prioridad.indexOf(a.status) - prioridad.indexOf(b.status)
+    )
+    if (sorted.length > 0) {
+      venue.value = sorted[0]
       const v = venue.value
       // Poblar formulario datos
       formDatos.name = v.name || ''
@@ -271,23 +367,38 @@ onMounted(async () => {
       // Cargar documentos
       try {
         documentos.value = await venueService.getVenueDocuments(v.id)
-      } catch { documentos.value = [] }
+      } catch (err) {
+        console.error('Error al cargar documentos de la sede', err)
+        documentos.value = []
+      }
       // Cargar rating promedio de la sede
       try {
-        const revRes = await api.get(`/reviews/target/VENUE/${v.id}`)
+        const revRes = await reviewService.getByTarget('VENUE', v.id)
         const reviews = revRes.data
         if (Array.isArray(reviews) && reviews.length > 0) {
           const avg = reviews.reduce((s, r) => s + (r.score || 0), 0) / reviews.length
           venueRating.value = avg
         }
-      } catch {}
+      } catch (err) {
+        console.error('Error al cargar rating de la sede', err)
+      }
     }
-  } catch {}
+  } catch (err) { console.error('Error al cargar sedes del usuario', err) }
   loading.value = false
   attachAutocomplete(addressInput.value, (place) => {
     formDatos.address = place.formatted_address
     if (place.city && !formDatos.city) formDatos.city = place.city
   })
+
+  // Estado de la cuenta MercadoPago y feedback del retorno OAuth.
+  cargarMpStatus()
+  if (route.query.mp === 'ok') {
+    toast.success('Cuenta de MercadoPago vinculada correctamente')
+    router.replace({ query: {} })
+  } else if (route.query.mp === 'error') {
+    toast.error('No se pudo vincular la cuenta de MercadoPago. Intenta nuevamente.')
+    router.replace({ query: {} })
+  }
 })
 
 async function saveDatos() {
@@ -327,11 +438,8 @@ async function onDocFileChange(event) {
   nuevoDoc.fileUrl = ''
   msgDoc.value = ''
   try {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('type', 'documents')
-    const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-    nuevoDoc.fileUrl = res.data.fileUrl || res.data.url
+    const res = await uploadService.uploadFile(file, 'venue-documents', venue.value.id)
+    nuevoDoc.fileUrl = res.url
     nuevoDoc.tipoArchivo = file.type
   } catch (e) {
     msgDoc.value = e?.response?.data?.error || 'Error al subir el archivo'
@@ -366,6 +474,8 @@ async function eliminarDocumento(docId) {
   try {
     await venueService.deleteVenueDocument(docId)
     documentos.value = documentos.value.filter(d => d.id !== docId)
-  } catch {}
+  } catch (err) {
+    console.error('Error al eliminar documento de la sede', err)
+  }
 }
 </script>

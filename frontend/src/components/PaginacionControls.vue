@@ -8,7 +8,7 @@
         @click="$emit('change', currentPage - 1)"
         :disabled="currentPage <= 1"
         class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500
-               hover:text-white hover:bg-[#1a1d2e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+               hover:text-white hover:bg-[var(--bg-elevated)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         aria-label="Página anterior"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -25,7 +25,7 @@
             'w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors',
             page === currentPage
               ? 'bg-primary text-white font-medium'
-              : 'text-gray-500 hover:text-white hover:bg-[#1a1d2e]'
+              : 'text-gray-500 hover:text-white hover:bg-[var(--bg-elevated)]'
           ]"
         >{{ page }}</button>
       </template>
@@ -34,7 +34,7 @@
         @click="$emit('change', currentPage + 1)"
         :disabled="currentPage >= totalPages"
         class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500
-               hover:text-white hover:bg-[#1a1d2e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+               hover:text-white hover:bg-[var(--bg-elevated)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         aria-label="Página siguiente"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -14,6 +14,7 @@ backend/.idea/
 
 # Env files with secrets
 .env
+.env.local
 backend/.env
 
 # OS
@@ -26,3 +27,7 @@ Thumbs.db
 *.iml
 
 .claude/
+
+jmeter.log
+.vercel
+.env*.local

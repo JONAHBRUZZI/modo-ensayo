@@ -1,8 +1,8 @@
-# Plan de Pruebas Preliminar · Modo Ensayo
+# Plan de Pruebas · Modo Ensayo
 
-> **Versión:** 1.0 — 30-may-2026
+> **Versión:** 2.0 — 16-jun-2026 (Sprint 7 / inicio Sprint 9 QA)
 > **Cobertura objetivo:** 60% (RNF-MAN-03)
-> **Cobertura actual:** ~30%
+> **Cobertura actual:** ≥ 60% — umbral JaCoCo activado, 70 tests pasan en CI
 
 ## 1. Objetivo
 
@@ -37,18 +37,22 @@ Tres niveles de pruebas complementarias:
 - Base de datos RDS PostgreSQL
 - MercadoPago en modo **sandbox**
 
-## 4. Tests unitarios implementados
+## 4. Tests implementados — estado al 16-jun-2026
 
-### Backend (7 archivos)
+### Backend (10 archivos — 70 tests, 0 fallos)
 
-| Archivo | Reglas cubiertas | Casos |
+| Archivo | Reglas / HU cubiertas | Casos |
 |---|---|---|
-| `AuthServiceTest.java` | HU01, HU02 | Registro válido, email duplicado, RUT duplicado, login OK, login con credenciales inválidas |
-| `PaymentServiceTest.java` | R01, R02, R10, R11, R12 | Checkout atómico, cupos llenos, duplicados, rollback en error |
-| `ClassConfirmationServiceTest.java` | R01, R13 | REALIZADA libera pagos, NO_REALIZADA pasa a REFUND_PENDING |
-| `RescheduleServiceTest.java` | R15, R16, R17, R18 | Sugerencia de fechas, timeout, decisión Maestro PROPIA/ASIGNADA |
-| `RescheduleServiceDemoTest.java` | Flujo completo | Demo orquestada del reagendamiento |
-| `ReviewServiceDemoTest.java` | HU20 | Crear reseña post-clase, validación de elegibilidad |
+| `AuthServiceTest.java` | HU01, HU02 | Registro válido, email duplicado, login OK, credenciales inválidas, usuario no encontrado |
+| `UserServiceTest.java` | HU03, HU04, R21 | getProfile, identidad PENDING/APPROVED, updateProfile, changePassword, RUT inválido, documento duplicado, refundMethod, perfil profesional |
+| `ClassServiceTest.java` | HU10, HU12, R08 | createBorrador sin identidad, borrador→publicar, conflicto horario, sede no aprobada, getById, listPublished |
+| `AdminServiceTest.java` | HU21, R20, R22 | reviewIdentity (sin asignar TEACHER), approveVenue+VENUE_ADMIN, no duplicar rol, toggleUser con/sin motivo, assignRole |
+| `PaymentServiceTest.java` | R01, R02, R10, R11, R12 | Checkout atómico, cupos llenos, duplicados, rollback |
+| `ClassConfirmationServiceTest.java` | R01, R13 | REALIZADA libera pagos, NO_REALIZADA→REFUND_PENDING, ASIGNADA notifica a venue admin |
+| `RescheduleServiceTest.java` | R15, R16, R17, R18 | Sugerencia de fechas, timeout 48h, decisión Maestro PROPIA/ASIGNADA |
+| `ReviewServiceDemoTest.java` | HU20 | Crear reseña post-clase, elegibilidad |
+| `AuthIntegrationTest.java` | HU01, HU02 | Registro+login E2E, contraseña corta, credenciales inválidas, acceso sin JWT |
+| `AdminIntegrationTest.java` | HU21 | Flujo admin E2E con BD real |
 
 ### Frontend (4 archivos)
 
@@ -172,28 +176,55 @@ Tres niveles de pruebas complementarias:
 - BD con 1000 clases publicadas + filtros
 - **Objetivo:** consulta < 500ms p95
 
+## 5.5 Lista de verificación aceptación — 22 HU
+
+| HU | Descripción | Estado manual | Sprint |
+|---|---|---|---|
+| HU01 | Registro con correo único + RUT único | ✓ Verificado | S1 |
+| HU02 | Login JWT + manejo de credenciales inválidas | ✓ Verificado | S1 |
+| HU03 | Upload documento identidad + validación RUT + unicidad | ✓ Verificado | S2 |
+| HU04 | Perfil profesional Maestro (biografía + disciplinas + redes) | ✓ Verificado | S4 |
+| HU05 | Búsqueda de clases con filtros simultáneos (AND) | ✓ Verificado | S3 |
+| HU06 | Ver detalle de clase con cupos disponibles | ✓ Verificado | S3 |
+| HU07 | Carrito con beneficiarios, validar duplicados | ✓ Verificado | S3 |
+| HU08 | Checkout consolidado MercadoPago + estado RETAINED | ✓ Verificado | S4 |
+| HU09 | Cancelar inscripción → REFUND_PENDING | ✓ Verificado | S5 |
+| HU10 | Reservar sala → asignar rol TEACHER en primera publicación | ✓ Verificado | S3 |
+| HU11 | Crear borrador sin sala → asignar sala después | ✓ Verificado | S3 |
+| HU12 | Publicar clase (DRAFT → PUBLISHED) con validaciones | ✓ Verificado | S3 |
+| HU13 | Marcar asistencia ±2 horas de la clase | ✓ Verificado | S5 |
+| HU14 | Dashboard Alumno: mis clases + estados | ✓ Verificado | S5 |
+| HU15 | Registrar sede SEDE / HOME_STUDIO con documentos SII | ✓ Verificado | S2/S8 |
+| HU16 | Registrar sala con todos los campos de equipamiento | ✓ Verificado | S2 |
+| HU17 | Admin Sede confirma REALIZADA / NO_REALIZADA | ✓ Verificado | S5 |
+| HU18 | Reagendamiento R19 + sugerencias + decisión Alumno 48h | ✓ Verificado | S6 |
+| HU19 | Panel Admin General: usuarios, sedes, métricas | ○ Pendiente Sprint 9 | S7 |
+| HU20 | Dejar reseña post-clase completada | ○ Pendiente Sprint 9 | S8 |
+| HU21 | Admin General aprueba identidad / sede (sin asignar roles indebidos) | ✓ Verificado | S7 |
+| HU22 | Botones de contexto [Alumno][Profesor][Mi Sede] con movilidad de perfil | ○ Pendiente Sprint 9 | S7 |
+
 ## 6. Métricas de aceptación
 
 | Métrica | Objetivo | Estado actual |
 |---|---|---|
-| Cobertura backend | ≥ 60% | ~30% (mejorando en Sprint 9) |
-| Cobertura frontend | ≥ 50% | ~25% |
-| Tiempo respuesta GET /classes | < 500ms p95 | Por medir |
-| Tiempo respuesta POST /checkout | < 2s p95 | Por medir |
-| Bugs críticos al cierre | 0 | Por medir Sprint 9 |
+| Cobertura backend (JaCoCo) | ≥ 60% | **≥ 60% — umbral activo, 70 tests** |
+| Cobertura frontend (Vitest) | ≥ 50% | ~25% (pendiente Sprint 9) |
+| Tiempo respuesta GET /classes | < 500ms p95 | Optimizado con JOIN FETCH + Caffeine cache |
+| Tiempo respuesta POST /checkout | < 2s p95 | Por medir con JMeter |
+| Bugs críticos al cierre | 0 | 0 bugs críticos conocidos |
 | Bugs menores al cierre | ≤ 3 | Por medir Sprint 9 |
-| HU verificadas manualmente | 22 / 22 | 18 / 22 actualmente |
+| HU verificadas manualmente | 22 / 22 | **19 / 22** (HU19, HU20, HU22 pendientes Sprint 9) |
 
 ## 7. Responsabilidades
 
-| Área | Responsable | Cobertura |
+| Área | Responsable | Estado |
 |---|---|---|
-| Tests unitarios backend | Jonathan | Sprint 9 + ya 6 archivos |
-| Tests unitarios frontend | Victor | Sprint 9 + ya 4 archivos |
-| Tests de integración | Jonathan + Darlette | Sprint 9 |
-| Aceptación manual | Equipo completo | Sprints 8-9 |
-| Pruebas de carga | Darlette | Sprint 9 |
-| Revisión de seguridad | Jonathan | Sprint 9 |
+| Tests unitarios backend | Jonathan | ✓ 10 archivos, 70 tests, JaCoCo ≥ 60% |
+| Tests unitarios frontend | Victor | Pendiente ampliar a 50% (4 archivos actuales) |
+| Tests de integración | Jonathan + Darlette | 2 archivos (Auth + Admin) — ampliar con ClassFlow |
+| Aceptación manual HU19, HU20, HU22 | Equipo completo | Sprint 9 |
+| Pruebas de carga JMeter 50 usuarios | Darlette | Plan JMeter creado — ejecutar en Sprint 9 |
+| Revisión de seguridad | Jonathan | Pendiente Sprint 9 |
 
 ## 8. Herramientas
 

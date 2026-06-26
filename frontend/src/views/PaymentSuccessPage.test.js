@@ -21,8 +21,8 @@ describe('PaymentSuccessPage', () => {
     await router.push('/payment/success')
     const wrapper = mount(PaymentSuccessPage, { global: { plugins: [router] } })
 
-    expect(wrapper.text()).toContain('Pago Exitoso')
-    expect(wrapper.text()).toContain('procesado correctamente')
+    expect(wrapper.text()).toContain('Pago exitoso')
+    expect(wrapper.text()).toContain('procesada correctamente')
   })
 
   it('shows payment_id from query params', async () => {

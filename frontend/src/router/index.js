@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { decodeJwt } from '@/utils/jwt'
 
 const routes = [
   {
@@ -114,6 +115,12 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'alumno/mis-clases/calendario',
+        name: 'MisClasesCalendario',
+        component: () => import('@/views/alumno/MisClasesCalendarioPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'alumno/pagos',
         name: 'PagosHistorial',
         component: () => import('@/views/alumno/PagosHistorialPage.vue'),
@@ -194,6 +201,12 @@ const routes = [
         meta: { requiresAuth: true, requiresIdentity: true }
       },
       {
+        path: 'profesor/calendario',
+        name: 'ProfesorCalendario',
+        component: () => import('@/views/profesor/ProfesorCalendarioPage.vue'),
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
+      },
+      {
         path: 'profesor/borradores',
         name: 'ProfesorBorradores',
         component: () => import('@/views/profesor/ProfesorBorradoresPage.vue'),
@@ -222,12 +235,6 @@ const routes = [
       {
         path: 'sede/salas',
         name: 'SedeSalas',
-        component: () => import('@/views/sede/SedeAgendaSalaPage.vue'),
-        meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
-      },
-      {
-        path: 'sede/salas/:salaId/agenda',
-        name: 'SedeAgendaSala',
         component: () => import('@/views/sede/SedeAgendaSalaPage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
@@ -262,13 +269,13 @@ const routes = [
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {
-        path: 'sede/métricas',
+        path: 'sede/metricas',
         name: 'SedeMétricas',
         component: () => import('@/views/sede/SedeMetricasPage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {
-        path: 'sede/configuración',
+        path: 'sede/configuracion',
         name: 'SedeConfiguración',
         component: () => import('@/views/sede/SedeConfiguracionPage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
@@ -277,13 +284,19 @@ const routes = [
         path: 'sede/registro',
         name: 'VenueRegistration',
         component: () => import('@/views/sede/VenueRegistrationPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, requiresIdentity: true }
       },
       {
         path: 'sede/sala-registro',
         name: 'RoomRegistration',
         component: () => import('@/views/sede/RoomRegistrationPage.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: 'sede/calendario',
+        name: 'SedeCalendario',
+        component: () => import('@/views/sede/SedeCalendarioPage.vue'),
+        meta: { requiresAuth: true, roles: ['VENUE_ADMIN', 'ADMIN'] }
       },
       // Admin routes
       {
@@ -312,6 +325,12 @@ const routes = [
       }
     ]
   },
+  // Redirects de rutas antiguas con tilde (se codifican mal al recargar) → ASCII
+  { path: '/sede/configuración', redirect: '/sede/configuracion' },
+  { path: '/sede/métricas', redirect: '/sede/metricas' },
+  { path: '/profesor/métricas', redirect: '/profesor/metricas' },
+  { path: '/notificaciónes', redirect: '/notificaciones' },
+  { path: '/quiero-gestiónar-sede', redirect: '/quiero-gestionar-sede' },
   // Redirects
   {
     path: '/associates',
@@ -367,16 +386,15 @@ router.beforeEach((to, from, next) => {
   let user = null
   try {
     user = JSON.parse(userRaw)
-  } catch {}
+  } catch (err) {
+    console.error('Error al parsear usuario almacenado', err)
+  }
 
   const isAuthenticated = () => {
     if (!token) return false
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      return payload.exp * 1000 > Date.now()
-    } catch {
-      return false
-    }
+    const payload = decodeJwt(token)
+    if (!payload) return false
+    return payload.exp * 1000 > Date.now()
   }
 
   const hasRole = (roles) => {

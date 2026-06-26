@@ -34,7 +34,8 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useAuth } from '@/stores/auth'
-import api from '@/services/api'
+import userService from '@/services/userService'
+import { validarNombreSocial, validarTelefono } from '@/utils/profileValidator'
 
 const { user, displayName, updateUserProfile } = useAuth()
 const form = reactive({ socialName: user.value?.socialName || '', phone: user.value?.phone || '' })
@@ -47,9 +48,18 @@ const pwMsg = ref('')
 const pwOk = ref(false)
 
 async function handleUpdate() {
-  saving.value = true
   success.value = ''
   error.value = ''
+
+  // Validación de nombre social (longitud, caracteres y lenguaje no permitido).
+  const vNombre = validarNombreSocial(form.socialName)
+  if (!vNombre.valido) { error.value = vNombre.error; return }
+
+  // Validación de teléfono (móvil chileno).
+  const vTel = validarTelefono(form.phone)
+  if (!vTel.valido) { error.value = vTel.error; return }
+
+  saving.value = true
   try {
     await updateUserProfile(form)
     success.value = 'Perfil actualizado correctamente'
@@ -65,7 +75,7 @@ async function changePw() {
   pwSaving.value = true
   pwMsg.value = ''
   try {
-    await api.put('/users/me/password', { currentPassword: pw.current, newPassword: pw.new })
+    await userService.changePassword(pw.new)
     pwMsg.value = 'Contraseña cambiada exitosamente'
     pwOk.value = true
     pw.current = ''

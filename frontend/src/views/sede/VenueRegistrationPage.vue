@@ -84,16 +84,25 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">
-              Ciudad / Comuna <span class="text-red-400">*</span>
+              Región <span class="text-red-400">*</span>
             </label>
-            <input v-model="form.city" required class="input-field" placeholder="ej: Santiago, Providencia" />
+            <select v-model="form.region" required class="input-field">
+              <option value="">Selecciona una región</option>
+              <option v-for="r in regiones" :key="r" :value="r">{{ r }}</option>
+            </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">
-              Dirección <span class="text-red-400">*</span>
+              Comuna <span class="text-red-400">*</span>
             </label>
-            <input ref="addressInput" v-model="form.address" required class="input-field" placeholder="ej: Av. Italia 1234, Providencia" />
+            <input v-model="form.comuna" required class="input-field" placeholder="ej: Providencia" />
           </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">
+            Dirección <span class="text-red-400">*</span>
+          </label>
+          <input ref="addressInput" v-model="form.address" required class="input-field" placeholder="ej: Av. Italia 1234" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Referencia o indicaciones de acceso</label>
@@ -175,6 +184,59 @@
         </div>
       </div>
 
+      <!-- Horario de la sede -->
+      <div class="card space-y-4" :class="horarioConfirmado ? 'border border-green-500/40' : 'border border-primary/30'">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <h2 class="text-lg font-semibold text-white">Horario de la {{ form.tipo === 'HOME_STUDIO' ? 'instancia' : 'sede' }} <span class="text-red-400">*</span></h2>
+          <span v-if="horarioConfirmado" class="text-xs font-medium text-green-400 flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Horario creado
+          </span>
+        </div>
+        <p class="text-xs text-gray-400">
+          Marca los días de atención y su rango horario (desde / hasta). Este horario se hereda por <strong>cada sala</strong> que registres y genera automáticamente su calendario de disponibilidad para reservas.
+        </p>
+
+        <div class="space-y-2">
+          <div v-for="d in scheduleDays" :key="d" class="flex items-center gap-3 flex-wrap">
+            <label class="flex items-center gap-2 w-28 cursor-pointer shrink-0">
+              <input type="checkbox" v-model="horario[d].enabled" class="w-4 h-4 rounded border-gray-600 text-primary bg-gray-800" />
+              <span class="text-sm text-gray-300">{{ dayLabels[d] }}</span>
+            </label>
+            <div v-if="horario[d].enabled" class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs text-gray-500">Desde</span>
+              <input type="time" v-model="horario[d].desde" class="input-field !py-1.5 w-28" />
+              <span class="text-xs text-gray-500">Hasta</span>
+              <input type="time" v-model="horario[d].hasta" class="input-field !py-1.5 w-28" />
+            </div>
+            <span v-else class="text-xs text-gray-600 italic">Cerrado</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 pt-2 border-t border-white/5">
+          <label class="text-sm text-gray-300">Duración de cada bloque reservable</label>
+          <select v-model.number="duracionBloque" class="input-field !py-1.5 w-32">
+            <option :value="30">30 min</option>
+            <option :value="45">45 min</option>
+            <option :value="60">60 min</option>
+            <option :value="90">90 min</option>
+            <option :value="120">120 min</option>
+          </select>
+        </div>
+
+        <p v-if="horarioError" class="text-red-400 text-xs">{{ horarioError }}</p>
+
+        <button type="button" @click="abrirConfirmHorario" class="btn-primary text-sm">
+          {{ horarioConfirmado ? 'Actualizar horario' : 'Crear horario' }}
+        </button>
+
+        <div v-if="horarioConfirmado" class="text-xs bg-green-500/5 border border-green-500/20 rounded-lg p-3 space-y-0.5">
+          <p class="text-green-300 font-medium mb-1">Horario configurado:</p>
+          <p v-for="r in horarioResumen" :key="r" class="text-gray-300">· {{ r }}</p>
+          <p class="text-gray-500 mt-1">Bloques de {{ duracionBloque }} min.</p>
+        </div>
+      </div>
+
       <!-- Documentación requerida -->
       <div class="card space-y-4 border border-primary/20">
         <h2 class="text-lg font-semibold text-white border-b border-white/10 pb-3">Documentacion requerida</h2>
@@ -226,17 +288,33 @@
 
       <p v-if="error" class="text-red-400 text-sm text-center bg-red-500/10 rounded-lg p-3">{{ error }}</p>
 
-      <button type="submit" :disabled="enviando" class="btn-primary w-full py-3 text-base font-semibold">
+      <button type="submit" :disabled="enviando" class="btn-primary w-full py-3 text-base font-semibold flex items-center justify-center gap-2">
+        <span v-if="enviando" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
         {{ enviando ? 'Enviando solicitud...' : 'Enviar solicitud de registro' }}
       </button>
     </form>
+
+    <!-- Confirmación del horario -->
+    <ConfirmDialog
+      :show="showHorarioConfirm"
+      type="success"
+      title="Confirmar horario"
+      confirm-text="Sí, crear horario"
+      cancel-text="No"
+      :message="`¿Estás seguro del horario? ${horarioResumen.join('  ·  ')}. Bloques de ${duracionBloque} min. Se aplicará a todas las salas de tu ${form.tipo === 'HOME_STUDIO' ? 'instancia' : 'sede'}.`"
+      @confirm="confirmarHorario"
+      @close="showHorarioConfirm = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
+import scheduleService from '@/services/scheduleService'
+import { supabase } from '@/services/supabase'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
 
 const { isAuthenticated } = useAuth()
@@ -290,6 +368,8 @@ const form = reactive({
   tipo: 'SEDE',
   name: '',
   description: '',
+  region: '',
+  comuna: '',
   city: '',
   address: '',
   referencia: '',
@@ -304,8 +384,70 @@ const form = reactive({
   caracteristicas: [],
 })
 
+const regiones = [
+  'Arica y Parinacota',
+  'Tarapacá',
+  'Antofagasta',
+  'Atacama',
+  'Coquimbo',
+  'Valparaíso',
+  'Metropolitana de Santiago',
+  "O'Higgins",
+  'Maule',
+  'Ñuble',
+  'Biobío',
+  'La Araucanía',
+  'Los Ríos',
+  'Los Lagos',
+  'Aysén',
+  'Magallanes y de la Antártica Chilena',
+]
+
 const docArchivos = ref({})
 const docGuardados = ref([])  // tipos de documento ya guardados en el servidor
+
+// ── Horario de la sede ──
+const scheduleDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+const dayLabels = {
+  MONDAY: 'Lunes', TUESDAY: 'Martes', WEDNESDAY: 'Miércoles',
+  THURSDAY: 'Jueves', FRIDAY: 'Viernes', SATURDAY: 'Sábado', SUNDAY: 'Domingo'
+}
+const horario = reactive({
+  MONDAY:    { enabled: true,  desde: '08:00', hasta: '22:00' },
+  TUESDAY:   { enabled: true,  desde: '08:00', hasta: '22:00' },
+  WEDNESDAY: { enabled: true,  desde: '08:00', hasta: '22:00' },
+  THURSDAY:  { enabled: true,  desde: '08:00', hasta: '22:00' },
+  FRIDAY:    { enabled: true,  desde: '08:00', hasta: '22:00' },
+  SATURDAY:  { enabled: false, desde: '09:00', hasta: '18:00' },
+  SUNDAY:    { enabled: false, desde: '09:00', hasta: '18:00' },
+})
+const duracionBloque = ref(60)
+const horarioConfirmado = ref(false)
+const showHorarioConfirm = ref(false)
+const horarioError = ref('')
+
+const horarioResumen = computed(() =>
+  scheduleDays.filter(d => horario[d].enabled).map(d => `${dayLabels[d]} ${horario[d].desde}–${horario[d].hasta}`)
+)
+
+// Si editan el horario o la duración tras confirmar, se invalida la confirmación.
+watch([horario, duracionBloque], () => { horarioConfirmado.value = false }, { deep: true })
+
+function abrirConfirmHorario() {
+  horarioError.value = ''
+  const activos = scheduleDays.filter(d => horario[d].enabled)
+  if (activos.length === 0) { horarioError.value = 'Marca al menos un día de atención.'; return }
+  for (const d of activos) {
+    if (!horario[d].desde || !horario[d].hasta) { horarioError.value = `Completa el horario de ${dayLabels[d]}.`; return }
+    if (horario[d].desde >= horario[d].hasta) { horarioError.value = `En ${dayLabels[d]}, "Desde" debe ser anterior a "Hasta".`; return }
+  }
+  showHorarioConfirm.value = true
+}
+
+function confirmarHorario() {
+  showHorarioConfirm.value = false
+  horarioConfirmado.value = true
+}
 
 // Documentos requeridos segun tipo de sede
 const docsRequeridos = computed(() => {
@@ -339,6 +481,8 @@ onMounted(async () => {
     form.tipo        = v.tipo        || 'SEDE'
     form.name        = v.name        || ''
     form.description = v.description || ''
+    form.region      = v.region      || ''
+    form.comuna      = v.comuna      || ''
     form.city        = v.city        || ''
     form.address     = v.address     || ''
     form.phone       = v.phone       || ''
@@ -346,6 +490,24 @@ onMounted(async () => {
     form.instagram   = v.instagram   || ''
     form.sitioWeb    = v.sitioWeb    || ''
     docGuardados.value = solicitud.documentosGuardados || []
+
+    // Precargar el horario existente de la sede (si reenvía una solicitud).
+    try {
+      const sched = await scheduleService.getSchedule(v.id)
+      if (sched?.length) {
+        for (const d of scheduleDays) horario[d].enabled = false
+        for (const s of sched) {
+          const dow = s.dayOfWeek || s.day_of_week
+          if (horario[dow]) {
+            horario[dow].enabled = true
+            horario[dow].desde = String(s.openTime || s.open_time || '').slice(0, 5)
+            horario[dow].hasta = String(s.closeTime || s.close_time || '').slice(0, 5)
+          }
+        }
+        const cfg = await scheduleService.getBlockConfig(v.id)
+        if (cfg?.blockDurationMin) duracionBloque.value = cfg.blockDurationMin
+      }
+    } catch { /* sin horario previo */ }
   }
   attachAutocomplete(addressInput.value, (place) => {
     form.address = place.formatted_address
@@ -354,35 +516,64 @@ onMounted(async () => {
   cargando.value = false
 })
 
+// Sube los documentos adjuntos al bucket privado venue-documents y los indexa.
+async function subirDocumentos(venueId) {
+  for (const tipo of Object.keys(docArchivos.value)) {
+    const file = docArchivos.value[tipo]
+    if (!file) continue
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase()
+    const path = `${venueId}/${tipo}-${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage
+      .from('venue-documents').upload(path, file, { upsert: true, contentType: file.type })
+    if (upErr) throw upErr
+    await venueService.addVenueDocument(venueId, {
+      fileUrl: path, tipo, nombre: file.name, tipoArchivo: file.type
+    })
+  }
+}
+
 async function submit() {
-  enviando.value = true
   error.value = ''
+  if (!horarioConfirmado.value) {
+    error.value = 'Primero crea y confirma el horario de la sede.'
+    return
+  }
+  enviando.value = true
   try {
-    const fd = new FormData()
-    fd.append('nombre', form.name)
-    fd.append('ciudad', form.city)
-    fd.append('direccion', form.address)
-    fd.append('descripcion', form.description || '')
-    fd.append('teléfono', form.phone || '')
-    fd.append('email', form.email || '')
-    fd.append('tipo', form.tipo)
-    if (form.instagram) fd.append('instagram', form.instagram)
-    if (form.sitioWeb) fd.append('sitioWeb', form.sitioWeb)
+    // 1. Crear (o reenviar) la sede vía Edge Function register-venue.
+    const venue = await venueService.createVenue({
+      name: form.name,
+      description: form.description,
+      region: form.region,
+      comuna: form.comuna,
+      // En Chile la ciudad coincide con la comuna; se completa para las búsquedas
+      // que filtran/muestran por city.
+      city: form.comuna,
+      address: form.address,
+      phone: form.phone,
+      email: form.email,
+      tipo: form.tipo,
+      instagram: form.instagram,
+      sitioWeb: form.sitioWeb,
+    })
+    if (!venue?.id) throw new Error('No se pudo crear la sede.')
 
-    // Adjuntar documentos
-    const docsKeys = Object.keys(docArchivos.value)
-    for (const tipo of docsKeys) {
-      fd.append('documentos', docArchivos.value[tipo])
-      fd.append('tiposDocumento', tipo)
-    }
+    // 2-3. Horario, config de bloques y documentos son independientes entre sí
+    // (solo necesitan el id de la sede): se ejecutan en paralelo para no sumar
+    // los tiempos de cada llamada.
+    const schedules = scheduleDays
+      .filter(d => horario[d].enabled)
+      .map(d => ({ dayOfWeek: d, openTime: horario[d].desde, closeTime: horario[d].hasta }))
+    await Promise.all([
+      scheduleService.saveSchedule(venue.id, schedules),
+      scheduleService.saveBlockConfig(venue.id, { blockDurationMin: duracionBloque.value, gapBetweenBlocksMin: 0 }),
+      subirDocumentos(venue.id),
+    ])
 
-    await venueService.registrarVenueConDocumentos(fd)
     enviado.value = true
   } catch (e) {
-    const msg = e.response?.data?.message || e.response?.data?.error || e.message
-    error.value = msg && msg !== 'No message available'
-      ? msg
-      : 'Error al enviar la solicitud. Intenta nuevamente.'
+    error.value = e.response?.data?.error || e.response?.data?.message || e.message ||
+      'Error al enviar la solicitud. Intenta nuevamente.'
   } finally {
     enviando.value = false
   }

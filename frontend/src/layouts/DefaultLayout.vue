@@ -1,5 +1,11 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-[var(--bg-base)]">
+  <div class="min-h-screen flex flex-col bg-[var(--bg-base)] relative overflow-x-hidden">
+    <!-- Aurora de fondo global -->
+    <div class="aurora" aria-hidden="true">
+      <div class="aurora-blob aurora-purple"></div>
+      <div class="aurora-blob aurora-blue"></div>
+      <div class="aurora-blob aurora-pink"></div>
+    </div>
     <!-- Navbar -->
     <nav class="sticky top-0 z-50 bg-[var(--bg-base)] backdrop-blur-sm border-b border-[#6C63FF22]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -426,6 +432,65 @@ watch(() => route.path, () => {
 </script>
 
 <style scoped>
+/* Aurora global */
+.aurora {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: aurora-float 12s ease-in-out infinite alternate;
+}
+
+.aurora-purple {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #6C63FF, transparent 70%);
+  top: -150px;
+  left: -100px;
+  animation-delay: 0s;
+  animation-duration: 14s;
+}
+
+.aurora-blue {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #3B82F6, transparent 70%);
+  top: 20%;
+  right: -120px;
+  animation-delay: -5s;
+  animation-duration: 11s;
+}
+
+.aurora-pink {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, #A855F7, transparent 70%);
+  bottom: 10%;
+  left: 30%;
+  animation-delay: -8s;
+  animation-duration: 16s;
+}
+
+@keyframes aurora-float {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(40px, -30px) scale(1.08); }
+  100% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+/* Asegurar que el contenido quede por encima de la aurora */
+nav, main, footer {
+  position: relative;
+  z-index: 1;
+}
+
 .nav-link {
   @apply px-3 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all;
 }

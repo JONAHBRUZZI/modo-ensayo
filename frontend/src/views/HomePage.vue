@@ -444,6 +444,21 @@ const currentSteps = computed(() => allSteps[activeTab.value])
   background: radial-gradient(ellipse, #6C63FF14 0%, transparent 68%);
   pointer-events: none;
 }
+.hero-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.particle {
+  position: absolute;
+  bottom: -10px;
+  width: 4px; height: 4px;
+  background: #6C63FF33;
+  border-radius: 50%;
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  10%  { opacity: 0.7; }
+  90%  { opacity: 0.3; }
+  100% { transform: translateY(-500px) scale(0.4); opacity: 0; }
+}
 .hero-inner { position: relative; z-index: 1; }
 .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
 .hero-text { display: flex; flex-direction: column; }

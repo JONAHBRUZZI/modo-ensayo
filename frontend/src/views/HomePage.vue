@@ -3,7 +3,7 @@
 
     <!-- Capa de particulas: cubre toda la portada de forma ambiental -->
     <div class="page-particles" aria-hidden="true">
-      <span v-for="n in 22" :key="n" class="particle" :style="{ left: particleX(n), animationDelay: (n * 0.35) + 's', animationDuration: (7 + (n % 5)) + 's' }" />
+      <span v-for="n in 12" :key="n" class="particle" :style="{ left: particleX(n), animationDelay: (n * 0.6) + 's', animationDuration: (8 + (n % 5)) + 's' }" />
     </div>
 
     <!-- HERO -->
@@ -448,16 +448,16 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 .particle {
   position: absolute;
   bottom: -10px;
-  width: 5px; height: 5px;
+  width: 3px; height: 3px;
   background: #9B8CFF;
   border-radius: 50%;
-  box-shadow: 0 0 6px 1px #6C63FFaa;
+  box-shadow: 0 0 3px 0 #6C63FF44;
   animation: float-up linear infinite;
 }
 @keyframes float-up {
   0%   { transform: translateY(0) scale(1); opacity: 0; }
-  12%  { opacity: 0.95; }
-  85%  { opacity: 0.5; }
+  12%  { opacity: 0.28; }
+  85%  { opacity: 0.14; }
   100% { transform: translateY(-100vh) scale(0.4); opacity: 0; }
 }
 .hero-inner { position: relative; z-index: 1; }

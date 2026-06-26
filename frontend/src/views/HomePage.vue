@@ -203,6 +203,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import heroBailarines from '@/assets/hero-bailarines.png'
 import heroMusicos from '@/assets/hero-musicos.png'
 
+function particleX(n) { return (((n * 37 + 11) % 90) + 5) + '%' }
+
 // Crossfade
 const heroImages = [heroBailarines, heroMusicos]
 const activeImg = ref(0)

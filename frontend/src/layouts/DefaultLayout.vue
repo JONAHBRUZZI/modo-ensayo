@@ -269,58 +269,33 @@
 
     <!-- Footer -->
     <footer class="bg-[#0b0d14] border-t border-[#1e2130]">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
 
-          <!-- Columna 1: Logo + descripción -->
-          <div>
-            <div class="flex items-center space-x-2 mb-3">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, #6C63FF, #9B8CFF);">
-                <span class="text-white font-bold text-xs tracking-wide">ME</span>
-              </div>
-              <span class="text-white font-semibold text-base">Modo <span class="text-primary">Ensayo</span></span>
+          <!-- Logo + descripción corta -->
+          <div class="flex items-center gap-3">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #6C63FF, #9B8CFF);">
+              <span class="text-white font-bold text-xs">ME</span>
             </div>
-            <p class="text-gray-500 text-sm leading-relaxed">
-              Plataforma chilena que conecta alumnos, maestros y salas de ensayo en un solo lugar. Reserva, aprende y crece.
-            </p>
-          </div>
-
-          <!-- Columna 2: Navegación -->
-          <div>
-            <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">Plataforma</h3>
-            <ul class="space-y-2">
-              <li><router-link to="/" class="text-gray-500 hover:text-white text-sm transition-colors">Inicio</router-link></li>
-              <li><router-link to="/classes" class="text-gray-500 hover:text-white text-sm transition-colors">Cronograma de clases</router-link></li>
-              <li><router-link to="/quiero-ser-profesor" class="text-gray-500 hover:text-white text-sm transition-colors">Quiero ser Maestro</router-link></li>
-              <li><router-link to="/quiero-gestionar-sede" class="text-gray-500 hover:text-white text-sm transition-colors">Quiero gestionar una Sede</router-link></li>
-            </ul>
-          </div>
-
-          <!-- Columna 3: Acceso -->
-          <div>
-            <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">Acceso</h3>
-            <ul class="space-y-2">
-              <li><router-link to="/login" class="text-gray-500 hover:text-white text-sm transition-colors">Iniciar sesión</router-link></li>
-              <li><router-link to="/register" class="text-gray-500 hover:text-white text-sm transition-colors">Crear cuenta gratis</router-link></li>
-            </ul>
-            <div class="mt-6">
-              <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Disciplinas</h3>
-              <div class="flex flex-wrap gap-2">
-                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Ballet</span>
-                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Cueca</span>
-                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Danza</span>
-                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Música</span>
-                <span class="text-xs text-gray-600 bg-[#111420] border border-[#1e2130] px-2.5 py-1 rounded-full">Teatro</span>
-              </div>
+            <div>
+              <span class="text-white text-sm font-semibold">Modo <span class="text-primary">Ensayo</span></span>
+              <p class="text-gray-600 text-xs mt-0.5">Plataforma chilena de danza y música</p>
             </div>
           </div>
 
-        </div>
+          <!-- Links centrados -->
+          <div class="flex flex-wrap gap-x-5 gap-y-1">
+            <router-link to="/" class="text-gray-500 hover:text-white text-xs transition-colors">Inicio</router-link>
+            <router-link to="/classes" class="text-gray-500 hover:text-white text-xs transition-colors">Clases</router-link>
+            <router-link to="/quiero-ser-profesor" class="text-gray-500 hover:text-white text-xs transition-colors">Ser Maestro</router-link>
+            <router-link to="/quiero-gestionar-sede" class="text-gray-500 hover:text-white text-xs transition-colors">Gestiónar Sede</router-link>
+            <router-link to="/login" class="text-gray-500 hover:text-white text-xs transition-colors">Iniciar sesión</router-link>
+            <router-link to="/register" class="text-gray-500 hover:text-white text-xs transition-colors">Registrarse</router-link>
+          </div>
 
-        <!-- Barra inferior -->
-        <div class="border-t border-[#1e2130] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span class="text-gray-600 text-xs">© {{ new Date().getFullYear() }} Modo Ensayo. Todos los derechos reservados.</span>
-          <span class="text-gray-700 text-xs">Hecho en Chile 🇨🇱</span>
+          <!-- Copyright -->
+          <span class="text-gray-700 text-xs whitespace-nowrap">© {{ new Date().getFullYear() }} Modo Ensayo · Chile 🇨🇱</span>
+
         </div>
       </div>
     </footer>
@@ -449,45 +424,46 @@ watch(() => route.path, () => {
 .aurora-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.35;
-  animation: aurora-float 12s ease-in-out infinite alternate;
+  filter: blur(55px);
+  opacity: 0.22;
+  animation: aurora-float 14s ease-in-out infinite alternate;
 }
 
 .aurora-purple {
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, #6C63FF, transparent 70%);
-  top: -150px;
-  left: -100px;
+  width: 320px;
+  height: 320px;
+  background: #6C63FF;
+  top: -60px;
+  left: -60px;
+  animation-duration: 16s;
   animation-delay: 0s;
-  animation-duration: 14s;
 }
 
 .aurora-blue {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, #3B82F6, transparent 70%);
-  top: 20%;
-  right: -120px;
-  animation-delay: -5s;
-  animation-duration: 11s;
+  width: 260px;
+  height: 260px;
+  background: #2563EB;
+  top: 15%;
+  right: -40px;
+  animation-duration: 12s;
+  animation-delay: -4s;
 }
 
 .aurora-pink {
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, #A855F7, transparent 70%);
-  bottom: 10%;
-  left: 30%;
-  animation-delay: -8s;
-  animation-duration: 16s;
+  width: 280px;
+  height: 280px;
+  background: #7C3AED;
+  bottom: 15%;
+  left: 35%;
+  animation-duration: 18s;
+  animation-delay: -9s;
 }
 
 @keyframes aurora-float {
-  0%   { transform: translate(0, 0) scale(1); }
-  50%  { transform: translate(40px, -30px) scale(1.08); }
-  100% { transform: translate(-20px, 20px) scale(0.95); }
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(50px, -40px) scale(1.1); }
+  66%  { transform: translate(-30px, 30px) scale(0.92); }
+  100% { transform: translate(20px, -20px) scale(1.05); }
 }
 
 .nav-link {

@@ -263,7 +263,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-[#0b0d14] border-t border-[#1e2130]">
+    <footer class="bg-[var(--bg-footer)] border-t border-[var(--border-subtle)]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
 
@@ -273,23 +273,23 @@
               <span class="text-white font-bold text-xs">ME</span>
             </div>
             <div>
-              <span class="text-white text-sm font-semibold">Modo <span class="text-primary">Ensayo</span></span>
-              <p class="text-gray-600 text-xs mt-0.5">Plataforma chilena de danza y música</p>
+              <span class="text-sm font-semibold text-[var(--text-primary)]">Modo <span class="text-primary">Ensayo</span></span>
+              <p class="text-[var(--text-secondary)] text-xs mt-0.5">Plataforma chilena de danza y música</p>
             </div>
           </div>
 
           <!-- Links centrados -->
           <div class="flex flex-wrap gap-x-5 gap-y-1">
-            <router-link to="/" class="text-gray-500 hover:text-white text-xs transition-colors">Inicio</router-link>
-            <router-link to="/classes" class="text-gray-500 hover:text-white text-xs transition-colors">Clases</router-link>
-            <router-link to="/quiero-ser-profesor" class="text-gray-500 hover:text-white text-xs transition-colors">Ser Maestro</router-link>
-            <router-link to="/quiero-gestionar-sede" class="text-gray-500 hover:text-white text-xs transition-colors">Gestiónar Sede</router-link>
-            <router-link to="/login" class="text-gray-500 hover:text-white text-xs transition-colors">Iniciar sesión</router-link>
-            <router-link to="/register" class="text-gray-500 hover:text-white text-xs transition-colors">Registrarse</router-link>
+            <router-link to="/" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Inicio</router-link>
+            <router-link to="/classes" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Clases</router-link>
+            <router-link to="/quiero-ser-profesor" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Ser Maestro</router-link>
+            <router-link to="/quiero-gestionar-sede" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Gestiónar Sede</router-link>
+            <router-link to="/login" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Iniciar sesión</router-link>
+            <router-link to="/register" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Registrarse</router-link>
           </div>
 
           <!-- Copyright -->
-          <span class="text-gray-700 text-xs whitespace-nowrap">© {{ new Date().getFullYear() }} Modo Ensayo · Chile 🇨🇱</span>
+          <span class="text-[var(--text-secondary)] text-xs whitespace-nowrap">© {{ new Date().getFullYear() }} Modo Ensayo · Chile 🇨🇱</span>
 
         </div>
       </div>

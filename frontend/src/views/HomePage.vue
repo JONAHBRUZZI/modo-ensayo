@@ -67,13 +67,14 @@
             <div
               v-motion :initial="{ opacity: 0 }"
               :enter="{ opacity: 1, transition: { duration: 600, delay: 400 } }"
+              ref="statsRowRef"
               class="stats-row"
             >
-              <div class="stat-item"><span class="stat-num">+120</span><span class="stat-label">Clases activas</span></div>
+              <div class="stat-item"><span class="stat-num">+{{ displayClases }}</span><span class="stat-label">Clases activas</span></div>
               <div class="stat-divider" aria-hidden="true"></div>
-              <div class="stat-item"><span class="stat-num">+40</span><span class="stat-label">Maestros</span></div>
+              <div class="stat-item"><span class="stat-num">+{{ displayMaestros }}</span><span class="stat-label">Maestros</span></div>
               <div class="stat-divider" aria-hidden="true"></div>
-              <div class="stat-item"><span class="stat-num">+15</span><span class="stat-label">Sedes</span></div>
+              <div class="stat-item"><span class="stat-num">+{{ displaySedes }}</span><span class="stat-label">Sedes</span></div>
             </div>
           </div>
 
@@ -272,6 +273,42 @@ function resetTimer() {
 }
 onMounted(() => resetTimer())
 onUnmounted(() => clearInterval(timer))
+
+// --- Count-up stats ---
+const displayClases = ref(0)
+const displayMaestros = ref(0)
+const displaySedes = ref(0)
+const statsVisible = ref(false)
+const statsRowRef = ref(null)
+let statsObserver = null
+
+function animateCount(refVar, target, duration = 1400) {
+  const start = performance.now()
+  function tick(now) {
+    const elapsed = now - start
+    const progress = Math.min(elapsed / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3)
+    refVar.value = Math.round(eased * target)
+    if (progress < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
+onMounted(() => {
+  statsObserver = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting && !statsVisible.value) {
+      statsVisible.value = true
+      animateCount(displayClases, 120)
+      animateCount(displayMaestros, 40)
+      animateCount(displaySedes, 15)
+    }
+  }, { threshold: 0.5 })
+  if (statsRowRef.value) statsObserver.observe(statsRowRef.value)
+})
+
+onUnmounted(() => {
+  if (statsObserver) statsObserver.disconnect()
+})
 
 // Disciplinas
 const disciplines = ['Ballet', 'Cueca', 'Danza contemporánea', 'Folklore', 'Guitarra', 'Piano', 'Violín', 'Teatro', 'Canto']

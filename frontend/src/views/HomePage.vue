@@ -1,14 +1,14 @@
 <template>
   <div class="home">
 
+    <!-- Capa de particulas: cubre toda la portada de forma ambiental -->
+    <div class="page-particles" aria-hidden="true">
+      <span v-for="n in 22" :key="n" class="particle" :style="{ left: particleX(n), animationDelay: (n * 0.35) + 's', animationDuration: (7 + (n % 5)) + 's' }" />
+    </div>
+
     <!-- HERO -->
     <section class="hero">
       <div class="hero-glow" aria-hidden="true"></div>
-
-      <!-- Particle layer -->
-      <div class="hero-particles" aria-hidden="true">
-        <span v-for="n in 12" :key="n" class="particle" :style="{ left: particleX(n), animationDelay: (n * 0.4) + 's', animationDuration: (4 + (n % 3)) + 's' }" />
-      </div>
 
       <div class="hero-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="hero-grid">
@@ -444,20 +444,20 @@ const currentSteps = computed(() => allSteps[activeTab.value])
   background: radial-gradient(ellipse, #6C63FF14 0%, transparent 68%);
   pointer-events: none;
 }
-.hero-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.page-particles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
 .particle {
   position: absolute;
   bottom: -10px;
   width: 4px; height: 4px;
-  background: #6C63FF33;
+  background: #6C63FF40;
   border-radius: 50%;
   animation: float-up linear infinite;
 }
 @keyframes float-up {
   0%   { transform: translateY(0) scale(1); opacity: 0; }
-  10%  { opacity: 0.7; }
-  90%  { opacity: 0.3; }
-  100% { transform: translateY(-500px) scale(0.4); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.25; }
+  100% { transform: translateY(-100vh) scale(0.4); opacity: 0; }
 }
 .hero-inner { position: relative; z-index: 1; }
 .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }

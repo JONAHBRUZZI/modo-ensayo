@@ -48,7 +48,7 @@
             Crear cuenta gratis
           </router-link>
           <router-link to="/login"
-            class="w-full flex items-center justify-center gap-2 py-2.5 border border-white/15 text-gray-300 rounded-xl text-sm hover:bg-white/5 transition-colors">
+            class="w-full flex items-center justify-center gap-2 py-2.5 border border-[var(--border-default)] text-[var(--text-secondary)] rounded-xl text-sm hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] transition-colors">
             Ya tengo cuenta
           </router-link>
         </template>

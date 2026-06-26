@@ -448,15 +448,16 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 .particle {
   position: absolute;
   bottom: -10px;
-  width: 4px; height: 4px;
-  background: #6C63FF40;
+  width: 5px; height: 5px;
+  background: #9B8CFF;
   border-radius: 50%;
+  box-shadow: 0 0 6px 1px #6C63FFaa;
   animation: float-up linear infinite;
 }
 @keyframes float-up {
   0%   { transform: translateY(0) scale(1); opacity: 0; }
-  10%  { opacity: 0.6; }
-  90%  { opacity: 0.25; }
+  12%  { opacity: 0.95; }
+  85%  { opacity: 0.5; }
   100% { transform: translateY(-100vh) scale(0.4); opacity: 0; }
 }
 .hero-inner { position: relative; z-index: 1; }

@@ -196,7 +196,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <p class="section-eyebrow">&iquest;Que puedes hacer?</p>
         <div class="features-grid">
-          <router-link
+          <div
             v-for="(feat, i) in features"
             :key="feat.title"
             v-motion :initial="{ opacity: 0, y: 28 }"
@@ -206,7 +206,7 @@
             <div :class="['feat-icon', feat.iconClass]" aria-hidden="true" v-html="feat.icon"></div>
             <h3 class="feat-title">{{ feat.title }}</h3>
             <p class="feat-desc">{{ feat.desc }}</p>
-          </router-link>
+          </div>
         </div>
       </div>
     </section>

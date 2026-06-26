@@ -55,6 +55,17 @@
 
             <div
               v-motion :initial="{ opacity: 0 }"
+              :enter="{ opacity: 1, transition: { duration: 500, delay: 320 } }"
+              class="hero-roles-hint"
+            >
+              <span>¿Enseñas o tienes un espacio?</span>
+              <router-link to="/quiero-ser-profesor">Publica tus clases</router-link>
+              <span class="hint-dot" aria-hidden="true">·</span>
+              <router-link to="/quiero-gestionar-sede">Registra tu espacio</router-link>
+            </div>
+
+            <div
+              v-motion :initial="{ opacity: 0 }"
               :enter="{ opacity: 1, transition: { duration: 600, delay: 400 } }"
               class="stats-row"
             >
@@ -108,6 +119,50 @@
       </div>
     </section>
 
+    <!-- PAGOS PROTEGIDOS (diferenciador) -->
+    <section class="protect-section">
+      <div class="protect-glow" aria-hidden="true"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div
+          v-motion :initial="{ opacity: 0, y: 20 }"
+          :visible="{ opacity: 1, y: 0, transition: { duration: 450 } }"
+          class="protect-head"
+        >
+          <p class="section-eyebrow">Pagos protegidos</p>
+          <h2 class="protect-title">Tu dinero se libera <em>solo</em> cuando la clase se realiza</h2>
+          <p class="protect-sub">
+            Nada de pagar y cruzar los dedos. Protegemos a alumnos y maestros por igual:
+            el pago queda resguardado hasta que la clase ocurra de verdad.
+          </p>
+        </div>
+
+        <div class="protect-grid">
+          <div
+            v-for="(p, i) in protections"
+            :key="p.title"
+            v-motion :initial="{ opacity: 0, y: 24 }"
+            :visible="{ opacity: 1, y: 0, transition: { duration: 420, delay: i * 100 } }"
+            class="protect-card"
+          >
+            <div :class="['protect-icon', p.iconClass]" v-html="p.icon" aria-hidden="true"></div>
+            <h3 class="protect-card-title">{{ p.title }}</h3>
+            <p class="protect-card-desc">{{ p.desc }}</p>
+          </div>
+        </div>
+
+        <div
+          v-motion :initial="{ opacity: 0 }"
+          :visible="{ opacity: 1, transition: { duration: 500, delay: 200 } }"
+          class="trust-bar"
+        >
+          <div v-for="b in trustBadges" :key="b.label" class="trust-badge">
+            <span class="trust-badge-icon" v-html="b.icon" aria-hidden="true"></span>
+            {{ b.label }}
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- PARA QUIÉN ES -->
     <section class="roles-section">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -129,6 +184,7 @@
                 {{ item }}
               </li>
             </ul>
+            <p v-if="role.note" class="role-note" v-html="role.note"></p>
             <router-link :to="role.cta.to" :class="['role-cta', role.cta.style]">{{ role.cta.label }}</router-link>
           </div>
         </div>
@@ -236,16 +292,56 @@ const roles = [
     iconClass: 'icon-green',
     icon: `<svg width='22' height='22' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'/></svg>`,
     items: ['Crea y publica tus propias clases', 'Agenda salas en sedes asociadas', 'Recibe pagos de forma segura', 'Visualiza tus métricas y asistencia'],
+    note: '¿Tienes tu propio espacio? También puedes registrarlo como <strong>HomeStudio</strong>.',
     cta: { to: '/quiero-ser-profesor', label: 'Quiero ser Maestro', style: 'btn-hero-secondary mt-4 text-sm inline-flex' }
   },
   {
-    title: 'Tengo una Sede',
-    desc: 'Administra tus salas, confirma clases y monitorea el rendimiento de tu espacio.',
+    title: 'Tengo un espacio',
+    desc: 'Desde una academia con varias salas hasta tu home studio personal: pon tu espacio a trabajar.',
     iconClass: 'icon-amber',
     icon: `<svg width='22' height='22' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'/></svg>`,
-    items: ['Registra y gestiona tus salas', 'Confirma clases y reagendamientos', 'Panel de métricas en tiempo real', 'Administra maestros asociados'],
-    cta: { to: '/quiero-gestionar-sede', label: 'Registrar mi Sede', style: 'btn-hero-secondary mt-4 text-sm inline-flex' }
+    items: ['Registra una sede o tu HomeStudio', 'Gestiona salas, horarios y reservas', 'Confirma clases y reagendamientos', 'Panel de métricas en tiempo real'],
+    note: 'Sede comercial o espacio en tu casa: <strong>ambos son bienvenidos</strong>.',
+    cta: { to: '/quiero-gestionar-sede', label: 'Registrar mi espacio', style: 'btn-hero-secondary mt-4 text-sm inline-flex' }
   }
+]
+
+// Pagos protegidos (diferenciador central: pago condicionado a que la clase ocurra)
+const protections = [
+  {
+    title: 'Reservas con confianza',
+    desc: 'Pagas al reservar, pero tu dinero queda protegido hasta que la clase se realice.',
+    iconClass: 'icon-purple',
+    icon: `<svg width='22' height='22' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'/></svg>`,
+  },
+  {
+    title: 'Si algo cambia, te acomodas',
+    desc: 'Reagenda la clase o recupera tu pago si no se concreta. Sin letra chica.',
+    iconClass: 'icon-green',
+    icon: `<svg width='22' height='22' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'/></svg>`,
+  },
+  {
+    title: 'El maestro cobra al confirmar',
+    desc: 'El pago se transfiere de forma automática cuando la clase se realiza.',
+    iconClass: 'icon-amber',
+    icon: `<svg width='22' height='22' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>`,
+  },
+]
+
+// Señales de confianza
+const trustBadges = [
+  {
+    label: 'Maestros con identidad verificada',
+    icon: `<svg fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>`,
+  },
+  {
+    label: 'Reseñas reales de alumnos',
+    icon: `<svg fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'/></svg>`,
+  },
+  {
+    label: 'Pagos procesados con MercadoPago',
+    icon: `<svg fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'/></svg>`,
+  },
 ]
 
 // Features
@@ -344,6 +440,10 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 }
 .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 .stat-divider { width: 1px; height: 28px; background: var(--border-subtle); }
+.hero-roles-hint { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 1.25rem; font-size: 13px; color: var(--text-secondary); }
+.hero-roles-hint a { color: #8B83FF; font-weight: 600; transition: color 0.2s; }
+.hero-roles-hint a:hover { color: #6C63FF; text-decoration: underline; }
+.hero-roles-hint .hint-dot { color: var(--border-default); }
 
 /* ABOUT */
 .about-section { background: var(--bg-footer); padding: 4rem 0; border-top: 1px solid var(--border-subtle); }
@@ -352,6 +452,29 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 .about-desc { color: var(--text-secondary); font-size: 15px; line-height: 1.8; margin-bottom: 1.5rem; }
 .disciplines { display: flex; flex-wrap: wrap; gap: 8px; }
 .discipline-pill { background: #6C63FF12; border: 1px solid #6C63FF28; color: #9B8CFF; font-size: 12px; font-weight: 500; padding: 4px 14px; border-radius: 100px; }
+
+/* PAGOS PROTEGIDOS */
+.protect-section { position: relative; overflow: hidden; background: var(--bg-base); padding: 4.5rem 0; border-top: 1px solid var(--border-subtle); }
+.protect-glow {
+  position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 300px;
+  background: radial-gradient(ellipse, #6C63FF1f 0%, transparent 70%);
+  pointer-events: none;
+}
+.protect-head { position: relative; text-align: center; max-width: 640px; margin: 0 auto 2.5rem; }
+.protect-title { font-size: clamp(22px, 3vw, 32px); font-weight: 700; color: var(--text-primary); line-height: 1.2; margin: 0.25rem 0 0.75rem; }
+.protect-title em { font-style: normal; color: #8B83FF; }
+.protect-sub { color: var(--text-secondary); font-size: 15px; line-height: 1.7; }
+.protect-grid { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 2.5rem; }
+.protect-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 1.75rem; text-align: center; transition: border-color 0.2s, transform 0.2s; }
+.protect-card:hover { border-color: #6C63FF44; transform: translateY(-2px); }
+.protect-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+.protect-card-title { color: var(--text-primary); font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.protect-card-desc { color: var(--text-secondary); font-size: 13px; line-height: 1.65; }
+.trust-bar { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.trust-badge { display: inline-flex; align-items: center; gap: 8px; background: #6C63FF0f; border: 1px solid #6C63FF26; color: var(--text-secondary); font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 100px; }
+.trust-badge-icon { display: inline-flex; color: #8B83FF; }
+.trust-badge-icon svg { width: 16px; height: 16px; }
 
 /* ROLES */
 .roles-section { background: var(--bg-base); padding: 4rem 0; border-top: 1px solid var(--border-subtle); }
@@ -368,6 +491,8 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 .role-list { list-style: none; padding: 0; margin: 0 0 auto 0; display: flex; flex-direction: column; gap: 6px; }
 .role-item { display: flex; align-items: flex-start; gap: 8px; color: var(--text-secondary); font-size: 13px; }
 .role-item svg { color: #6C63FF; margin-top: 2px; }
+.role-note { color: var(--text-secondary); font-size: 12px; line-height: 1.5; margin: 0; padding-top: 0.75rem; }
+.role-note :deep(strong) { color: #8B83FF; font-weight: 600; }
 .role-cta { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; transition: all 0.2s; }
 
 /* FEATURES */

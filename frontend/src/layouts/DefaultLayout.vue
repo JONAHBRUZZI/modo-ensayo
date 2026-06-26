@@ -490,12 +490,6 @@ watch(() => route.path, () => {
   100% { transform: translate(-20px, 20px) scale(0.95); }
 }
 
-/* Asegurar que el contenido quede por encima de la aurora */
-nav, main, footer {
-  position: relative;
-  z-index: 1;
-}
-
 .nav-link {
   @apply px-3 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all;
 }

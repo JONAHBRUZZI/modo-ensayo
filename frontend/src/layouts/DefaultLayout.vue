@@ -270,7 +270,7 @@
     <!-- Footer -->
     <footer class="bg-[var(--bg-footer)] border-t border-[var(--border-subtle)]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
           <!-- Logo + descripción corta -->
           <div class="flex items-center gap-3">
@@ -284,7 +284,7 @@
           </div>
 
           <!-- Links centrados -->
-          <div class="flex flex-wrap gap-x-5 gap-y-1">
+          <div class="flex flex-wrap gap-x-5 gap-y-2">
             <router-link to="/" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Inicio</router-link>
             <router-link to="/classes" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Clases</router-link>
             <router-link to="/quiero-ser-profesor" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Ser Maestro</router-link>

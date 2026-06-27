@@ -158,7 +158,7 @@
             <input type="number" v-model.number="form.cantidadSalas" min="1" class="input-field" placeholder="ej: 3" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Capacidad máxima por sala</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Capacidad máxima de la sede</label>
             <input type="number" v-model.number="form.capacidadMaxima" min="1" class="input-field" placeholder="ej: 20" />
           </div>
         </div>
@@ -244,6 +244,29 @@
           {{ form.tipo === 'SEDE' ? 'Las sedes comerciales requieren documentacion tributaria, permisos municipales y documentos legales.' : 'Para HomeStudio necesitas tu Inicio de Actividades del SII y un comprobante que acredite el domicilio (luz, agua, gas, internet, extracto bancario o ficha de proteccion social).' }}
         </p>
 
+        <!-- Foto de la sede (fachada/frontis) — imagen de referencia en el sistema -->
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-medium text-red-400">
+              Foto de la {{ form.tipo === 'HOME_STUDIO' ? 'instancia' : 'sede' }} (frontis) <span class="text-red-400">*</span>
+            </span>
+          </div>
+          <p class="text-[11px] text-gray-500">
+            Sube una foto del frente de la {{ form.tipo === 'HOME_STUDIO' ? 'instancia' : 'sede' }} (no de una sala). Quedará como imagen de referencia en el sistema.
+          </p>
+          <input type="file"
+            accept="image/*"
+            @change="onFotoSede"
+            class="block w-full text-sm text-gray-400
+              file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
+              file:text-sm file:bg-primary file:text-white
+              hover:file:bg-primary/80 file:cursor-pointer file:transition-colors" />
+          <div v-if="fotoSede" class="flex items-center gap-3 mt-2">
+            <img :src="fotoSedePreview" alt="Vista previa de la sede" class="w-20 h-20 object-cover rounded-lg border border-white/10" />
+            <span class="text-xs text-green-400">{{ fotoSede.name }}</span>
+          </div>
+        </div>
+
         <div v-for="doc in docsRequeridos" :key="doc.tipo" class="space-y-1.5">
           <!-- Label -->
           <div class="flex items-center gap-2">
@@ -316,6 +339,7 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
 import scheduleService from '@/services/scheduleService'
+import uploadService from '@/services/uploadService'
 import { supabase } from '@/services/supabase'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { usePlacesAutocomplete } from '@/composables/usePlacesAutocomplete'
@@ -409,6 +433,19 @@ const regiones = [
 const docArchivos = ref({})
 const docGuardados = ref([])  // tipos de documento ya guardados en el servidor
 
+// Foto de referencia de la sede (frontis). Se sube al bucket público
+// venue-photos y se guarda en venues.image_url.
+const fotoSede = ref(null)
+const fotoSedePreview = ref('')
+const fotoSedeGuardada = ref('')  // image_url ya guardada en una solicitud previa
+
+function onFotoSede(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  fotoSede.value = file
+  fotoSedePreview.value = URL.createObjectURL(file)
+}
+
 // ── Horario de la sede ──
 const scheduleDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 const dayLabels = {
@@ -492,6 +529,10 @@ onMounted(async () => {
     form.email       = v.email       || ''
     form.instagram   = v.instagram   || ''
     form.sitioWeb    = v.sitioWeb    || ''
+    form.capacidadMaxima = v.capacidadMaxima ?? ''
+    form.cantidadSalas   = v.cantidadSalas ?? ''
+    fotoSedeGuardada.value = v.imageUrl || ''
+    if (fotoSedeGuardada.value) fotoSedePreview.value = fotoSedeGuardada.value
     docGuardados.value = solicitud.documentosGuardados || []
 
     // Precargar el horario existente de la sede (si reenvía una solicitud).
@@ -535,10 +576,35 @@ async function subirDocumentos(venueId) {
   }
 }
 
+// Sube la foto de referencia (si se eligió una nueva) y guarda en el perfil de
+// la sede la imagen y los datos de capacidad.
+async function guardarFotoYCapacidad(venueId) {
+  let imageUrl
+  if (fotoSede.value) {
+    const { url } = await uploadService.uploadFile(fotoSede.value, 'venue', venueId)
+    imageUrl = url
+  }
+  // La foto de referencia siempre se guarda (la columna image_url ya existe).
+  if (imageUrl) await venueService.updateVenueExtras(venueId, { imageUrl })
+  // La capacidad se guarda aparte para no romper el registro si la migración de
+  // columnas (capacidad_maxima/cantidad_salas) aún no está aplicada en la BD.
+  try {
+    await venueService.updateVenueExtras(venueId, {
+      capacidadMaxima: form.capacidadMaxima,
+      cantidadSalas: form.cantidadSalas
+    })
+  } catch { /* columnas de capacidad pendientes de migración */ }
+}
+
 async function submit() {
   error.value = ''
   if (!horarioConfirmado.value) {
     error.value = 'Primero crea y confirma el horario de la sede.'
+    return
+  }
+  // La foto de referencia es obligatoria, salvo que ya exista de una solicitud previa.
+  if (!fotoSede.value && !fotoSedeGuardada.value) {
+    error.value = 'Sube una foto del frontis de la sede.'
     return
   }
   enviando.value = true
@@ -571,6 +637,7 @@ async function submit() {
       scheduleService.saveSchedule(venue.id, schedules),
       scheduleService.saveBlockConfig(venue.id, { blockDurationMin: duracionBloque.value, gapBetweenBlocksMin: 0 }),
       subirDocumentos(venue.id),
+      guardarFotoYCapacidad(venue.id),
     ])
 
     enviado.value = true

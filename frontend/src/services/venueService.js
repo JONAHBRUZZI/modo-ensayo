@@ -70,6 +70,20 @@ export default {
     return row
   },
 
+  // Guarda en el perfil de la sede la foto de referencia (image_url) y los datos
+  // de capacidad capturados en el registro.
+  async updateVenueExtras(id, { imageUrl, capacidadMaxima, cantidadSalas } = {}) {
+    const patch = {}
+    if (imageUrl !== undefined && imageUrl !== null) patch.image_url = imageUrl
+    if (capacidadMaxima !== undefined && capacidadMaxima !== '' && capacidadMaxima !== null) patch.capacidad_maxima = capacidadMaxima
+    if (cantidadSalas !== undefined && cantidadSalas !== '' && cantidadSalas !== null) patch.cantidad_salas = cantidadSalas
+    if (Object.keys(patch).length === 0) return null
+    const { data: row, error } = await supabase
+      .from('venues').update(patch).eq('id', id).select('*').single()
+    if (error) throw error
+    return camelize(row)
+  },
+
   async updateVenueSocial(id, data) {
     const patch = {
       instagram: data.instagram ?? null,

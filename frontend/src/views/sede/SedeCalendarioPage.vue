@@ -16,109 +16,25 @@
       </div>
       <h2 class="text-xl font-bold text-white mb-2">Sin horarios disponibles</h2>
       <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">
-        Tu sede aún no tiene un horario laboral configurado. Defínelo para que el sistema
-        genere automáticamente los bloques de disponibilidad de tus salas.
+        Tu sede aún no tiene un horario laboral configurado. Defínelo en
+        <strong>Configuración</strong> para que el sistema genere automáticamente los bloques
+        de disponibilidad de tus salas.
       </p>
-      <button @click="showConfig = true" class="btn-primary text-base px-8 py-3">
-        Crear horario laboral
-      </button>
+      <router-link to="/sede/configuracion" class="btn-primary text-base px-8 py-3 inline-block">
+        Configurar horario laboral
+      </router-link>
     </div>
 
     <template v-else>
-      <!-- Config section (collapsible) -->
-      <div class="card mb-6">
-        <button
-          @click="showConfig = !showConfig"
-          class="flex items-center justify-between w-full text-left"
-        >
-          <h3 class="text-white font-medium">Horario laboral de la sede</h3>
-          <svg
-            :class="{ 'rotate-180': showConfig }"
-            class="w-5 h-5 text-gray-400 transition-transform duration-200"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-
-        <div v-if="showConfig" class="mt-4 space-y-4">
-          <div class="space-y-3">
-            <div
-              v-for="day in days"
-              :key="day"
-              class="flex items-center gap-4 flex-wrap"
-            >
-              <label class="flex items-center gap-2 w-28">
-                <input
-                  type="checkbox"
-                  v-model="scheduleDays[day].enabled"
-                  class="w-4 h-4 rounded border-dark-border bg-dark-bg text-primary focus:ring-primary/50"
-                />
-                <span class="text-sm text-gray-300">{{ dayLabels[day] }}</span>
-              </label>
-              <template v-if="scheduleDays[day].enabled">
-                <input
-                  type="time"
-                  v-model="scheduleDays[day].openTime"
-                  class="input-field w-32"
-                />
-                <span class="text-gray-400 text-sm">a</span>
-                <input
-                  type="time"
-                  v-model="scheduleDays[day].closeTime"
-                  class="input-field w-32"
-                />
-              </template>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-dark-border">
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Duración del bloque (min)</label>
-              <input
-                type="number"
-                v-model.number="blockCfg.duration"
-                class="input-field"
-                min="15"
-                step="5"
-              />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Brecha entre bloques (min)</label>
-              <input
-                type="number"
-                v-model.number="blockCfg.gap"
-                class="input-field"
-                min="0"
-                step="5"
-              />
-            </div>
-          </div>
-
-          <p v-if="configMsg" :class="configMsgType === 'error' ? 'text-red-400' : 'text-green-400'" class="text-sm">{{ configMsg }}</p>
-
-          <button
-            @click="confirmSaveConfig = true"
-            :disabled="savingConfig"
-            class="btn-primary text-sm"
-          >
-            {{ savingConfig ? 'Guardando...' : 'Guardar configuración' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Confirmation modal -->
-      <div v-if="confirmSaveConfig" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-        <div class="card max-w-md w-full mx-4 space-y-4">
-          <h4 class="text-lg font-semibold text-white">Confirmar cambios</h4>
-          <p class="text-sm text-gray-400">
-            ⚠️ Este cambio es TOTAL. Se regenerarán todos los bloques. Las clases en horarios que ya no existan serán afectadas. ¿Confirmas?
-          </p>
-          <div class="flex justify-end gap-3">
-            <button @click="confirmSaveConfig = false" class="text-sm text-gray-400 hover:text-white">Cancelar</button>
-            <button @click="saveAllConfig" class="btn-primary text-sm">Confirmar</button>
-          </div>
-        </div>
+      <!-- Acceso a la configuración del horario (la edición vive en Configuración) -->
+      <div class="flex items-center justify-between gap-3 mb-6 p-4 card">
+        <p class="text-sm text-gray-400">
+          El horario laboral y la duración de los bloques se configuran en
+          <strong class="text-gray-200">Configuración de la sede</strong>.
+        </p>
+        <router-link to="/sede/configuracion" class="text-sm text-primary hover:underline whitespace-nowrap">
+          Editar horario →
+        </router-link>
       </div>
 
       <!-- Maintenance confirmation modal -->
@@ -222,26 +138,18 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import venueService from '@/services/venueService'
 import scheduleService from '@/services/scheduleService'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
+const toast = useToast()
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
-const dayLabels = {
-  MONDAY: 'Lunes', TUESDAY: 'Martes', WEDNESDAY: 'Miércoles',
-  THURSDAY: 'Jueves', FRIDAY: 'Viernes', SATURDAY: 'Sábado', SUNDAY: 'Domingo'
-}
 const dayLabelsShort = { MONDAY: 'Lun', TUESDAY: 'Mar', WEDNESDAY: 'Mié', THURSDAY: 'Jue', FRIDAY: 'Vie', SATURDAY: 'Sáb', SUNDAY: 'Dom' }
 
 const venue = ref(null)
 const rooms = ref([])
 const loading = ref(true)
 const hayHorario = ref(false)
-
-const showConfig = ref(false)
-const savingConfig = ref(false)
-const confirmSaveConfig = ref(false)
-const configMsg = ref('')
-const configMsgType = ref('')
 
 const scheduleDays = reactive({
   MONDAY: { enabled: true, openTime: '08:00', closeTime: '18:00' },
@@ -476,47 +384,13 @@ async function doMaintenanceAction() {
     maintenanceConfirm.value = null
     await loadAllSchedules()
   } catch (e) {
-    configMsg.value = e?.response?.data?.message || 'Error al actualizar mantención'
-    configMsgType.value = 'error'
+    toast.error(e?.response?.data?.message || 'Error al actualizar mantención')
   }
   maintenanceLoading.value = false
 }
 
 function onRoomChange() {
   loadAllSchedules()
-}
-
-async function saveAllConfig() {
-  confirmSaveConfig.value = false
-  savingConfig.value = true
-  configMsg.value = ''
-  try {
-    const schedules = days
-      .filter(d => scheduleDays[d].enabled)
-      .map(d => ({
-        dayOfWeek: d,
-        openTime: scheduleDays[d].openTime,
-        closeTime: scheduleDays[d].closeTime
-      }))
-
-    const cfg = {
-      blockDurationMin: blockCfg.duration,
-      gapBetweenBlocksMin: blockCfg.gap
-    }
-
-    await scheduleService.saveSchedule(venue.value.id, schedules)
-    await scheduleService.saveBlockConfig(venue.value.id, cfg)
-    await scheduleService.generateBlocks(venue.value.id)
-
-    hayHorario.value = schedules.length > 0
-    configMsg.value = 'Configuración guardada y bloques regenerados correctamente.'
-    configMsgType.value = 'success'
-    await loadAllSchedules()
-  } catch (e) {
-    configMsg.value = e?.response?.data?.message || 'Error al guardar la configuración'
-    configMsgType.value = 'error'
-  }
-  savingConfig.value = false
 }
 
 async function loadAllSchedules() {

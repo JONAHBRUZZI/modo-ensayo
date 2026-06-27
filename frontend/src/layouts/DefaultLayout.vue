@@ -262,6 +262,30 @@
       </div>
     </div>
 
+    <!-- Banner: sede sin horario laboral (contexto Sede) -->
+    <div v-if="mostrarBannerHorarioIncompleto" class="bg-yellow-500/10 border-b border-yellow-500/30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <div class="flex items-start gap-3 flex-1 min-w-0">
+            <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+            <div class="min-w-0">
+              <p class="text-yellow-200 text-sm font-semibold">Tu sede no tiene horario laboral configurado</p>
+              <p class="text-yellow-100/70 text-xs mt-0.5">
+                Sin horario no se generan bloques de disponibilidad: tus salas no aparecen reservables para los profesores.
+              </p>
+            </div>
+          </div>
+          <router-link to="/sede/configuracion"
+                       class="px-4 py-2 rounded-lg bg-yellow-500 text-black text-sm font-semibold hover:bg-yellow-400 transition-colors whitespace-nowrap flex-shrink-0">
+            Configurar horario
+          </router-link>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-1">
       <router-view />
@@ -309,6 +333,7 @@ import { useAuth } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
 import paymentService from '@/services/paymentService'
 import venueService from '@/services/venueService'
+import scheduleService from '@/services/scheduleService'
 import NotificationBell from '@/components/NotificationBell.vue'
 
 const router = useRouter()
@@ -323,11 +348,19 @@ const mostrarBannerPerfilIncompleto = computed(() => {
     && route.path !== '/profesor/perfil-profesional'
 })
 
+const mostrarBannerHorarioIncompleto = computed(() => {
+  return modoActual.value === 'sede'
+    && puedeVerContextoSede.value
+    && sedeSinHorario.value
+    && route.path !== '/sede/configuracion'
+})
+
 const showUserMenu = ref(false)
 const showMobileMenu = ref(false)
 const userMenuRef = ref(null)
 const cartCount = ref(0)
 const sedeConfirmarCount = ref(0)
+const sedeSinHorario = ref(false)
 
 const availableModes = computed(() => {
   const modes = [{ value: 'alumno', label: 'Alumno' }]
@@ -388,11 +421,32 @@ async function loadSedeConfirmarCount() {
   }
 }
 
+// Verifica si la sede aprobada del gestor tiene horario laboral configurado.
+// Sin horario no se generan bloques reservables, así que mostramos un aviso
+// persistente que obliga a completarlo.
+async function checkSedeHorario() {
+  if (modoActual.value !== 'sede' || !puedeVerContextoSede.value) {
+    sedeSinHorario.value = false
+    return
+  }
+  try {
+    const venues = await venueService.getMyVenues()
+    const vArr = Array.isArray(venues) ? venues : venues?.content || []
+    const sede = vArr.find(v => v.status === 'APROBADA')
+    if (!sede) { sedeSinHorario.value = false; return }
+    const sched = await scheduleService.getSchedule(sede.id)
+    sedeSinHorario.value = !(Array.isArray(sched) && sched.length > 0)
+  } catch {
+    sedeSinHorario.value = false
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   if (isAuthenticated.value) {
     loadCartCount()
     loadSedeConfirmarCount()
+    checkSedeHorario()
     syncActividadMaestro()
     syncAtributos()
   }
@@ -406,6 +460,7 @@ watch(() => route.path, () => {
   if (isAuthenticated.value) {
     loadCartCount()
     loadSedeConfirmarCount()
+    checkSedeHorario()
   }
   showMobileMenu.value = false
 })

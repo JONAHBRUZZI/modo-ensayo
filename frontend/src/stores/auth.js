@@ -277,16 +277,36 @@ export function useAuth() {
       const { data, error } = await supabase.rpc('get_my_attributes')
       if (error) throw error
       updateUserAttributes(mapAtributos(data))
-      // Reflejar roles emergentes (TEACHER / VENUE_ADMIN) sin re-login.
-      if (user.value) {
-        const roles = user.value.roles || []
-        const next = [...roles]
-        if (data?.hasRoleTeacher && !next.includes('TEACHER')) next.push('TEACHER')
-        if (data?.tieneSedeAprobada && !next.includes('VENUE_ADMIN')) next.push('VENUE_ADMIN')
-        if (next.length !== roles.length) {
-          store.setUser({ ...user.value, roles: next })
-        }
+      if (!user.value) return
+
+      // Roles emergentes (TEACHER / VENUE_ADMIN): leemos los roles REALES del
+      // JWT actual (no user.value.roles, que puede haber sido reflejado local-
+      // mente). Si la BD ya otorgó un rol que el access_token todavía no tiene,
+      // refrescamos la sesión: las Edge Functions leen los roles del JWT, así
+      // que sin esto el router/UI ven el rol pero las EFs responden 403.
+      const { data: { session } } = await supabase.auth.getSession()
+      const jwtRoles = rolesFromSession(session)
+      const necesitaTeacher = data?.hasRoleTeacher && !jwtRoles.includes('TEACHER')
+      const necesitaSede = data?.tieneSedeAprobada && !jwtRoles.includes('VENUE_ADMIN')
+      if (!necesitaTeacher && !necesitaSede) return
+
+      const { data: refreshed } = await supabase.auth.refreshSession()
+      const newRoles = rolesFromSession(refreshed?.session)
+      if (refreshed?.session && (newRoles.includes('VENUE_ADMIN') || newRoles.includes('TEACHER'))) {
+        // El token fresco ya trae el rol: reconstruimos el usuario desde el JWT
+        // real para que router, UI y Edge Functions queden consistentes.
+        store.setToken(refreshed.session.access_token, refreshed.session.refresh_token)
+        const u = await buildUserFromSession(refreshed.session)
+        if (u) { store.setUser(u); return }
       }
+
+      // Fallback: el refresh aún no trae el rol. Lo reflejamos localmente para
+      // no romper la navegación; el próximo syncAtributos reintentará el refresh.
+      const roles = user.value.roles || []
+      const next = [...roles]
+      if (necesitaTeacher && !next.includes('TEACHER')) next.push('TEACHER')
+      if (necesitaSede && !next.includes('VENUE_ADMIN')) next.push('VENUE_ADMIN')
+      if (next.length !== roles.length) store.setUser({ ...user.value, roles: next })
     } catch (err) {
       console.error('Error al sincronizar atributos de usuario', err)
     }

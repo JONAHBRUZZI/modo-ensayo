@@ -276,6 +276,9 @@ const expandedVenue = ref(null)
 const expandedRoom = ref(null)
 const roomSlots = ref({})
 const roomLoading = ref(null)
+// Salas a las que ya se les saltó automáticamente a su primera semana con cupos
+// (evita re-saltar cuando el usuario navega manualmente entre semanas).
+const autoSaltadas = new Set()
 const selectedSlots = ref([])
 const selectionRoom = ref(null)
 const selectionVenue = ref(null)
@@ -435,6 +438,22 @@ async function loadRoomCalendar(roomId) {
       vistos.add(s.startTime)
       return true
     })
+
+    // Si la semana mostrada no tiene cupos, saltar (una vez) a la primera semana
+    // con disponibilidad real, para no mostrar una semana vacía.
+    if (roomSlots.value[roomId].length === 0 && !autoSaltadas.has(roomId)) {
+      autoSaltadas.add(roomId)
+      const next = await scheduleService.getNextAvailableBlock(roomId, new Date().toISOString())
+      if (next?.startTime) {
+        const nextMonday = getMonday(new Date(next.startTime))
+        const currentMonday = getRoomWeekStart(roomId)
+        if (nextMonday.getTime() !== currentMonday.getTime()) {
+          roomWeekStarts.value[roomId] = nextMonday
+          await loadRoomCalendar(roomId)
+          return
+        }
+      }
+    }
   } catch {
     roomSlots.value[roomId] = []
   }

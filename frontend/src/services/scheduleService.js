@@ -48,6 +48,22 @@ export default {
     return invokeFunction('generate-blocks')
   },
 
+  // Primer bloque DISPONIBLE de la sala desde una fecha dada (para abrir el
+  // calendario en la primera semana con disponibilidad real).
+  async getNextAvailableBlock(roomId, from) {
+    let q = supabase
+      .from('room_schedule_blocks')
+      .select('start_time')
+      .eq('room_id', roomId)
+      .eq('status', 'AVAILABLE')
+      .order('start_time', { ascending: true })
+      .limit(1)
+    if (from) q = q.gte('start_time', from)
+    const { data, error } = await q
+    if (error) throw error
+    return camelize(data?.[0] || null)
+  },
+
   async getRoomSchedule(roomId, from, to) {
     let q = supabase.from('room_schedule_blocks').select('*').eq('room_id', roomId)
     if (from) q = q.gte('start_time', from)

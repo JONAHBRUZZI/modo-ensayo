@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /alumno/
+Disallow: /profesor/
+Disallow: /sede/
+Disallow: /admin/
+
+Sitemap: https://modoensayo.cl/sitemap.xml

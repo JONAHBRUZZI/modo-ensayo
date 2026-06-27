@@ -11,7 +11,7 @@
   - Realtime: suscripciones a cambios (notificaciones)
 - **Lógica de servidor**: Supabase Edge Functions (Deno + TypeScript)
 - **Seguridad de datos**: Row Level Security (RLS) en cada tabla
-- **Pagos**: MercadoPago Checkout Pro, integrado vía Edge Functions
+- **Pagos**: MercadoPago Checkout Pro (inscripción a clases) + MercadoPago Connect marketplace con split automático (arriendo de salas)
 - **Hosting frontend**: Vercel
 - **CI/CD**: GitHub Actions
 
@@ -92,6 +92,31 @@ Usuario -> Frontend (Vue SPA en Vercel)
                                               |
                                               '-- MercadoPago API (pagos)
 ```
+
+## Flujo de pagos
+
+### Inscripción a clases (Checkout Pro simple)
+```
+Alumno → CartPage → mercadopago-create-preference → MP Checkout
+       → pago aprobado → mercadopago-webhook
+       → crea enrollments + payments (RETAINED)
+       → se libera al confirmar la clase (confirm-class)
+```
+
+### Arriendo de sala (MercadoPago Connect — split)
+```
+Profesor → BuscarSalasPage → reserve-room-preference
+         → bloques marcados HELD (15 min) + preferencia con token de la SEDE
+         → redirige a MP Checkout
+         → pago aprobado → mercadopago-webhook
+         → bloques HELD → OCCUPIED, crea/publica clase, dinero va a la sede
+         → si no paga → cron release_expired_holds devuelve bloques a AVAILABLE
+```
+
+El **split** funciona porque la preferencia se crea con el `access_token` del
+vendedor (sede) obtenido vía OAuth Connect, más un `marketplace_fee` configurable
+(`app_settings.room_reservation_commission_pct`) que queda para la plataforma.
+La plataforma nunca custodia el dinero de terceros.
 
 ## Principios de Diseño
 

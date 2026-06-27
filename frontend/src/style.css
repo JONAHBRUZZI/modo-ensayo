@@ -114,24 +114,53 @@
   .text-theme-secondary { color: var(--text-secondary); }
 }
 
-/* En modo claro, text-white sobre fondos que cambian a beige sería invisible.
-   Este override lo convierte al color de texto del tema. Los elementos con
-   bg coloreado (gradientes, bg-primary, bg-red-*) siguen siendo legibles porque
-   el fondo permanece de color. Los componentes que usan @apply text-white en
-   style.css (btn-primary, btn-danger) NO son afectados por este selector. */
+/* ================================
+   Overrides modo claro
+   ================================ */
+
+/* text-white sobre fondos que cambian a beige sería invisible en claro.
+   btn-primary y btn-danger usan @apply y no son afectados por este selector. */
 .light .text-white {
   color: var(--text-primary);
 }
 
-/* Badges de estado: en modo oscuro usan texto pastel (-300) sobre un fondo
-   coloreado translúcido (bg-*-500/20). En modo claro ese fondo se aclara y el
-   texto pastel pierde contraste (ej. "VERIFICADA" casi invisible). Estos tokens
-   -300 solo se usan en badges sobre fondo translúcido, así que oscurecerlos en
-   modo claro es seguro y mejora el contraste sin afectar otros elementos. */
-.light .text-green-300 { color: #15803d; }   /* green-700 */
-.light .text-amber-300 { color: #b45309; }   /* amber-700 */
-.light .text-indigo-300 { color: #4338ca; }  /* indigo-700 */
-.light .text-red-300 { color: #b91c1c; }     /* red-700 */
+/* Escala de grises de Tailwind — readaptados a tonos cálidos del tema claro */
+.light .text-gray-300 { color: #5a5242; }
+.light .text-gray-400 { color: var(--text-secondary); }
+.light .text-gray-500 { color: #6b6153; }
+.light .text-gray-600 { color: #57503f; }
+.light .text-gray-700 { color: #44403a; }
+
+/* Fondos oscuros hardcodeados → superficie del tema claro */
+.light .bg-gray-800,
+.light .bg-gray-900 { background-color: var(--bg-elevated); }
+
+/* Bordes grises → borde del tema */
+.light .border-gray-700 { border-color: var(--border-subtle); }
+.light .border-gray-600 { border-color: var(--border-default); }
+
+/* ConfirmDialog y modales con fondo blanco en modo oscuro */
+.light .bg-white { background-color: var(--bg-surface); }
+.light .bg-gray-50 { background-color: var(--bg-elevated); }
+.light .text-gray-900 { color: var(--text-primary); }
+
+/* Hover sobre fondos oscuros hardcodeados */
+.light .hover\:bg-\[\#1a1d2e\]:hover { background-color: var(--bg-elevated); }
+.light .hover\:bg-\[\#111420\]:hover { background-color: var(--bg-surface); }
+
+/* Badges de estado: texto pastel pierde contraste en claro */
+.light .text-green-300  { color: #15803d; }
+.light .text-green-400  { color: #16a34a; }
+.light .text-amber-300  { color: #b45309; }
+.light .text-amber-400  { color: #b45309; }
+.light .text-yellow-400 { color: #a16207; }
+.light .text-indigo-300 { color: #4338ca; }
+.light .text-blue-400   { color: #1d4ed8; }
+.light .text-red-300    { color: #b91c1c; }
+.light .text-red-400    { color: #dc2626; }
+
+/* Aurora — reducir en modo claro para no tapar el fondo beige */
+.light .aurora-blob { opacity: 0.07; filter: blur(55px) saturate(1.5); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }

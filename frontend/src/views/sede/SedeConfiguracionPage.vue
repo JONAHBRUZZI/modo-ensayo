@@ -108,6 +108,73 @@
         </div>
       </div>
 
+      <!-- Horario laboral de la sede (solo sedes aprobadas) -->
+      <div v-if="venue.status === 'APROBADA'" class="card space-y-4" :class="hayHorario ? '' : 'border border-yellow-500/40'">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-white font-medium">Horario laboral de la sede</h3>
+            <p class="text-gray-500 text-xs mt-1">
+              Define los días y horas de atención. El sistema genera automáticamente los bloques
+              reservables de tus salas a partir de este horario.
+            </p>
+          </div>
+          <span v-if="!hayHorario" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 whitespace-nowrap">
+            Sin configurar
+          </span>
+        </div>
+
+        <p v-if="!hayHorario" class="text-yellow-300/90 text-sm bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+          ⚠️ Tu sede aún no tiene horario configurado. Mientras no lo definas, tus salas no mostrarán
+          disponibilidad y los profesores no podrán reservarlas.
+        </p>
+
+        <div class="space-y-3">
+          <div v-for="day in days" :key="day" class="flex items-center gap-4 flex-wrap">
+            <label class="flex items-center gap-2 w-28">
+              <input type="checkbox" v-model="scheduleDays[day].enabled"
+                     class="w-4 h-4 rounded border-dark-border bg-dark-bg text-primary focus:ring-primary/50" />
+              <span class="text-sm text-gray-300">{{ dayLabels[day] }}</span>
+            </label>
+            <template v-if="scheduleDays[day].enabled">
+              <input type="time" v-model="scheduleDays[day].openTime" class="input-field w-32" />
+              <span class="text-gray-400 text-sm">a</span>
+              <input type="time" v-model="scheduleDays[day].closeTime" class="input-field w-32" />
+            </template>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-dark-border">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Duración del bloque (min)</label>
+            <input type="number" v-model.number="blockCfg.duration" class="input-field" min="15" step="5" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Brecha entre bloques (min)</label>
+            <input type="number" v-model.number="blockCfg.gap" class="input-field" min="0" step="5" />
+          </div>
+        </div>
+
+        <p v-if="configMsg" :class="configMsgType === 'error' ? 'text-red-400' : 'text-green-400'" class="text-sm">{{ configMsg }}</p>
+
+        <button @click="confirmSaveConfig = true" :disabled="savingConfig" class="btn-primary text-sm">
+          {{ savingConfig ? 'Guardando...' : 'Guardar configuración' }}
+        </button>
+      </div>
+
+      <!-- Confirmar regeneración de bloques -->
+      <div v-if="confirmSaveConfig" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div class="card max-w-md w-full mx-4 space-y-4">
+          <h4 class="text-lg font-semibold text-white">Confirmar cambios</h4>
+          <p class="text-sm text-gray-400">
+            ⚠️ Este cambio es TOTAL. Se regenerarán todos los bloques. Las clases en horarios que ya no existan serán afectadas. ¿Confirmas?
+          </p>
+          <div class="flex justify-end gap-3">
+            <button @click="confirmSaveConfig = false" class="text-sm text-gray-400 hover:text-white">Cancelar</button>
+            <button @click="saveAllConfig" class="btn-primary text-sm">Confirmar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Documentos de la sede -->
       <div class="card space-y-4">
         <div class="flex items-start justify-between">
@@ -269,6 +336,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import venueService from '@/services/venueService'
+import scheduleService from '@/services/scheduleService'
 import paymentService from '@/services/paymentService'
 import uploadService from '@/services/uploadService'
 import { reviewService } from '@/services/reviewService'
@@ -338,6 +406,88 @@ const uploadingDoc = ref(false)
 const msgDoc = ref('')
 const msgDocType = ref('')
 
+// Horario laboral de la sede
+const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+const dayLabels = {
+  MONDAY: 'Lunes', TUESDAY: 'Martes', WEDNESDAY: 'Miércoles',
+  THURSDAY: 'Jueves', FRIDAY: 'Viernes', SATURDAY: 'Sábado', SUNDAY: 'Domingo'
+}
+const scheduleDays = reactive({
+  MONDAY: { enabled: true, openTime: '08:00', closeTime: '18:00' },
+  TUESDAY: { enabled: true, openTime: '08:00', closeTime: '18:00' },
+  WEDNESDAY: { enabled: true, openTime: '08:00', closeTime: '18:00' },
+  THURSDAY: { enabled: true, openTime: '08:00', closeTime: '18:00' },
+  FRIDAY: { enabled: true, openTime: '08:00', closeTime: '18:00' },
+  SATURDAY: { enabled: false, openTime: '08:00', closeTime: '18:00' },
+  SUNDAY: { enabled: false, openTime: '08:00', closeTime: '18:00' }
+})
+const blockCfg = reactive({ duration: 60, gap: 15 })
+const hayHorario = ref(false)
+const savingConfig = ref(false)
+const confirmSaveConfig = ref(false)
+const configMsg = ref('')
+const configMsgType = ref('')
+
+async function cargarHorario(venueId) {
+  try {
+    const [scheduleRes, blockConfigRes] = await Promise.allSettled([
+      scheduleService.getSchedule(venueId),
+      scheduleService.getBlockConfig(venueId)
+    ])
+    if (scheduleRes.status === 'fulfilled' && Array.isArray(scheduleRes.value)) {
+      hayHorario.value = scheduleRes.value.length > 0
+      // Reinicia y aplica solo los días que vienen del servidor.
+      for (const d of days) scheduleDays[d].enabled = false
+      for (const s of scheduleRes.value) {
+        if (scheduleDays[s.dayOfWeek]) {
+          scheduleDays[s.dayOfWeek].enabled = true
+          scheduleDays[s.dayOfWeek].openTime = s.openTime?.slice(0, 5) || '08:00'
+          scheduleDays[s.dayOfWeek].closeTime = s.closeTime?.slice(0, 5) || '18:00'
+        }
+      }
+    }
+    if (blockConfigRes.status === 'fulfilled' && blockConfigRes.value) {
+      blockCfg.duration = blockConfigRes.value.blockDurationMin || 60
+      blockCfg.gap = blockConfigRes.value.gapBetweenBlocksMin || 15
+    }
+  } catch (err) {
+    console.error('Error al cargar el horario de la sede', err)
+  }
+}
+
+async function saveAllConfig() {
+  confirmSaveConfig.value = false
+  savingConfig.value = true
+  configMsg.value = ''
+  try {
+    const schedules = days
+      .filter(d => scheduleDays[d].enabled)
+      .map(d => ({ dayOfWeek: d, openTime: scheduleDays[d].openTime, closeTime: scheduleDays[d].closeTime }))
+
+    if (schedules.length === 0) {
+      configMsg.value = 'Marca al menos un día de atención.'
+      configMsgType.value = 'error'
+      savingConfig.value = false
+      return
+    }
+
+    await scheduleService.saveSchedule(venue.value.id, schedules)
+    await scheduleService.saveBlockConfig(venue.value.id, {
+      blockDurationMin: blockCfg.duration,
+      gapBetweenBlocksMin: blockCfg.gap
+    })
+    await scheduleService.generateBlocks(venue.value.id)
+
+    hayHorario.value = true
+    configMsg.value = 'Horario guardado y bloques regenerados correctamente.'
+    configMsgType.value = 'success'
+  } catch (e) {
+    configMsg.value = e?.response?.data?.message || 'Error al guardar el horario'
+    configMsgType.value = 'error'
+  }
+  savingConfig.value = false
+}
+
 onMounted(async () => {
   try {
     const venues = await venueService.getMyVenues()
@@ -382,6 +532,8 @@ onMounted(async () => {
       } catch (err) {
         console.error('Error al cargar rating de la sede', err)
       }
+      // Cargar el horario laboral (relevante solo en sedes aprobadas)
+      if (v.status === 'APROBADA') await cargarHorario(v.id)
     }
   } catch (err) { console.error('Error al cargar sedes del usuario', err) }
   loading.value = false

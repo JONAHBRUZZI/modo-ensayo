@@ -41,7 +41,7 @@
               Todo leído
             </button>
             <router-link to="/notificaciones" @click="showMenu = false"
-              class="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+              class="text-xs text-gray-500 hover:text-gray-300 transition-colors">
               Ver todo →
             </router-link>
           </div>
@@ -89,7 +89,7 @@
         <!-- Pie -->
         <div class="border-t border-white/5 px-4 py-2.5">
           <router-link to="/notificaciones" @click="showMenu = false"
-            class="flex items-center justify-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-indigo-400 transition-colors">
+            class="flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-indigo-400 transition-colors">
             Ver todas las notificaciónes
           </router-link>
         </div>

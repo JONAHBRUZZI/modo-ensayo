@@ -36,16 +36,17 @@ export default {
       const redirectUri = `${functionsBase}/mp-connect-callback`;
 
       // Canje del code por tokens del vendedor.
+      // MercadoPago OAuth requiere application/x-www-form-urlencoded.
       const tokenResp = await fetch("https://api.mercadopago.com/oauth/token", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
+        body: new URLSearchParams({
           client_id: clientId,
           client_secret: clientSecret,
           code,
           grant_type: "authorization_code",
           redirect_uri: redirectUri,
-        }),
+        }).toString(),
       });
       const token = await tokenResp.json();
       if (!tokenResp.ok || !token.access_token) {

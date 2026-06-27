@@ -16,109 +16,25 @@
       </div>
       <h2 class="text-xl font-bold text-white mb-2">Sin horarios disponibles</h2>
       <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">
-        Tu sede aún no tiene un horario laboral configurado. Defínelo para que el sistema
-        genere automáticamente los bloques de disponibilidad de tus salas.
+        Tu sede aún no tiene un horario laboral configurado. Defínelo en
+        <strong>Configuración</strong> para que el sistema genere automáticamente los bloques
+        de disponibilidad de tus salas.
       </p>
-      <button @click="showConfig = true" class="btn-primary text-base px-8 py-3">
-        Crear horario laboral
-      </button>
+      <router-link to="/sede/configuracion" class="btn-primary text-base px-8 py-3 inline-block">
+        Configurar horario laboral
+      </router-link>
     </div>
 
     <template v-else>
-      <!-- Config section (collapsible) -->
-      <div class="card mb-6">
-        <button
-          @click="showConfig = !showConfig"
-          class="flex items-center justify-between w-full text-left"
-        >
-          <h3 class="text-white font-medium">Horario laboral de la sede</h3>
-          <svg
-            :class="{ 'rotate-180': showConfig }"
-            class="w-5 h-5 text-gray-400 transition-transform duration-200"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-
-        <div v-if="showConfig" class="mt-4 space-y-4">
-          <div class="space-y-3">
-            <div
-              v-for="day in days"
-              :key="day"
-              class="flex items-center gap-4 flex-wrap"
-            >
-              <label class="flex items-center gap-2 w-28">
-                <input
-                  type="checkbox"
-                  v-model="scheduleDays[day].enabled"
-                  class="w-4 h-4 rounded border-dark-border bg-dark-bg text-primary focus:ring-primary/50"
-                />
-                <span class="text-sm text-gray-300">{{ dayLabels[day] }}</span>
-              </label>
-              <template v-if="scheduleDays[day].enabled">
-                <input
-                  type="time"
-                  v-model="scheduleDays[day].openTime"
-                  class="input-field w-32"
-                />
-                <span class="text-gray-400 text-sm">a</span>
-                <input
-                  type="time"
-                  v-model="scheduleDays[day].closeTime"
-                  class="input-field w-32"
-                />
-              </template>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-dark-border">
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Duración del bloque (min)</label>
-              <input
-                type="number"
-                v-model.number="blockCfg.duration"
-                class="input-field"
-                min="15"
-                step="5"
-              />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Brecha entre bloques (min)</label>
-              <input
-                type="number"
-                v-model.number="blockCfg.gap"
-                class="input-field"
-                min="0"
-                step="5"
-              />
-            </div>
-          </div>
-
-          <p v-if="configMsg" :class="configMsgType === 'error' ? 'text-red-400' : 'text-green-400'" class="text-sm">{{ configMsg }}</p>
-
-          <button
-            @click="confirmSaveConfig = true"
-            :disabled="savingConfig"
-            class="btn-primary text-sm"
-          >
-            {{ savingConfig ? 'Guardando...' : 'Guardar configuración' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Confirmation modal -->
-      <div v-if="confirmSaveConfig" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-        <div class="card max-w-md w-full mx-4 space-y-4">
-          <h4 class="text-lg font-semibold text-white">Confirmar cambios</h4>
-          <p class="text-sm text-gray-400">
-            ⚠️ Este cambio es TOTAL. Se regenerarán todos los bloques. Las clases en horarios que ya no existan serán afectadas. ¿Confirmas?
-          </p>
-          <div class="flex justify-end gap-3">
-            <button @click="confirmSaveConfig = false" class="text-sm text-gray-400 hover:text-white">Cancelar</button>
-            <button @click="saveAllConfig" class="btn-primary text-sm">Confirmar</button>
-          </div>
-        </div>
+      <!-- Acceso a la configuración del horario (la edición vive en Configuración) -->
+      <div class="flex items-center justify-between gap-3 mb-6 p-4 card">
+        <p class="text-sm text-gray-400">
+          El horario laboral y la duración de los bloques se configuran en
+          <strong class="text-gray-200">Configuración de la sede</strong>.
+        </p>
+        <router-link to="/sede/configuracion" class="text-sm text-primary hover:underline whitespace-nowrap">
+          Editar horario →
+        </router-link>
       </div>
 
       <!-- Maintenance confirmation modal -->
@@ -131,6 +47,22 @@
             <button @click="doMaintenanceAction" class="btn-primary text-sm">
               {{ maintenanceConfirm.action === 'mark' ? 'Marcar' : 'Liberar' }}
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horario ocupado: info de solo lectura (gestión = fase futura) -->
+      <div v-if="occupiedInfo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div class="card max-w-md w-full mx-4 space-y-4">
+          <h4 class="text-lg font-semibold text-white">Horario ocupado</h4>
+          <p class="text-sm text-gray-400">
+            {{ occupiedInfo.date }} · {{ occupiedInfo.label }} — este horario está ocupado por una reserva.
+          </p>
+          <p class="text-xs text-gray-500">
+            La gestión de horarios ocupados (liberar el cupo o cambiarlo a mantención) estará disponible próximamente.
+          </p>
+          <div class="flex justify-end">
+            <button @click="occupiedInfo = null" class="btn-primary text-sm">Cerrar</button>
           </div>
         </div>
       </div>
@@ -190,9 +122,7 @@
                   @click="onCellClick(day, block)"
                 >
                   <div class="text-xs text-center min-h-[40px] flex flex-col items-center justify-center gap-0.5 py-1">
-                    <span v-if="getCellClass(day, block).includes('cursor-pointer')" class="text-[10px] opacity-60">{{ getCellStatusLabel(day, block) }}</span>
-                    <span v-if="getCellClass(day, block) === 'bg-red-500/20 border border-red-500/30 rounded p-1'" class="text-[10px] text-red-300 truncate max-w-[90px]">{{ getCellTitle(day, block) }}</span>
-                    <span v-if="getCellClass(day, block) === 'bg-yellow-500/20 border border-yellow-500/30 rounded p-1 cursor-pointer hover:bg-yellow-500/30'" class="text-[10px] text-yellow-300">Mantención</span>
+                    <span v-if="cellStatus(day, block) !== 'OUT'" class="text-[10px]" :class="cellLabelClass(day, block)">{{ cellStatusLabel(day, block) }}</span>
                   </div>
                 </td>
               </tr>
@@ -200,16 +130,24 @@
           </table>
         </div>
 
-        <!-- Legend -->
-        <div class="flex items-center gap-6 mt-6 pt-4 border-t border-dark-border flex-wrap">
-          <span class="flex items-center gap-1.5 text-xs text-gray-400">
-            <span class="w-3 h-3 rounded-sm bg-green-500/40 border border-green-500/50"></span> Disponible
-          </span>
-          <span class="flex items-center gap-1.5 text-xs text-gray-400">
-            <span class="w-3 h-3 rounded-sm bg-red-500/40 border border-red-500/50"></span> Ocupado
-          </span>
-          <span class="flex items-center gap-1.5 text-xs text-gray-400">
-            <span class="w-3 h-3 rounded-sm bg-yellow-500/40 border border-yellow-500/50"></span> Mantención
+        <!-- Leyenda clickeable: actúa como filtro de estado -->
+        <div class="flex items-center gap-2 mt-6 pt-4 border-t border-dark-border flex-wrap">
+          <button
+            v-for="f in filtros" :key="f.value"
+            type="button"
+            @click="toggleFiltro(f.value)"
+            :class="[
+              'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors',
+              filtroEstado === f.value
+                ? 'border-white/30 bg-[var(--bg-elevated)] text-white'
+                : 'border-white/10 text-gray-400 hover:text-white'
+            ]"
+          >
+            <span class="w-3 h-3 rounded-sm" :class="f.swatch"></span> {{ f.label }}
+          </button>
+          <span v-if="filtroEstado" class="text-[11px] text-gray-500 ml-1">
+            Mostrando solo <strong class="text-gray-300">{{ filtroLabel }}</strong> ·
+            <button type="button" @click="filtroEstado = null" class="text-primary hover:underline">ver todo</button>
           </span>
         </div>
       </div>
@@ -222,26 +160,18 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import venueService from '@/services/venueService'
 import scheduleService from '@/services/scheduleService'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
+const toast = useToast()
 
 const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
-const dayLabels = {
-  MONDAY: 'Lunes', TUESDAY: 'Martes', WEDNESDAY: 'Miércoles',
-  THURSDAY: 'Jueves', FRIDAY: 'Viernes', SATURDAY: 'Sábado', SUNDAY: 'Domingo'
-}
 const dayLabelsShort = { MONDAY: 'Lun', TUESDAY: 'Mar', WEDNESDAY: 'Mié', THURSDAY: 'Jue', FRIDAY: 'Vie', SATURDAY: 'Sáb', SUNDAY: 'Dom' }
 
 const venue = ref(null)
 const rooms = ref([])
 const loading = ref(true)
 const hayHorario = ref(false)
-
-const showConfig = ref(false)
-const savingConfig = ref(false)
-const confirmSaveConfig = ref(false)
-const configMsg = ref('')
-const configMsgType = ref('')
 
 const scheduleDays = reactive({
   MONDAY: { enabled: true, openTime: '08:00', closeTime: '18:00' },
@@ -261,6 +191,21 @@ const scheduleData = ref({}) // key: `${roomId}|${date}|${HH}:${MM}` -> schedule
 
 const maintenanceConfirm = ref(null)
 const maintenanceLoading = ref(false)
+
+// Info de solo lectura al pinchar un horario ocupado (gestión = fase futura).
+const occupiedInfo = ref(null)
+
+// Leyenda clickeable como filtro de estado. null = mostrar todo.
+const filtroEstado = ref(null)
+const filtros = [
+  { value: 'AVAILABLE', label: 'Disponible', swatch: 'bg-green-500/40 border border-green-500/50' },
+  { value: 'OCCUPIED', label: 'Ocupado', swatch: 'bg-red-500/40 border border-red-500/50' },
+  { value: 'MAINTENANCE', label: 'Mantención', swatch: 'bg-yellow-500/40 border border-yellow-500/50' }
+]
+const filtroLabel = computed(() => filtros.find(f => f.value === filtroEstado.value)?.label || '')
+function toggleFiltro(v) {
+  filtroEstado.value = filtroEstado.value === v ? null : v
+}
 
 function getMonday(d) {
   const date = new Date(d)
@@ -363,95 +308,99 @@ function getScheduleForCell(dateStr, blockStartMin, roomId) {
   return scheduleData.value[key] || null
 }
 
+// Estado efectivo de una celda: 'OUT' (fuera de horario) | 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE'.
+// Cuando no hay sala seleccionada agrega todas las salas con prioridad ocupado > mantención > disponible.
+function cellStatus(day, block) {
+  const dow = day.dayOfWeek
+  if (!scheduleDays[dow]?.enabled) return 'OUT'
+  if (block.start >= timeToMinutes(scheduleDays[dow]?.closeTime)) return 'OUT'
+  if (block.start < timeToMinutes(scheduleDays[dow]?.openTime)) return 'OUT'
+
+  if (selectedRoomId.value) {
+    const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
+    return entry?.status || 'AVAILABLE'
+  }
+
+  let hasOccupied = false
+  let hasMaintenance = false
+  for (const room of rooms.value) {
+    const entry = getScheduleForCell(day.date, block.start, room.id)
+    if (entry?.status === 'OCCUPIED') hasOccupied = true
+    else if (entry?.status === 'MAINTENANCE') hasMaintenance = true
+  }
+  if (hasOccupied) return 'OCCUPIED'
+  if (hasMaintenance) return 'MAINTENANCE'
+  return 'AVAILABLE'
+}
+
+// Una celda se atenúa (y deja de ser interactiva) si está fuera de horario o si hay un
+// filtro activo y su estado no coincide.
+function cellDimmed(day, block) {
+  const st = cellStatus(day, block)
+  if (st === 'OUT') return true
+  return !!filtroEstado.value && st !== filtroEstado.value
+}
+
 function getCellClass(day, block) {
-  const dow = day.dayOfWeek
-  if (!scheduleDays[dow]?.enabled) {
-    return 'bg-dark-bg/50 rounded'
+  const st = cellStatus(day, block)
+  if (st === 'OUT') return 'bg-dark-bg/50 rounded'
+
+  const dimmed = !!filtroEstado.value && st !== filtroEstado.value
+  const colors = {
+    AVAILABLE: dimmed ? 'bg-green-500/10 border-green-500/15' : 'bg-green-500/20 border-green-500/30',
+    OCCUPIED: dimmed ? 'bg-red-500/10 border-red-500/15' : 'bg-red-500/20 border-red-500/30',
+    MAINTENANCE: dimmed ? 'bg-yellow-500/10 border-yellow-500/15' : 'bg-yellow-500/20 border-yellow-500/30'
+  }[st]
+
+  let cls = `${colors} border rounded p-1`
+  if (dimmed) {
+    cls += ' opacity-40'
+  } else if (selectedRoomId.value) {
+    const hover = { AVAILABLE: 'hover:bg-green-500/30', OCCUPIED: 'hover:bg-red-500/30', MAINTENANCE: 'hover:bg-yellow-500/30' }[st]
+    cls += ` cursor-pointer ${hover}`
   }
-
-  const dayClose = timeToMinutes(scheduleDays[dow]?.closeTime)
-  if (block.start >= dayClose) {
-    return 'bg-dark-bg/50 rounded'
-  }
-
-  const dayOpen = timeToMinutes(scheduleDays[dow]?.openTime)
-  if (block.start < dayOpen) {
-    return 'bg-dark-bg/50 rounded'
-  }
-
-  if (selectedRoomId.value) {
-    const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
-    if (entry?.status === 'OCCUPIED') return 'bg-red-500/20 border border-red-500/30 rounded p-1'
-    if (entry?.status === 'MAINTENANCE') return 'bg-yellow-500/20 border border-yellow-500/30 rounded p-1 cursor-pointer hover:bg-yellow-500/30'
-    return 'bg-green-500/20 border border-green-500/30 rounded p-1 cursor-pointer hover:bg-green-500/30'
-  }
-
-  // Aggregate for all rooms
-  let hasOccupied = false
-  let hasMaintenance = false
-  let hasAvailable = false
-
-  for (const room of rooms.value) {
-    const entry = getScheduleForCell(day.date, block.start, room.id)
-    if (entry?.status === 'OCCUPIED') hasOccupied = true
-    else if (entry?.status === 'MAINTENANCE') hasMaintenance = true
-    else hasAvailable = true
-  }
-
-  if (hasOccupied) return 'bg-red-500/20 border border-red-500/30 rounded p-1'
-  if (hasMaintenance) return 'bg-yellow-500/20 border border-yellow-500/30 rounded p-1'
-  return 'bg-green-500/20 border border-green-500/30 rounded p-1'
+  return cls
 }
 
-function getCellStatusLabel(day, block) {
-  const dow = day.dayOfWeek
-  if (!scheduleDays[dow]?.enabled) return ''
-
-  if (selectedRoomId.value) {
-    const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
-    if (entry?.status === 'OCCUPIED') return 'Ocupado'
-    if (entry?.status === 'MAINTENANCE') return ''
-    return 'Disponible'
-  }
-
-  let hasOccupied = false
-  let hasMaintenance = false
-  for (const room of rooms.value) {
-    const entry = getScheduleForCell(day.date, block.start, room.id)
-    if (entry?.status === 'OCCUPIED') hasOccupied = true
-    else if (entry?.status === 'MAINTENANCE') hasMaintenance = true
-  }
-  if (hasOccupied) return 'Ocupado'
-  if (hasMaintenance) return 'Mant.'
-  return 'Disp.'
+function cellStatusLabel(day, block) {
+  const st = cellStatus(day, block)
+  if (st === 'OUT') return ''
+  const agg = !selectedRoomId.value
+  if (st === 'OCCUPIED') return 'Ocupado'
+  if (st === 'MAINTENANCE') return agg ? 'Mant.' : 'Mantención'
+  return agg ? 'Disp.' : 'Disponible'
 }
 
-function getCellTitle(day, block) {
-  if (!selectedRoomId.value) return ''
-  const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
-  return entry?.classTitle || ''
+function cellLabelClass(day, block) {
+  const st = cellStatus(day, block)
+  const color = { AVAILABLE: 'text-green-200', OCCUPIED: 'text-red-200', MAINTENANCE: 'text-yellow-200' }[st] || 'text-gray-300'
+  return cellDimmed(day, block) ? `${color} opacity-50` : `${color} opacity-80`
 }
 
 function onCellClick(day, block) {
-  const dow = day.dayOfWeek
-  if (!scheduleDays[dow]?.enabled) return
+  // Sin sala seleccionada (vista agregada) o celda atenuada por horario/filtro: no se actúa.
   if (!selectedRoomId.value) return
+  if (cellDimmed(day, block)) return
 
+  const st = cellStatus(day, block)
   const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
-  const status = entry?.status || 'AVAILABLE'
 
-  if (status === 'OCCUPIED') return
+  if (st === 'OCCUPIED') {
+    occupiedInfo.value = { date: day.dateFormatted, label: block.label }
+    return
+  }
 
-  if (status === 'MAINTENANCE') {
+  if (st === 'MAINTENANCE') {
     maintenanceConfirm.value = {
       action: 'release',
-      message: '¿Liberar este horario de mantención?',
+      message: '¿Liberar este horario y dejarlo disponible nuevamente?',
       blockId: entry.id,
       roomId: selectedRoomId.value
     }
     return
   }
 
+  // AVAILABLE
   maintenanceConfirm.value = {
     action: 'mark',
     message: '¿Marcar este horario como mantención?',
@@ -476,47 +425,13 @@ async function doMaintenanceAction() {
     maintenanceConfirm.value = null
     await loadAllSchedules()
   } catch (e) {
-    configMsg.value = e?.response?.data?.message || 'Error al actualizar mantención'
-    configMsgType.value = 'error'
+    toast.error(e?.response?.data?.message || 'Error al actualizar mantención')
   }
   maintenanceLoading.value = false
 }
 
 function onRoomChange() {
   loadAllSchedules()
-}
-
-async function saveAllConfig() {
-  confirmSaveConfig.value = false
-  savingConfig.value = true
-  configMsg.value = ''
-  try {
-    const schedules = days
-      .filter(d => scheduleDays[d].enabled)
-      .map(d => ({
-        dayOfWeek: d,
-        openTime: scheduleDays[d].openTime,
-        closeTime: scheduleDays[d].closeTime
-      }))
-
-    const cfg = {
-      blockDurationMin: blockCfg.duration,
-      gapBetweenBlocksMin: blockCfg.gap
-    }
-
-    await scheduleService.saveSchedule(venue.value.id, schedules)
-    await scheduleService.saveBlockConfig(venue.value.id, cfg)
-    await scheduleService.generateBlocks(venue.value.id)
-
-    hayHorario.value = schedules.length > 0
-    configMsg.value = 'Configuración guardada y bloques regenerados correctamente.'
-    configMsgType.value = 'success'
-    await loadAllSchedules()
-  } catch (e) {
-    configMsg.value = e?.response?.data?.message || 'Error al guardar la configuración'
-    configMsgType.value = 'error'
-  }
-  savingConfig.value = false
 }
 
 async function loadAllSchedules() {

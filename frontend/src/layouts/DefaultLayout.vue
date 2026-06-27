@@ -1,5 +1,11 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-[var(--bg-base)]">
+  <div class="min-h-screen flex flex-col bg-[var(--bg-base)] relative overflow-x-hidden">
+    <!-- Aurora de fondo global -->
+    <div class="aurora" aria-hidden="true">
+      <div class="aurora-blob aurora-purple"></div>
+      <div class="aurora-blob aurora-blue"></div>
+      <div class="aurora-blob aurora-pink"></div>
+    </div>
     <!-- Navbar -->
     <nav class="sticky top-0 z-50 bg-[var(--bg-base)] backdrop-blur-sm border-b border-[#6C63FF22]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,7 +31,12 @@
                   Por Asignar
                   <span v-if="reservasSinClaseCount > 0" class="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{{ reservasSinClaseCount }}</span>
                 </router-link>
-                <router-link to="/reviews" class="nav-link">Reseñas</router-link>
+                <router-link to="/profesor/clases-propias" class="nav-link">Mis Clases</router-link>
+                <router-link to="/profesor/clases-asignadas" class="nav-link">Asignadas</router-link>
+                <router-link to="/profesor/borradores" class="nav-link">Borradores</router-link>
+                <router-link to="/profesor/buscar-salas" class="nav-link">Agendar Sala</router-link>
+                <router-link to="/profesor/metricas" class="nav-link">Métricas</router-link>
+                <router-link to="/profesor/pagos" class="nav-link">Pagos</router-link>
               </template>
 
               <!-- Sede mode -->
@@ -111,7 +122,7 @@
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Perfil
                   </router-link>
-                  <router-link to="/notificaciones" class="flex items-center px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]">
+                  <router-link to="/notificaciones" class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#1a1d2e]">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                     Notificaciónes
                   </router-link>
@@ -182,12 +193,11 @@
               </button>
             </div>
             <template v-if="puedeVerContextoProfesor && modoActual === 'profesor'">
-              <router-link to="/profesor/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Home</router-link>
-              <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile relative" @click="showMobileMenu = false">
-                Por Asignar
-                <span v-if="reservasSinClaseCount > 0" class="ml-2 bg-yellow-500 text-black text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{{ reservasSinClaseCount }}</span>
-              </router-link>
-              <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
+              <router-link to="/profesor/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Dashboard</router-link>
+              <router-link to="/profesor/clases-propias" class="nav-link-mobile" @click="showMobileMenu = false">Mis Clases</router-link>
+              <router-link to="/profesor/clases-por-asignar" class="nav-link-mobile" @click="showMobileMenu = false">Por Asignar</router-link>
+              <router-link to="/profesor/buscar-salas" class="nav-link-mobile" @click="showMobileMenu = false">Agendar Sala</router-link>
+              <router-link to="/profesor/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
             </template>
             <template v-if="puedeVerContextoSede && modoActual === 'sede'">
               <router-link to="/sede/dashboard" class="nav-link-mobile" @click="showMobileMenu = false">Panel</router-link>
@@ -252,27 +262,64 @@
       </div>
     </div>
 
+    <!-- Banner: sede sin horario laboral (contexto Sede) -->
+    <div v-if="mostrarBannerHorarioIncompleto" class="bg-yellow-500/10 border-b border-yellow-500/30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <div class="flex items-start gap-3 flex-1 min-w-0">
+            <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+            <div class="min-w-0">
+              <p class="text-yellow-200 text-sm font-semibold">Tu sede no tiene horario laboral configurado</p>
+              <p class="text-yellow-100/70 text-xs mt-0.5">
+                Sin horario no se generan bloques de disponibilidad: tus salas no aparecen reservables para los profesores.
+              </p>
+            </div>
+          </div>
+          <router-link to="/sede/configuracion"
+                       class="px-4 py-2 rounded-lg bg-yellow-500 text-black text-sm font-semibold hover:bg-yellow-400 transition-colors whitespace-nowrap flex-shrink-0">
+            Configurar horario
+          </router-link>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-1">
       <router-view />
     </main>
 
     <!-- Footer -->
-    <footer class="bg-[var(--bg-footer)] border-t border-[var(--border-subtle)] py-8">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row justify-between items-center">
-          <div class="flex items-center space-x-2 mb-4 md:mb-0">
-            <div class="w-6 h-6 rounded flex items-center justify-center" style="background: #6C63FF;">
-              <span class="text-white text-xs font-bold">ME</span>
+    <footer class="bg-[var(--bg-footer)] border-t border-[var(--border-subtle)]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+
+          <!-- Logo + descripción corta -->
+          <div class="flex items-center gap-3">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #6C63FF, #9B8CFF);">
+              <span class="text-white font-bold text-xs">ME</span>
             </div>
-            <span class="text-[var(--text-secondary)] text-sm">Modo Ensayo &copy; {{ new Date().getFullYear() }}</span>
+            <div>
+              <span class="text-sm font-semibold text-[var(--text-primary)]">Modo <span class="text-primary">Ensayo</span></span>
+              <p class="text-[var(--text-secondary)] text-xs mt-0.5">Plataforma chilena de danza y música</p>
+            </div>
           </div>
-          <div class="flex space-x-6">
-            <router-link to="/" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">Inicio</router-link>
-            <router-link to="/classes" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">Clases</router-link>
-            <router-link to="/quiero-ser-profesor" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">Ser Profesor</router-link>
-            <router-link to="/quiero-gestionar-sede" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">Gestiónar Sede</router-link>
+
+          <!-- Links centrados -->
+          <div class="flex flex-wrap gap-x-5 gap-y-2">
+            <router-link to="/" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Inicio</router-link>
+            <router-link to="/classes" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Clases</router-link>
+            <router-link to="/quiero-ser-profesor" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Ser Maestro</router-link>
+            <router-link to="/quiero-gestionar-sede" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Gestiónar Sede</router-link>
+            <router-link to="/login" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Iniciar sesión</router-link>
+            <router-link to="/register" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors">Registrarse</router-link>
           </div>
+
+          <!-- Copyright -->
+          <span class="text-[var(--text-secondary)] text-xs whitespace-nowrap">© {{ new Date().getFullYear() }} Modo Ensayo · Chile 🇨🇱</span>
+
         </div>
       </div>
     </footer>
@@ -286,6 +333,7 @@ import { useAuth } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
 import paymentService from '@/services/paymentService'
 import venueService from '@/services/venueService'
+import scheduleService from '@/services/scheduleService'
 import NotificationBell from '@/components/NotificationBell.vue'
 
 const router = useRouter()
@@ -300,11 +348,19 @@ const mostrarBannerPerfilIncompleto = computed(() => {
     && route.path !== '/profesor/perfil-profesional'
 })
 
+const mostrarBannerHorarioIncompleto = computed(() => {
+  return modoActual.value === 'sede'
+    && puedeVerContextoSede.value
+    && sedeSinHorario.value
+    && route.path !== '/sede/configuracion'
+})
+
 const showUserMenu = ref(false)
 const showMobileMenu = ref(false)
 const userMenuRef = ref(null)
 const cartCount = ref(0)
 const sedeConfirmarCount = ref(0)
+const sedeSinHorario = ref(false)
 
 const availableModes = computed(() => {
   const modes = [{ value: 'alumno', label: 'Alumno' }]
@@ -365,11 +421,32 @@ async function loadSedeConfirmarCount() {
   }
 }
 
+// Verifica si la sede aprobada del gestor tiene horario laboral configurado.
+// Sin horario no se generan bloques reservables, así que mostramos un aviso
+// persistente que obliga a completarlo.
+async function checkSedeHorario() {
+  if (modoActual.value !== 'sede' || !puedeVerContextoSede.value) {
+    sedeSinHorario.value = false
+    return
+  }
+  try {
+    const venues = await venueService.getMyVenues()
+    const vArr = Array.isArray(venues) ? venues : venues?.content || []
+    const sede = vArr.find(v => v.status === 'APROBADA')
+    if (!sede) { sedeSinHorario.value = false; return }
+    const sched = await scheduleService.getSchedule(sede.id)
+    sedeSinHorario.value = !(Array.isArray(sched) && sched.length > 0)
+  } catch {
+    sedeSinHorario.value = false
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   if (isAuthenticated.value) {
     loadCartCount()
     loadSedeConfirmarCount()
+    checkSedeHorario()
     syncActividadMaestro()
     syncAtributos()
   }
@@ -383,12 +460,67 @@ watch(() => route.path, () => {
   if (isAuthenticated.value) {
     loadCartCount()
     loadSedeConfirmarCount()
+    checkSedeHorario()
   }
   showMobileMenu.value = false
 })
 </script>
 
 <style scoped>
+/* Aurora global */
+.aurora {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: 0.22;
+  animation: aurora-float 14s ease-in-out infinite alternate;
+}
+
+.aurora-purple {
+  width: 320px;
+  height: 320px;
+  background: #6C63FF;
+  top: -60px;
+  left: -60px;
+  animation-duration: 16s;
+  animation-delay: 0s;
+}
+
+.aurora-blue {
+  width: 260px;
+  height: 260px;
+  background: #2563EB;
+  top: 15%;
+  right: -40px;
+  animation-duration: 12s;
+  animation-delay: -4s;
+}
+
+.aurora-pink {
+  width: 280px;
+  height: 280px;
+  background: #7C3AED;
+  bottom: 15%;
+  left: 35%;
+  animation-duration: 18s;
+  animation-delay: -9s;
+}
+
+@keyframes aurora-float {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(50px, -40px) scale(1.1); }
+  66%  { transform: translate(-30px, 30px) scale(0.92); }
+  100% { transform: translate(20px, -20px) scale(1.05); }
+}
+
 .nav-link {
   @apply px-3 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all;
 }

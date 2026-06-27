@@ -47,7 +47,7 @@ El **código fuente** vive en `frontend/` (Vue SPA) y `supabase/` (migraciones S
 | Lógica de servidor | Supabase Edge Functions (Deno + TypeScript) |
 | Seguridad de datos | Row Level Security (RLS) en PostgreSQL |
 | Autenticación | Supabase Auth (email/password + Google OAuth, JWT) |
-| Pagos | MercadoPago Checkout Pro (vía Edge Functions) |
+| Pagos | MercadoPago Checkout Pro + Connect marketplace con split (vía Edge Functions) |
 | Hosting frontend | Vercel |
 | CI/CD | GitHub Actions |
 
@@ -78,12 +78,11 @@ Detalles en [`Documentación/A2-Setup-Local.md`](./Documentación/A2-Setup-Local
 
 ---
 
-## Estado del proyecto al 30-may-2026
+## Estado del proyecto al 24-jun-2026
 
-- **Sprint actual:** Sprint 5 (Semana 12) en cierre
-- **Sprints completados:** 5 de 12
-- **Hitos cumplidos:** 4 de 8 (incluye Experiencia 2 con 35%)
-- **MVP completado:** ~70%
-- **Funcionalidades extra implementadas (fuera del plan):** 27
+- **MVP completado:** ~95%
+- **Pagos**: inscripción a clases + arriendo de sala con split MercadoPago Connect (marketplace)
+- **Pendiente de despliegue**: migraciones MP Connect + Edge Functions `mp-connect-start`, `mp-connect-callback`, `reserve-room-preference` (ver [`DESPLIEGUE_MERCADOPAGO.md`](./DESPLIEGUE_MERCADOPAGO.md))
+- **Funcionalidades implementadas (fuera del plan original):** 30+
 
-Detalle en la [Carta Gantt actualizada](./Documentación/word/10-Carta-Gantt-30may2026.docx).
+Detalle en la [Carta Gantt actualizada](./Documentación/Carta-Gantt-13jun2026.md).

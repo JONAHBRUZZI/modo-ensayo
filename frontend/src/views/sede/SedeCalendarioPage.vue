@@ -122,7 +122,22 @@
                   @click="onCellClick(day, block)"
                 >
                   <div class="text-xs text-center min-h-[40px] flex flex-col items-center justify-center gap-0.5 py-1">
-                    <span v-if="cellStatus(day, block) !== 'OUT'" class="text-[10px]" :class="cellLabelClass(day, block)">{{ cellStatusLabel(day, block) }}</span>
+                    <!-- Vista "Todas las salas": muestra el nombre de cada sala ocupada o en mantención -->
+                    <template v-if="!selectedRoomId">
+                      <span
+                        v-for="(it, i) in cellAggItems(day, block)"
+                        :key="i"
+                        class="text-[10px] leading-tight"
+                        :class="aggItemClass(it.status)"
+                      >{{ aggItemLabel(it) }}</span>
+                      <span
+                        v-if="cellAggItems(day, block).length === 0 && cellStatus(day, block) !== 'OUT'"
+                        class="text-[10px]"
+                        :class="cellLabelClass(day, block)"
+                      >Disp.</span>
+                    </template>
+                    <!-- Vista de una sala: etiqueta de estado simple -->
+                    <span v-else-if="cellStatus(day, block) !== 'OUT'" class="text-[10px]" :class="cellLabelClass(day, block)">{{ cellStatusLabel(day, block) }}</span>
                   </div>
                 </td>
               </tr>
@@ -402,6 +417,30 @@ function cellLabelClass(day, block) {
   }
   const color = { AVAILABLE: 'text-green-200', OCCUPIED: 'text-red-200' }[st] || 'text-gray-300'
   return cellDimmed(day, block) ? `${color} opacity-50` : `${color} opacity-80`
+}
+
+// Vista "Todas las salas": lista de salas ocupadas o en mantención en la celda,
+// para ver de un vistazo qué sala está en cada estado en cada horario.
+function cellAggItems(day, block) {
+  const items = []
+  const dow = day.dayOfWeek
+  if (!scheduleDays[dow]?.enabled) return items
+  if (block.start >= timeToMinutes(scheduleDays[dow]?.closeTime)) return items
+  if (block.start < timeToMinutes(scheduleDays[dow]?.openTime)) return items
+  for (const room of rooms.value) {
+    const entry = getScheduleForCell(day.date, block.start, room.id)
+    if (entry?.status === 'OCCUPIED') items.push({ name: room.name, status: 'OCCUPIED' })
+    else if (entry?.status === 'MAINTENANCE') items.push({ name: room.name, status: 'MAINTENANCE' })
+  }
+  return items
+}
+
+function aggItemClass(status) {
+  return status === 'OCCUPIED' ? 'text-red-700 font-semibold' : 'text-yellow-700 font-semibold'
+}
+
+function aggItemLabel(item) {
+  return `${item.status === 'OCCUPIED' ? 'Ocup' : 'Mant'}: ${item.name}`
 }
 
 function onCellClick(day, block) {

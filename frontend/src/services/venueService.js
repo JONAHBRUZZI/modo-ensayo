@@ -259,14 +259,26 @@ export default {
       .map(r => camelize({ ...r, photo_url: byRoom[r.id] }))
   },
 
+  // Clases agendadas en las salas de la sede del usuario. Usa el RPC
+  // get_venue_classes (SECURITY DEFINER, auto-scopeado a auth.uid()), que
+  // cubre el hueco de RLS sin ampliar las policies de `classes`.
+  async getVenueClasses() {
+    const { data, error } = await supabase.rpc('get_venue_classes')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(c => camelize(c))
+  },
+  // Clases pendientes de validación de la sede (status POR_VALIDAR).
+  async getPendingClasses() {
+    const { data, error } = await supabase.rpc('get_venue_classes', { p_status: 'POR_VALIDAR' })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(c => camelize(c))
+  },
+
   // Pendientes (huecos de RLS / flujo de Storage / lógica de agregación):
-  // - getVenueClasses/getPendingClasses: RLS de classes no permite al admin de sede ver clases ajenas.
   // - registrarVenueConDocumentos: requiere subir archivos a Storage primero.
   // - deleteVenueDocument: falta policy DELETE en venue_documents.
   // - deletePhoto: falta policy DELETE en venue_photos para algunos casos.
   // - getVenueMetrics/getVenueProfessors: requieren agregación server-side.
-  getVenueClasses() { return NOT_MIGRATED('getVenueClasses', 'RLS de classes para admin de sede') },
-  getPendingClasses() { return NOT_MIGRATED('getPendingClasses', 'RLS de classes para admin de sede') },
   async registrarVenueConDocumentos(fd) {
     const userId = await currentUserId()
 

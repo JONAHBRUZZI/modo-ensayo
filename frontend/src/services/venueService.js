@@ -124,13 +124,18 @@ export default {
   // Elimina una sala. Los bloques de horario y mantenciones se borran en cascada.
   // Si la sala tiene clases asociadas, la FK (RESTRICT) hace fallar el borrado:
   // se traduce a un mensaje claro para el gestor.
+  // Se usa .select() para confirmar que realmente se borró una fila: si RLS impide
+  // el DELETE, PostgREST no devuelve error pero afecta 0 filas (data vacío).
   async deleteRoom(roomId) {
-    const { error } = await supabase.from('rooms').delete().eq('id', roomId)
+    const { data, error } = await supabase.from('rooms').delete().eq('id', roomId).select('id')
     if (error) {
       if (error.code === '23503') {
         throw { response: { status: 409, data: { message: 'La sala tiene clases asociadas y no puede eliminarse.' } } }
       }
       throw error
+    }
+    if (!Array.isArray(data) || data.length === 0) {
+      throw { response: { status: 403, data: { message: 'No se pudo eliminar la sala (permisos insuficientes). Intenta nuevamente más tarde.' } } }
     }
     return { status: 'ok' }
   },

@@ -12,7 +12,7 @@ CREATE POLICY "rphoto_insert" ON storage.objects FOR INSERT TO authenticated
     bucket_id = 'room-photos' AND EXISTS (
       SELECT 1 FROM public.rooms r
       JOIN public.venues v ON v.id = r.venue_id
-      WHERE r.id = ((storage.foldername(name))[1])::uuid AND v.admin_id = auth.uid()
+      WHERE r.id = ((storage.foldername(storage.objects.name))[1])::uuid AND v.admin_id = auth.uid()
     )
   );
 
@@ -21,7 +21,7 @@ CREATE POLICY "rphoto_delete" ON storage.objects FOR DELETE TO authenticated
     bucket_id = 'room-photos' AND EXISTS (
       SELECT 1 FROM public.rooms r
       JOIN public.venues v ON v.id = r.venue_id
-      WHERE r.id = ((storage.foldername(name))[1])::uuid AND v.admin_id = auth.uid()
+      WHERE r.id = ((storage.foldername(storage.objects.name))[1])::uuid AND v.admin_id = auth.uid()
     )
   );
 

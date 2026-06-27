@@ -57,16 +57,14 @@ export default {
     return camelize(data)
   },
 
-  async markMaintenance(roomId, blockId, reason) {
+  async markMaintenance(roomId, blockId, startTime, endTime, reason) {
     const { error: updErr } = await supabase
       .from('room_schedule_blocks').update({ status: 'MAINTENANCE' }).eq('id', blockId)
     if (updErr) throw updErr
-    const { data: block } = await supabase
-      .from('room_schedule_blocks').select('start_time, end_time').eq('id', blockId).single()
     const { error } = await supabase.from('room_maintenances').insert({
       room_id: roomId,
-      start_time: block?.start_time,
-      end_time: block?.end_time,
+      start_time: startTime,
+      end_time: endTime,
       reason: reason ?? null
     })
     if (error) throw error

@@ -405,6 +405,8 @@ function onCellClick(day, block) {
     action: 'mark',
     message: '¿Marcar este horario como mantención?',
     blockId: entry?.id,
+    startTime: entry?.startTime,
+    endTime: entry?.endTime,
     roomId: selectedRoomId.value,
     date: day.date,
     startMin: block.start
@@ -413,14 +415,14 @@ function onCellClick(day, block) {
 
 async function doMaintenanceAction() {
   if (!maintenanceConfirm.value) return
-  const { action, blockId, roomId, date, startMin } = maintenanceConfirm.value
+  const { action, blockId, roomId, startTime, endTime } = maintenanceConfirm.value
 
   maintenanceLoading.value = true
   try {
     if (action === 'release') {
       await scheduleService.releaseMaintenance(blockId)
     } else if (action === 'mark') {
-      await scheduleService.markMaintenance(roomId, blockId, 'Mantención programada')
+      await scheduleService.markMaintenance(roomId, blockId, startTime, endTime, 'Mantención programada')
     }
     maintenanceConfirm.value = null
     await loadAllSchedules()

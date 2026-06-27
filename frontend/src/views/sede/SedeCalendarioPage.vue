@@ -233,6 +233,28 @@ function instantToLocalParts(iso) {
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${hour}:${p.minute}` }
 }
 
+// Offset (ms) de la zona de la sede respecto a UTC en un instante dado.
+function sedeOffsetMs(date) {
+  const p = new Intl.DateTimeFormat('en-US', {
+    timeZone: ZONA_SEDE, hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  }).formatToParts(date).reduce((a, x) => { a[x.type] = x.value; return a }, {})
+  const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second)
+  return asUTC - date.getTime()
+}
+
+// Convierte una fecha (YYYY-MM-DD) + minutos desde medianoche en hora de la sede
+// al instante UTC (ISO) correspondiente. Inverso de instantToLocalParts.
+function localSedeToInstant(dateStr, minutes) {
+  const [y, mo, d] = dateStr.split('-').map(Number)
+  const hh = Math.floor(minutes / 60)
+  const mm = minutes % 60
+  const naiveUTC = Date.UTC(y, mo - 1, d, hh, mm)
+  const off = sedeOffsetMs(new Date(naiveUTC))
+  return new Date(naiveUTC - off).toISOString()
+}
+
 function timeToMinutes(t) {
   if (!t) return 0
   const [h, m] = t.split(':').map(Number)
@@ -394,35 +416,35 @@ function onCellClick(day, block) {
     maintenanceConfirm.value = {
       action: 'release',
       message: '¿Liberar este horario y dejarlo disponible nuevamente?',
-      blockId: entry.id,
+      // entry puede traer el id de la mantención y/o el id del bloque (si existe).
+      maintenanceId: entry?.maintenanceId || null,
+      blockId: entry?.id || null,
       roomId: selectedRoomId.value
     }
     return
   }
 
-  // AVAILABLE
+  // AVAILABLE — calcular el tramo desde la celda (sirve aunque no exista bloque).
   maintenanceConfirm.value = {
     action: 'mark',
     message: '¿Marcar este horario como mantención?',
-    blockId: entry?.id,
-    startTime: entry?.startTime,
-    endTime: entry?.endTime,
-    roomId: selectedRoomId.value,
-    date: day.date,
-    startMin: block.start
+    blockId: entry?.id || null,
+    startTime: entry?.startTime || localSedeToInstant(day.date, block.start),
+    endTime: entry?.endTime || localSedeToInstant(day.date, block.end),
+    roomId: selectedRoomId.value
   }
 }
 
 async function doMaintenanceAction() {
   if (!maintenanceConfirm.value) return
-  const { action, blockId, roomId, startTime, endTime } = maintenanceConfirm.value
+  const { action, blockId, maintenanceId, roomId, startTime, endTime } = maintenanceConfirm.value
 
   maintenanceLoading.value = true
   try {
     if (action === 'release') {
-      await scheduleService.releaseMaintenance(blockId)
+      await scheduleService.releaseMaintenance(maintenanceId, blockId)
     } else if (action === 'mark') {
-      await scheduleService.markMaintenance(roomId, blockId, startTime, endTime, 'Mantención programada')
+      await scheduleService.markMaintenance(roomId, startTime, endTime, blockId, 'Mantención programada')
     }
     maintenanceConfirm.value = null
     await loadAllSchedules()
@@ -463,6 +485,24 @@ async function loadAllSchedules() {
           if (dateStr && timeStr) {
             const key = buildLookupKey(room.id, dateStr, timeStr)
             map[key] = { ...entry, roomId: room.id }
+          }
+        }
+      }
+    } catch {
+      // ignore errors for individual rooms
+    }
+
+    // Sobreponer mantenciones: son la fuente de verdad y pueden existir aunque la
+    // sala no tenga bloques de horario generados.
+    try {
+      const maints = await scheduleService.getRoomMaintenances(room.id, from, to)
+      if (Array.isArray(maints)) {
+        for (const m of maints) {
+          const { date: dateStr, time: timeStr } = instantToLocalParts(m.startTime)
+          if (dateStr && timeStr) {
+            const key = buildLookupKey(room.id, dateStr, timeStr)
+            const prev = map[key] || {}
+            map[key] = { ...prev, roomId: room.id, status: 'MAINTENANCE', maintenanceId: m.id, startTime: m.startTime, endTime: m.endTime }
           }
         }
       }

@@ -57,24 +57,44 @@ export default {
     return camelize(data)
   },
 
-  async markMaintenance(roomId, blockId, startTime, endTime, reason) {
-    const { error: updErr } = await supabase
-      .from('room_schedule_blocks').update({ status: 'MAINTENANCE' }).eq('id', blockId)
-    if (updErr) throw updErr
-    const { error } = await supabase.from('room_maintenances').insert({
+  // Mantenciones registradas de una sala en un rango (fuente de verdad de la
+  // mantención: existe aunque la sala no tenga bloques de horario generados).
+  async getRoomMaintenances(roomId, from, to) {
+    let q = supabase.from('room_maintenances').select('*').eq('room_id', roomId)
+    if (from) q = q.gte('start_time', from)
+    if (to) q = q.lte('end_time', to)
+    const { data, error } = await q.order('start_time', { ascending: true })
+    if (error) throw error
+    return camelize(data)
+  },
+
+  // Marca un horario como mantención. La mantención se registra en
+  // room_maintenances (que el gestor sí puede escribir). Si además existe un
+  // bloque de horario para ese tramo, se actualiza a MAINTENANCE (best-effort).
+  async markMaintenance(roomId, startTime, endTime, blockId = null, reason = null) {
+    const { data, error } = await supabase.from('room_maintenances').insert({
       room_id: roomId,
       start_time: startTime,
       end_time: endTime,
-      reason: reason ?? null
-    })
+      reason: reason ?? 'Mantención programada'
+    }).select('id').single()
     if (error) throw error
-    return { status: 'ok' }
+    if (blockId) {
+      await supabase.from('room_schedule_blocks').update({ status: 'MAINTENANCE' }).eq('id', blockId)
+    }
+    return { status: 'ok', id: data?.id }
   },
 
-  async releaseMaintenance(blockId) {
-    const { error } = await supabase
-      .from('room_schedule_blocks').update({ status: 'AVAILABLE' }).eq('id', blockId)
-    if (error) throw error
+  // Libera una mantención: borra el registro de room_maintenances y, si hay un
+  // bloque asociado, lo devuelve a disponible.
+  async releaseMaintenance(maintenanceId, blockId = null) {
+    if (maintenanceId) {
+      const { error } = await supabase.from('room_maintenances').delete().eq('id', maintenanceId)
+      if (error) throw error
+    }
+    if (blockId) {
+      await supabase.from('room_schedule_blocks').update({ status: 'AVAILABLE' }).eq('id', blockId)
+    }
     return { status: 'ok' }
   },
 

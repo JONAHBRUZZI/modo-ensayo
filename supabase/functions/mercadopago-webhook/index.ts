@@ -105,14 +105,26 @@ export default {
       const paymentId = payload.data?.id;
       if (!paymentId) return new Response("ok", { status: 200 });
 
-      const mpToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")!;
+      const admin = ctx.supabaseAdmin;
+
+      // En pagos marketplace (arriendo de sala) la preferencia se crea con el
+      // token del VENDEDOR, por lo que el pago vive en SU cuenta y el token de la
+      // plataforma no puede consultarlo. La notification_url incluye ?seller=<id>
+      // para saber con qué token consultar el pago.
+      let mpToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")!;
+      const sellerId = new URL(req.url).searchParams.get("seller");
+      if (sellerId) {
+        const { data: sellerAcc } = await admin
+          .from("mp_seller_accounts").select("access_token")
+          .eq("user_id", sellerId).maybeSingle();
+        if (sellerAcc?.access_token) mpToken = sellerAcc.access_token;
+      }
+
       const mpResp = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: { Authorization: `Bearer ${mpToken}` },
       });
       const payment = await mpResp.json();
       if (payment.status !== "approved") return new Response("ok", { status: 200 });
-
-      const admin = ctx.supabaseAdmin;
 
       const { data: session, error: sessErr } = await admin
         .from("payment_sessions").select("*")

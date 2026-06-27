@@ -104,7 +104,9 @@ export default {
           failure: `${frontendUrl}/payment/failure`,
           pending: `${frontendUrl}/payment/pending`,
         },
-        notification_url: `${functionsBase}/mercadopago-webhook`,
+        // Incluye el vendedor: el webhook lo usa para consultar el pago con el
+        // token del vendedor (el pago vive en su cuenta, no en la plataforma).
+        notification_url: `${functionsBase}/mercadopago-webhook?seller=${venue.admin_id}`,
       };
       if (marketplaceFee > 0) preferenceBody.marketplace_fee = marketplaceFee;
       if (isHttps) preferenceBody.auto_return = "approved";

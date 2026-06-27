@@ -288,10 +288,13 @@
 
       <p v-if="error" class="text-red-400 text-sm text-center bg-red-500/10 rounded-lg p-3">{{ error }}</p>
 
-      <button type="submit" :disabled="enviando" class="btn-primary w-full py-3 text-base font-semibold flex items-center justify-center gap-2">
+      <button type="submit" :disabled="enviando || !horarioConfirmado" class="btn-primary w-full py-3 text-base font-semibold flex items-center justify-center gap-2">
         <span v-if="enviando" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
         {{ enviando ? 'Enviando solicitud...' : 'Enviar solicitud de registro' }}
       </button>
+      <p v-if="!horarioConfirmado" class="text-amber-400 text-xs text-center mt-2">
+        Primero crea y confirma el horario de la sede para poder enviar la solicitud.
+      </p>
     </form>
 
     <!-- Confirmación del horario -->

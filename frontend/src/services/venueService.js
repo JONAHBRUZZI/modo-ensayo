@@ -109,6 +109,32 @@ export default {
     return row
   },
 
+  // Reservas activas de una sala = bloques OCCUPIED (reservados) o HELD (en pago).
+  // Se usa para impedir eliminar una sala que tiene reservas vigentes.
+  async countReservasActivasSala(roomId) {
+    const { count, error } = await supabase
+      .from('room_schedule_blocks')
+      .select('id', { count: 'exact', head: true })
+      .eq('room_id', roomId)
+      .in('status', ['OCCUPIED', 'HELD'])
+    if (error) throw error
+    return count || 0
+  },
+
+  // Elimina una sala. Los bloques de horario y mantenciones se borran en cascada.
+  // Si la sala tiene clases asociadas, la FK (RESTRICT) hace fallar el borrado:
+  // se traduce a un mensaje claro para el gestor.
+  async deleteRoom(roomId) {
+    const { error } = await supabase.from('rooms').delete().eq('id', roomId)
+    if (error) {
+      if (error.code === '23503') {
+        throw { response: { status: 409, data: { message: 'La sala tiene clases asociadas y no puede eliminarse.' } } }
+      }
+      throw error
+    }
+    return { status: 'ok' }
+  },
+
   confirmClassRealized(classId) {
     return invokeFunction('confirm-class', { body: { classId, realized: true } })
   },

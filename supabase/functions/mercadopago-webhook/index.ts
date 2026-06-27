@@ -57,11 +57,29 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
   } catch (_e) { /* best-effort */ }
 }
 
+// Consulta un pago en la API de MercadoPago con un access_token dado.
+// Devuelve el JSON del pago, o null si el token no puede leerlo (404/401).
+async function fetchMpPayment(paymentId: string, token: string) {
+  const resp = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!resp.ok) return null;
+  return await resp.json();
+}
+
 // auth: "none" — MercadoPago no envía JWT. Verificamos via HMAC SHA-256.
 // Recordar: verify_jwt = false para esta función en supabase/config.toml.
 export default {
   fetch: withSupabase({ auth: "none" }, async (req, ctx) => {
     try {
+      const url = new URL(req.url);
+
+      // Solo procesamos notificaciones de pago. merchant_order y otros topics se
+      // ignoran con 200 (no hacemos nada con ellos) para no spamear reintentos
+      // ni ensuciar los logs con 403 de firma que no aplican.
+      const topic = url.searchParams.get("topic") ?? url.searchParams.get("type");
+      if (topic && topic !== "payment") return new Response("ok", { status: 200 });
+
       const body = await req.text();
 
       const secret = Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET");
@@ -86,8 +104,8 @@ export default {
       }
       if (!ts || !v1) return new Response("Forbidden", { status: 403 });
 
-      const url = new URL(req.url);
-      const dataId = url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "";
+      // El manifest de MP usa data.id en minúsculas (relevante para ids alfanuméricos).
+      const dataId = (url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "").toString().toLowerCase();
       const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
       const encoder = new TextEncoder();
       const key = await crypto.subtle.importKey(
@@ -105,17 +123,28 @@ export default {
       logInfo("webhook_signature_verified", { requestId });
 
       const payload = JSON.parse(body);
-      const paymentId = payload.data?.id;
+      const paymentId = payload.data?.id ?? url.searchParams.get("data.id");
       if (!paymentId) return new Response("ok", { status: 200 });
 
-      const mpToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")!;
-      const mpResp = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-        headers: { Authorization: `Bearer ${mpToken}` },
-      });
-      const payment = await mpResp.json();
-      if (payment.status !== "approved") return new Response("ok", { status: 200 });
-
       const admin = ctx.supabaseAdmin;
+
+      // El pago de una inscripción a clase vive en la cuenta de la plataforma,
+      // pero el de una reserva de sala vive en la cuenta del VENDEDOR (la sede,
+      // que creó la preferencia con su propio token). Probamos primero el token
+      // de la plataforma y, si no puede leer el pago, los de las sedes conectadas.
+      const platformToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")!;
+      let payment = await fetchMpPayment(paymentId, platformToken);
+      if (!payment?.external_reference) {
+        const { data: sellers } = await admin
+          .from("mp_seller_accounts")
+          .select("access_token").eq("status", "CONNECTED");
+        for (const s of sellers ?? []) {
+          if (!s.access_token) continue;
+          const sellerPayment = await fetchMpPayment(paymentId, s.access_token);
+          if (sellerPayment?.external_reference) { payment = sellerPayment; break; }
+        }
+      }
+      if (!payment || payment.status !== "approved") return new Response("ok", { status: 200 });
 
       const { data: session, error: sessErr } = await admin
         .from("payment_sessions").select("*")

@@ -120,6 +120,38 @@
       </div>
     </section>
 
+    <!-- SALAS DESTACADAS -->
+    <section v-if="salasDestacadas.length" class="featured-section">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div
+          v-motion :initial="{ opacity: 0, y: 20 }"
+          :visible="{ opacity: 1, y: 0, transition: { duration: 450 } }"
+          class="text-center mb-10"
+        >
+          <p class="section-eyebrow">Espacios disponibles</p>
+          <h2 class="about-title">Salas destacadas</h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="sala in salasDestacadas" :key="sala.id"
+            class="rounded-2xl overflow-hidden border border-white/10 bg-[var(--bg-elevated)] hover:border-primary/40 transition-colors"
+          >
+            <img :src="sala.photoUrl" :alt="sala.name" class="w-full h-44 object-cover" loading="lazy" />
+            <div class="p-4">
+              <h3 class="text-white font-semibold">{{ sala.name }}</h3>
+              <p class="text-gray-400 text-sm mt-0.5">
+                {{ sala.venue?.name }}<span v-if="sala.venue?.city"> · {{ sala.venue.city }}</span>
+              </p>
+              <div class="flex items-center justify-between mt-3">
+                <span class="text-xs text-gray-500">Capacidad: {{ sala.capacity || '—' }}</span>
+                <span v-if="sala.pricePerHour" class="text-primary font-semibold text-sm">${{ Number(sala.pricePerHour).toLocaleString('es-CL') }}/hr</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- PAGOS PROTEGIDOS (diferenciador) -->
     <section class="protect-section">
       <div class="protect-glow" aria-hidden="true"></div>
@@ -259,6 +291,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import heroBailarines from '@/assets/hero-bailarines.png'
 import heroMusicos from '@/assets/hero-musicos.png'
+import venueService from '@/services/venueService'
 
 function particleX(n) { return (((n * 37 + 11) % 90) + 5) + '%' }
 
@@ -275,6 +308,12 @@ onMounted(() => resetTimer())
 onUnmounted(() => clearInterval(timer))
 
 // --- Count-up stats ---
+const salasDestacadas = ref([])
+
+onMounted(async () => {
+  try { salasDestacadas.value = await venueService.getFeaturedRooms(6) } catch { salasDestacadas.value = [] }
+})
+
 const displayClases = ref(0)
 const displayMaestros = ref(0)
 const displaySedes = ref(0)
@@ -500,6 +539,7 @@ const currentSteps = computed(() => allSteps[activeTab.value])
 
 /* ABOUT */
 .about-section { background: var(--bg-footer); padding: 4rem 0; border-top: 1px solid var(--border-subtle); }
+.featured-section { background: var(--bg-base); padding: 4rem 0; border-top: 1px solid var(--border-subtle); }
 .about-inner { max-width: 760px; }
 .about-title { font-size: clamp(22px, 3vw, 30px); font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; margin-top: 0.5rem; }
 .about-desc { color: var(--text-secondary); font-size: 15px; line-height: 1.8; margin-bottom: 1.5rem; }

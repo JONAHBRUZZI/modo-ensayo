@@ -217,17 +217,59 @@ export default {
     return camelize(data)
   },
 
+  async addRoomPhoto(roomId, data) {
+    const { data: row, error } = await supabase
+      .from('venue_photos')
+      .insert({
+        owner_id: roomId,
+        owner_type: 'ROOM',
+        photo_url: data.photoUrl ?? data.photo_url,
+        alt_text: data.altText ?? data.alt_text ?? null,
+        display_order: data.displayOrder ?? data.display_order ?? 0,
+        principal: data.principal ?? false
+      })
+      .select('*').single()
+    if (error) throw error
+    return camelize(row)
+  },
+
+  // Salas destacadas para la home: salas de sedes aprobadas (la RLS ya filtra por
+  // sede APROBADA) que tengan al menos una foto. Devuelve la foto principal.
+  async getFeaturedRooms(limit = 6) {
+    const { data: rooms, error } = await supabase
+      .from('rooms')
+      .select('id, name, type, capacity, price_per_hour, venue:venues(name, city)')
+      .limit(40)
+    if (error) throw error
+    if (!Array.isArray(rooms) || rooms.length === 0) return []
+
+    const ids = rooms.map(r => r.id)
+    const { data: photos } = await supabase
+      .from('venue_photos').select('owner_id, photo_url, principal, display_order')
+      .eq('owner_type', 'ROOM').in('owner_id', ids)
+      .order('display_order', { ascending: true })
+
+    const byRoom = {}
+    for (const p of photos || []) {
+      if (!byRoom[p.owner_id] || p.principal) byRoom[p.owner_id] = p.photo_url
+    }
+
+    return rooms
+      .filter(r => byRoom[r.id])
+      .slice(0, limit)
+      .map(r => camelize({ ...r, photo_url: byRoom[r.id] }))
+  },
+
   // Pendientes (huecos de RLS / flujo de Storage / lógica de agregación):
   // - getVenueClasses/getPendingClasses: RLS de classes no permite al admin de sede ver clases ajenas.
   // - registrarVenueConDocumentos: requiere subir archivos a Storage primero.
   // - deleteVenueDocument: falta policy DELETE en venue_documents.
-  // - addRoomPhoto/deletePhoto: RLS de venue_photos solo permite ROOM a ADMIN / sin DELETE.
+  // - deletePhoto: falta policy DELETE en venue_photos para algunos casos.
   // - getVenueMetrics/getVenueProfessors: requieren agregación server-side.
   getVenueClasses() { return NOT_MIGRATED('getVenueClasses', 'RLS de classes para admin de sede') },
   getPendingClasses() { return NOT_MIGRATED('getPendingClasses', 'RLS de classes para admin de sede') },
   registrarVenueConDocumentos() { return NOT_MIGRATED('registrarVenueConDocumentos', 'flujo de Storage') },
   deleteVenueDocument() { return NOT_MIGRATED('deleteVenueDocument', 'falta policy DELETE') },
-  addRoomPhoto() { return NOT_MIGRATED('addRoomPhoto', 'RLS venue_photos ROOM') },
   deletePhoto() { return NOT_MIGRATED('deletePhoto', 'falta policy DELETE') },
   getVenueMetrics() { return NOT_MIGRATED('getVenueMetrics', 'agregación server-side') },
   getVenueProfessors() { return NOT_MIGRATED('getVenueProfessors', 'agregación server-side') }

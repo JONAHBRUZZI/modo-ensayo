@@ -1,4 +1,5 @@
 import { supabase, currentUserId } from './supabase'
+import { compressImage } from '@/utils/imageCompression'
 
 // Mapea el "type" lógico al bucket de Storage y a cómo se construye el path.
 // Las RLS de Storage exigen que el primer segmento del path sea:
@@ -31,6 +32,9 @@ export default {
     if (!prefix) {
       throw { response: { status: 400, data: { message: `Falta ownerId para subir a ${cfg.bucket}` } } }
     }
+    // Comprime cualquier imagen antes de subir (baja el peso manteniendo calidad).
+    // No afecta a PDFs ni otros archivos no-imagen.
+    file = await compressImage(file)
     const safeName = `${Date.now()}-${file.name.replace(/[^\w.\-]/g, '_')}`
     const path = `${prefix}/${safeName}`
     const { error } = await supabase.storage.from(cfg.bucket).upload(path, file, { upsert: false })

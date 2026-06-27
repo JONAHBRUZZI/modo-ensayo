@@ -91,7 +91,36 @@
             </span>
             <router-link v-if="!mpConectado" to="/sede/configuracion" class="text-primary text-sm hover:underline whitespace-nowrap">Vincular cuenta</router-link>
           </li>
+          <li class="flex items-center justify-between gap-3 text-sm">
+            <span class="flex items-center gap-2 text-gray-300">
+              <span :class="tieneFotoPrincipal ? 'text-green-400' : 'text-amber-400'">{{ tieneFotoPrincipal ? '✓' : '○' }}</span>
+              Al menos una foto de la sala
+            </span>
+          </li>
         </ul>
+      </div>
+
+      <!-- Fotos de la sala -->
+      <div class="card space-y-3">
+        <h3 class="text-white font-medium">Fotos de la sala</h3>
+        <p class="text-xs text-gray-400">
+          Sube al menos 1 foto (máximo 2). Se mostrarán cuando se vea la sala en la plataforma.
+          Las imágenes se optimizan automáticamente para cargar más rápido.
+        </p>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-medium text-red-400">Foto principal <span class="text-red-400">*</span></label>
+            <input type="file" accept="image/*" @change="(e) => onFoto(e, 0)"
+              class="block w-full text-sm text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-primary/80 file:cursor-pointer" />
+            <img v-if="fotosPreview[0]" :src="fotosPreview[0]" alt="Foto principal" class="w-full h-28 object-cover rounded-lg border border-white/10" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="block text-xs font-medium text-gray-400">Foto secundaria <span class="text-gray-600 text-[10px]">(opcional)</span></label>
+            <input type="file" accept="image/*" @change="(e) => onFoto(e, 1)"
+              class="block w-full text-sm text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-primary/80 file:cursor-pointer" />
+            <img v-if="fotosPreview[1]" :src="fotosPreview[1]" alt="Foto secundaria" class="w-full h-28 object-cover rounded-lg border border-white/10" />
+          </div>
+        </div>
       </div>
 
       <!-- Equipamiento — espacio -->
@@ -182,6 +211,7 @@ import { useAuth } from '@/stores/auth'
 import venueService from '@/services/venueService'
 import scheduleService from '@/services/scheduleService'
 import paymentService from '@/services/paymentService'
+import uploadService from '@/services/uploadService'
 
 const router = useRouter()
 // identidadValidada se valida UNA sola vez al registrar el usuario.
@@ -202,7 +232,22 @@ const tieneHorario = ref(false)
 const verificandoHorario = ref(false)
 const mpStatus = ref(null)
 const mpConectado = computed(() => mpStatus.value?.status === 'CONNECTED' && mpStatus.value?.hasToken)
-const requisitosOk = computed(() => !!form.venueId && tieneHorario.value && mpConectado.value)
+
+// Fotos de la sala: mínimo 1, máximo 2. fotos[0] es la principal.
+const fotos = ref([null, null])
+const fotosPreview = ref(['', ''])
+const tieneFotoPrincipal = computed(() => !!fotos.value[0])
+
+function onFoto(event, idx) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  fotos.value[idx] = file
+  fotosPreview.value[idx] = URL.createObjectURL(file)
+}
+
+const requisitosOk = computed(() =>
+  !!form.venueId && tieneHorario.value && mpConectado.value && tieneFotoPrincipal.value
+)
 
 const form = reactive({
   venueId: '',
@@ -257,9 +302,14 @@ async function submit() {
     msgType.value = 'error'
     return
   }
+  if (!tieneFotoPrincipal.value) {
+    msg.value = 'Sube al menos una foto de la sala.'
+    msgType.value = 'error'
+    return
+  }
   sending.value = true
   try {
-    await venueService.createRoom(form.venueId, {
+    const room = await venueService.createRoom(form.venueId, {
       name: form.name,
       capacity: form.capacity,
       tamanoM2: form.tamanoM2,
@@ -280,6 +330,16 @@ async function submit() {
       tieneGuitarra: form.tieneGuitarra,
       tieneBateria: form.tieneBateria
     })
+
+    // Subir las fotos de la sala (la primera es la principal) y asociarlas.
+    const roomId = room?.id
+    if (roomId) {
+      const seleccionadas = fotos.value.filter(Boolean)
+      for (let i = 0; i < seleccionadas.length; i++) {
+        const { url } = await uploadService.uploadFile(seleccionadas[i], 'room', roomId)
+        await venueService.addRoomPhoto(roomId, { photoUrl: url, displayOrder: i, principal: i === 0 })
+      }
+    }
 
     // La sala hereda el horario de la sede: se generan sus bloques de
     // disponibilidad inmediatamente (best-effort; el cron y el calendario de la

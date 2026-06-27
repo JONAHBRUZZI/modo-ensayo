@@ -395,7 +395,12 @@ function cellStatusLabel(day, block) {
 
 function cellLabelClass(day, block) {
   const st = cellStatus(day, block)
-  const color = { AVAILABLE: 'text-green-200', OCCUPIED: 'text-red-200', MAINTENANCE: 'text-yellow-200' }[st] || 'text-gray-300'
+  // La mantención se resalta en oscuro y negrita para que se lea con claridad
+  // dentro de la celda amarilla.
+  if (st === 'MAINTENANCE') {
+    return cellDimmed(day, block) ? 'text-yellow-700 font-semibold opacity-60' : 'text-yellow-700 font-semibold'
+  }
+  const color = { AVAILABLE: 'text-green-200', OCCUPIED: 'text-red-200' }[st] || 'text-gray-300'
   return cellDimmed(day, block) ? `${color} opacity-50` : `${color} opacity-80`
 }
 

@@ -51,6 +51,22 @@
         </div>
       </div>
 
+      <!-- Horario ocupado: info de solo lectura (gestión = fase futura) -->
+      <div v-if="occupiedInfo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div class="card max-w-md w-full mx-4 space-y-4">
+          <h4 class="text-lg font-semibold text-white">Horario ocupado</h4>
+          <p class="text-sm text-gray-400">
+            {{ occupiedInfo.date }} · {{ occupiedInfo.label }} — este horario está ocupado por una reserva.
+          </p>
+          <p class="text-xs text-gray-500">
+            La gestión de horarios ocupados (liberar el cupo o cambiarlo a mantención) estará disponible próximamente.
+          </p>
+          <div class="flex justify-end">
+            <button @click="occupiedInfo = null" class="btn-primary text-sm">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Calendar section -->
       <div class="card">
         <!-- Week selector -->
@@ -106,9 +122,7 @@
                   @click="onCellClick(day, block)"
                 >
                   <div class="text-xs text-center min-h-[40px] flex flex-col items-center justify-center gap-0.5 py-1">
-                    <span v-if="getCellClass(day, block).includes('cursor-pointer')" class="text-[10px] opacity-60">{{ getCellStatusLabel(day, block) }}</span>
-                    <span v-if="getCellClass(day, block) === 'bg-red-500/20 border border-red-500/30 rounded p-1'" class="text-[10px] text-red-300 truncate max-w-[90px]">{{ getCellTitle(day, block) }}</span>
-                    <span v-if="getCellClass(day, block) === 'bg-yellow-500/20 border border-yellow-500/30 rounded p-1 cursor-pointer hover:bg-yellow-500/30'" class="text-[10px] text-yellow-300">Mantención</span>
+                    <span v-if="cellStatus(day, block) !== 'OUT'" class="text-[10px]" :class="cellLabelClass(day, block)">{{ cellStatusLabel(day, block) }}</span>
                   </div>
                 </td>
               </tr>
@@ -116,16 +130,24 @@
           </table>
         </div>
 
-        <!-- Legend -->
-        <div class="flex items-center gap-6 mt-6 pt-4 border-t border-dark-border flex-wrap">
-          <span class="flex items-center gap-1.5 text-xs text-gray-400">
-            <span class="w-3 h-3 rounded-sm bg-green-500/40 border border-green-500/50"></span> Disponible
-          </span>
-          <span class="flex items-center gap-1.5 text-xs text-gray-400">
-            <span class="w-3 h-3 rounded-sm bg-red-500/40 border border-red-500/50"></span> Ocupado
-          </span>
-          <span class="flex items-center gap-1.5 text-xs text-gray-400">
-            <span class="w-3 h-3 rounded-sm bg-yellow-500/40 border border-yellow-500/50"></span> Mantención
+        <!-- Leyenda clickeable: actúa como filtro de estado -->
+        <div class="flex items-center gap-2 mt-6 pt-4 border-t border-dark-border flex-wrap">
+          <button
+            v-for="f in filtros" :key="f.value"
+            type="button"
+            @click="toggleFiltro(f.value)"
+            :class="[
+              'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors',
+              filtroEstado === f.value
+                ? 'border-white/30 bg-[var(--bg-elevated)] text-white'
+                : 'border-white/10 text-gray-400 hover:text-white'
+            ]"
+          >
+            <span class="w-3 h-3 rounded-sm" :class="f.swatch"></span> {{ f.label }}
+          </button>
+          <span v-if="filtroEstado" class="text-[11px] text-gray-500 ml-1">
+            Mostrando solo <strong class="text-gray-300">{{ filtroLabel }}</strong> ·
+            <button type="button" @click="filtroEstado = null" class="text-primary hover:underline">ver todo</button>
           </span>
         </div>
       </div>
@@ -169,6 +191,21 @@ const scheduleData = ref({}) // key: `${roomId}|${date}|${HH}:${MM}` -> schedule
 
 const maintenanceConfirm = ref(null)
 const maintenanceLoading = ref(false)
+
+// Info de solo lectura al pinchar un horario ocupado (gestión = fase futura).
+const occupiedInfo = ref(null)
+
+// Leyenda clickeable como filtro de estado. null = mostrar todo.
+const filtroEstado = ref(null)
+const filtros = [
+  { value: 'AVAILABLE', label: 'Disponible', swatch: 'bg-green-500/40 border border-green-500/50' },
+  { value: 'OCCUPIED', label: 'Ocupado', swatch: 'bg-red-500/40 border border-red-500/50' },
+  { value: 'MAINTENANCE', label: 'Mantención', swatch: 'bg-yellow-500/40 border border-yellow-500/50' }
+]
+const filtroLabel = computed(() => filtros.find(f => f.value === filtroEstado.value)?.label || '')
+function toggleFiltro(v) {
+  filtroEstado.value = filtroEstado.value === v ? null : v
+}
 
 function getMonday(d) {
   const date = new Date(d)
@@ -271,95 +308,99 @@ function getScheduleForCell(dateStr, blockStartMin, roomId) {
   return scheduleData.value[key] || null
 }
 
+// Estado efectivo de una celda: 'OUT' (fuera de horario) | 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE'.
+// Cuando no hay sala seleccionada agrega todas las salas con prioridad ocupado > mantención > disponible.
+function cellStatus(day, block) {
+  const dow = day.dayOfWeek
+  if (!scheduleDays[dow]?.enabled) return 'OUT'
+  if (block.start >= timeToMinutes(scheduleDays[dow]?.closeTime)) return 'OUT'
+  if (block.start < timeToMinutes(scheduleDays[dow]?.openTime)) return 'OUT'
+
+  if (selectedRoomId.value) {
+    const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
+    return entry?.status || 'AVAILABLE'
+  }
+
+  let hasOccupied = false
+  let hasMaintenance = false
+  for (const room of rooms.value) {
+    const entry = getScheduleForCell(day.date, block.start, room.id)
+    if (entry?.status === 'OCCUPIED') hasOccupied = true
+    else if (entry?.status === 'MAINTENANCE') hasMaintenance = true
+  }
+  if (hasOccupied) return 'OCCUPIED'
+  if (hasMaintenance) return 'MAINTENANCE'
+  return 'AVAILABLE'
+}
+
+// Una celda se atenúa (y deja de ser interactiva) si está fuera de horario o si hay un
+// filtro activo y su estado no coincide.
+function cellDimmed(day, block) {
+  const st = cellStatus(day, block)
+  if (st === 'OUT') return true
+  return !!filtroEstado.value && st !== filtroEstado.value
+}
+
 function getCellClass(day, block) {
-  const dow = day.dayOfWeek
-  if (!scheduleDays[dow]?.enabled) {
-    return 'bg-dark-bg/50 rounded'
+  const st = cellStatus(day, block)
+  if (st === 'OUT') return 'bg-dark-bg/50 rounded'
+
+  const dimmed = !!filtroEstado.value && st !== filtroEstado.value
+  const colors = {
+    AVAILABLE: dimmed ? 'bg-green-500/10 border-green-500/15' : 'bg-green-500/20 border-green-500/30',
+    OCCUPIED: dimmed ? 'bg-red-500/10 border-red-500/15' : 'bg-red-500/20 border-red-500/30',
+    MAINTENANCE: dimmed ? 'bg-yellow-500/10 border-yellow-500/15' : 'bg-yellow-500/20 border-yellow-500/30'
+  }[st]
+
+  let cls = `${colors} border rounded p-1`
+  if (dimmed) {
+    cls += ' opacity-40'
+  } else if (selectedRoomId.value) {
+    const hover = { AVAILABLE: 'hover:bg-green-500/30', OCCUPIED: 'hover:bg-red-500/30', MAINTENANCE: 'hover:bg-yellow-500/30' }[st]
+    cls += ` cursor-pointer ${hover}`
   }
-
-  const dayClose = timeToMinutes(scheduleDays[dow]?.closeTime)
-  if (block.start >= dayClose) {
-    return 'bg-dark-bg/50 rounded'
-  }
-
-  const dayOpen = timeToMinutes(scheduleDays[dow]?.openTime)
-  if (block.start < dayOpen) {
-    return 'bg-dark-bg/50 rounded'
-  }
-
-  if (selectedRoomId.value) {
-    const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
-    if (entry?.status === 'OCCUPIED') return 'bg-red-500/20 border border-red-500/30 rounded p-1'
-    if (entry?.status === 'MAINTENANCE') return 'bg-yellow-500/20 border border-yellow-500/30 rounded p-1 cursor-pointer hover:bg-yellow-500/30'
-    return 'bg-green-500/20 border border-green-500/30 rounded p-1 cursor-pointer hover:bg-green-500/30'
-  }
-
-  // Aggregate for all rooms
-  let hasOccupied = false
-  let hasMaintenance = false
-  let hasAvailable = false
-
-  for (const room of rooms.value) {
-    const entry = getScheduleForCell(day.date, block.start, room.id)
-    if (entry?.status === 'OCCUPIED') hasOccupied = true
-    else if (entry?.status === 'MAINTENANCE') hasMaintenance = true
-    else hasAvailable = true
-  }
-
-  if (hasOccupied) return 'bg-red-500/20 border border-red-500/30 rounded p-1'
-  if (hasMaintenance) return 'bg-yellow-500/20 border border-yellow-500/30 rounded p-1'
-  return 'bg-green-500/20 border border-green-500/30 rounded p-1'
+  return cls
 }
 
-function getCellStatusLabel(day, block) {
-  const dow = day.dayOfWeek
-  if (!scheduleDays[dow]?.enabled) return ''
-
-  if (selectedRoomId.value) {
-    const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
-    if (entry?.status === 'OCCUPIED') return 'Ocupado'
-    if (entry?.status === 'MAINTENANCE') return ''
-    return 'Disponible'
-  }
-
-  let hasOccupied = false
-  let hasMaintenance = false
-  for (const room of rooms.value) {
-    const entry = getScheduleForCell(day.date, block.start, room.id)
-    if (entry?.status === 'OCCUPIED') hasOccupied = true
-    else if (entry?.status === 'MAINTENANCE') hasMaintenance = true
-  }
-  if (hasOccupied) return 'Ocupado'
-  if (hasMaintenance) return 'Mant.'
-  return 'Disp.'
+function cellStatusLabel(day, block) {
+  const st = cellStatus(day, block)
+  if (st === 'OUT') return ''
+  const agg = !selectedRoomId.value
+  if (st === 'OCCUPIED') return 'Ocupado'
+  if (st === 'MAINTENANCE') return agg ? 'Mant.' : 'Mantención'
+  return agg ? 'Disp.' : 'Disponible'
 }
 
-function getCellTitle(day, block) {
-  if (!selectedRoomId.value) return ''
-  const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
-  return entry?.classTitle || ''
+function cellLabelClass(day, block) {
+  const st = cellStatus(day, block)
+  const color = { AVAILABLE: 'text-green-200', OCCUPIED: 'text-red-200', MAINTENANCE: 'text-yellow-200' }[st] || 'text-gray-300'
+  return cellDimmed(day, block) ? `${color} opacity-50` : `${color} opacity-80`
 }
 
 function onCellClick(day, block) {
-  const dow = day.dayOfWeek
-  if (!scheduleDays[dow]?.enabled) return
+  // Sin sala seleccionada (vista agregada) o celda atenuada por horario/filtro: no se actúa.
   if (!selectedRoomId.value) return
+  if (cellDimmed(day, block)) return
 
+  const st = cellStatus(day, block)
   const entry = getScheduleForCell(day.date, block.start, selectedRoomId.value)
-  const status = entry?.status || 'AVAILABLE'
 
-  if (status === 'OCCUPIED') return
+  if (st === 'OCCUPIED') {
+    occupiedInfo.value = { date: day.dateFormatted, label: block.label }
+    return
+  }
 
-  if (status === 'MAINTENANCE') {
+  if (st === 'MAINTENANCE') {
     maintenanceConfirm.value = {
       action: 'release',
-      message: '¿Liberar este horario de mantención?',
+      message: '¿Liberar este horario y dejarlo disponible nuevamente?',
       blockId: entry.id,
       roomId: selectedRoomId.value
     }
     return
   }
 
+  // AVAILABLE
   maintenanceConfirm.value = {
     action: 'mark',
     message: '¿Marcar este horario como mantención?',

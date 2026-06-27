@@ -31,6 +31,50 @@
         </div>
       </div>
 
+      <!-- Foto de perfil de la sede -->
+      <div class="card space-y-4" :class="venue.imageUrl ? '' : 'border border-yellow-500/40'">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-white font-medium">Foto de la sede</h3>
+            <p class="text-gray-500 text-xs mt-1">
+              Foto del frontis de la sede. Se usa como imagen de perfil en el sistema. Puedes cambiarla cuando quieras.
+            </p>
+          </div>
+          <span v-if="!venue.imageUrl" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 whitespace-nowrap">
+            Falta foto
+          </span>
+        </div>
+
+        <div class="flex items-center gap-4 flex-wrap">
+          <img
+            v-if="fotoPerfilPreview || venue.imageUrl"
+            :src="fotoPerfilPreview || venue.imageUrl"
+            alt="Foto de la sede"
+            class="w-28 h-28 object-cover rounded-xl border border-white/10"
+          />
+          <div v-else class="w-28 h-28 rounded-xl border border-dashed border-white/20 flex items-center justify-center text-gray-600">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+
+          <div class="flex-1 min-w-[200px] space-y-2">
+            <input type="file"
+              accept="image/*"
+              @change="onFotoPerfil"
+              class="block w-full text-sm text-gray-400
+                file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
+                file:text-sm file:bg-primary file:text-white
+                hover:file:bg-primary/80 file:cursor-pointer file:transition-colors" />
+            <p v-if="!venue.imageUrl" class="text-yellow-400 text-xs">
+              Esta sede aún no tiene foto. Sube una para completar tu perfil.
+            </p>
+            <p v-if="msgFoto" :class="msgFotoType === 'error' ? 'text-red-400' : 'text-green-400'" class="text-xs">{{ msgFoto }}</p>
+            <button type="button" @click="guardarFoto" :disabled="savingFoto || !fotoPerfil" class="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ savingFoto ? 'Guardando...' : (venue.imageUrl ? 'Cambiar foto' : 'Subir foto') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Sede rechazada: motivo -->
       <div v-if="venue.status === 'RECHAZADA'" class="card border-red-500/30 bg-red-500/5">
         <h3 class="text-red-400 font-medium mb-1">Sede Rechazada</h3>
@@ -386,6 +430,40 @@ const camposVerificados = computed(() => {
     { label: 'Email', valor: venue.value.email || '—' },
   ].filter(c => c.valor)
 })
+
+// Foto de perfil de la sede
+const fotoPerfil = ref(null)
+const fotoPerfilPreview = ref('')
+const savingFoto = ref(false)
+const msgFoto = ref('')
+const msgFotoType = ref('')
+
+function onFotoPerfil(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  fotoPerfil.value = file
+  fotoPerfilPreview.value = URL.createObjectURL(file)
+  msgFoto.value = ''
+}
+
+async function guardarFoto() {
+  if (!fotoPerfil.value || !venue.value) return
+  savingFoto.value = true
+  msgFoto.value = ''
+  try {
+    const { url } = await uploadService.uploadFile(fotoPerfil.value, 'venue', venue.value.id)
+    await venueService.updateVenueExtras(venue.value.id, { imageUrl: url })
+    venue.value = { ...venue.value, imageUrl: url }
+    fotoPerfil.value = null
+    fotoPerfilPreview.value = ''
+    msgFoto.value = 'Foto actualizada correctamente.'
+    msgFotoType.value = 'success'
+  } catch (e) {
+    msgFoto.value = e?.response?.data?.message || e?.message || 'Error al subir la foto'
+    msgFotoType.value = 'error'
+  }
+  savingFoto.value = false
+}
 
 // Formulario datos estructurales
 const formDatos = reactive({ name: '', city: '', address: '', description: '', phone: '', email: '' })

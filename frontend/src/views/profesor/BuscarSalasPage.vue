@@ -140,7 +140,11 @@
                 <div v-else class="overflow-x-auto">
                   <!-- Navegación de semana: siempre visible para poder revisar otras semanas -->
                   <div class="flex items-center justify-between mb-3">
-                    <button @click.stop="prevRoomWeek(room.id)" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-dark-border">&larr; Anterior</button>
+                    <button
+                      @click.stop="prevRoomWeek(room.id)"
+                      :disabled="!puedeRetrocederSemana(room.id)"
+                      class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-dark-border disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                    >&larr; Anterior</button>
                     <span class="text-xs text-gray-400 font-medium">{{ getRoomWeekLabel(room.id) }}</span>
                     <button @click.stop="nextRoomWeek(room.id)" class="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-dark-border">Siguiente &rarr;</button>
                   </div>
@@ -428,8 +432,12 @@ async function loadRoomCalendar(roomId) {
     sunday.setDate(monday.getDate() + 6)
     sunday.setHours(23, 59, 59, 999)
     const slots = await scheduleService.getRoomSchedule(roomId, monday.toISOString(), sunday.toISOString())
-    // Solo los bloques disponibles son reservables en el buscador.
-    const disponibles = (Array.isArray(slots) ? slots : []).filter(s => s.status === 'AVAILABLE')
+    // Solo los bloques disponibles y futuros son reservables: un bloque cuyo inicio
+    // ya pasó no debe ofrecerse (el backend también lo rechaza al crear la reserva).
+    const ahora = Date.now()
+    const disponibles = (Array.isArray(slots) ? slots : []).filter(
+      s => s.status === 'AVAILABLE' && new Date(s.startTime).getTime() > ahora
+    )
     // Deduplicar por hora de inicio: defensa ante bloques duplicados en la BD
     // (el generador puede duplicar si aún no existe el constraint UNIQUE).
     const vistos = new Set()
@@ -460,7 +468,13 @@ async function loadRoomCalendar(roomId) {
   roomLoading.value = null
 }
 
+// La semana actual es el límite inferior: no se permite navegar al pasado.
+function puedeRetrocederSemana(roomId) {
+  return getRoomWeekStart(roomId).getTime() > getMonday(new Date()).getTime()
+}
+
 function prevRoomWeek(roomId) {
+  if (!puedeRetrocederSemana(roomId)) return
   const current = getRoomWeekStart(roomId)
   const d = new Date(current)
   d.setDate(d.getDate() - 7)

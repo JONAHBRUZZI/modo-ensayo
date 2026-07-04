@@ -17,7 +17,12 @@ function mapClassBody(data) {
     // El input datetime-local entrega 'YYYY-MM-DDTHH:mm' (sin segundos ni zona);
     // se normaliza a ISO completo porque la Edge Function valida con z.datetime().
     startTime: data.startTime ? new Date(data.startTime).toISOString() : undefined,
-    roomId: data.roomId ?? undefined
+    roomId: data.roomId ?? undefined,
+    // Clase creada por la sede: tipo ASIGNADA + profe dependiente + honorario.
+    // Para clases PROPIA estos quedan undefined y la Edge Function usa sus defaults.
+    tipoClase: data.tipoClase ?? undefined,
+    teacherId: data.teacherId ?? undefined,
+    honorario: (data.honorario === '' || data.honorario == null) ? undefined : data.honorario
   }
 }
 

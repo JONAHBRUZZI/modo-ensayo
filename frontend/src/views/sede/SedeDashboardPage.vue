@@ -6,26 +6,83 @@
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
     <h1 class="text-3xl font-bold text-white mb-2">Panel de Sede</h1>
-    <p class="text-gray-400 mb-8">Gestióna tu sede de ensayo</p>
+    <p class="text-gray-400 mb-8">Gestiona tu sede de ensayo</p>
 
-    <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <!-- Stats operativos -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Salas</h3>
         <p class="text-3xl font-bold text-white">{{ stats.salas || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Clases Hoy</h3>
-        <p class="text-3xl font-bold text-primary">{{ stats.clasesHoy || 0 }}</p>
       </div>
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Por Confirmar</h3>
         <p class="text-3xl font-bold text-yellow-400">{{ stats.porConfirmar || 0 }}</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingresos</h3>
-        <p class="text-3xl font-bold text-green-400">${{ stats.ingresos?.toLocaleString() || 0 }}</p>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Total</h3>
+        <p class="text-3xl font-bold text-green-400">${{ totales.total.toLocaleString('es-CL') }}</p>
       </div>
+    </div>
+
+    <!-- Ingresos por fuente -->
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <h2 class="text-lg font-semibold text-white">Ingresos por fuente</h2>
+      <div class="inline-flex rounded-lg border border-white/10 overflow-hidden text-sm">
+        <button
+          @click="setGranularidad('month')"
+          :class="granularidad === 'month' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'"
+          class="px-4 py-1.5 transition-colors"
+        >Mensual</button>
+        <button
+          @click="setGranularidad('year')"
+          :class="granularidad === 'year' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'"
+          class="px-4 py-1.5 transition-colors"
+        >Anual</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Arriendo</h3>
+        <p class="text-2xl font-bold text-blue-400">${{ totales.arriendo.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Reservas de sala pagadas</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Clases</h3>
+        <p class="text-2xl font-bold text-purple-400">${{ totales.clases.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Margen de clases de sede (alumnos − honorario)</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Total</h3>
+        <p class="text-2xl font-bold text-green-400">${{ totales.total.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Arriendo + clases</p>
+      </div>
+    </div>
+
+    <!-- Detalle por período -->
+    <div v-if="metricasLoading" class="text-gray-500 text-sm py-6 text-center">Cargando ingresos...</div>
+    <div v-else-if="metricas.length" class="card overflow-x-auto mb-8">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-gray-500 text-xs uppercase">
+            <th class="text-left py-2 px-2">{{ granularidad === 'year' ? 'Año' : 'Mes' }}</th>
+            <th class="text-right py-2 px-2">Arriendo</th>
+            <th class="text-right py-2 px-2">Clases</th>
+            <th class="text-right py-2 px-2">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="m in metricas" :key="m.periodo" class="border-t border-white/5">
+            <td class="py-2 px-2 text-gray-300">{{ m.periodo }}</td>
+            <td class="py-2 px-2 text-right text-blue-400">${{ Number(m.ingresoArriendo).toLocaleString('es-CL') }}</td>
+            <td class="py-2 px-2 text-right text-purple-400">${{ Number(m.ingresoClases).toLocaleString('es-CL') }}</td>
+            <td class="py-2 px-2 text-right text-white font-medium">${{ Number(m.ingresoTotal).toLocaleString('es-CL') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-else class="card text-center py-8 mb-8">
+      <p class="text-gray-500 text-sm">Aún no hay ingresos registrados.</p>
     </div>
 
     <!-- Alerta urgente: clases pendientes de confirmación -->
@@ -62,25 +119,32 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import venueService from '@/services/venueService'
 
-const stats = ref({ salas: 0, clasesHoy: 0, porConfirmar: 0, ingresos: 0 })
+const stats = ref({ salas: 0, porConfirmar: 0 })
+const metricas = ref([])
+const metricasLoading = ref(true)
+const granularidad = ref('month')
+
+// Totales sumando todos los períodos devueltos por el RPC.
+const totales = computed(() => {
+  return metricas.value.reduce((acc, m) => {
+    acc.arriendo += Number(m.ingresoArriendo || 0)
+    acc.clases += Number(m.ingresoClases || 0)
+    acc.total += Number(m.ingresoTotal || 0)
+    return acc
+  }, { arriendo: 0, clases: 0, total: 0 })
+})
 
 onMounted(async () => {
+  await cargarMetricas()
   try {
-    const [metrics, pendingProm] = await Promise.allSettled([
-      venueService.getVenueMetrics(),
-      venueService.getPendingClasses()
-    ])
-    if (metrics.status === 'fulfilled' && metrics.value) {
-      stats.value.ingresos = metrics.value.ingresos || 0
-      stats.value.clasesHoy = metrics.value.totalClases || 0
-    }
-    if (pendingProm.status === 'fulfilled' && pendingProm.value) {
-      stats.value.porConfirmar = pendingProm.value.length || 0
-    }
+    const pendientes = await venueService.getPendingClasses()
+    stats.value.porConfirmar = Array.isArray(pendientes) ? pendientes.length : 0
+  } catch { stats.value.porConfirmar = 0 }
 
+  try {
     const myVenues = await venueService.getMyVenues()
     const vArr = Array.isArray(myVenues) ? myVenues : myVenues?.content || []
     let totalSalas = 0
@@ -94,7 +158,24 @@ onMounted(async () => {
     }
     stats.value.salas = totalSalas
   } catch (err) {
-    console.error('Error al cargar estadísticas de la sede', err)
+    console.error('Error al cargar salas de la sede', err)
   }
 })
+
+async function cargarMetricas() {
+  metricasLoading.value = true
+  try {
+    metricas.value = await venueService.getVenueMetrics(granularidad.value)
+  } catch (err) {
+    console.error('Error al cargar métricas de la sede', err)
+    metricas.value = []
+  }
+  metricasLoading.value = false
+}
+
+function setGranularidad(g) {
+  if (granularidad.value === g) return
+  granularidad.value = g
+  cargarMetricas()
+}
 </script>

@@ -4,7 +4,6 @@ import { z } from "npm:zod@3";
 
 const BodySchema = z.object({
   title: z.string().min(1).max(200),
-  // nullable/opcional: el flujo "reservar sala" crea drafts sin disciplina
   discipline: z.string().min(1).nullish(),
   disciplineCategory: z.string().min(1).nullish(),
   level: z.enum(["BASICO","INTERMEDIO","AVANZADO"]).nullish(),
@@ -17,6 +16,9 @@ const BodySchema = z.object({
   startTime: z.string().datetime().optional(),
   roomId: z.string().uuid().optional(),
   draft: z.boolean().default(false),
+  tipoClase: z.enum(["PROPIA", "ASIGNADA"]).default("PROPIA"),
+  teacherId: z.string().uuid().nullish(),
+  honorario: z.number().positive().nullish(),
 });
 
 export default {
@@ -27,7 +29,43 @@ export default {
       const roles: string[] = (userClaims!.appMetadata?.roles as string[]) ?? [];
       const body = BodySchema.parse(await req.json());
 
-      if (roles.includes("TEACHER")) {
+      // ASIGNADA = clase creada por la sede (profe dependiente + honorario fijo).
+      // El creador es el gestor de sede, no el profesor: cambia validación y ruteo.
+      const tipoClase = body.tipoClase ?? "PROPIA";
+      const esAsignada = tipoClase === "ASIGNADA";
+      let teacherId = userId;
+      let honorario: number | null = null;
+
+      if (esAsignada) {
+        if (!roles.includes("VENUE_ADMIN") && !roles.includes("ADMIN")) {
+          return Response.json({ error: "Solo el admin de sede puede crear clases ASIGNADA" }, { status: 403 });
+        }
+        if (!body.teacherId) {
+          return Response.json({ error: "Debe seleccionar un profesor dependiente" }, { status: 400 });
+        }
+        if (!body.roomId) {
+          return Response.json({ error: "Debe seleccionar una sala" }, { status: 400 });
+        }
+        // La sala debe pertenecer a una sede del gestor.
+        const { data: room } = await admin.from("rooms")
+          .select("venue_id, venues!inner(admin_id)").eq("id", body.roomId).single();
+        const venueId = (room as any)?.venue_id;
+        if (!room || (room as any).venues?.admin_id !== userId) {
+          return Response.json({ error: "La sala no pertenece a tu sede" }, { status: 403 });
+        }
+        // El profe debe ser dependiente ACTIVO de ESA misma sede (no de otra).
+        const { data: vt } = await admin.from("venue_teachers")
+          .select("id").eq("teacher_id", body.teacherId).eq("venue_id", venueId)
+          .eq("status", "ACTIVE").maybeSingle();
+        if (!vt) {
+          return Response.json({ error: "El profesor no está vinculado a esta sede" }, { status: 400 });
+        }
+        teacherId = body.teacherId;
+        honorario = body.honorario ?? null;
+      }
+
+      // Identidad: solo se exige al profesor que publica su propia clase (PROPIA).
+      if (!esAsignada && roles.includes("TEACHER")) {
         const { data: profile } = await admin.from("profiles")
           .select("identidad_validada").eq("id", userId).single();
         if (!profile?.identidad_validada) {
@@ -35,9 +73,10 @@ export default {
         }
       }
 
-      // Guard Marketplace: para PUBLICAR (no borrador) el profesor debe tener
-      // MercadoPago conectado — al confirmarse la clase se le liquida el pago.
-      if (!body.draft) {
+      // Guard Marketplace: para PUBLICAR una clase PROPIA (no borrador) el profesor
+      // debe tener MercadoPago conectado (se le liquida el pago). Las ASIGNADA no lo
+      // requieren: el honorario del profe dependiente se registra como payout (tracked).
+      if (!body.draft && !esAsignada) {
         const { data: seller } = await admin.from("mp_seller_accounts")
           .select("status").eq("user_id", userId).maybeSingle();
         if (!seller || seller.status !== "CONNECTED") {
@@ -79,15 +118,16 @@ export default {
         start_time: body.startTime ?? null,
         end_time: endTime,
         room_id: body.roomId ?? null,
-        teacher_id: userId,
+        teacher_id: teacherId,
         status,
-        tipo_clase: "PROPIA",
+        tipo_clase: tipoClase,
+        honorario,
       }).select("*").single();
 
       if (error) throw error;
 
       let atributosActualizados = false;
-      if (!body.draft && !roles.includes("TEACHER")) {
+      if (!body.draft && !esAsignada && !roles.includes("TEACHER")) {
         await admin.auth.admin.updateUserById(userId, {
           app_metadata: { roles: [...roles, "TEACHER"] },
         });

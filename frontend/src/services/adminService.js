@@ -4,7 +4,7 @@ export default {
   // Estadísticas del panel admin. Se calculan con consultas directas: el admin
   // tiene acceso a estas tablas vía las políticas RLS (has_role('ADMIN')), así que
   // no dependemos de la Edge Function admin-stats (que requiere despliegue manual).
-  async getStats() {
+  async getStats(granularidad = 'month') {
     // Cuenta filas de una tabla aplicando un filtro opcional. Devuelve 0 si falla.
     const contar = async (tabla, filtro) => {
       let q = supabase.from(tabla).select('*', { count: 'exact', head: true })
@@ -32,17 +32,33 @@ export default {
       for (const v of data || []) sedesPorEstado[v.status] = (sedesPorEstado[v.status] || 0) + 1
     } catch { /* sin datos */ }
 
-    // Ingresos mensuales liberados (gráfico de línea; degrada si no hay datos).
-    const ingresosMensuales = []
+    // Ingresos por fuente y período (clases = payments RELEASED; arriendos =
+    // payment_sessions ROOM_RESERVATION aprobadas). granularidad: 'month' | 'year'.
+    const ingresosPorPeriodo = []
+    const periodoDe = (fecha) => (fecha || '').substring(0, granularidad === 'year' ? 4 : 7)
+    const porPeriodo = {}
+    const acumular = (per, campo, monto) => {
+      if (!per) return
+      porPeriodo[per] = porPeriodo[per] || { clases: 0, arriendos: 0 }
+      porPeriodo[per][campo] += Number(monto || 0)
+    }
     try {
       const { data } = await supabase.from('payments').select('amount, created_at').eq('status', 'RELEASED')
-      const porMes = {}
-      for (const p of data || []) {
-        const mes = (p.created_at || '').substring(0, 7) // YYYY-MM
-        if (mes) porMes[mes] = (porMes[mes] || 0) + Number(p.amount || 0)
-      }
-      for (const mes of Object.keys(porMes).sort()) ingresosMensuales.push({ mes, ingresos: porMes[mes] })
+      for (const p of data || []) acumular(periodoDe(p.created_at), 'clases', p.amount)
     } catch { /* sin datos */ }
+    try {
+      const { data } = await supabase.from('payment_sessions')
+        .select('cart_snapshot, processed_at, created_at').eq('status', 'APPROVED')
+      for (const ps of data || []) {
+        const snap = ps.cart_snapshot || {}
+        if (snap.type !== 'ROOM_RESERVATION') continue
+        acumular(periodoDe(ps.processed_at || ps.created_at), 'arriendos', snap.amount)
+      }
+    } catch { /* sin datos / sin permiso */ }
+    for (const per of Object.keys(porPeriodo).sort()) {
+      const { clases, arriendos } = porPeriodo[per]
+      ingresosPorPeriodo.push({ periodo: per, clases, arriendos, total: clases + arriendos })
+    }
 
     // Usuarios por rol (gráfico circular). Los roles viven en auth.users, así que
     // se obtienen vía la Edge Function admin-users (que usa la Admin API).
@@ -65,9 +81,26 @@ export default {
       totalClases,
       clasesRealizadas,
       sedesPorEstado,
-      ingresosMensuales,
+      ingresosPorPeriodo,
       usuariosPorRol
     }
+  },
+
+  // Comisiones configurables (app_settings). El admin las lee y edita vía las
+  // policies has_role('ADMIN'). value es jsonb: guardamos/leemos un número.
+  async getSettings() {
+    const keys = ['room_reservation_commission_pct', 'marketplace_commission_pct']
+    const { data, error } = await supabase.from('app_settings').select('key, value').in('key', keys)
+    if (error) throw error
+    const out = {}
+    for (const row of data || []) out[row.key] = Number(row.value)
+    return out
+  },
+
+  async updateSetting(key, value) {
+    const { error } = await supabase.from('app_settings').update({ value }).eq('key', key)
+    if (error) throw error
+    return { status: 'ok' }
   },
 
   async getIdentityVerifications() {

@@ -15,7 +15,11 @@
       </div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Fecha y Hora</label><input type="datetime-local" v-model="form.startTime" required class="input-field" /></div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Sala</label><select v-model="form.roomId" required class="input-field"><option value="">Seleccionar sala</option><option v-for="r in rooms" :key="r.id" :value="r.id">{{ r.name }}</option></select></div>
-      <div><label class="block text-sm font-medium text-gray-300 mb-1">Maestro Dependiente</label><select v-model="form.teacherId" class="input-field"><option :value="null">Sin asignar (clase sin profesor)</option><option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name || t.email }}</option></select></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-300 mb-1">Maestro Dependiente</label><select v-model="form.teacherId" class="input-field"><option :value="null">Sin asignar (clase sin profesor)</option><option v-for="t in teachers" :key="t.id" :value="t.teacherId">{{ t.fullName || t.email }}</option></select></div>
+        <div><label class="block text-sm font-medium text-gray-300 mb-1">Honorario del profe ($)</label><input type="number" v-model.number="form.honorario" min="0" class="input-field" placeholder="Ej: 70000" /></div>
+      </div>
+      <p class="text-xs text-gray-500 -mt-2">La sede cobra a los alumnos y le paga al profe el honorario fijo; la diferencia es el ingreso de la sede.</p>
       <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
       <button type="submit" :disabled="creating" class="btn-primary w-full">{{ creating ? 'Creando...' : 'Crear Clase' }}</button>
     </form>
@@ -29,7 +33,7 @@ import classService from '@/services/classService'
 import venueService from '@/services/venueService'
 
 const router = useRouter()
-const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, startTime: '', roomId: '', teacherId: null, tipoClase: 'ASIGNADA' })
+const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, startTime: '', roomId: '', teacherId: null, honorario: 0, tipoClase: 'ASIGNADA' })
 const rooms = ref([])
 const teachers = ref([])
 const error = ref('')

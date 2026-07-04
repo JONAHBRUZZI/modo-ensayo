@@ -31,7 +31,7 @@
       </div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Descripcion</label><textarea v-model="form.description" rows="3" class="input-field"></textarea></div>
       <div class="grid grid-cols-3 gap-4">
-        <div><label class="block text-sm font-medium text-gray-300 mb-1">Capacidad</label><input type="number" v-model.number="form.capacity" min="1" required class="input-field" /></div>
+        <div><label class="block text-sm font-medium text-gray-300 mb-1">Capacidad</label><input type="number" :value="form.capacity || ''" readonly disabled class="input-field opacity-70 cursor-not-allowed" placeholder="Según la sala" /><p class="text-[10px] text-gray-500 mt-0.5">La define la sala</p></div>
         <div><label class="block text-sm font-medium text-gray-300 mb-1">Duracion (min)</label><input type="number" v-model.number="form.duration" min="30" required class="input-field" /></div>
         <div><label class="block text-sm font-medium text-gray-300 mb-1">Precio</label><input type="number" v-model.number="form.price" min="0" required class="input-field" /></div>
       </div>
@@ -70,6 +70,12 @@ const nuevaDisciplina = ref('')
 // El select controla form.discipline salvo cuando está en "Otro" (aún sin definir).
 watch(disciplinaSel, (val) => {
   if (val !== '__OTRO__') form.value.discipline = val
+})
+
+// La capacidad la define la sala: al elegirla, se toma su tope (read-only).
+watch(() => form.value.roomId, (id) => {
+  const sala = rooms.value.find(r => r.id === id)
+  form.value.capacity = sala?.capacity ?? null
 })
 
 // Normaliza a "Title Case" con espacios colapsados (ej: "  KARATE " -> "Karate").

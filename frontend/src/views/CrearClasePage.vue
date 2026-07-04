@@ -111,8 +111,9 @@
       <!-- Capacidad, Duracion, Precio -->
       <div class="grid grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Capacidad *</label>
-          <input type="number" v-model.number="form.capacity" min="1" required class="input-field" />
+          <label class="block text-sm font-medium text-gray-300 mb-1">Capacidad</label>
+          <input type="number" :value="form.capacity || ''" readonly disabled class="input-field opacity-70 cursor-not-allowed" placeholder="Según la sala" />
+          <p class="text-[10px] text-gray-500 mt-0.5">La define la sala</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Duracion (min) *</label>
@@ -242,6 +243,13 @@ watch(() => form.value.venueId, async (id) => {
   if (isEditing.value) return  // no cambiar sala si es borrador
   if (!id) { rooms.value = []; return }
   try { rooms.value = await classService.getVenueRooms(id) } catch { rooms.value = [] }
+})
+
+// La capacidad la define la sala seleccionada (su tope), no se escribe a mano.
+watch(() => form.value.roomId, (id) => {
+  if (isEditing.value) return
+  const sala = rooms.value.find(r => r.id === id)
+  if (sala?.capacity) form.value.capacity = sala.capacity
 })
 
 async function handleCreate() {

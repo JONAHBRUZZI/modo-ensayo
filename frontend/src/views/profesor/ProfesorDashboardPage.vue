@@ -125,13 +125,20 @@
         </svg>
       </div>
       <h3 class="text-white font-semibold mb-2">Crea tu primera clase</h3>
-      <p class="text-gray-400 text-sm mb-4">Reserva una sala y publica tu clase para comenzar a recibir alumnos.</p>
-      <router-link to="/profesor/buscar-salas" class="btn-primary">Buscar Sala</router-link>
+      <p class="text-gray-400 text-sm mb-4">Reserva una sala y publícala, o prepara un borrador para asignarlo después.</p>
+      <div class="flex items-center justify-center gap-3 flex-wrap">
+        <router-link to="/profesor/buscar-salas" class="btn-primary">Buscar Sala</router-link>
+        <router-link to="/profesor/crear-borrador" class="btn-secondary">Crear Borrador</router-link>
+      </div>
     </div>
 
     <!-- Accesos rapidos -->
     <h2 class="text-lg font-semibold text-white mb-4">Accesos rapidos</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <router-link to="/profesor/crear-borrador" class="card hover:border-primary/50 transition-colors group border-primary/30">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Crear Borrador</h3>
+        <p class="text-gray-400 text-sm mt-2">Prepara una clase como plantilla y asígnala luego a una sala.</p>
+      </router-link>
       <router-link to="/profesor/perfil-profesional" class="card hover:border-primary/50 transition-colors group border-primary/30">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Perfil Profesional</h3>
         <p class="text-gray-400 text-sm mt-2">Especialidad, experiencia, formacion y redes sociales.</p>

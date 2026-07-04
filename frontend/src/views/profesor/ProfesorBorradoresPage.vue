@@ -229,7 +229,7 @@ async function asignarBorradorAReserva(r) {
   if (!r.selectedDraft) return
   r.asignando = true
   try {
-    await api.post(`/profesor/clases/${r.selectedDraft}/asignar-reserva`, {
+    await classService.assignReserva(r.selectedDraft, {
       roomId: r.roomId,
       startTime: r.startTime,
       duration: 60

@@ -324,8 +324,36 @@ export default {
   },
   deleteVenueDocument() { return NOT_MIGRATED('deleteVenueDocument', 'falta policy DELETE') },
   deletePhoto() { return NOT_MIGRATED('deletePhoto', 'falta policy DELETE') },
-  getVenueMetrics() { return NOT_MIGRATED('getVenueMetrics', 'agregación server-side') },
-  getVenueProfessors() { return NOT_MIGRATED('getVenueProfessors', 'agregación server-side') }
+
+  // Ingresos de la sede por fuente (arriendo/clases) y total, agrupados por
+  // período. granularidad: 'month' (default) | 'year'. RPC SECURITY DEFINER.
+  async getVenueMetrics(granularidad = 'month') {
+    const { data, error } = await supabase.rpc('get_venue_metrics', { p_granularidad: granularidad })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  },
+
+  // Profesores dependientes de las sedes del usuario (RPC SECURITY DEFINER).
+  // Cada fila: { id (venue_teachers.id), venueId, teacherId, status, email, fullName }.
+  async getVenueProfessors() {
+    const { data, error } = await supabase.rpc('get_venue_professors')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  },
+
+  // Agrega un profe dependiente por email (el RPC valida la sede y resuelve el
+  // email en auth.users, inaccesible desde el cliente).
+  async addVenueTeacher(venueId, email) {
+    const { error } = await supabase.rpc('add_venue_teacher', { p_venue_id: venueId, p_email: email })
+    if (error) throw { response: { status: 400, data: { message: error.message } } }
+    return { status: 'ok' }
+  },
+
+  // Quita un profe dependiente (la policy DELETE permite al admin de la sede).
+  async removeVenueTeacher(id) {
+    const { error } = await supabase.from('venue_teachers').delete().eq('id', id)
+    if (error) throw error
+  }
 }
 
 // Convierte el payload de sala (camelCase) a columnas snake_case conocidas.

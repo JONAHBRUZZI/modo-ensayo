@@ -86,7 +86,7 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Disciplina *</label>
-          <input v-model="form.discipline" required class="input-field" placeholder="Ej: Guitarra, Ballet, Karate..." list="discipline-list" autocomplete="off" />
+          <input v-model="form.discipline" required class="input-field" placeholder="Ej: Guitarra, Ballet, Karate..." list="discipline-list" autocomplete="off" @blur="form.discipline = normalizarDisciplina(form.discipline)" />
           <datalist id="discipline-list">
             <optgroup v-for="g in disciplineGroups" :key="g.category || 'otras'" :label="g.label">
               <option v-for="item in g.items" :key="item" :value="item" />
@@ -174,6 +174,7 @@ import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
 import { useAuth } from '@/stores/auth'
 import BorradorSelector from '@/components/BorradorSelector.vue'
+import { normalizarDisciplina } from '@/utils/disciplina'
 
 const router = useRouter()
 const route = useRoute()
@@ -254,6 +255,7 @@ watch(() => form.value.roomId, (id) => {
 
 async function handleCreate() {
   error.value = ''
+  form.value.discipline = normalizarDisciplina(form.value.discipline)
   creating.value = true
   try {
     if (isEditing.value) {

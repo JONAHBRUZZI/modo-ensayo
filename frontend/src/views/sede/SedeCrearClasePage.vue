@@ -4,8 +4,30 @@
     <form @submit.prevent="handleCreate" class="card space-y-4">
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Titulo</label><input v-model="form.title" required class="input-field" /></div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="block text-sm font-medium text-gray-300 mb-1">Disciplina</label><select v-model="form.discipline" required class="input-field"><option value="">Seleccionar</option><option>Guitarra</option><option>Bateria</option><option>Bajo</option><option>Canto</option><option>Piano</option><option>Violin</option><option>Otro</option></select></div>
-        <div><label class="block text-sm font-medium text-gray-300 mb-1">Nivel</label><select v-model="form.level" required class="input-field"><option value="">Seleccionar</option><option value="BASICO">Básico</option><option value="INTERMEDIO">Intermedio</option><option value="AVANZADO">Avanzado</option></select></div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Disciplina</label>
+          <select v-model="disciplinaSel" required class="input-field">
+            <option value="">Seleccionar</option>
+            <option v-for="d in disciplinas" :key="d" :value="d">{{ d }}</option>
+            <option value="__OTRO__">Otro...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nivel</label>
+          <select v-model="form.level" required class="input-field">
+            <option value="">Seleccionar</option>
+            <option value="BASICO">Básico</option>
+            <option value="INTERMEDIO">Intermedio</option>
+            <option value="AVANZADO">Avanzado</option>
+          </select>
+        </div>
+      </div>
+      <div v-if="disciplinaSel === '__OTRO__'" class="flex gap-3 items-end">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-300 mb-1">¿Cuál disciplina?</label>
+          <input v-model="nuevaDisciplina" class="input-field" placeholder="Ej: Karate, Ballet" @keyup.enter.prevent="agregarDisciplina" />
+        </div>
+        <button type="button" @click="agregarDisciplina" class="btn-primary text-sm whitespace-nowrap">Agregar</button>
       </div>
       <div><label class="block text-sm font-medium text-gray-300 mb-1">Descripcion</label><textarea v-model="form.description" rows="3" class="input-field"></textarea></div>
       <div class="grid grid-cols-3 gap-4">
@@ -27,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
@@ -38,6 +60,45 @@ const rooms = ref([])
 const teachers = ref([])
 const error = ref('')
 const creating = ref(false)
+
+// Disciplinas base + las que agregue la sede vía "Otro". disciplinaSel es el valor
+// del select ('__OTRO__' abre el campo para escribir una nueva).
+const disciplinas = ref(['Danza', 'Guitarra', 'Bateria', 'Bajo', 'Canto', 'Piano', 'Violin'])
+const disciplinaSel = ref('')
+const nuevaDisciplina = ref('')
+
+// El select controla form.discipline salvo cuando está en "Otro" (aún sin definir).
+watch(disciplinaSel, (val) => {
+  if (val !== '__OTRO__') form.value.discipline = val
+})
+
+// Normaliza a "Title Case" con espacios colapsados (ej: "  KARATE " -> "Karate").
+function normalizarDisciplina(txt) {
+  return (txt || '').trim().replace(/\s+/g, ' ').toLowerCase()
+    .split(' ').filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+// Clave de comparación: sin acentos ni mayúsculas, para deduplicar
+// ("Karate" == "karate" == "KÁRATE"). No fusiona grafías distintas (karate ≠ carate).
+function claveComparacion(txt) {
+  return normalizarDisciplina(txt).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+function agregarDisciplina() {
+  const canon = normalizarDisciplina(nuevaDisciplina.value)
+  if (!canon) { error.value = 'Escribe la disciplina.'; return }
+  error.value = ''
+  const clave = claveComparacion(canon)
+  const existente = disciplinas.value.find(d => claveComparacion(d) === clave)
+  if (existente) {
+    disciplinaSel.value = existente          // ya existía: la reutiliza
+  } else {
+    disciplinas.value.push(canon)            // nueva: al final de las opciones
+    disciplinaSel.value = canon
+  }
+  nuevaDisciplina.value = ''
+}
 
 onMounted(async () => {
   try {
@@ -51,6 +112,11 @@ onMounted(async () => {
 
 async function handleCreate() {
   error.value = ''
+  // "Otro" elegido pero sin agregar la disciplina: no dejar enviar el centinela.
+  if (disciplinaSel.value === '__OTRO__' || !form.value.discipline) {
+    error.value = 'Selecciona o agrega una disciplina.'
+    return
+  }
   creating.value = true
   try {
     await classService.createClass(form.value)

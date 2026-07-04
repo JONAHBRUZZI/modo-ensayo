@@ -53,6 +53,7 @@ import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '@/services/classService'
 import venueService from '@/services/venueService'
+import { normalizarDisciplina, claveComparacion } from '@/utils/disciplina'
 
 const router = useRouter()
 const form = ref({ title: '', discipline: '', level: '', description: '', capacity: 10, duration: 60, price: 0, startTime: '', roomId: '', teacherId: null, honorario: 0, tipoClase: 'ASIGNADA' })
@@ -77,19 +78,6 @@ watch(() => form.value.roomId, (id) => {
   const sala = rooms.value.find(r => r.id === id)
   form.value.capacity = sala?.capacity ?? null
 })
-
-// Normaliza a "Title Case" con espacios colapsados (ej: "  KARATE " -> "Karate").
-function normalizarDisciplina(txt) {
-  return (txt || '').trim().replace(/\s+/g, ' ').toLowerCase()
-    .split(' ').filter(Boolean)
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-}
-
-// Clave de comparación: sin acentos ni mayúsculas, para deduplicar
-// ("Karate" == "karate" == "KÁRATE"). No fusiona grafías distintas (karate ≠ carate).
-function claveComparacion(txt) {
-  return normalizarDisciplina(txt).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-}
 
 function agregarDisciplina() {
   const canon = normalizarDisciplina(nuevaDisciplina.value)

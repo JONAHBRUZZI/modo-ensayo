@@ -37,12 +37,14 @@ export default {
         return Response.json({ error: "Conflicto de horario en la sala" }, { status: 409 });
       }
 
-      // Publicar el draft existente en vez de crear una fila nueva
+      // Publicar el draft existente en vez de crear una fila nueva. La capacidad
+      // de la clase la define la sala (su tope), no el borrador.
       const { data: cls, error: clsErr } = await admin.from("classes").update({
         duration: body.duration,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
         room_id: body.roomId,
+        capacity: (room as any).capacity,
         status: "PUBLISHED",
       }).eq("id", body.classId).eq("teacher_id", userId).eq("status", "DRAFT").select("*").single();
       if (clsErr || !cls) throw clsErr ?? new Error("Error publicando el borrador");

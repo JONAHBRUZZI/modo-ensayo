@@ -24,17 +24,22 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
   const lastEnd = blocks[blocks.length - 1].end_time;
   const durationMin = blockIds.length * 60;
 
+  // La capacidad de la clase la define la sala (su tope).
+  const { data: roomRow } = await admin.from("rooms").select("capacity").eq("id", cart.roomId).single();
+  const roomCapacity = (roomRow?.capacity as number) ?? 1;
+
   let classId: string | null = cart.borradorId ?? null;
   if (classId) {
     // Asigna sala/horario al borrador existente y lo publica.
     await admin.from("classes").update({
-      room_id: cart.roomId, start_time: firstStart, end_time: lastEnd, status: "PUBLISHED",
+      room_id: cart.roomId, start_time: firstStart, end_time: lastEnd,
+      capacity: roomCapacity, status: "PUBLISHED",
     }).eq("id", classId).eq("teacher_id", ownerId);
   } else {
     // Crea un borrador de reserva (el profesor lo completa luego).
     const { data: nueva } = await admin.from("classes").insert({
       title: `Reserva - ${cart.roomName}`,
-      level: "BASICO", capacity: 1, duration: durationMin, price: cart.amount,
+      level: "BASICO", capacity: roomCapacity, duration: durationMin, price: cart.amount,
       start_time: firstStart, end_time: lastEnd,
       room_id: cart.roomId, teacher_id: ownerId,
       status: "DRAFT", tipo_clase: "PROPIA",

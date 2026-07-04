@@ -8,7 +8,7 @@ const BodySchema = z.object({
   disciplineCategory: z.string().min(1).nullish(),
   level: z.enum(["BASICO","INTERMEDIO","AVANZADO"]).nullish(),
   description: z.string().max(2000).optional(),
-  capacity: z.number().int().positive().max(500),
+  capacity: z.number().int().positive().max(500).optional(),
   duration: z.number().int().positive(),
   price: z.number().positive(),
   minAge: z.number().int().min(0).optional(),
@@ -99,6 +99,16 @@ export default {
         }
       }
 
+      // La capacidad de la clase la define la sala (su tope): si hay sala, se toma
+      // rooms.capacity e ignora lo que venga del formulario. Sin sala (borrador),
+      // se usa un placeholder que se corrige al asignar la sala.
+      let capacity = body.capacity ?? 1;
+      if (body.roomId) {
+        const { data: roomCap } = await admin.from("rooms")
+          .select("capacity").eq("id", body.roomId).single();
+        if (roomCap?.capacity) capacity = roomCap.capacity;
+      }
+
       const status = body.draft ? "DRAFT" : "PUBLISHED";
       const endTime = body.startTime
         ? new Date(new Date(body.startTime).getTime() + body.duration * 60000).toISOString()
@@ -110,9 +120,9 @@ export default {
         discipline_category: body.disciplineCategory ?? null,
         level: body.level ?? null,
         description: body.description ?? null,
-        capacity: body.capacity,
         duration: body.duration,
         price: body.price,
+        capacity,
         min_age: body.minAge ?? null,
         max_age: body.maxAge ?? null,
         start_time: body.startTime ?? null,

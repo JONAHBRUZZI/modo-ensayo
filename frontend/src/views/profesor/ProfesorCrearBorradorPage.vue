@@ -61,12 +61,7 @@
       </div>
 
       <!-- Capacidad, Duracion, Precio -->
-      <div class="grid grid-cols-3 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Capacidad *</label>
-          <input v-model.number="form.capacity" type="number" min="1" max="100" required class="input-field"
-            placeholder="Ej: 10" />
-        </div>
+      <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Duracion (min) *</label>
           <input v-model.number="form.duration" type="number" min="30" max="480" step="15" required class="input-field"
@@ -78,6 +73,7 @@
             placeholder="Ej: 15000" />
         </div>
       </div>
+      <p class="text-xs text-gray-500 -mt-1">La capacidad se define automáticamente por la sala cuando reserves una.</p>
 
       <!-- Rango de edad -->
       <div class="grid grid-cols-2 gap-4">
@@ -130,7 +126,6 @@ const form = ref({
   discipline: '',
   level: '',
   description: '',
-  capacity: null,
   duration: 60,
   price: null,
   minAge: 0,
@@ -146,7 +141,6 @@ async function handleSubmit() {
       discipline: form.value.discipline,
       level: form.value.level,
       description: form.value.description,
-      capacity: form.value.capacity,
       duration: form.value.duration,
       price: form.value.price,
       minAge: form.value.minAge,

@@ -353,6 +353,14 @@ export default {
   async removeVenueTeacher(id) {
     const { error } = await supabase.from('venue_teachers').delete().eq('id', id)
     if (error) throw error
+  },
+
+  // Candidatos a profesor (rol TEACHER o con perfil profesional) para sugerir el
+  // correo al agregar un profe dependiente. Devuelve [{ email, fullName }].
+  async getTeacherCandidates() {
+    const { data, error } = await supabase.rpc('list_teacher_candidates')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
   }
 }
 

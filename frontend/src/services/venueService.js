@@ -361,6 +361,14 @@ export default {
     const { data, error } = await supabase.rpc('list_teacher_candidates')
     if (error) throw { response: { status: 500, data: { message: error.message } } }
     return (data || []).map(r => camelize(r))
+  },
+
+  // Cuánto se le debe a cada profesor dependiente (honorarios comprometidos).
+  // Devuelve [{ teacherId, fullName, email, totalHonorario, clases }].
+  async getVenueTeacherPayouts() {
+    const { data, error } = await supabase.rpc('get_venue_teacher_payouts')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
   }
 }
 

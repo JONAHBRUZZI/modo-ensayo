@@ -20,13 +20,14 @@
       </div>
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Total</h3>
-        <p class="text-3xl font-bold text-green-400">${{ totales.total.toLocaleString('es-CL') }}</p>
+        <p class="text-3xl font-bold text-green-400">${{ ingresoTotal.toLocaleString('es-CL') }}</p>
+        <p class="text-[10px] text-gray-500 mt-1">Arriendo + clases (antes de pagar profes)</p>
       </div>
     </div>
 
-    <!-- Ingresos por fuente -->
+    <!-- Ingresos y egresos -->
     <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-      <h2 class="text-lg font-semibold text-white">Ingresos por fuente</h2>
+      <h2 class="text-lg font-semibold text-white">Ingresos y egresos</h2>
       <div class="inline-flex rounded-lg border border-white/10 overflow-hidden text-sm">
         <button
           @click="setGranularidad('month')"
@@ -41,7 +42,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Arriendo</h3>
         <p class="text-2xl font-bold text-blue-400">${{ totales.arriendo.toLocaleString('es-CL') }}</p>
@@ -50,17 +51,50 @@
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Clases</h3>
         <p class="text-2xl font-bold text-purple-400">${{ totales.clases.toLocaleString('es-CL') }}</p>
-        <p class="text-xs text-gray-500 mt-1">Margen de clases de sede (alumnos − honorario)</p>
+        <p class="text-xs text-gray-500 mt-1">Recaudación de alumnos</p>
       </div>
+      <!-- Egreso profesores: clickeable, despliega el detalle por profesor -->
+      <button
+        type="button"
+        @click="mostrarEgreso = !mostrarEgreso"
+        class="card text-left hover:border-primary/50 transition-colors"
+      >
+        <div class="flex items-center justify-between">
+          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Egreso Profesores</h3>
+          <svg :class="['w-4 h-4 text-gray-400 transition-transform', mostrarEgreso && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <p class="text-2xl font-bold text-red-400">${{ totales.egreso.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Honorarios a profes asociados · ver detalle</p>
+      </button>
       <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Total</h3>
-        <p class="text-2xl font-bold text-green-400">${{ totales.total.toLocaleString('es-CL') }}</p>
-        <p class="text-xs text-gray-500 mt-1">Arriendo + clases</p>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Resultado</h3>
+        <p class="text-2xl font-bold" :class="neto >= 0 ? 'text-green-400' : 'text-red-400'">${{ neto.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Ingresos − egresos</p>
+      </div>
+    </div>
+
+    <!-- Detalle de egreso por profesor -->
+    <div v-if="mostrarEgreso" class="card mb-6">
+      <h3 class="text-white font-medium mb-3">Pago a profesores asociados</h3>
+      <div v-if="payoutsLoading" class="text-gray-500 text-sm py-3">Cargando...</div>
+      <div v-else-if="payouts.length === 0" class="text-gray-500 text-sm py-3">Aún no hay honorarios comprometidos.</div>
+      <div v-else class="space-y-2">
+        <div v-for="p in payouts" :key="p.teacherId" class="flex items-center justify-between border-t border-white/5 pt-2 first:border-0 first:pt-0">
+          <div>
+            <p class="text-white text-sm font-medium">{{ p.fullName || p.email || 'Profesor' }}</p>
+            <p class="text-gray-500 text-xs">{{ p.clases }} clase{{ Number(p.clases) > 1 ? 's' : '' }}</p>
+          </div>
+          <p class="text-red-400 font-semibold">${{ Number(p.totalHonorario).toLocaleString('es-CL') }}</p>
+        </div>
+        <div class="flex items-center justify-between border-t border-white/10 pt-3 mt-1">
+          <p class="text-gray-300 text-sm font-medium">Total a pagar</p>
+          <p class="text-red-400 font-bold">${{ totales.egreso.toLocaleString('es-CL') }}</p>
+        </div>
       </div>
     </div>
 
     <!-- Detalle por período -->
-    <div v-if="metricasLoading" class="text-gray-500 text-sm py-6 text-center">Cargando ingresos...</div>
+    <div v-if="metricasLoading" class="text-gray-500 text-sm py-6 text-center">Cargando...</div>
     <div v-else-if="metricas.length" class="card overflow-x-auto mb-8">
       <table class="w-full text-sm">
         <thead>
@@ -68,7 +102,8 @@
             <th class="text-left py-2 px-2">{{ granularidad === 'year' ? 'Año' : 'Mes' }}</th>
             <th class="text-right py-2 px-2">Arriendo</th>
             <th class="text-right py-2 px-2">Clases</th>
-            <th class="text-right py-2 px-2">Total</th>
+            <th class="text-right py-2 px-2">Egreso profes</th>
+            <th class="text-right py-2 px-2">Resultado</th>
           </tr>
         </thead>
         <tbody>
@@ -76,13 +111,14 @@
             <td class="py-2 px-2 text-gray-300">{{ m.periodo }}</td>
             <td class="py-2 px-2 text-right text-blue-400">${{ Number(m.ingresoArriendo).toLocaleString('es-CL') }}</td>
             <td class="py-2 px-2 text-right text-purple-400">${{ Number(m.ingresoClases).toLocaleString('es-CL') }}</td>
-            <td class="py-2 px-2 text-right text-white font-medium">${{ Number(m.ingresoTotal).toLocaleString('es-CL') }}</td>
+            <td class="py-2 px-2 text-right text-red-400">${{ Number(m.egresoProfes).toLocaleString('es-CL') }}</td>
+            <td class="py-2 px-2 text-right font-medium" :class="Number(m.total) >= 0 ? 'text-green-400' : 'text-red-400'">${{ Number(m.total).toLocaleString('es-CL') }}</td>
           </tr>
         </tbody>
       </table>
     </div>
     <div v-else class="card text-center py-8 mb-8">
-      <p class="text-gray-500 text-sm">Aún no hay ingresos registrados.</p>
+      <p class="text-gray-500 text-sm">Aún no hay movimientos registrados.</p>
     </div>
 
     <!-- Alerta urgente: clases pendientes de confirmación -->
@@ -127,18 +163,30 @@ const metricas = ref([])
 const metricasLoading = ref(true)
 const granularidad = ref('month')
 
-// Totales sumando todos los períodos devueltos por el RPC.
+// Egreso a profesores: detalle desplegable.
+const mostrarEgreso = ref(false)
+const payouts = ref([])
+const payoutsLoading = ref(true)
+
+// Totales sumando todos los períodos.
 const totales = computed(() => {
   return metricas.value.reduce((acc, m) => {
     acc.arriendo += Number(m.ingresoArriendo || 0)
     acc.clases += Number(m.ingresoClases || 0)
-    acc.total += Number(m.ingresoTotal || 0)
+    acc.egreso += Number(m.egresoProfes || 0)
     return acc
-  }, { arriendo: 0, clases: 0, total: 0 })
+  }, { arriendo: 0, clases: 0, egreso: 0 })
 })
+// Ingreso = arriendo + recaudación de clases (antes de pagar profes).
+const ingresoTotal = computed(() => totales.value.arriendo + totales.value.clases)
+// Resultado neto = ingresos − egresos.
+const neto = computed(() => ingresoTotal.value - totales.value.egreso)
 
 onMounted(async () => {
   await cargarMetricas()
+  try { payouts.value = await venueService.getVenueTeacherPayouts() } catch { payouts.value = [] }
+  payoutsLoading.value = false
+
   try {
     const pendientes = await venueService.getPendingClasses()
     stats.value.porConfirmar = Array.isArray(pendientes) ? pendientes.length : 0

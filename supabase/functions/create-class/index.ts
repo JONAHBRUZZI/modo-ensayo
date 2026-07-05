@@ -9,12 +9,15 @@ const BodySchema = z.object({
   level: z.enum(["BASICO","INTERMEDIO","AVANZADO"]).nullish(),
   description: z.string().max(2000).optional(),
   capacity: z.number().int().positive().max(500).optional(),
-  duration: z.number().int().positive(),
+  duration: z.number().int().positive().optional(),
   price: z.number().positive(),
   minAge: z.number().int().min(0).optional(),
   maxAge: z.number().int().max(120).optional(),
   startTime: z.string().datetime().optional(),
   roomId: z.string().uuid().optional(),
+  // Bloques del horario de la sala que ocupará la clase (flujo sede/ASIGNADA):
+  // de ahí se derivan inicio, fin y duración, y se marcan OCCUPIED al crear.
+  blockIds: z.array(z.string().uuid()).max(24).optional(),
   draft: z.boolean().default(false),
   tipoClase: z.enum(["PROPIA", "ASIGNADA"]).default("PROPIA"),
   teacherId: z.string().uuid().nullish(),
@@ -87,9 +90,32 @@ export default {
         }
       }
 
-      if (body.roomId && body.startTime) {
-        const start = new Date(body.startTime);
-        const end = new Date(start.getTime() + body.duration * 60000);
+      // Horario de la clase: desde los bloques seleccionados (flujo sede) o desde
+      // startTime + duration (flujo profesor). Los bloques, además, se ocupan.
+      let startIso: string | null = body.startTime ?? null;
+      let endIso: string | null = null;
+      let durationMin: number = body.duration ?? 0;
+      let bloquesOcupar: string[] = [];
+
+      if (body.blockIds && body.blockIds.length > 0 && body.roomId) {
+        const { data: blocks } = await admin.from("room_schedule_blocks")
+          .select("id, start_time, end_time, status")
+          .eq("room_id", body.roomId).in("id", body.blockIds);
+        if (!blocks || blocks.length !== body.blockIds.length ||
+            blocks.some((b) => b.status !== "AVAILABLE")) {
+          return Response.json({ error: "Algún bloque ya no está disponible" }, { status: 409 });
+        }
+        const ordenados = blocks.slice().sort((a, b) =>
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+        startIso = ordenados[0].start_time;
+        endIso = ordenados[ordenados.length - 1].end_time;
+        durationMin = Math.round(
+          (new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
+        bloquesOcupar = body.blockIds;
+      } else if (body.roomId && startIso && durationMin > 0) {
+        // Conflicto de horario: solo aplica al flujo con startTime + duración.
+        const start = new Date(startIso);
+        const end = new Date(start.getTime() + durationMin * 60000);
         const { data: conflicts } = await admin.from("classes")
           .select("id").eq("room_id", body.roomId)
           .neq("status", "CANCELLED").neq("status", "SUSPENDED")
@@ -97,6 +123,7 @@ export default {
         if (conflicts && conflicts.length > 0) {
           return Response.json({ error: "Conflicto de horario en la sala" }, { status: 409 });
         }
+        endIso = end.toISOString();
       }
 
       // La capacidad de la clase la define la sala (su tope): si hay sala, se toma
@@ -110,9 +137,6 @@ export default {
       }
 
       const status = body.draft ? "DRAFT" : "PUBLISHED";
-      const endTime = body.startTime
-        ? new Date(new Date(body.startTime).getTime() + body.duration * 60000).toISOString()
-        : null;
 
       const { data: cls, error } = await admin.from("classes").insert({
         title: body.title,
@@ -120,13 +144,13 @@ export default {
         discipline_category: body.disciplineCategory ?? null,
         level: body.level ?? null,
         description: body.description ?? null,
-        duration: body.duration,
+        duration: durationMin,
         price: body.price,
         capacity,
         min_age: body.minAge ?? null,
         max_age: body.maxAge ?? null,
-        start_time: body.startTime ?? null,
-        end_time: endTime,
+        start_time: startIso,
+        end_time: endIso,
         room_id: body.roomId ?? null,
         teacher_id: teacherId,
         status,
@@ -135,6 +159,13 @@ export default {
       }).select("*").single();
 
       if (error) throw error;
+
+      // Ocupa los bloques seleccionados (flujo sede) para que dejen de estar libres.
+      if (bloquesOcupar.length > 0) {
+        await admin.from("room_schedule_blocks")
+          .update({ status: "OCCUPIED", class_id: cls.id })
+          .in("id", bloquesOcupar).eq("status", "AVAILABLE");
+      }
 
       let atributosActualizados = false;
       if (!body.draft && !esAsignada && !roles.includes("TEACHER")) {

@@ -369,6 +369,21 @@ export default {
     const { data, error } = await supabase.rpc('get_venue_teacher_payouts')
     if (error) throw { response: { status: 500, data: { message: error.message } } }
     return (data || []).map(r => camelize(r))
+  },
+
+  // Detalle completo de una clase de la sede (info + profesor + cupos).
+  async getVenueClassDetail(classId) {
+    const { data, error } = await supabase.rpc('get_venue_class_detail', { p_class_id: classId })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    const row = Array.isArray(data) ? data[0] : data
+    return row ? camelize(row) : null
+  },
+
+  // Alumnos/beneficiarios inscritos en una clase de la sede (+ asistencia).
+  async getVenueClassStudents(classId) {
+    const { data, error } = await supabase.rpc('get_venue_class_students', { p_class_id: classId })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
   }
 }
 

@@ -104,7 +104,7 @@
         <p class="text-gray-400 text-sm">No hay clases asignadas activas.</p>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div v-for="c in asignadasActivas.slice(0, 4)" :key="c.id" class="card">
+        <div v-for="c in asignadasActivas.slice(0, 4)" :key="c.id" class="card cursor-pointer hover:border-primary/50 transition-colors" @click="abrirDetalle(c)">
           <div class="flex items-start justify-between">
             <div>
               <h3 class="text-white font-medium">{{ c.title }}</h3>
@@ -172,6 +172,8 @@
         <p class="text-gray-400 text-sm mt-2">Clases en borrador pendientes de publicar.</p>
       </router-link>
     </div>
+
+    <ClaseDetalleModal v-model="modalAbierto" :clase="claseSel" />
   </div>
 </template>
 
@@ -180,6 +182,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
+import ClaseDetalleModal from '@/components/ClaseDetalleModal.vue'
 import professionalProfileService from '@/services/professionalProfileService'
 import { formatDate } from '@/utils/dateFormatter'
 
@@ -191,6 +194,13 @@ const propiasFuturas = ref([])
 const asignadasActivas = ref([])
 const loadingPropias = ref(false)
 const loadingAsignadas = ref(false)
+
+const modalAbierto = ref(false)
+const claseSel = ref(null)
+function abrirDetalle(c) {
+  claseSel.value = c
+  modalAbierto.value = true
+}
 
 const now = new Date()
 

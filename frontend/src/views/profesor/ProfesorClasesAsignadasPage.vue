@@ -20,21 +20,26 @@
       <p class='text-gray-600 text-sm mt-1'>Las clases de sede que dictes aparecerán aquí.</p>
     </div>
     <div v-else class="space-y-4">
-      <div v-for="c in clases" :key="c.id" class="card flex items-center justify-between">
+      <div v-for="c in clases" :key="c.id" class="card flex items-center justify-between hover:border-primary/50 transition-colors cursor-pointer" @click="abrirDetalle(c)">
         <div><h3 class="text-white font-medium">{{ c.title }}</h3><p class="text-gray-400 text-sm">{{ c.discipline }} - {{ c.level }}</p><p class="text-gray-500 text-xs">{{ formatDate(c.startTime) }}</p></div>
-        <router-link :to="'/profesor/asistencia/' + c.id" class="btn-primary text-sm">Asistencia</router-link>
+        <router-link :to="'/profesor/asistencia/' + c.id" class="btn-primary text-sm" @click.stop>Asistencia</router-link>
       </div>
     </div>
+
+    <ClaseDetalleModal v-model="modalAbierto" :clase="claseSel" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
+import ClaseDetalleModal from '@/components/ClaseDetalleModal.vue'
 import { formatDate } from '@/utils/dateFormatter'
 
 const clases = ref([])
 const loading = ref(true)
+const modalAbierto = ref(false)
+const claseSel = ref(null)
 
 onMounted(async () => {
   try {
@@ -43,6 +48,11 @@ onMounted(async () => {
   } catch { clases.value = [] }
   loading.value = false
 })
+
+function abrirDetalle(c) {
+  claseSel.value = c
+  modalAbierto.value = true
+}
 
 
 </script>

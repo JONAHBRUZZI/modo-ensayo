@@ -23,7 +23,7 @@ AS $$
       (u.raw_app_meta_data -> 'roles') ? 'TEACHER'
       OR EXISTS (SELECT 1 FROM public.professional_profiles pp WHERE pp.id = u.id)
     )
-  ORDER BY u.email
+  ORDER BY 1
   LIMIT 200;
 $$;
 REVOKE ALL ON FUNCTION public.list_teacher_candidates() FROM public;

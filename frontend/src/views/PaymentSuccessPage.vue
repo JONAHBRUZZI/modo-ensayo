@@ -59,12 +59,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 
 const route = useRoute()
-const { modoActual } = useAuth()
+const { modoActual, syncAtributos, isTeacher } = useAuth()
 const paymentId = computed(() => route.query.payment_id)
 const externalReference = computed(() => route.query.external_reference)
 
@@ -93,4 +93,17 @@ const linkSecundario = computed(() =>
     ? { ruta: '/classes', texto: 'Buscar más salas' }
     : { ruta: '/alumno/pagos', texto: 'Historial de pagos' }
 )
+
+// Un pago puede otorgar un rol nuevo (ej. TEACHER al reservar una sala). El
+// webhook lo agrega en el backend; reintentamos sincronizar para que el token
+// lo tome solo, sin que el usuario tenga que cerrar y volver a abrir sesión.
+// El webhook puede tardar unos segundos: reintentamos con espera en las reservas.
+onMounted(async () => {
+  const maxIntentos = esReserva.value ? 6 : 1
+  for (let i = 0; i < maxIntentos; i++) {
+    try { await syncAtributos() } catch { /* se reintenta */ }
+    if (isTeacher.value) break
+    if (i < maxIntentos - 1) await new Promise((r) => setTimeout(r, 2000))
+  }
+})
 </script>

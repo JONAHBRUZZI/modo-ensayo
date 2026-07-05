@@ -20,10 +20,10 @@
       <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm mb-5">
         <div><span class="text-gray-500">Sala:</span> <span class="text-white">{{ clase.room?.name || '—' }}</span></div>
         <div><span class="text-gray-500">Sede:</span> <span class="text-white">{{ clase.room?.venue?.name || '—' }}</span></div>
+        <div v-if="clase.room?.venue?.address" class="col-span-2"><span class="text-gray-500">Dirección:</span> <span class="text-white">{{ clase.room.venue.address }}</span></div>
         <div><span class="text-gray-500">Fecha:</span> <span class="text-white">{{ clase.startTime ? formatDate(clase.startTime) : '—' }}</span></div>
         <div><span class="text-gray-500">Hora:</span> <span class="text-white">{{ clase.startTime ? formatTime(clase.startTime) : '—' }}<span v-if="clase.endTime"> – {{ formatTime(clase.endTime) }}</span></span></div>
         <div><span class="text-gray-500">Duración:</span> <span class="text-white">{{ clase.duration || 0 }} min</span></div>
-        <div><span class="text-gray-500">Precio alumno:</span> <span class="text-white">${{ Number(clase.price || 0).toLocaleString('es-CL') }}</span></div>
         <div><span class="text-gray-500">Cupo:</span> <span class="text-white">{{ alumnos.length }} / {{ clase.capacity }}</span></div>
         <div><span class="text-gray-500">Tipo:</span> <span class="text-white">{{ clase.tipoClase === 'ASIGNADA' ? 'De sede' : 'Propia' }}</span></div>
       </div>

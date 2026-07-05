@@ -119,6 +119,15 @@ export default {
     return camelize(row)
   },
 
+  // Alumnos inscritos en una clase (+ asistencia). RPC seguro que autoriza al
+  // profesor de la clase o al admin de la sede. Devuelve [{ enrollmentId,
+  // attendeeName, studentEmail, beneficiaryType, status, present }].
+  async getClassStudents(classId) {
+    const { data, error } = await supabase.rpc('get_venue_class_students', { p_class_id: classId })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  },
+
   async getClassAttendance(classId) {
     const { data, error } = await supabase.from('attendances').select('*').eq('class_id', classId)
     if (error) throw error

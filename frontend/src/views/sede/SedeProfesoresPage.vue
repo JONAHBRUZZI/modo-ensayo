@@ -15,15 +15,20 @@
         <input
           v-model="nuevoEmail"
           type="email"
+          list="teacher-emails"
+          autocomplete="off"
           placeholder="profesor@correo.cl"
           class="input-field flex-1 min-w-[220px]"
           @keyup.enter="agregar"
         />
+        <datalist id="teacher-emails">
+          <option v-for="c in candidatos" :key="c.email" :value="c.email">{{ c.fullName }}</option>
+        </datalist>
         <button @click="agregar" :disabled="agregando || !nuevoEmail" class="btn-primary text-sm disabled:opacity-50">
           {{ agregando ? 'Agregando...' : 'Agregar' }}
         </button>
       </div>
-      <p class="text-xs text-gray-500 mt-2">El profesor debe tener una cuenta registrada en la plataforma.</p>
+      <p class="text-xs text-gray-500 mt-2">Escribe el correo (te sugerimos profesores registrados). Debe tener una cuenta en la plataforma.</p>
     </div>
 
     <div v-if="loading" class="text-center text-gray-500 py-20">
@@ -64,6 +69,7 @@ import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
 const profesores = ref([])
+const candidatos = ref([])
 const loading = ref(true)
 const venueId = ref(null)
 const nuevoEmail = ref('')
@@ -77,6 +83,8 @@ onMounted(async () => {
     const sede = vArr.find(v => v.status === 'APROBADA') || vArr[0]
     venueId.value = sede?.id || null
   } catch { venueId.value = null }
+  // Sugerencias de correo (profesores registrados) para el autocompletado.
+  try { candidatos.value = await venueService.getTeacherCandidates() } catch { candidatos.value = [] }
   await cargar()
 })
 

@@ -9,6 +9,10 @@
 -- Además get_venue_teacher_payouts: cuánto se le debe a cada profesor.
 -- ============================================================
 
+-- Cambia el tipo de retorno (agrega egreso_profes/total), así que hay que
+-- eliminar la versión anterior antes de recrearla.
+DROP FUNCTION IF EXISTS public.get_venue_metrics(text);
+
 CREATE OR REPLACE FUNCTION public.get_venue_metrics(p_granularidad text DEFAULT 'month')
 RETURNS TABLE (
   periodo          text,

@@ -2,6 +2,26 @@ import { supabase, currentUserId, invokeFunction, camelize } from './supabase'
 
 const CLASS_WITH_RELATIONS = '*, room:rooms(*, venue:venues(*))'
 
+// Los nombres de los profesores viven en profiles (RLS: solo el dueño lee su
+// fila), así que no se pueden embeber por PostgREST. Se resuelven con el RPC
+// seguro get_teacher_names y se anexan como `teacherName` a cada clase.
+export async function attachTeacherNames(clases) {
+  const arr = Array.isArray(clases) ? clases : (clases ? [clases] : [])
+  const ids = [...new Set(arr.map(c => c?.teacherId).filter(Boolean))]
+  if (!ids.length) return clases
+  let nombres = {}
+  try {
+    const { data, error } = await supabase.rpc('get_teacher_names', { p_ids: ids })
+    if (!error && Array.isArray(data)) {
+      for (const row of data) nombres[row.id] = row.full_name
+    }
+  } catch { /* si falla, las clases quedan sin teacherName */ }
+  for (const c of arr) {
+    if (c && c.teacherId) c.teacherName = nombres[c.teacherId] ?? null
+  }
+  return clases
+}
+
 function mapClassBody(data) {
   return {
     title: data.title,
@@ -34,14 +54,14 @@ export default {
     if (params.level) q = q.eq('level', params.level)
     const { data, error } = await q.order('start_time', { ascending: true })
     if (error) throw error
-    return camelize(data)
+    return attachTeacherNames(camelize(data))
   },
 
   async getClassById(id) {
     const { data, error } = await supabase
       .from('classes').select(CLASS_WITH_RELATIONS).eq('id', id).maybeSingle()
     if (error) throw error
-    return camelize(data)
+    return attachTeacherNames(camelize(data))
   },
 
   async createClass(data) {

@@ -89,13 +89,20 @@
             >
               Completar y Publicar
             </router-link>
-            <router-link
-              v-else
-              :to="'/profesor/buscar-salas?borradorId=' + c.id"
-              class="btn-primary text-sm"
-            >
-              Asignar Sala
-            </router-link>
+            <template v-else>
+              <router-link
+                :to="'/profesor/crear-borrador?edit=' + c.id"
+                class="btn-secondary text-sm"
+              >
+                Editar
+              </router-link>
+              <router-link
+                :to="'/profesor/buscar-salas?borradorId=' + c.id"
+                class="btn-primary text-sm"
+              >
+                Asignar Sala
+              </router-link>
+            </template>
             <button
               @click="confirmarEliminar(c)"
               class="text-red-400 hover:text-red-300 text-sm transition-colors"

@@ -205,6 +205,26 @@ export default {
     return camelize(data)
   },
 
+  // Edita un borrador SIN publicarlo: mantiene el estado DRAFT (RLS permite al
+  // profesor actualizar sus propias clases).
+  async updateDraft(id, fields) {
+    const patch = {
+      title: fields.title,
+      discipline: fields.discipline ?? null,
+      discipline_category: fields.disciplineCategory ?? fields.category ?? null,
+      level: fields.level || null,
+      description: fields.description ?? null,
+      duration: fields.duration,
+      price: fields.price,
+      min_age: fields.minAge ?? null,
+      max_age: fields.maxAge ?? null
+    }
+    const { data, error } = await supabase
+      .from('classes').update(patch).eq('id', id).select(CLASS_WITH_RELATIONS).single()
+    if (error) throw error
+    return camelize(data)
+  },
+
   // Reservas (bloques ocupados) que aún no tienen borrador asociado.
   // Pendiente de lógica server-side fiel; se devuelve vacío para no romper la vista.
   async getReservasSinBorrador() {

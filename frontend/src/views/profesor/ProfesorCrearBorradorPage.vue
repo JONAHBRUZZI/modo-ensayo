@@ -6,7 +6,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
         </svg>
       </router-link>
-      <h1 class="text-3xl font-bold text-white">Crear Borrador de Clase</h1>
+      <h1 class="text-3xl font-bold text-white">{{ esEdicion ? 'Editar Borrador' : 'Crear Borrador de Clase' }}</h1>
     </div>
     <p class="text-gray-400 text-sm mb-8 ml-8">
       Define los datos de tu clase. Despues puedes asignar una sala y publicarla.
@@ -91,7 +91,7 @@
 
       <div class="flex gap-3 pt-2">
         <button type="submit" :disabled="loading || !identidadValidada" class="btn-primary flex-1">
-          {{ loading ? 'Guardando...' : 'Guardar Borrador' }}
+          {{ loading ? 'Guardando...' : (esEdicion ? 'Guardar Cambios' : 'Guardar Borrador') }}
         </button>
         <router-link to="/profesor/borradores" class="flex-1 text-center px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:bg-white/5 text-sm transition-colors">
           Cancelar
@@ -102,25 +102,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
 import { useAuth } from '@/stores/auth'
 import { normalizarDisciplina } from '@/utils/disciplina'
 
 const router = useRouter()
+const route = useRoute()
 const { identidadValidada } = useAuth()
 
 const loading = ref(false)
 const error = ref('')
 const disciplineGroups = ref([])
-
-onMounted(async () => {
-  try {
-    const data = await classService.getDisciplines()
-    disciplineGroups.value = Array.isArray(data) ? data : []
-  } catch { disciplineGroups.value = [] }
-})
+// Modo edición: ?edit=<id del borrador>.
+const editId = ref(route.query.edit || null)
+const esEdicion = computed(() => !!editId.value)
 
 const form = ref({
   title: '',
@@ -133,12 +130,38 @@ const form = ref({
   maxAge: 99
 })
 
+onMounted(async () => {
+  try {
+    const data = await classService.getDisciplines()
+    disciplineGroups.value = Array.isArray(data) ? data : []
+  } catch { disciplineGroups.value = [] }
+
+  // Si es edición, precargar el borrador existente.
+  if (editId.value) {
+    try {
+      const c = await classService.getClassById(editId.value)
+      if (c) {
+        form.value.title = c.title || ''
+        form.value.discipline = c.discipline || ''
+        form.value.level = c.level || ''
+        form.value.description = c.description || ''
+        form.value.duration = c.duration || 60
+        form.value.price = c.price ?? null
+        form.value.minAge = c.minAge ?? 0
+        form.value.maxAge = c.maxAge ?? 99
+      }
+    } catch (err) {
+      console.error('Error al cargar el borrador', err)
+    }
+  }
+})
+
 async function handleSubmit() {
   error.value = ''
   form.value.discipline = normalizarDisciplina(form.value.discipline)
   loading.value = true
   try {
-    await classService.createBorrador({
+    const payload = {
       title: form.value.title,
       discipline: form.value.discipline,
       level: form.value.level,
@@ -147,7 +170,12 @@ async function handleSubmit() {
       price: form.value.price,
       minAge: form.value.minAge,
       maxAge: form.value.maxAge
-    })
+    }
+    if (esEdicion.value) {
+      await classService.updateDraft(editId.value, payload)
+    } else {
+      await classService.createBorrador(payload)
+    }
     router.push('/profesor/borradores')
   } catch (e) {
     error.value = e?.response?.data?.message || 'Error al guardar el borrador'

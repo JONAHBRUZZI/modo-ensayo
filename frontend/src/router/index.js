@@ -121,6 +121,12 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'alumno/reagendamiento/:rescheduleId',
+        name: 'AlumnoReagendamiento',
+        component: () => import('@/views/alumno/AlumnoReagendamientoPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'alumno/pagos',
         name: 'PagosHistorial',
         component: () => import('@/views/alumno/PagosHistorialPage.vue'),

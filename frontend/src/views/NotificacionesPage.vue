@@ -20,7 +20,12 @@
       <p class='text-gray-600 text-sm mt-1'>Te avisaremos cuando haya algo nuevo.</p>
     </div>
     <div v-else class="space-y-3">
-      <div v-for="n in notifications" :key="n.id" :class="['card', !n.read && 'border-primary/30']">
+      <div
+        v-for="n in notifications"
+        :key="n.id"
+        :class="['card', !n.read && 'border-primary/30', rutaNotificacion(n.type) && 'cursor-pointer hover:border-primary/50 transition-colors']"
+        @click="onNotifClick(n)"
+      >
         <div class="flex items-start justify-between">
           <div class="flex-1">
             <h4 class="text-white font-medium">{{ n.title }}</h4>
@@ -36,19 +41,31 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import rescheduleService from '@/services/rescheduleService'
 import { formatDate } from '@/utils/dateFormatter'
+import { rutaNotificacion } from '@/utils/notificationRoute'
 
+const router = useRouter()
 const notifications = ref([])
 const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const data = await rescheduleService.getNotifications()
-    notifications.value = Array.isArray(data) ? data : data?.content || data?.data || []
+    const res = await rescheduleService.getNotifications()
+    const data = res?.data ?? res
+    notifications.value = Array.isArray(data) ? data : data?.content || []
   } catch { notifications.value = [] }
   loading.value = false
 })
+
+async function onNotifClick(n) {
+  const ruta = rutaNotificacion(n.type)
+  if (!n.read) {
+    try { await rescheduleService.markRead(n.id); n.read = true } catch { /* noop */ }
+  }
+  if (ruta) router.push(ruta)
+}
 
 
 </script>

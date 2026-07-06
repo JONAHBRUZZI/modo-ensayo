@@ -79,6 +79,14 @@ Definidas en `supabase/functions/`. `verify_jwt` se configura por función en
 | `mp-connect-start` | Inicia OAuth de MercadoPago Connect; genera state anti-CSRF y devuelve URL de autorización |
 | `mp-connect-callback` | Callback OAuth (sin JWT); valida state, canjea code→tokens y guarda cuenta del vendedor |
 | `reserve-room-preference` | Crea preferencia de arriendo de sala con split automático a la cuenta MercadoPago de la sede |
+| `mp-oauth-start` | Inicia OAuth de MercadoPago para conectar la cuenta del **profesor** (payouts); genera `state` anti-CSRF en `mp_oauth_states` y devuelve la URL de autorización |
+| `mp-oauth-callback` | Callback OAuth del profesor (sin JWT); valida `state`, canjea code→tokens y guarda la cuenta del vendedor |
+| `process-payouts` | Batch (pg_cron + pg_net, service role): liquida `teacher_payouts` en PENDING, ejecuta el desembolso del honorario y pasa a PAID de forma idempotente |
+| `process-refunds` | Batch (pg_cron + pg_net, service role): procesa `payments` en REFUND_PENDING (canal bancario o API MercadoPago) y pasa a REFUNDED de forma idempotente |
+
+> Nota: `mp-oauth-*` conecta la cuenta del **profesor** (para recibir el honorario
+> vía `teacher_payouts`), mientras que `mp-connect-*` conecta la cuenta de la
+> **sede** (para el split del arriendo de salas). Son dos flujos OAuth distintos.
 
 ---
 

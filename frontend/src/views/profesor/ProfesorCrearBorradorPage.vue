@@ -61,19 +61,12 @@
       </div>
 
       <!-- Capacidad, Duracion, Precio -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Duracion (min) *</label>
-          <input v-model.number="form.duration" type="number" min="30" max="480" step="15" required class="input-field"
-            placeholder="Ej: 60" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Precio ($) *</label>
-          <input v-model.number="form.price" type="number" min="0" required class="input-field"
-            placeholder="Ej: 15000" />
-        </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Precio ($) *</label>
+        <input v-model.number="form.price" type="number" min="0" required class="input-field"
+          placeholder="Ej: 15000" />
       </div>
-      <p class="text-xs text-gray-500 -mt-1">La capacidad se define automáticamente por la sala cuando reserves una.</p>
+      <p class="text-xs text-gray-500 -mt-1">La capacidad y la duración se definen solas según la sala y el horario que reserves y asignes a este borrador.</p>
 
       <!-- Rango de edad -->
       <div class="grid grid-cols-2 gap-4">
@@ -124,7 +117,6 @@ const form = ref({
   discipline: '',
   level: '',
   description: '',
-  duration: 60,
   price: null,
   minAge: 0,
   maxAge: 99
@@ -145,7 +137,6 @@ onMounted(async () => {
         form.value.discipline = c.discipline || ''
         form.value.level = c.level || ''
         form.value.description = c.description || ''
-        form.value.duration = c.duration || 60
         form.value.price = c.price ?? null
         form.value.minAge = c.minAge ?? 0
         form.value.maxAge = c.maxAge ?? 99
@@ -166,7 +157,6 @@ async function handleSubmit() {
       discipline: form.value.discipline,
       level: form.value.level,
       description: form.value.description,
-      duration: form.value.duration,
       price: form.value.price,
       minAge: form.value.minAge,
       maxAge: form.value.maxAge

@@ -30,10 +30,11 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
 
   let classId: string | null = cart.borradorId ?? null;
   if (classId) {
-    // Asigna sala/horario al borrador existente y lo publica.
+    // Asigna sala/horario al borrador existente y lo publica. La duración la
+    // define el horario reservado (bloques), no lo que traía el borrador.
     await admin.from("classes").update({
       room_id: cart.roomId, start_time: firstStart, end_time: lastEnd,
-      capacity: roomCapacity, status: "PUBLISHED",
+      duration: durationMin, capacity: roomCapacity, status: "PUBLISHED",
     }).eq("id", classId).eq("teacher_id", ownerId);
   } else {
     // Crea un borrador de reserva (el profesor lo completa luego).

@@ -44,6 +44,10 @@
             <span class="badge badge-purple text-xs">{{ item.discipline }}</span>
             <span class="badge badge-green text-xs">{{ item.level }}</span>
           </div>
+          <p class="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            Para: <span class="text-gray-200 font-medium">{{ nombreBeneficiario(item) }}</span>
+          </p>
         </div>
         <div class="flex items-center gap-4 shrink-0">
           <span class="text-primary font-bold">${{ item.price?.toLocaleString('es-CL') }}</span>
@@ -83,19 +87,38 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import paymentService from '@/services/paymentService'
+import associateService from '@/services/associateService'
+import { useAuth } from '@/stores/auth'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const router = useRouter()
+const { user } = useAuth()
 const items = ref([])
+const asociados = ref({})
 const loading = ref(true)
 const checkingOut = ref(false)
 const showConfirm = ref(false)
 const total = computed(() => items.value.reduce((sum, i) => sum + (i.price || 0), 0))
 
+// Nombre de la persona inscrita en cada item: el titular para SELF, o el
+// asociado correspondiente. cart_items no guarda el nombre, se resuelve aquí.
+function nombreBeneficiario(item) {
+  if (!item.beneficiaryId || item.beneficiaryType === 'SELF') {
+    return `${user?.fullName || 'Yo'} (titular)`
+  }
+  return asociados.value[item.beneficiaryId] || 'Asociado'
+}
+
 onMounted(async () => {
   try {
-    const data = await paymentService.getCart()
+    const [data, asoc] = await Promise.all([
+      paymentService.getCart(),
+      associateService.getAssociates().catch(() => [])
+    ])
     items.value = data?.items || []
+    const idx = {}
+    for (const a of (Array.isArray(asoc) ? asoc : [])) idx[a.id] = a.name
+    asociados.value = idx
   } catch { items.value = [] } finally { loading.value = false }
 })
 

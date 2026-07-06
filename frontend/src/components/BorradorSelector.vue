@@ -106,8 +106,9 @@ async function asignar() {
   try {
     await classService.assignReserva(seleccionado.value.id, {
       roomId: props.roomId,
-      startTime: props.startTime,
-      duration: props.duration
+      startTime: new Date(props.startTime).toISOString(),
+      duration: props.duration,
+      reservationId: props.reservationId
     })
     if (props.reservationId) {
       await classService.deleteDraft(props.reservationId)
@@ -115,7 +116,7 @@ async function asignar() {
     emit('applied', seleccionado.value)
     cerrar()
   } catch (e) {
-    errorMsg.value = e?.response?.data?.message || 'Error al asignar el borrador'
+    errorMsg.value = e?.response?.data?.error || e?.response?.data?.message || 'Error al asignar el borrador'
   }
   procesando.value = false
 }

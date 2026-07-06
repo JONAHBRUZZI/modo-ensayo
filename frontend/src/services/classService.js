@@ -181,8 +181,8 @@ export default {
     if (error) throw error
   },
 
-  async assignReserva(classId, { roomId, startTime, duration }) {
-    return invokeFunction('assign-reserva', { body: { classId, roomId, startTime, duration } })
+  async assignReserva(classId, { roomId, startTime, duration, reservationId = null }) {
+    return invokeFunction('assign-reserva', { body: { classId, roomId, startTime, duration, reservationId } })
   },
 
   // Publicar un borrador: conserva sala/horario del DRAFT, actualiza datos y pasa a PUBLISHED.

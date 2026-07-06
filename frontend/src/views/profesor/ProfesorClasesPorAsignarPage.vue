@@ -213,7 +213,8 @@ async function asignarBorrador() {
     await classService.assignReserva(borrador.id, {
       roomId: reserva.roomId,
       startTime: new Date(reserva.startTime).toISOString(),
-      duration: reserva.duration || 60
+      duration: reserva.duration || 60,
+      reservationId: reserva.id
     })
     // 2. Eliminar el draft de la reserva original
     await classService.deleteDraft(reserva.id)

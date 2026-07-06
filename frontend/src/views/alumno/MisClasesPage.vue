@@ -44,6 +44,10 @@
               <h3 class="text-lg font-semibold text-white hover:text-primary transition-colors">{{ c.title }}</h3>
               <p class="text-gray-400 text-sm">{{ c.discipline }} {{ c.level ? '— ' + c.level : '' }}</p>
               <p class="text-gray-500 text-xs mt-1">{{ formatDate(c.startTime) }}</p>
+              <p v-if="c.teacherName" class="text-gray-500 text-xs mt-0.5">Prof. {{ c.teacherName }}</p>
+              <p v-if="c.venueName" class="text-gray-500 text-xs mt-0.5">
+                {{ c.venueName }}<span v-if="c.venueAddress"> · {{ c.venueAddress }}</span><span v-else-if="c.venueComuna"> · {{ c.venueComuna }}</span>
+              </p>
             </router-link>
             <div class="flex items-center gap-3 flex-shrink-0">
               <span class="text-primary font-semibold text-sm">${{ c.price?.toLocaleString('es-CL') }}</span>

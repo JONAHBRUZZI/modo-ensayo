@@ -92,7 +92,28 @@
           <span class="text-primary font-bold text-lg">${{ c.price?.toLocaleString() }}</span>
         </div>
         <h3 class="text-base font-semibold text-white mb-2 group-hover:text-primary transition-colors">{{ c.title }}</h3>
-        <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ c.description }}</p>
+        <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ c.description }}</p>
+
+        <!-- Datos fundamentales de la clase -->
+        <div class="space-y-1.5 text-xs text-gray-400 mb-3">
+          <div v-if="c.teacherName" class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span>Prof. {{ c.teacherName }}</span>
+          </div>
+          <div v-if="c.room?.venue" class="flex items-start gap-1.5">
+            <svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>
+              <span class="text-gray-300">{{ c.room.venue.name }}</span>
+              <span v-if="c.room.venue.address"> · {{ c.room.venue.address }}</span>
+              <span v-else-if="c.room.venue.comuna"> · {{ c.room.venue.comuna }}</span>
+            </span>
+          </div>
+          <div v-if="rangoEdad(c)" class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 012-2h2.096a1 1 0 01.717 1.696l-1.72 1.72a1 1 0 00.717 1.696H15M12 8H7.904a1 1 0 01-.717-1.696l1.72-1.72A1 1 0 008.19 3H12"/></svg>
+            <span>{{ rangoEdad(c) }}</span>
+          </div>
+        </div>
+
         <div class="flex items-center justify-between text-xs text-gray-600 border-t border-[var(--border-subtle)] pt-3 mt-auto">
           <span>{{ formatDate(c.startTime) }}</span>
           <span class="text-primary/70 group-hover:text-primary transition-colors">Ver detalle &rarr;</span>
@@ -186,6 +207,16 @@ async function buscar() {
   } finally {
     loading.value = false
   }
+}
+
+// Texto del rango de edad recomendado según min_age / max_age de la clase.
+function rangoEdad(c) {
+  const min = c.minAge ?? null
+  const max = c.maxAge ?? null
+  if (min != null && max != null) return `Edad ${min} a ${max} años`
+  if (min != null) return `Desde ${min} años`
+  if (max != null) return `Hasta ${max} años`
+  return ''
 }
 
 function goToClass(id) { router.push(`/alumno/clases/${id}`) }

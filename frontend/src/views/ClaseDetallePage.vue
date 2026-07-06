@@ -40,16 +40,51 @@
             <span class="text-gray-500 text-xs">Precio</span>
             <span class="text-primary font-bold text-lg">${{ clase.price?.toLocaleString() }}</span>
           </div>
+          <div v-if="rangoEdad" class="flex flex-col gap-1">
+            <span class="text-gray-500 text-xs">Edad recomendada</span>
+            <span class="text-white font-medium">{{ rangoEdad }}</span>
+          </div>
+          <div v-if="clase.teacherName" class="flex flex-col gap-1">
+            <span class="text-gray-500 text-xs">Profesor</span>
+            <span class="text-white font-medium">{{ clase.teacherName }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sede y ubicación -->
+      <div v-if="clase.room?.venue" class="card">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Dónde se imparte</h2>
+        <div class="space-y-3 text-sm">
+          <div class="flex flex-col gap-1">
+            <span class="text-gray-500 text-xs">Sede</span>
+            <span class="text-white font-medium">{{ clase.room.venue.name }}</span>
+          </div>
+          <div v-if="clase.room?.name" class="flex flex-col gap-1">
+            <span class="text-gray-500 text-xs">Sala</span>
+            <span class="text-white font-medium">{{ clase.room.name }}</span>
+          </div>
+          <div v-if="clase.room.venue.address || clase.room.venue.comuna" class="flex flex-col gap-1">
+            <span class="text-gray-500 text-xs">Dirección</span>
+            <span class="text-white font-medium">
+              {{ clase.room.venue.address }}<span v-if="clase.room.venue.address && clase.room.venue.comuna">, </span>{{ clase.room.venue.comuna }}
+            </span>
+          </div>
         </div>
       </div>
 
       <div class="card space-y-4">
-        <div v-if="beneficiaries.length > 0">
-          <label class="block text-sm font-medium text-gray-300 mb-2">Inscribir a:</label>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">¿A quién quieres inscribir?</label>
           <select v-model="selectedBeneficiary" class="input-field">
-            <option :value="null">Yo ({{ user?.fullName }})</option>
-            <option v-for="b in beneficiaries" :key="b.id" :value="b">{{ b.email || b.name || 'Asociado' }}</option>
+            <option :value="null">Yo ({{ user?.fullName || 'Titular' }})</option>
+            <option v-for="b in beneficiaries" :key="b.id" :value="b">
+              {{ b.name || b.email || 'Asociado' }}{{ b.relationship ? ' — ' + b.relationship : '' }}
+            </option>
           </select>
+          <p v-if="beneficiaries.length === 0" class="text-gray-600 text-xs mt-1.5">
+            Puedes inscribir a familiares o dependientes agregándolos en
+            <router-link to="/alumno/asociados" class="text-primary hover:underline">Mis asociados</router-link>.
+          </p>
         </div>
         <button @click="addToCart" :disabled="adding" class="btn-primary w-full">
           {{ adding ? 'Agregando...' : 'Agregar al Carrito' }}
@@ -89,6 +124,7 @@ import { useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import paymentService from '@/services/paymentService'
+import associateService from '@/services/associateService'
 import { reviewService } from '@/services/reviewService'
 import { formatDate } from '@/utils/dateFormatter'
 
@@ -107,11 +143,24 @@ const promedioReviews = computed(() => {
   return reviews.value.reduce((sum, r) => sum + r.score, 0) / reviews.value.length
 })
 
+// Texto del rango de edad recomendado según min_age / max_age de la clase.
+const rangoEdad = computed(() => {
+  const min = clase.value?.minAge ?? null
+  const max = clase.value?.maxAge ?? null
+  if (min != null && max != null) return `${min} a ${max} años`
+  if (min != null) return `Desde ${min} años`
+  if (max != null) return `Hasta ${max} años`
+  return ''
+})
+
 onMounted(async () => {
   try {
     clase.value = await classService.getClassById(route.params.claseId)
     const rev = await reviewService.getByClass(route.params.claseId).then(r => r.data).catch(() => [])
     reviews.value = Array.isArray(rev) ? rev : []
+    // Asociados del titular para el desplegable "¿A quién quieres inscribir?".
+    const asoc = await associateService.getAssociates().catch(() => [])
+    beneficiaries.value = Array.isArray(asoc) ? asoc : []
   } catch (err) {
     console.error('Error al cargar detalle de la clase', err)
   } finally { loading.value = false }

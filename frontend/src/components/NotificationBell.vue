@@ -61,7 +61,7 @@
 
           <ul v-else class="divide-y divide-white/5">
             <li v-for="n in notifs" :key="n.id"
-              @click="markRead(n.id)"
+              @click="onNotifClick(n)"
               class="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-white/3"
               :class="!n.read ? 'bg-indigo-500/5' : ''">
 
@@ -100,12 +100,26 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useNotifications } from '../hooks/useNotifications'
+import { rutaNotificacion } from '../utils/notificationRoute'
 
 const { notifs, unreadCount, iconConfig, markRead, markAllRead, formatTime, startPolling, stopPolling } = useNotifications()
 
+const router = useRouter()
 const showMenu = ref(false)
 const bellRef = ref(null)
+
+// Marca leída y, si la notificación tiene una pantalla asociada (ej. un
+// reagendamiento pendiente), navega hacia ella.
+const onNotifClick = (n) => {
+  markRead(n.id)
+  const ruta = rutaNotificacion(n.type)
+  if (ruta) {
+    showMenu.value = false
+    router.push(ruta)
+  }
+}
 
 // Fallback de título: notificaciones antiguas pueden no tener title guardado.
 // Se infiere a partir del tipo o del contenido del mensaje.

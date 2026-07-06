@@ -9,27 +9,27 @@ Estas reglas son las restricciones e invariantes del sistema, sus mecanismos de 
 
 ## R01 — Pagos condicionados a realización de clase
 
-Todo pago de inscripción queda en estado `RETAINED` (retenido) al momento del cobro y solo se libera (`RELEASED`) cuando la clase asociada pasa a estado `REALIZADA`. Si la clase se confirma como `NO_REALIZADA`, los pagos retenidos pasan a `REFUND_PENDING` para devolución según el método preferido del alumno.
+Todo pago de inscripción queda en estado `RETAINED` (retenido) al momento del cobro y solo se libera (`RELEASED`) cuando la clase asociada se confirma como realizada (estado `COMPLETED`). Si la clase se confirma como no realizada (estado `SUSPENDED`), los pagos retenidos pasan a `REFUND_PENDING` para devolución según el método preferido del alumno.
 
-- **Implementación:** Trigger `trg_release_payment` en PostgreSQL + lógica en `ClassConfirmationService`.
-- **Validación:** `PaymentServiceTest`, `ClassConfirmationServiceTest`.
+- **Implementación:** Edge Function `confirm-class` (Deno/TypeScript, service-role). No hay trigger de liberación; la lógica vive en la función. El desembolso real al profesor queda registrado en `teacher_payouts` (estado `PENDING`).
+- **Validación:** manual + verificación en SQL Editor (`payments.status`, `teacher_payouts`).
 
 ---
 
 ## R02 — Control de capacidad de clase
 
-No se puede inscribir a un beneficiario en una clase que ha alcanzado su capacidad máxima. La capacidad es definida por el Maestro al crear la clase.
+No se puede inscribir a un beneficiario en una clase que ha alcanzado su capacidad máxima. La capacidad se toma del tope de la sala (`rooms.capacity`) al crear o publicar la clase.
 
-- **Implementación:** Trigger `trg_check_capacity` + `CHECK` al insertar en `enrollments`.
+- **Implementación:** validación de cupo en las Edge Functions `create-class` (fija `capacity` desde la sala) y `mercadopago-webhook` (cuenta inscripciones activas contra `capacity` antes de confirmar). La inscripción única por beneficiario la garantiza el índice `enrollments_unique_beneficiary` sobre `(class_id, beneficiary_type, COALESCE(beneficiary_id, student_id))`.
 - **Excepción:** El sistema responde con error de negocio "La clase está llena".
 
 ---
 
 ## R03 — Auditoría de estados de clase
 
-Cada transición de estado de una clase (`BORRADOR`, `PUBLISHED`, `IN_PROGRESS`, `COMPLETED`, `POR_VALIDAR`, `CANCELLED`, `REALIZADA`, `NO_REALIZADA`) debe quedar registrada en `class_status_history` con el usuario que realizó el cambio y la fecha.
+Cada transición de estado de una clase debe quedar registrada en `class_status_history`. Los estados reales del enum `class_status` son: `DRAFT`, `PUBLISHED`, `IN_PROGRESS`, `FULL`, `CANCELLED`, `COMPLETED`, `SUSPENDED`, `POR_VALIDAR`. (`COMPLETED` = clase realizada; `SUSPENDED` = no realizada; `POR_VALIDAR` = a la espera de confirmación de la sede; `FULL` = cupo lleno).
 
-- **Implementación:** Trigger `trg_class_status_change`.
+- **Implementación:** Trigger `trg_classes_status` → función `track_class_status()`, que inserta la transición en `class_status_history`.
 
 ---
 
@@ -102,19 +102,19 @@ El proceso de checkout debe ser atómico: o se inscriben **todos** los items del
 
 ## R12 — Pago consolidado distribuido
 
-Un único pago en MercadoPago genera un único `consolidated_payment` y N `payment_items` que se distribuyen entre las clases del carrito. Cada `payment_item` queda en estado `RETAINED` hasta que su clase se confirma.
+Un único pago en MercadoPago genera una sesión de pago (`payment_sessions`, una por checkout) y N filas en `payments` (una por inscripción), que se distribuyen entre las clases del carrito. Cada fila de `payments` queda en estado `RETAINED` hasta que su clase se confirma. (El modelo heredado del backend Spring `consolidated_payments` / `payment_items` ya no existe.)
 
-- **Implementación:** `PaymentService.createMercadoPagoPreference()` + webhook handler.
+- **Implementación:** Edge Functions `mercadopago-create-preference` + `mercadopago-webhook`.
 
 ---
 
 ## R13 — Liberación o devolución por confirmación de clase
 
 Cuando el Admin de Sede confirma una clase como:
-- **`REALIZADA`** → todos los `payment_items` asociados pasan a `RELEASED`. El Maestro recibe el pago.
-- **`NO_REALIZADA`** → todos los `payment_items` pasan a `REFUND_PENDING`. Los alumnos reciben sus devoluciones.
+- **`COMPLETED`** (realizada) → todas las filas de `payments` asociadas pasan a `RELEASED`. El Maestro recibe el pago (registrado en `teacher_payouts`).
+- **`SUSPENDED`** (no realizada) → todas las filas de `payments` pasan a `REFUND_PENDING`. Los alumnos reciben sus devoluciones.
 
-Esta confirmación es la **única forma** de liberar pagos.
+Esta confirmación (Edge Function `confirm-class`) es la **única forma** de liberar pagos.
 
 ---
 
@@ -180,18 +180,18 @@ Si la decisión la intenta el actor incorrecto, el sistema rechaza con error 403
 ```
 [Usuario paga] → RETAINED
                     ↓
-        [clase REALIZADA] → RELEASED (trigger automático)
+        [clase COMPLETED] → RELEASED (Edge Function confirm-class)
                     ↓
-        [clase NO_REALIZADA] → REFUND_PENDING → REFUNDED (manual por admin)
+        [clase SUSPENDED] → REFUND_PENDING → REFUNDED (process-refunds / manual)
 ```
 
 ### Clase
 
 ```
-BORRADOR → PUBLISHED → IN_PROGRESS → POR_VALIDAR ───┬─→ REALIZADA
-                                                     └─→ NO_REALIZADA
-                ↓                                    ↓
-              CANCELLED                         (también CANCELLED)
+DRAFT → PUBLISHED → IN_PROGRESS → POR_VALIDAR ───┬─→ COMPLETED  (realizada)
+                                                  └─→ SUSPENDED  (no realizada)
+              ↓             ↓
+          CANCELLED       FULL (cupo lleno)
 ```
 
 ### Reagendamiento
@@ -212,9 +212,9 @@ PROPUESTO → DECISION_MAESTRO ─── acepta ──→ NOTIFICADO_ALUMNOS
 
 | Regla | Archivo de implementación | Test |
 |---|---|---|
-| R01 | `ClassConfirmationService.java` | `ClassConfirmationServiceTest.java` |
-| R02 | Trigger `trg_check_capacity` (03_procedures.sql) | Manual + integration |
-| R03 | Trigger `trg_class_status_change` (03_procedures.sql) | Manual |
+| R01 | Edge Function `confirm-class` | Manual + SQL Editor |
+| R02 | Edge Functions `create-class` / `mercadopago-webhook` + índice `enrollments_unique_beneficiary` | Manual + integration |
+| R03 | Trigger `trg_classes_status` → `track_class_status()` | Manual |
 | R04 | `UserService.uploadIdentity()`, `ClassService.createBorrador()` | Integration |
 | R05 | `IdentityVerificationRepository` | Manual |
 | R06 | `AdminController.aprobarSede()` | Manual |

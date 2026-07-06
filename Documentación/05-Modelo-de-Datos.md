@@ -203,6 +203,11 @@ Bloques de agenda generados por sala.
 | beneficiary_id | uuid | |
 | status | text | DEFAULT 'ACTIVE' |
 
+> **Unicidad:** índice único `enrollments_unique_beneficiary` sobre
+> `(class_id, beneficiary_type, COALESCE(beneficiary_id, student_id))`. Un mismo
+> beneficiario no se repite en la clase, pero un alumno sí puede inscribir a
+> varios beneficiarios distintos (él mismo + asociados) en la misma clase.
+
 ### `attendances`
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -364,6 +369,26 @@ State temporal del flujo OAuth (anti-CSRF). Se borra al completar el callback.
 | key | Tipo de valor | Descripción |
 |-----|---------------|-------------|
 | `room_reservation_commission_pct` | numeric (0–100) | Comisión de la plataforma sobre el arriendo. Default: 0 |
+
+### `teacher_payouts`
+Registro del desembolso del honorario al profesor cuando su clase se confirma como
+realizada (`COMPLETED`). Una fila por pago liberado; el giro real a MercadoPago queda
+`tracked` (Fase 0). Origen: migración `20260622000100_marketplace_payouts.sql`.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | uuid | PK |
+| payment_id | uuid | UNIQUE, FK → payments(id) |
+| teacher_id | uuid | FK → auth.users(id) |
+| class_id | uuid | FK → classes(id) |
+| gross_amount | numeric | Monto bruto del pago |
+| commission_amount | numeric | DEFAULT 0 — comisión de la plataforma |
+| net_amount | numeric | Neto a girar al profesor |
+| mp_reference | text | Referencia del giro en MercadoPago |
+| status | text | CHECK PENDING / PAID / FAILED |
+| error_detail | text | Detalle si el giro falla |
+| created_at | timestamptz | DEFAULT now() |
+| paid_at | timestamptz | |
 
 ## 8. Enums (tipos definidos)
 

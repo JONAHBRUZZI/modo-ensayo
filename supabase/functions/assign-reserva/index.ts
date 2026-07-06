@@ -7,6 +7,9 @@ const BodySchema = z.object({
   roomId: z.string().uuid(),
   startTime: z.string().datetime(),
   duration: z.number().int().positive(),
+  // Clase "placeholder" de la reserva a la que se asigna el borrador. Se excluye
+  // del chequeo de conflicto (es la reserva misma) y se le pasan sus bloques.
+  reservationId: z.string().uuid().nullish(),
 });
 
 export default {
@@ -29,10 +32,13 @@ export default {
 
       const start = new Date(body.startTime);
       const end = new Date(start.getTime() + body.duration * 60000);
-      const { data: conflicts } = await admin.from("classes")
+      let conflictQuery = admin.from("classes")
         .select("id").eq("room_id", body.roomId)
         .neq("status", "CANCELLED").neq("status", "SUSPENDED")
         .lt("start_time", end.toISOString()).gt("end_time", start.toISOString());
+      // La reserva misma ocupa ese horario: se excluye del chequeo de conflicto.
+      if (body.reservationId) conflictQuery = conflictQuery.neq("id", body.reservationId);
+      const { data: conflicts } = await conflictQuery;
       if (conflicts && conflicts.length > 0) {
         return Response.json({ error: "Conflicto de horario en la sala" }, { status: 409 });
       }
@@ -55,6 +61,15 @@ export default {
         .lte("start_time", start.toISOString())
         .gte("end_time", end.toISOString())
         .eq("status", "AVAILABLE");
+
+      // La reserva ya ocupaba esos bloques (OCCUPIED con el id del placeholder):
+      // se reasignan al borrador publicado para que no queden huérfanos al
+      // eliminar la reserva.
+      if (body.reservationId) {
+        await admin.from("room_schedule_blocks")
+          .update({ status: "OCCUPIED", class_id: cls.id })
+          .eq("class_id", body.reservationId);
+      }
 
       let atributosActualizados = false;
       if (!roles.includes("TEACHER")) {

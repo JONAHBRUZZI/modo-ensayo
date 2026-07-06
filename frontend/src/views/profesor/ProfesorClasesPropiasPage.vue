@@ -105,7 +105,12 @@ function abrirBorradorSelector(c) {
 
 async function cargar() {
   loading.value = true
-  try { clases.value = await classService.getTeacherPropias() } catch { clases.value = [] }
+  try {
+    // Solo clases agendadas (publicadas en adelante). Los borradores/reservas sin
+    // configurar viven en "Borradores" y "Por Asignar", no acá.
+    const data = await classService.getTeacherPropias()
+    clases.value = (Array.isArray(data) ? data : []).filter(c => c.status !== 'DRAFT')
+  } catch { clases.value = [] }
   loading.value = false
 }
 

@@ -65,18 +65,18 @@
       </div>
     </div>
 
-    <!-- Seccion A: Clases propias activas -->
-    <div v-if="tieneReservasActivas" class="mb-10">
+    <!-- Seccion A: Clases propias -->
+    <div v-if="tienePropias" class="mb-10">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-white">Mis Clases Próximas</h2>
+        <h2 class="text-xl font-semibold text-white">Clases Propias</h2>
         <router-link to="/profesor/clases-propias" class="text-primary text-sm hover:underline">Ver todas</router-link>
       </div>
       <div v-if="loadingPropias" class="text-gray-400 text-sm">Cargando...</div>
-      <div v-else-if="propiasFuturas.length === 0" class="card text-center py-6">
-        <p class="text-gray-400 text-sm">No hay clases próximas.</p>
+      <div v-else-if="propiasMostrar.length === 0" class="card text-center py-6">
+        <p class="text-gray-400 text-sm">No hay clases propias para mostrar.</p>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div v-for="c in propiasFuturas.slice(0, 4)" :key="c.id" class="card">
+        <div v-for="c in propiasMostrar.slice(0, 4)" :key="c.id" class="card">
           <div class="flex items-start justify-between">
             <div>
               <h3 class="text-white font-medium">{{ c.title }}</h3>
@@ -118,7 +118,7 @@
     </div>
 
     <!-- Estado vacio: sin actividad activa -->
-    <div v-if="!tieneReservasActivas && !tieneAsignacionesActivas" class="card text-center py-12 mb-10">
+    <div v-if="!tienePropias && !tieneReservasActivas && !tieneAsignacionesActivas" class="card text-center py-12 mb-10">
       <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
         <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -190,10 +190,19 @@ const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSin
 
 const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, totalRetenido: 0, totalLiberado: 0 })
 const averageRating = ref(null)
+const propiasAll = ref([])
 const propiasFuturas = ref([])
 const asignadasActivas = ref([])
 const loadingPropias = ref(false)
 const loadingAsignadas = ref(false)
+
+// La sección "Clases Propias" se muestra si el profesor tiene clases propias,
+// no según el flag de reservas de sala (que puede estar en falso aunque existan).
+const tienePropias = computed(() => propiasAll.value.length > 0)
+// Prioriza las próximas; si no hay ninguna futura, muestra las que existan.
+const propiasMostrar = computed(() =>
+  propiasFuturas.value.length ? propiasFuturas.value : propiasAll.value
+)
 
 const modalAbierto = ref(false)
 const claseSel = ref(null)
@@ -223,14 +232,11 @@ onMounted(async () => {
     stats.value.totalLiberado = earnings.value?.resumen?.totalLiberado || 0
   }
 
-  // Seccion A: propias futuras
-  if (tieneReservasActivas.value) {
-    loadingPropias.value = true
-    propiasFuturas.value = propiasData
-      .filter(c => c.startTime && new Date(c.startTime) > now)
-      .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-    loadingPropias.value = false
-  }
+  // Seccion A: clases propias (todas + las próximas), sin depender del flag de reservas
+  propiasAll.value = propiasData
+  propiasFuturas.value = propiasData
+    .filter(c => c.startTime && new Date(c.startTime) > now)
+    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
 
   // Seccion B: asignadas activas
   if (tieneAsignacionesActivas.value) {

@@ -97,9 +97,18 @@ async function processPaymentRefund(admin: any, payment: PaymentRow): Promise<vo
   const mpPaymentId = await resolveMercadoPagoPaymentId(admin, studentId, classId);
 
   if (!mpPaymentId) {
-    throw new Error(
-      `Cannot resolve MercadoPago payment ID for student ${studentId}, class ${classId}`
+    // No se pudo resolver el pago de MercadoPago (dato inconsistente / sesión sin
+    // mercado_pago_payment_id). Es permanente: no tiene sentido reintentar en cada
+    // pasada del cron → se marca FAILED para atención manual.
+    await marcarRefundFallido(
+      admin,
+      payment,
+      studentId,
+      "no-resuelto",
+      0,
+      `No se pudo resolver el mercado_pago_payment_id (clase ${classId})`,
     );
+    return;
   }
 
   const mpToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");

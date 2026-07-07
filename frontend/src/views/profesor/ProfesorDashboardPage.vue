@@ -95,21 +95,9 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Agendar Sala</h3>
         <p class="text-gray-400 text-sm mt-2">Reserva una sala en una sede para tu proxima clase.</p>
       </router-link>
-      <router-link to="/profesor/metricas" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Métricas</h3>
-        <p class="text-gray-400 text-sm mt-2">Estadisticas de rendimiento y asistencia.</p>
-      </router-link>
-      <router-link to="/profesor/pagos" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Pagos</h3>
-        <p class="text-gray-400 text-sm mt-2">Historial de pagos recibidos por tus clases.</p>
-      </router-link>
       <router-link to="/profesor/clases-por-asignar" class="card hover:border-primary/50 transition-colors group">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases por Asignar</h3>
         <p class="text-gray-400 text-sm mt-2">Salas reservadas. Completa los datos de tu clase.</p>
-      </router-link>
-      <router-link to="/profesor/clases-asignadas" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Asignadas</h3>
-        <p class="text-gray-400 text-sm mt-2">Clases donde fuiste asignado como profesor.</p>
       </router-link>
       <router-link to="/profesor/calendario" class="card hover:border-primary/50 transition-colors group">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Calendario</h3>

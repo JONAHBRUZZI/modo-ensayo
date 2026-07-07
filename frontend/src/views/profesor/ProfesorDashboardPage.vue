@@ -103,8 +103,8 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Pagos</h3>
         <p class="text-gray-400 text-sm mt-2">Historial de pagos recibidos por tus clases.</p>
       </router-link>
-      <router-link to="/profesor/clases-propias" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Agendadas</h3>
+      <router-link to="/profesor/clases-por-asignar" class="card hover:border-primary/50 transition-colors group">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases por Asignar</h3>
         <p class="text-gray-400 text-sm mt-2">Salas reservadas. Completa los datos de tu clase.</p>
       </router-link>
       <router-link to="/profesor/clases-asignadas" class="card hover:border-primary/50 transition-colors group">

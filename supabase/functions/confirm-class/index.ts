@@ -58,9 +58,6 @@ export default {
         }
 
         if (esAsignada && honorario > 0) {
-          // Clase de sede: el profe dependiente recibe UN honorario fijo por la
-          // clase (no por alumno). Se registra un único payout sobre el primer
-          // pago; el resto de la recaudación es margen de la sede (tracked aparte).
           const first = releasedPayments[0];
           if (first) {
             const grossTotal = releasedPayments.reduce((s, p) => s + p.amount, 0);
@@ -76,7 +73,6 @@ export default {
             if (!poErr) payoutsCreated++;
           }
         } else {
-          // Clase PROPIA: al profesor se le liquida el neto (bruto − comisión) por pago.
           for (const p of releasedPayments) {
             const commission = Math.round(p.amount * commissionPct) / 100;
             const { error: poErr } = await admin.from("teacher_payouts").upsert({
@@ -91,6 +87,11 @@ export default {
             if (!poErr) payoutsCreated++;
           }
         }
+
+        // Liberar bloques OCCUPIED (la clase ya pasó, el horario queda disponible)
+        await admin.from("room_schedule_blocks")
+          .update({ status: "AVAILABLE", class_id: null })
+          .eq("class_id", body.classId).eq("status", "OCCUPIED");
       } else {
         // Pagos RETAINED → REFUND_PENDING (corrección G-07)
         if (enrollments) {
@@ -108,6 +109,16 @@ export default {
             });
           }
         }
+
+        // Cancelar enrollments (la clase no se realizó)
+        await admin.from("enrollments")
+          .update({ status: "CANCELLED" })
+          .eq("class_id", body.classId).eq("status", "ACTIVE");
+
+        // Liberar bloques OCCUPIED (la sede recupera el horario)
+        await admin.from("room_schedule_blocks")
+          .update({ status: "AVAILABLE", class_id: null })
+          .eq("class_id", body.classId).eq("status", "OCCUPIED");
       }
 
       await admin.from("classes").update({

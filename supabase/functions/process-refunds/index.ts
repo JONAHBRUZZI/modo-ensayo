@@ -93,84 +93,49 @@ async function processPaymentRefund(admin: any, payment: PaymentRow): Promise<vo
   const studentId: string = enrollment.student_id;
   const classId: string = enrollment.class_id;
 
-  // 2b. Resolver canal de reembolso: ¿tiene método bancario preferido?
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("preferred_refund_method_id")
-    .eq("id", studentId)
-    .single();
+  // 2b. Siempre intentar reembolso por MercadoPago (el pago original fue por MP)
+  const mpPaymentId = await resolveMercadoPagoPaymentId(admin, studentId, classId);
 
   let refundChannel: "bank" | "mercadopago";
   let refundReference: string;
 
-  if (profile?.preferred_refund_method_id) {
-    // Canal bancario: registrar devolución bancaria
-    const { data: refundMethod, error: rmErr } = await admin
-      .from("refund_methods")
-      .select("id, bank, account_type, account_number, account_holder")
-      .eq("id", profile.preferred_refund_method_id)
-      .single();
-
-    if (rmErr || !refundMethod) {
-      throw new Error(`Refund method ${profile.preferred_refund_method_id} not found for student ${studentId}`);
-    }
-
-    // La integración bancaria real aún no está implementada.
-    // Lanzar para mantener el pago en REFUND_PENDING y evitar marcarlo
-    // REFUNDED sin haber transferido dinero. Requiere atención manual.
-    logWarn("refund_bank_not_implemented", "Bank transfer required but not implemented", {
-      paymentId: payment.id,
-      studentId,
-      refundMethodId: refundMethod.id,
-      bank: refundMethod.bank,
-    });
+  if (!mpPaymentId) {
     throw new Error(
-      `Bank refund not implemented: payment ${payment.id} requires manual bank transfer ` +
-      `(${refundMethod.bank}) for student ${studentId}. Payment left in REFUND_PENDING.`
+      `Cannot resolve MercadoPago payment ID for student ${studentId}, class ${classId}`
     );
-  } else {
-    // Canal MercadoPago: resolver el mercado_pago_payment_id vía payment_sessions
-    const mpPaymentId = await resolveMercadoPagoPaymentId(admin, studentId, classId);
-
-    if (!mpPaymentId) {
-      throw new Error(
-        `Cannot resolve MercadoPago payment ID for student ${studentId}, class ${classId}`
-      );
-    }
-
-    // Invocar API de reembolsos de MercadoPago
-    const mpToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
-    if (!mpToken) {
-      throw new Error("MERCADOPAGO_ACCESS_TOKEN not configured");
-    }
-
-    const mpResp = await fetch(
-      `https://api.mercadopago.com/v1/payments/${mpPaymentId}/refunds`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${mpToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!mpResp.ok) {
-      const errorBody = await mpResp.text();
-      throw new Error(
-        `MercadoPago refund failed (${mpResp.status}): ${errorBody}`
-      );
-    }
-
-    const mpRefund = await mpResp.json();
-    refundChannel = "mercadopago";
-    refundReference = `mp_refund:${mpRefund.id ?? mpPaymentId}`;
-    logInfo("refund_mercadopago_success", {
-      paymentId: payment.id,
-      mpPaymentId,
-      mpRefundId: mpRefund.id,
-    });
   }
+
+  const mpToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
+  if (!mpToken) {
+    throw new Error("MERCADOPAGO_ACCESS_TOKEN not configured");
+  }
+
+  const mpResp = await fetch(
+    `https://api.mercadopago.com/v1/payments/${mpPaymentId}/refunds`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${mpToken}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!mpResp.ok) {
+    const errorBody = await mpResp.text();
+    throw new Error(
+      `MercadoPago refund failed (${mpResp.status}): ${errorBody}`
+    );
+  }
+
+  const mpRefund = await mpResp.json();
+  refundChannel = "mercadopago";
+  refundReference = `mp_refund:${mpRefund.id ?? mpPaymentId}`;
+  logInfo("refund_mercadopago_success", {
+    paymentId: payment.id,
+    mpPaymentId,
+    mpRefundId: mpRefund.id,
+  });
 
   // 3. Cierre idempotente: solo si sigue en REFUND_PENDING
   const { data: updated, error: updateErr } = await admin

@@ -22,6 +22,14 @@ const MAP = {
   NOT_REALIZED:        { label: 'No realizado',   cls: 'badge-red'    },
   DISABLED:            { label: 'Deshabilitado',  cls: 'badge-red'    },
   NO_SOLICITADA:       { label: 'Sin solicitud',  cls: 'badge-blue'   },
+  RETAINED:            { label: 'Retenido',      cls: 'badge-yellow' },
+  RELEASED:            { label: 'Liberado',      cls: 'badge-green'  },
+  REFUND_PENDING:      { label: 'En devolución', cls: 'badge-yellow' },
+  REFUNDED:            { label: 'Devuelto',      cls: 'badge-blue'   },
+  FAILED:              { label: 'Fallido',       cls: 'badge-red'    },
+  SUSPENDED:           { label: 'Suspendida',    cls: 'badge-red'    },
+  POR_VALIDAR:         { label: 'Por validar',   cls: 'badge-yellow' },
+  PAID:                { label: 'Pagado',        cls: 'badge-green'  },
 }
 
 const resolved = computed(() => MAP[props.status?.toUpperCase()] ?? { label: props.status || '—', cls: 'badge-blue' })

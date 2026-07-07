@@ -6,7 +6,7 @@
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
     <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-bold text-white">Clases Agendadas</h1>
+      <h1 class="text-3xl font-bold text-white">Clases Propias</h1>
       <router-link to="/profesor/buscar-salas" class="btn-primary text-sm">Reservar Sala</router-link>
     </div>
 

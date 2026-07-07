@@ -65,58 +65,6 @@
       </div>
     </div>
 
-    <!-- Seccion A: Clases propias -->
-    <div v-if="tienePropias" class="mb-10">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-white">Clases Propias</h2>
-        <router-link to="/profesor/clases-propias" class="text-primary text-sm hover:underline">Ver todas</router-link>
-      </div>
-      <div v-if="loadingPropias" class="text-gray-400 text-sm">Cargando...</div>
-      <div v-else-if="propiasMostrar.length === 0" class="card text-center py-6">
-        <p class="text-gray-400 text-sm">No hay clases propias para mostrar.</p>
-      </div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div v-for="c in propiasMostrar.slice(0, 4)" :key="c.id" class="card">
-          <div class="flex items-start justify-between">
-            <div>
-              <h3 class="text-white font-medium">{{ c.title }}</h3>
-              <p class="text-gray-400 text-sm">{{ c.discipline }} · {{ c.level }}</p>
-              <p class="text-gray-500 text-xs mt-1">{{ formatDate(c.startTime) }}</p>
-            </div>
-            <span class="text-primary font-semibold text-sm">${{ c.price?.toLocaleString('es-CL') }}</span>
-          </div>
-          <div class="flex items-center justify-between mt-3">
-            <span class="text-gray-400 text-xs">{{ c.enrolledCount || 0 }}/{{ c.capacity }} alumnos</span>
-            <router-link :to="'/profesor/asistencia/' + c.id" class="btn-primary text-xs !py-1 !px-3">Asistencia</router-link>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seccion B: Clases asignadas activas -->
-    <div v-if="tieneAsignacionesActivas" class="mb-10">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-white">Clases Asignadas</h2>
-        <router-link to="/profesor/clases-asignadas" class="text-primary text-sm hover:underline">Ver todas</router-link>
-      </div>
-      <div v-if="loadingAsignadas" class="text-gray-400 text-sm">Cargando...</div>
-      <div v-else-if="asignadasActivas.length === 0" class="card text-center py-6">
-        <p class="text-gray-400 text-sm">No hay clases asignadas activas.</p>
-      </div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div v-for="c in asignadasActivas.slice(0, 4)" :key="c.id" class="card cursor-pointer hover:border-primary/50 transition-colors" @click="abrirDetalle(c)">
-          <div class="flex items-start justify-between">
-            <div>
-              <h3 class="text-white font-medium">{{ c.title }}</h3>
-              <p class="text-gray-400 text-sm">{{ c.discipline }} · {{ c.level }}</p>
-              <p class="text-gray-500 text-xs mt-1">{{ formatDate(c.startTime) }}</p>
-            </div>
-            <span class="badge badge-blue text-xs">Asignada</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Estado vacio: sin actividad activa -->
     <div v-if="!tienePropias && !tieneReservasActivas && !tieneAsignacionesActivas" class="card text-center py-12 mb-10">
       <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -172,8 +120,6 @@
         <p class="text-gray-400 text-sm mt-2">Clases en borrador pendientes de publicar.</p>
       </router-link>
     </div>
-
-    <ClaseDetalleModal v-model="modalAbierto" :clase="claseSel" />
   </div>
 </template>
 
@@ -182,39 +128,19 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
-import ClaseDetalleModal from '@/components/ClaseDetalleModal.vue'
 import professionalProfileService from '@/services/professionalProfileService'
-import { formatDate } from '@/utils/dateFormatter'
 
 const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
 
 const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, totalRetenido: 0, totalLiberado: 0 })
 const averageRating = ref(null)
-const propiasAll = ref([])
-const propiasFuturas = ref([])
-const asignadasActivas = ref([])
-const loadingPropias = ref(false)
-const loadingAsignadas = ref(false)
 
-// La sección "Clases Propias" se muestra si el profesor tiene clases propias,
-// no según el flag de reservas de sala (que puede estar en falso aunque existan).
-const tienePropias = computed(() => propiasAll.value.length > 0)
-// Prioriza las próximas; si no hay ninguna futura, muestra las que existan.
-const propiasMostrar = computed(() =>
-  propiasFuturas.value.length ? propiasFuturas.value : propiasAll.value
-)
-
-const modalAbierto = ref(false)
-const claseSel = ref(null)
-function abrirDetalle(c) {
-  claseSel.value = c
-  modalAbierto.value = true
-}
-
-const now = new Date()
+// El estado vacío de onboarding se muestra si el profesor no tiene clases propias
+// (el flag de reservas puede estar en falso aunque existan clases).
+const tienePropias = computed(() => stats.value.propias > 0)
 
 onMounted(async () => {
-  // Stats generales
+  // Stats generales (los listados de clases se ven desde las tarjetas pulsables)
   const [propias, asignadas, earnings] = await Promise.allSettled([
     classService.getTeacherPropias(),
     classService.getTeacherAsignadas(),
@@ -230,21 +156,6 @@ onMounted(async () => {
   if (earnings.status === 'fulfilled') {
     stats.value.totalRetenido = earnings.value?.resumen?.totalRetenido || 0
     stats.value.totalLiberado = earnings.value?.resumen?.totalLiberado || 0
-  }
-
-  // Seccion A: clases propias (todas + las próximas), sin depender del flag de reservas
-  propiasAll.value = propiasData
-  propiasFuturas.value = propiasData
-    .filter(c => c.startTime && new Date(c.startTime) > now)
-    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-
-  // Seccion B: asignadas activas
-  if (tieneAsignacionesActivas.value) {
-    loadingAsignadas.value = true
-    asignadasActivas.value = asignadasData
-      .filter(c => c.startTime && new Date(c.startTime) > now)
-      .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-    loadingAsignadas.value = false
   }
 
   // Cargar rating promedio

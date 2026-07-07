@@ -107,6 +107,11 @@ async function processPaymentRefund(admin: any, payment: PaymentRow): Promise<vo
     throw new Error("MERCADOPAGO_ACCESS_TOKEN not configured");
   }
 
+  // Reembolso PARCIAL por el monto exacto de esta inscripción (payment.amount =
+  // lo que el alumno pagó por esta clase). Un mismo pago de MP puede cubrir varias
+  // inscripciones del carrito; sin el monto, MP haría un reembolso TOTAL del pago.
+  // La X-Idempotency-Key (estable por payment.id) evita doble reembolso si el cron
+  // reintenta la misma fila.
   const mpResp = await fetch(
     `https://api.mercadopago.com/v1/payments/${mpPaymentId}/refunds`,
     {
@@ -114,7 +119,9 @@ async function processPaymentRefund(admin: any, payment: PaymentRow): Promise<vo
       headers: {
         Authorization: `Bearer ${mpToken}`,
         "Content-Type": "application/json",
+        "X-Idempotency-Key": `refund:${payment.id}`,
       },
+      body: JSON.stringify({ amount: Number(payment.amount) }),
     }
   );
 

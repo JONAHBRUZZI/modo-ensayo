@@ -138,7 +138,10 @@ onMounted(async () => {
   const propiasData = propias.status === 'fulfilled' && Array.isArray(propias.value) ? propias.value : []
   const asignadasData = asignadas.status === 'fulfilled' && Array.isArray(asignadas.value) ? asignadas.value : []
 
-  stats.value.propias = propiasData.length
+  // Cuenta solo clases propias activas (no borradores), para coincidir con la
+  // página "Clases Propias" que filtra los DRAFT (viven en "Borradores").
+  const propiasPublicadas = propiasData.filter(c => c.status !== 'DRAFT')
+  stats.value.propias = propiasPublicadas.length
   stats.value.asignadas = asignadasData.length
   stats.value.alumnos = [...propiasData, ...asignadasData].reduce((s, c) => s + (c.enrolledCount || 0), 0)
   if (earnings.status === 'fulfilled') {

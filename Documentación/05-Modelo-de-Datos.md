@@ -418,7 +418,10 @@ realizada (`COMPLETED`). Una fila por pago liberado; el giro real a MercadoPago 
   `get_my_attributes` (atributos derivados del usuario), `get_teacher_names(uuid[])`
   (nombre público de profesores, `SECURITY DEFINER` acotado; salta la RLS de
   `profiles` para mostrar el profesor en las vistas de clases), `track_class_status`
-  (audita transiciones en `class_status_history`), `release_expired_holds`
+  (audita transiciones en `class_status_history`), `enforce_class_capacity`
+  (trigger `BEFORE INSERT` en `enrollments`: bloquea la fila de la clase con
+  `FOR UPDATE` y rechaza si el cupo ACTIVE está lleno — cupo a prueba de
+  concurrencia), `release_expired_holds`
   (libera bloques HELD vencidos cada 5 min vía `pg_cron`), más helpers de RLS y
   jobs de `pg_cron` para tareas programadas (regeneración de bloques, timeouts
   de reagendamiento, `process-refunds` cada 10 min, `process-payouts` cada 15 min).

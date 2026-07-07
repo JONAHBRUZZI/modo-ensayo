@@ -113,10 +113,20 @@ ya existía; faltaba toda la vista):
 que no ve las inscripciones creadas en el mismo carrito hasta confirmarse cada insert. Un carrito
 con **varias inscripciones a la misma clase** podía pasar el cupo. Se agrega un contador en memoria
 (`agregadosPorClase`) por clase durante el proceso.
-**Nota:** persiste una carrera teórica **entre carritos concurrentes** distintos (dos pagos casi
-simultáneos a la misma clase); resolverla del todo requeriría un control a nivel de BD
-(constraint/transacción). Fuera de alcance por ahora.
 **Estado:** Edge Function — **requiere `supabase functions deploy mercadopago-webhook`**.
+
+### 4.5 Cupo a prueba de concurrencia (control a nivel de BD) — PR #44 (migración)
+**Qué:** trigger `BEFORE INSERT` `enforce_class_capacity` sobre `enrollments`: bloquea la fila de la
+clase (`SELECT ... FOR UPDATE`) y cuenta las inscripciones ACTIVE antes de permitir el insert;
+rechaza con `CLASS_FULL` si el cupo está lleno.
+**Por qué:** cierra la carrera **entre carritos concurrentes** distintos (dos pagos casi simultáneos
+a la misma clase) que el fix en memoria de 4.4 no cubría — el chequeo count→insert del webhook no
+era atómico entre procesos.
+**Cómo:** el lock de fila serializa las inscripciones concurrentes a la misma clase; usa `count(*)`
+en vivo (sin columna denormalizada → sin drift) y `SECURITY DEFINER` para no quedar acotado por RLS.
+El webhook no requiere cambios: ya maneja el insert fallido (si el trigger rechaza, no crea el pago).
+**Archivos:** `migrations/20260707120000_enforce_class_capacity.sql`.
+**Estado:** **requiere aplicar la migración en el SQL Editor** (sin redeploy de Edge Functions).
 
 ---
 
@@ -156,5 +166,6 @@ y `06-API-Endpoints.md` (RPCs, `process-refunds`) al estado real del ciclo del d
 
 ## Acciones de despliegue pendientes de este documento
 
-1. `supabase functions deploy process-refunds` (fix 4.2 / PR #43).
-2. `supabase functions deploy mercadopago-webhook` (fix 4.4 / PR #43).
+1. `supabase functions deploy process-refunds` (fix 4.2 / PR #43). ✅ desplegada 07-jul.
+2. `supabase functions deploy mercadopago-webhook` (fix 4.4 / PR #43). ✅ desplegada 07-jul.
+3. Aplicar `20260707120000_enforce_class_capacity.sql` en el SQL Editor (fix 4.5 / PR #44). ⏳ pendiente.

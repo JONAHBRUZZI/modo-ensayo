@@ -167,6 +167,11 @@ export default {
         await materializeRoomReservation(admin, session, cart);
       } else {
         // Inscripción a clases (flujo original): crea enrollments + payments.
+        // agregadosPorClase cuenta las inscripciones ya creadas a cada clase EN ESTE
+        // carrito: el count de la BD no las ve hasta confirmarse cada insert, así que
+        // sin esto un carrito con varias inscripciones a la misma clase podría pasar
+        // el cupo (todas leen el mismo count inicial).
+        const agregadosPorClase: Record<string, number> = {};
         for (const item of cart.items) {
           const { data: cls } = await admin.from("classes")
             .select("id,status,capacity").eq("id", item.classId).single();
@@ -175,7 +180,8 @@ export default {
           const { count } = await admin.from("enrollments")
             .select("*", { count: "exact", head: true })
             .eq("class_id", item.classId).eq("status", "ACTIVE");
-          if (count && count >= cls.capacity) continue;
+          const yaAgregados = agregadosPorClase[item.classId] ?? 0;
+          if ((count ?? 0) + yaAgregados >= cls.capacity) continue;
 
           const { data: enrollment } = await admin.from("enrollments").insert({
             class_id: item.classId,
@@ -186,6 +192,7 @@ export default {
           }).select("id").single();
 
           if (enrollment) {
+            agregadosPorClase[item.classId] = yaAgregados + 1;
             await admin.from("payments").insert({
               enrollment_id: enrollment.id,
               amount: item.price,

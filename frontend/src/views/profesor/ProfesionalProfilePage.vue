@@ -56,6 +56,9 @@
           Cuenta conectada
         </span>
         <span class="text-gray-500 text-xs">Recibirás tus pagos automáticamente al confirmarse cada clase.</span>
+        <button type="button" @click="conectarMp" :disabled="mpLoading" class="btn-secondary text-xs !py-1 !px-3 ml-auto">
+          {{ mpLoading ? 'Redirigiendo...' : 'Cambiar cuenta' }}
+        </button>
       </div>
       <div v-else class="space-y-3">
         <p class="text-gray-300 text-sm">

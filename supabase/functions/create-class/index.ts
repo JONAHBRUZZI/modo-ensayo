@@ -76,10 +76,23 @@ export default {
         }
       }
 
-      // Guard Marketplace: para PUBLICAR una clase PROPIA (no borrador) el profesor
-      // debe tener MercadoPago conectado (se le liquida el pago). Las ASIGNADA no lo
-      // requieren: el honorario del profe dependiente se registra como payout (tracked).
+      // Guards para PUBLICAR una clase PROPIA (no borrador). Las ASIGNADA no los
+      // requieren acá: las crea la sede con honorario fijo al profe dependiente.
       if (!body.draft && !esAsignada) {
+        // 1. Perfil profesional completo (reputación/experiencia visible al alumno):
+        //    exige al menos especialidad y años de experiencia cargados.
+        const { data: pp } = await admin.from("professional_profiles")
+          .select("especialidad, disciplina_principal, experience_years")
+          .eq("id", userId).maybeSingle();
+        const tieneEspecialidad = !!(pp?.especialidad || pp?.disciplina_principal);
+        if (!pp || !tieneEspecialidad || pp.experience_years == null) {
+          return Response.json({
+            error: "Completa tu perfil profesional (especialidad y años de experiencia) antes de publicar una clase",
+            code: "PROFILE_INCOMPLETE",
+          }, { status: 409 });
+        }
+
+        // 2. MercadoPago conectado (se le liquida el pago al confirmarse la clase).
         const { data: seller } = await admin.from("mp_seller_accounts")
           .select("status").eq("user_id", userId).maybeSingle();
         if (!seller || seller.status !== "CONNECTED") {

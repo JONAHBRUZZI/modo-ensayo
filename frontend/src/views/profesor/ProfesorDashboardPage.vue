@@ -14,6 +14,32 @@
       </span>
     </div>
 
+    <!-- Aviso de perfil incompleto: aparece apenas el profesor entra a su panel -->
+    <router-link
+      v-if="readinessCargado && !profesorListo"
+      to="/profesor/perfil-profesional"
+      class="block mb-8 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-5 hover:bg-yellow-500/15 transition-colors"
+    >
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h2 class="text-white font-semibold">Completa tu perfil para poder publicar clases</h2>
+          <p class="text-gray-300 text-sm mt-0.5">
+            Antes de publicar tu primera clase necesitas:
+          </p>
+          <ul class="text-sm mt-1.5 space-y-0.5">
+            <li v-if="!perfilCompleto" class="text-yellow-300">• Completar tu perfil profesional (especialidad y experiencia)</li>
+            <li v-if="!mpConectado" class="text-yellow-300">• Conectar tu cuenta de MercadoPago para recibir tus pagos</li>
+          </ul>
+          <span class="inline-block mt-2 text-yellow-400 text-sm font-medium">Ir a mi perfil profesional →</span>
+        </div>
+      </div>
+    </router-link>
+
     <!-- Stats (pulsables → detalle) -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-10">
       <router-link to="/profesor/clases-propias" class="card group hover:border-primary/50 transition-colors">
@@ -117,11 +143,18 @@ import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
 import professionalProfileService from '@/services/professionalProfileService'
+import sellerService from '@/services/sellerService'
 
 const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
 
 const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, totalRetenido: 0, totalLiberado: 0 })
 const averageRating = ref(null)
+
+// Readiness del profesor para publicar (mismos requisitos que exige create-class).
+const perfilCompleto = ref(false)
+const mpConectado = ref(false)
+const readinessCargado = ref(false)
+const profesorListo = computed(() => perfilCompleto.value && mpConectado.value)
 
 // El estado vacío de onboarding se muestra si el profesor no tiene clases propias
 // (el flag de reservas puede estar en falso aunque existan clases).
@@ -149,13 +182,23 @@ onMounted(async () => {
     stats.value.totalLiberado = earnings.value?.resumen?.totalLiberado || 0
   }
 
-  // Cargar rating promedio
+  // Perfil profesional (rating + completitud) y estado de conexión MercadoPago.
+  // Mismos criterios que exige create-class al publicar, para avisar de inmediato.
   try {
     const profile = await professionalProfileService.getMine()
     if (profile?.averageRating) averageRating.value = profile.averageRating
+    perfilCompleto.value = !!(profile && (profile.especialidad || profile.disciplinaPrincipal) &&
+      profile.experienceYears != null)
   } catch (err) {
-    console.error('Error al cargar rating del profesor', err)
+    console.error('Error al cargar perfil del profesor', err)
   }
+  try {
+    const estado = await sellerService.getStatus()
+    mpConectado.value = !!estado?.connected
+  } catch (err) {
+    console.error('Error al cargar estado de MercadoPago', err)
+  }
+  readinessCargado.value = true
 })
 
 

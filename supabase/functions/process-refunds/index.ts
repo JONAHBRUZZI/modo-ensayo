@@ -96,9 +96,6 @@ async function processPaymentRefund(admin: any, payment: PaymentRow): Promise<vo
   // 2b. Siempre intentar reembolso por MercadoPago (el pago original fue por MP)
   const mpPaymentId = await resolveMercadoPagoPaymentId(admin, studentId, classId);
 
-  let refundChannel: "bank" | "mercadopago";
-  let refundReference: string;
-
   if (!mpPaymentId) {
     throw new Error(
       `Cannot resolve MercadoPago payment ID for student ${studentId}, class ${classId}`
@@ -123,14 +120,18 @@ async function processPaymentRefund(admin: any, payment: PaymentRow): Promise<vo
 
   if (!mpResp.ok) {
     const errorBody = await mpResp.text();
-    throw new Error(
-      `MercadoPago refund failed (${mpResp.status}): ${errorBody}`
-    );
+    // 5xx / 429: error transitorio de MP → se reintenta en la próxima pasada del cron.
+    if (mpResp.status >= 500 || mpResp.status === 429) {
+      throw new Error(`MercadoPago refund failed (${mpResp.status}): ${errorBody}`);
+    }
+    // 4xx: error permanente (pago no reembolsable, ya reembolsado, etc.). No tiene
+    // sentido reintentar indefinidamente: se marca FAILED para atención manual.
+    await marcarRefundFallido(admin, payment, studentId, mpPaymentId, mpResp.status, errorBody);
+    return;
   }
 
   const mpRefund = await mpResp.json();
-  refundChannel = "mercadopago";
-  refundReference = `mp_refund:${mpRefund.id ?? mpPaymentId}`;
+  const refundReference = `mp_refund:${mpRefund.id ?? mpPaymentId}`;
   logInfo("refund_mercadopago_success", {
     paymentId: payment.id,
     mpPaymentId,
@@ -164,12 +165,54 @@ async function processPaymentRefund(admin: any, payment: PaymentRow): Promise<vo
     resource_type: "payment",
     resource_id: payment.id,
     metadata: {
-      channel: refundChannel,
+      channel: "mercadopago",
       reference: refundReference,
       amount: payment.amount,
       student_id: studentId,
     },
   });
+}
+
+/**
+ * Marca un pago como FAILED (reembolso permanentemente fallido) para atención
+ * manual, sin reintentos. Idempotente: solo actúa si sigue en REFUND_PENDING.
+ */
+async function marcarRefundFallido(
+  admin: any,
+  payment: PaymentRow,
+  studentId: string,
+  mpPaymentId: string,
+  mpStatus: number,
+  errorBody: string,
+): Promise<void> {
+  const { data: updated } = await admin
+    .from("payments")
+    .update({ status: "FAILED" })
+    .eq("id", payment.id)
+    .eq("status", "REFUND_PENDING")
+    .select("id");
+
+  if (!updated || updated.length === 0) return; // ya procesado por otra pasada
+
+  await admin.from("audit_logs").insert({
+    actor_id: null,
+    action: "payment.refund_failed",
+    resource_type: "payment",
+    resource_id: payment.id,
+    metadata: {
+      student_id: studentId,
+      mp_payment_id: mpPaymentId,
+      mp_status: mpStatus,
+      error: errorBody?.slice(0, 500),
+      amount: payment.amount,
+    },
+  });
+
+  logWarn(
+    "refund_failed_permanent",
+    "MercadoPago rechazó el reembolso; requiere atención manual",
+    { paymentId: payment.id, mpStatus },
+  );
 }
 
 /**

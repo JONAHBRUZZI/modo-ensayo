@@ -14,28 +14,28 @@
       </span>
     </div>
 
-    <!-- Stats -->
+    <!-- Stats (pulsables → detalle) -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-10">
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Clases Propias</h3>
+      <router-link to="/profesor/clases-propias" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Clases Propias</h3>
         <p class="text-3xl font-bold text-white">{{ stats.propias || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Asignadas</h3>
+      </router-link>
+      <router-link to="/profesor/clases-asignadas" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Asignadas</h3>
         <p class="text-3xl font-bold text-primary">{{ stats.asignadas || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Total Alumnos</h3>
+      </router-link>
+      <router-link to="/profesor/metricas" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Total Alumnos</h3>
         <p class="text-3xl font-bold text-green-400">{{ stats.alumnos || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Retenido</h3>
+      </router-link>
+      <router-link to="/profesor/pagos" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Retenido</h3>
         <p class="text-3xl font-bold text-yellow-400">${{ stats.totalRetenido?.toLocaleString('es-CL') || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Liberado</h3>
+      </router-link>
+      <router-link to="/profesor/pagos" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Liberado</h3>
         <p class="text-3xl font-bold text-green-400">${{ stats.totalLiberado?.toLocaleString('es-CL') || 0 }}</p>
-      </div>
+      </router-link>
     </div>
 
     <!-- Seccion: Clases por Asignar (salas reservadas sin clase configurada) -->

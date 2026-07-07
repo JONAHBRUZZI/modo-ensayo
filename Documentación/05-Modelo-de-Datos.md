@@ -415,10 +415,13 @@ realizada (`COMPLETED`). Una fila por pago liberado; el giro real a MercadoPago 
   permiten. Las operaciones privilegiadas pasan por Edge Functions con la clave
   de servicio.
 - **Funciones / triggers**: `handle_new_user` (crea `profiles` al registrarse),
-  `get_my_attributes` (atributos derivados del usuario), `release_expired_holds`
+  `get_my_attributes` (atributos derivados del usuario), `get_teacher_names(uuid[])`
+  (nombre público de profesores, `SECURITY DEFINER` acotado; salta la RLS de
+  `profiles` para mostrar el profesor en las vistas de clases), `track_class_status`
+  (audita transiciones en `class_status_history`), `release_expired_holds`
   (libera bloques HELD vencidos cada 5 min vía `pg_cron`), más helpers de RLS y
   jobs de `pg_cron` para tareas programadas (regeneración de bloques, timeouts
-  de reagendamiento, etc.).
+  de reagendamiento, `process-refunds` cada 10 min, `process-payouts` cada 15 min).
 - **Migraciones**: el schema se versiona en `supabase/migrations/`. La base
   hosteada es la fuente de verdad; se sincroniza con la CLI.
 

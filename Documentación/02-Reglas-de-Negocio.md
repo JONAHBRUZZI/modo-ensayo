@@ -1,6 +1,6 @@
 # Reglas de Negocio · Modo Ensayo
 
-> **Versión:** 2.0 — Actualizado al 30-may-2026
+> **Versión:** 2.1 — Actualizado al 07-jul-2026
 > **Total de reglas:** 18 reglas formales del MVP
 
 Estas reglas son las restricciones e invariantes del sistema, sus mecanismos de aplicación y consecuencias documentadas. Todas están implementadas, validadas en código y/o en la base de datos.
@@ -111,10 +111,21 @@ Un único pago en MercadoPago genera una sesión de pago (`payment_sessions`, un
 ## R13 — Liberación o devolución por confirmación de clase
 
 Cuando el Admin de Sede confirma una clase como:
-- **`COMPLETED`** (realizada) → todas las filas de `payments` asociadas pasan a `RELEASED`. El Maestro recibe el pago (registrado en `teacher_payouts`).
-- **`SUSPENDED`** (no realizada) → todas las filas de `payments` pasan a `REFUND_PENDING`. Los alumnos reciben sus devoluciones.
+- **`COMPLETED`** (realizada) → todas las filas de `payments` asociadas pasan a `RELEASED`, se crea el `teacher_payouts` (PENDING) y se **liberan los bloques** de horario (`room_schedule_blocks` OCCUPIED → AVAILABLE).
+- **`SUSPENDED`** (no realizada) → todas las filas de `payments` pasan a `REFUND_PENDING`, se **cancelan las inscripciones** (`enrollments` → CANCELLED), se **liberan los bloques** y se notifica a cada alumno.
 
 Esta confirmación (Edge Function `confirm-class`) es la **única forma** de liberar pagos.
+
+**Reembolso (`process-refunds`, cron cada 10 min):** el reembolso se hace por
+**MercadoPago** (canal del pago original) y es **parcial**, por el monto exacto
+de cada inscripción (`payments.amount`) — un mismo pago de MP puede cubrir varias
+clases del carrito, así que se devuelve solo lo de la clase afectada, no el total.
+Usa `X-Idempotency-Key` por `payment.id`. Un error permanente de MP (4xx) marca el
+pago `FAILED` para atención manual; los transitorios (5xx/429) se reintentan.
+
+**Desembolso al profesor (`process-payouts`, cron cada 15 min):** el giro real
+(`disburseToSeller`) es un **stub de Fase 0** (money-out MercadoPago Chile
+pendiente): el `teacher_payouts` queda registrado pero el dinero aún no se gira.
 
 ---
 
@@ -145,7 +156,7 @@ Cuando el Maestro acepta un reagendamiento, los alumnos inscritos reciben una no
 - Su silencio se interpreta como **rechazo** automático.
 - El pago pasa a `REFUND_PENDING` según método preferido.
 
-- **Implementación:** `RescheduleTimeoutProcessor` (Spring `@Scheduled` cada hora) + `@EnableScheduling`.
+- **Implementación:** Edge Function `student-decision` (aceptar/rechazar del alumno; el rechazo pasa su `payments` a REFUND_PENDING) + la vista `AlumnoReagendamientoPage` (`/alumno/reagendamiento/:id`) con banner en "Mis Clases" y notificación accionable. El vencimiento a las 48 h lo procesa un job `pg_cron` que marca las respuestas sin responder como `TIMEOUT`.
 
 ---
 

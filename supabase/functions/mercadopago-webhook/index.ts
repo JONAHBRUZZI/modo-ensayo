@@ -203,10 +203,21 @@ export default {
         await admin.from("cart_items").delete().eq("owner_id", session.owner_id);
       }
 
+      // Costo real que cobró MercadoPago y neto recibido (para el margen del
+      // admin). fee_details suma todas las comisiones del pago; net_received_amount
+      // es lo que efectivamente llegó a la cuenta. Pagos viejos no traen fee.
+      const mpFeeAmount = Array.isArray(payment.fee_details)
+        ? payment.fee_details.reduce(
+          (acc: number, f: { amount?: number }) => acc + Number(f.amount ?? 0), 0)
+        : null;
+      const netReceivedAmount = payment.transaction_details?.net_received_amount ?? null;
+
       await admin.from("payment_sessions").update({
         status: "APPROVED",
         mercado_pago_payment_id: String(paymentId),
         processed_at: new Date().toISOString(),
+        mp_fee_amount: mpFeeAmount,
+        net_received_amount: netReceivedAmount,
       }).eq("id", session.id);
 
       await admin.from("audit_logs").insert({

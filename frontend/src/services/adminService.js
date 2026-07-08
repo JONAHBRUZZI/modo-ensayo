@@ -89,7 +89,7 @@ export default {
   // Comisiones configurables (app_settings). El admin las lee y edita vía las
   // policies has_role('ADMIN'). value es jsonb: guardamos/leemos un número.
   async getSettings() {
-    const keys = ['room_reservation_commission_pct', 'marketplace_commission_pct']
+    const keys = ['room_reservation_commission_pct', 'marketplace_commission_pct', 'payout_cutoff_day']
     const { data, error } = await supabase.from('app_settings').select('key, value').in('key', keys)
     if (error) throw error
     const out = {}
@@ -203,5 +203,29 @@ export default {
 
   async deleteUser(userId) {
     return invokeFunction('admin-users', { body: { action: 'deleteUser', userId } })
+  },
+
+  // ── Panel de pagos (Edge Function admin-payments, requiere service_role) ──
+  // Giros pendientes a profesores + reembolsos fallidos.
+  async getPayments() {
+    return invokeFunction('admin-payments', { body: { action: 'list' } })
+  },
+
+  // Finanzas del ciclo de corte: costo real MP vs. comisión cobrada (margen).
+  // month opcional 'YYYY-MM'; por defecto el ciclo actual.
+  async getFinance(month) {
+    return invokeFunction('admin-payments', { body: { action: 'finance', ...(month ? { month } : {}) } })
+  },
+
+  async markPayoutPaid(payoutId, reference) {
+    return invokeFunction('admin-payments', { body: { action: 'markPayoutPaid', payoutId, ...(reference ? { reference } : {}) } })
+  },
+
+  async retryRefund(paymentId) {
+    return invokeFunction('admin-payments', { body: { action: 'retryRefund', paymentId } })
+  },
+
+  async markRefundResolved(paymentId) {
+    return invokeFunction('admin-payments', { body: { action: 'markRefundResolved', paymentId } })
   }
 }

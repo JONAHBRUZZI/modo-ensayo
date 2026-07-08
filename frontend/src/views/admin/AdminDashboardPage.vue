@@ -27,6 +27,25 @@
       </router-link>
     </div>
 
+    <!-- Alerta: giros pendientes -->
+    <router-link
+      v-if="pagosPendientes.count > 0"
+      to="/admin/pagos"
+      class="card border-yellow-500/40 bg-yellow-500/5 flex items-center justify-between mb-10 hover:border-yellow-500/70 transition-colors group"
+    >
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">💸</span>
+        <div>
+          <p class="text-white font-semibold">
+            {{ pagosPendientes.count }} giro{{ pagosPendientes.count === 1 ? '' : 's' }} pendiente{{ pagosPendientes.count === 1 ? '' : 's' }}
+            por {{ money(pagosPendientes.total) }}
+          </p>
+          <p class="text-gray-400 text-sm">Clases validadas por pagar a profesores.</p>
+        </div>
+      </div>
+      <span class="text-yellow-400 text-sm group-hover:translate-x-0.5 transition-transform">Gestionar →</span>
+    </router-link>
+
     <!-- Charts grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
       <!-- Usuarios por rol (Pie) -->
@@ -82,6 +101,33 @@
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Ingresos Total</h3>
         <p class="text-2xl font-bold text-green-400">${{ totalesIngreso.total.toLocaleString('es-CL') }}</p>
+      </div>
+    </div>
+
+    <!-- Margen / costo MercadoPago del ciclo -->
+    <div class="flex items-center justify-between mb-1 mt-6">
+      <h2 class="text-lg font-semibold text-white">Margen · Costo MercadoPago</h2>
+      <router-link to="/admin/pagos" class="text-xs text-primary hover:underline">Ver detalle →</router-link>
+    </div>
+    <p class="text-gray-500 text-sm mb-4">Ciclo de corte actual. Ayuda a fijar un % de comisión que deje margen.</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Ingresos</h3>
+        <p class="text-2xl font-bold text-white">{{ money(finance.ingresos) }}</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Comisión cobrada</h3>
+        <p class="text-2xl font-bold text-purple-400">{{ money(finance.comisionCobrada) }}</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Costo MercadoPago</h3>
+        <p class="text-2xl font-bold text-red-400">{{ money(finance.costoMp) }}</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Margen neto</h3>
+        <p class="text-2xl font-bold" :class="(finance.margen || 0) >= 0 ? 'text-green-400' : 'text-red-400'">
+          {{ money(finance.margen) }}
+        </p>
       </div>
     </div>
 
@@ -289,6 +335,11 @@ const systemReviews = ref([])
 const sysStats = ref({})
 const granularidad = ref('month')
 
+// Resumen de pagos: giros pendientes (alerta) y margen del ciclo actual.
+const pagosPendientes = ref({ count: 0, total: 0 })
+const finance = ref({})
+const money = (v) => '$' + Number(v || 0).toLocaleString('es-CL')
+
 // Comisiones editables + estado del modal de confirmación.
 const comisiones = ref({ arriendo: 0, clases: 0 })
 const comisionesActuales = ref({})
@@ -398,9 +449,19 @@ async function confirmarGuardar() {
   }
 }
 
+async function cargarPagos() {
+  try {
+    const p = await adminService.getPayments()
+    const payouts = p?.payouts || []
+    pagosPendientes.value = { count: payouts.length, total: payouts.reduce((a, x) => a + Number(x.netAmount || 0), 0) }
+  } catch { /* sin permiso / sin datos */ }
+  try { finance.value = await adminService.getFinance() } catch { finance.value = {} }
+}
+
 onMounted(async () => {
   await cargarStats()
   await cargarComisiones()
+  await cargarPagos()
   try { systemReviews.value = (await reviewService.getSystemReviews()).data || [] } catch { systemReviews.value = [] }
   try { sysStats.value = (await reviewService.getSystemStats()).data || {} } catch { sysStats.value = {} }
 })

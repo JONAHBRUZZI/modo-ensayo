@@ -333,6 +333,12 @@ const routes = [
         name: 'RolesManagement',
         component: () => import('@/views/admin/DynamicRolesPage.vue'),
         meta: { requiresAuth: true, roles: ['ADMIN'] }
+      },
+      {
+        path: 'admin/pagos',
+        name: 'AdminPagos',
+        component: () => import('@/views/admin/AdminPagosPage.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN'] }
       }
     ]
   },

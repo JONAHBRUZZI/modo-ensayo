@@ -244,6 +244,8 @@ Sesión de checkout contra MercadoPago.
 | status | `payment_session_status` | DEFAULT 'PENDING' |
 | mercado_pago_payment_id | text | |
 | processed_at | timestamptz | |
+| mp_fee_amount | numeric | Comisión real que cobró MercadoPago en el pago (suma de `fee_details`). La llena el webhook; NULL en pagos históricos |
+| net_received_amount | numeric | Neto efectivamente recibido (`transaction_details.net_received_amount`). La llena el webhook; NULL en históricos |
 
 ### `payments`
 Pago retenido por inscripción (se libera cuando la clase se realiza).
@@ -365,10 +367,15 @@ State temporal del flujo OAuth (anti-CSRF). Se borra al completar el callback.
 | user_id | uuid | FK → auth.users(id) |
 | created_at | timestamptz | DEFAULT now() |
 
-### `app_settings` (clave relevante)
+### `app_settings` (claves relevantes)
+Configuración de negocio editable sin redeploy (jsonb). Solo `service_role` la
+escribe; el admin la lee/edita vía Edge Functions y policies `has_role('ADMIN')`.
+
 | key | Tipo de valor | Descripción |
 |-----|---------------|-------------|
 | `room_reservation_commission_pct` | numeric (0–100) | Comisión de la plataforma sobre el arriendo. Default: 0 |
+| `marketplace_commission_pct` | numeric (0–100) | Comisión de la plataforma sobre las clases. Default: 10 |
+| `payout_cutoff_day` | numeric (1–28) | Día del mes en que cierra el ciclo de giros a profesores; el panel de admin agrupa los payouts por ese ciclo. Default: 24 |
 
 ### `teacher_payouts`
 Registro del desembolso del honorario al profesor cuando su clase se confirma como

@@ -77,8 +77,9 @@ Definidas en `supabase/functions/`. `verify_jwt` se configura por función en
 | `admin-approve-venue` | Aprobar/rechazar sede (admin) |
 | `admin-stats` | Estadísticas de la plataforma (admin) |
 | `admin-users` | Gestión de usuarios y roles (admin) |
+| `admin-payments` | Panel de pagos (admin, service role). Acciones: `list` (giros `teacher_payouts` PENDING enriquecidos + reembolsos `payments` FAILED con su error de `audit_logs`), `finance` (costo real de MercadoPago vs. comisión cobrada = **margen** del ciclo de corte), `markPayoutPaid` (PENDING→PAID + `mp_reference`), `retryRefund` (FAILED→REFUND_PENDING) y `markRefundResolved` (FAILED→REFUNDED). No-admin → 403 |
 | `mercadopago-create-preference` | Crear preferencia de pago (inscripción a clases) |
-| `mercadopago-webhook` | Webhook de notificaciones de pago (sin JWT); discrimina entre inscripción y reserva de sala |
+| `mercadopago-webhook` | Webhook de notificaciones de pago (sin JWT); verifica firma HMAC, discrimina entre inscripción y reserva de sala, lee el pago con el token de la plataforma o de la sede vendedora, y guarda el **fee real de MercadoPago** (`mp_fee_amount`/`net_received_amount`) en `payment_sessions` |
 | `mp-connect-start` | Inicia OAuth de MercadoPago Connect; genera state anti-CSRF y devuelve URL de autorización |
 | `mp-connect-callback` | Callback OAuth (sin JWT); valida state, canjea code→tokens y guarda cuenta del vendedor |
 | `reserve-room-preference` | Crea preferencia de arriendo de sala con split automático a la cuenta MercadoPago de la sede |

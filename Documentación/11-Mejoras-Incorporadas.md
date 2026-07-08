@@ -128,6 +128,27 @@ El webhook no requiere cambios: ya maneja el insert fallido (si el trigger recha
 **Archivos:** `migrations/20260707120000_enforce_class_capacity.sql`.
 **Estado:** **requiere aplicar la migración en el SQL Editor** (sin redeploy de Edge Functions).
 
+### 4.6 Panel de admin de pagos + costo real de MercadoPago + corte mensual — (desplegada)
+**Qué:** panel de administración para gestionar el dinero que hoy solo se veía por SQL:
+- **Recordatorio** de giros pendientes (clases validadas por la sede sin pagar al profesor),
+  agrupados por profesor con total por profesor y por ciclo.
+- **Día de corte mensual** configurable (`app_settings.payout_cutoff_day`, default 24): el panel
+  agrupa los `teacher_payouts` por ese ciclo (ej. cerrar el 24, pagar antes del 26).
+- **Costo real de MercadoPago** por transacción: el webhook guarda `mp_fee_amount` y
+  `net_received_amount` en `payment_sessions`; el panel muestra **ingresos vs. comisión cobrada
+  vs. costo MP = margen** del ciclo, para fijar un % de comisión con margen.
+- **Giros manuales** (PENDING→PAID con referencia) y **reembolsos fallidos** (reintentar
+  FAILED→REFUND_PENDING o marcar resuelto FAILED→REFUNDED).
+**Por qué:** el desembolso real está bloqueado (Fase 0, money-out MercadoPago Chile), así que el
+admin gira manualmente; necesitaba un recordatorio, agrupación por corte y ver el margen real.
+**Cómo:** Edge Function `admin-payments` (rol ADMIN, service role) con acciones `list`, `finance`,
+`markPayoutPaid`, `retryRefund`, `markRefundResolved`; el fee se extrae de `payment.fee_details`
+en el webhook. No cambia el flujo de cobro ni a quién apunta el payout.
+**Archivos:** `functions/admin-payments/index.ts`, `functions/mercadopago-webhook/index.ts`,
+`migrations/20260707000000_mp_fee_and_cutoff.sql`, `views/admin/AdminPagosPage.vue`,
+`views/admin/AdminDashboardPage.vue`, `services/adminService.js`, `router/index.js`, `config.toml`.
+**Estado:** frontend desplegado; Edge Functions **desplegadas** y migración **aplicada** (07-jul).
+
 ---
 
 ## 5. Dashboard del profesor (UX)
@@ -167,5 +188,7 @@ y `06-API-Endpoints.md` (RPCs, `process-refunds`) al estado real del ciclo del d
 ## Acciones de despliegue pendientes de este documento
 
 1. `supabase functions deploy process-refunds` (fix 4.2 / PR #43). ✅ desplegada 07-jul.
-2. `supabase functions deploy mercadopago-webhook` (fix 4.4 / PR #43). ✅ desplegada 07-jul.
+2. `supabase functions deploy mercadopago-webhook` (fix 4.4 + fee real 4.6). ✅ desplegada 07-jul.
 3. Aplicar `20260707120000_enforce_class_capacity.sql` en el SQL Editor (fix 4.5 / PR #44). ⏳ pendiente.
+4. `supabase functions deploy admin-payments` (panel de pagos 4.6). ✅ desplegada 07-jul.
+5. Aplicar `20260707000000_mp_fee_and_cutoff.sql` en el SQL Editor (panel de pagos 4.6). ✅ aplicada 07-jul.

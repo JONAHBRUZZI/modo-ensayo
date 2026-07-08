@@ -400,7 +400,7 @@ const modalMetrica = ref({ abierto: false, key: null, cfg: null })
 
 const metricasCfg = [
   { key: 'ocupacion', titulo: 'M1 · Ocupación', objetivo: 80,
-    explicacion: 'De todos los cupos que ofrecieron las clases que abrieron a inscripción, cuántos se llenaron con alumnos. No mira la capacidad física de la sala, sino los cupos publicados. Un número alto significa que las clases se llenan.' },
+    explicacion: 'De la capacidad física de las salas donde se dictan las clases, qué porcentaje se llenó con alumnos inscritos. Se mide contra el aforo de la sala (no el cupo de la clase). Un número alto significa que las salas se aprovechan bien.' },
   { key: 'conversion', titulo: 'M2 · Conversión', objetivo: 70,
     explicacion: 'De cada checkout que un alumno inició, cuántos terminaron en un pago aprobado. Los que abandonan el carrito sin pagar bajan el número. Mide si el precio y el flujo de compra convencen.' },
   { key: 'asistencia', titulo: 'M3 · Asistencia', objetivo: 90,

@@ -204,7 +204,7 @@ y `06-API-Endpoints.md` (RPCs, `process-refunds`) al estado real del ciclo del d
 Fórmulas:
 | Métrica | Objetivo | Fórmula | Qué mide |
 |---|---|---|---|
-| M1 Ocupación | >80% | inscripciones ACTIVE ÷ cupos de clases abiertas | Cuánto se llenan las clases (por cupos publicados, no capacidad de sala) |
+| M1 Ocupación | >80% | inscripciones ACTIVE ÷ capacidad de la sala (`rooms.capacity`) | Cuánto se aprovecha el aforo físico de las salas |
 | M2 Conversión | >70% | sesiones APPROVED ÷ total sesiones | Cuántos checkouts terminan en pago (penaliza abandono) |
 | M3 Asistencia | >90% | asistencias `present` ÷ marcas totales | Cuántos inscritos asistieron (sobre inscritos, no capacidad) |
 | M4 Disponibilidad | >95% | latidos `uptime_checks` registrados ÷ esperados | % de tiempo en línea (latido interno cada 5 min); global |

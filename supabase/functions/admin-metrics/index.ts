@@ -27,7 +27,7 @@ export default {
       const [venuesR, classesR, roomsR, enrollsR, attsR, sessionsR] = await Promise.all([
         admin.from("venues").select("id, name"),
         admin.from("classes").select("id, capacity, status, room_id").limit(20000),
-        admin.from("rooms").select("id, venue_id").limit(20000),
+        admin.from("rooms").select("id, venue_id, capacity").limit(20000),
         admin.from("enrollments").select("class_id, status").limit(50000),
         admin.from("attendances").select("class_id, present").limit(50000),
         admin.from("payment_sessions").select("cart_snapshot, status").limit(50000),
@@ -35,6 +35,7 @@ export default {
 
       const venues: Any[] = venuesR.data ?? [];
       const roomToVenue = new Map<string, string>((roomsR.data ?? []).map((r: Any) => [r.id, r.venue_id]));
+      const roomCapById = new Map<string, number>((roomsR.data ?? []).map((r: Any) => [r.id, Number(r.capacity ?? 0)]));
       const classes: Any[] = classesR.data ?? [];
       const classToVenue = new Map<string, string | null>();
       const classInfo = new Map<string, Any>();
@@ -63,8 +64,9 @@ export default {
         return porSede.get(venueId)!;
       };
 
-      // ── M1 Ocupación: cupos ofrecidos vs inscripciones activas ──
-      // Cupos: clases que "abrieron" (no borrador ni cancelada) con capacity.
+      // ── M1 Ocupación: inscripciones activas vs CAPACIDAD DE LA SALA ──
+      // Por cada clase abierta (no borrador/cancelada) con sala, el denominador es
+      // el aforo físico de la sala (rooms.capacity), no el cupo de la clase.
       const activasPorClase = new Map<string, number>();
       for (const e of enrollsR.data ?? []) {
         if (e.status !== "ACTIVE") continue;
@@ -72,11 +74,13 @@ export default {
       }
       const ABIERTAS = new Set(["PUBLISHED", "IN_PROGRESS", "FULL", "COMPLETED", "SUSPENDED", "POR_VALIDAR"]);
       for (const c of classes) {
-        if (!ABIERTAS.has(c.status) || !(c.capacity > 0)) continue;
+        if (!ABIERTAS.has(c.status)) continue;
+        const salaCap = c.room_id ? (roomCapById.get(c.room_id) ?? 0) : 0;
+        if (!(salaCap > 0)) continue; // sin sala/aforo no se puede medir ocupación
         const activos = activasPorClase.get(c.id) ?? 0;
-        global.ocupActive += activos; global.ocupCap += c.capacity;
+        global.ocupActive += activos; global.ocupCap += salaCap;
         const s = accSede(classToVenue.get(c.id) ?? null);
-        if (s) { s.ocupActive += activos; s.ocupCap += c.capacity; }
+        if (s) { s.ocupActive += activos; s.ocupCap += salaCap; }
       }
 
       // ── M3 Asistencia: presentes vs total de marcas ──

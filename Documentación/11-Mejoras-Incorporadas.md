@@ -126,7 +126,7 @@ era atómico entre procesos.
 en vivo (sin columna denormalizada → sin drift) y `SECURITY DEFINER` para no quedar acotado por RLS.
 El webhook no requiere cambios: ya maneja el insert fallido (si el trigger rechaza, no crea el pago).
 **Archivos:** `migrations/20260707120000_enforce_class_capacity.sql`.
-**Estado:** **requiere aplicar la migración en el SQL Editor** (sin redeploy de Edge Functions).
+**Estado:** migración **aplicada** en SQL Editor (08-jul).
 
 ### 4.6 Panel de admin de pagos + costo real de MercadoPago + corte mensual — (desplegada)
 **Qué:** panel de administración para gestionar el dinero que hoy solo se veía por SQL:
@@ -189,6 +189,6 @@ y `06-API-Endpoints.md` (RPCs, `process-refunds`) al estado real del ciclo del d
 
 1. `supabase functions deploy process-refunds` (fix 4.2 / PR #43). ✅ desplegada 07-jul.
 2. `supabase functions deploy mercadopago-webhook` (fix 4.4 + fee real 4.6). ✅ desplegada 07-jul.
-3. Aplicar `20260707120000_enforce_class_capacity.sql` en el SQL Editor (fix 4.5 / PR #44). ⏳ pendiente.
+3. Aplicar `20260707120000_enforce_class_capacity.sql` en el SQL Editor (fix 4.5 / PR #44). ✅ aplicada 08-jul.
 4. `supabase functions deploy admin-payments` (panel de pagos 4.6). ✅ desplegada 07-jul.
 5. Aplicar `20260707000000_mp_fee_and_cutoff.sql` en el SQL Editor (panel de pagos 4.6). ✅ aplicada 07-jul.

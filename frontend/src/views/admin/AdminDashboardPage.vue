@@ -203,8 +203,8 @@
 
       <div class="card text-center">
         <h3 class="text-gray-400 text-xs mb-1">M4 · Disponibilidad</h3>
-        <a href="https://uptimerobot.com/dashboard"
-           target="_blank"
+        <a href="https://dashboard.uptimerobot.com/"
+           target="_blank" rel="noopener noreferrer"
            class="text-xl font-bold text-green-400 hover:underline block mt-1">
           Ver reporte ↗
         </a>

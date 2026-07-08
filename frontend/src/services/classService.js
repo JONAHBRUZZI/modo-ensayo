@@ -125,18 +125,10 @@ export default {
     return camelize(data)
   },
 
-  async markAttendance(classId, data) {
-    const { data: row, error } = await supabase
-      .from('attendances')
-      .insert({
-        class_id: classId,
-        beneficiary_id: data.beneficiaryId,
-        beneficiary_type: data.beneficiaryType || 'SELF',
-        present: data.present
-      })
-      .select('*').single()
-    if (error) throw error
-    return camelize(row)
+  // Guarda toda la lista de asistencia de una vez. marks: [{ enrollmentId, present }].
+  // La Edge Function resuelve el beneficiario real y hace upsert (service role).
+  async saveAttendance(classId, marks) {
+    return invokeFunction('save-attendance', { body: { classId, marks } })
   },
 
   // Alumnos inscritos en una clase (+ asistencia). RPC seguro que autoriza al

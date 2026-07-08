@@ -438,6 +438,12 @@ verify_jwt = true
 [functions.admin-payments]
 verify_jwt = true
 
+[functions.admin-metrics]
+verify_jwt = true
+
+[functions.save-attendance]
+verify_jwt = true
+
 # Invocadas por pg_cron via pg_net con service_role key (JWT válido).
 # verify_jwt = true es correcto aquí: la service_role key genera un JWT que
 # Supabase verifica normalmente. El handler usa auth: "service_role".

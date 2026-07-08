@@ -170,57 +170,70 @@
       </div>
     </BottomSheet>
 
-    <!-- Métricas del docente -->
-    <h2 class="text-lg font-semibold text-white mb-4 mt-6">Métricas de Rendimiento</h2>
+    <!-- Métricas de rendimiento (clicleables → desglose por sede) -->
+    <h2 class="text-lg font-semibold text-white mb-1 mt-6">Métricas de Rendimiento</h2>
+    <p class="text-gray-500 text-sm mb-4">Toca cualquier métrica para ver su explicación y el desglose por sede.</p>
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-
-      <div class="card text-center">
-        <h3 class="text-gray-400 text-xs mb-1">M1 · Tasa Ocupacion</h3>
-        <p class="text-3xl font-bold mt-1"
-           :class="(stats.tasaOcupacion||0) >= 80 ? 'text-green-400' : 'text-yellow-400'">
-          {{ stats.tasaOcupacion || 0 }}%
+      <button
+        v-for="m in metricasCfg"
+        :key="m.key"
+        @click="abrirMetrica(m.key)"
+        class="card text-center hover:border-primary/50 transition-colors cursor-pointer"
+      >
+        <h3 class="text-gray-400 text-xs mb-1">{{ m.titulo }}</h3>
+        <p v-if="m.externa" class="text-xl font-bold text-green-400 mt-1">Ver reporte ↗</p>
+        <p v-else class="text-3xl font-bold mt-1" :class="colorMetrica(valorGlobal(m.key), m.objetivo)">
+          {{ fmtPct(valorGlobal(m.key)) }}
         </p>
-        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 80%</p>
-      </div>
-
-      <div class="card text-center">
-        <h3 class="text-gray-400 text-xs mb-1">M2 · Conversion a Pago</h3>
-        <p class="text-3xl font-bold mt-1"
-           :class="(stats.conversionPago||0) >= 70 ? 'text-green-400' : 'text-red-400'">
-          {{ stats.conversionPago || 0 }}%
-        </p>
-        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 70%</p>
-      </div>
-
-      <div class="card text-center">
-        <h3 class="text-gray-400 text-xs mb-1">M3 · Tasa Asistencia</h3>
-        <p class="text-3xl font-bold mt-1"
-           :class="(stats.tasaAsistencia||0) >= 90 ? 'text-green-400' : 'text-yellow-400'">
-          {{ stats.tasaAsistencia || 0 }}%
-        </p>
-        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 90%</p>
-      </div>
-
-      <div class="card text-center">
-        <h3 class="text-gray-400 text-xs mb-1">M4 · Disponibilidad</h3>
-        <a href="https://dashboard.uptimerobot.com/"
-           target="_blank" rel="noopener noreferrer"
-           class="text-xl font-bold text-green-400 hover:underline block mt-1">
-          Ver reporte ↗
-        </a>
-        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 95%</p>
-      </div>
-
-      <div class="card text-center">
-        <h3 class="text-gray-400 text-xs mb-1">M5 · Pagos Exitosos</h3>
-        <p class="text-3xl font-bold mt-1"
-           :class="(stats.tasaPagosExitosos||100) >= 98 ? 'text-green-400' : 'text-yellow-400'">
-          {{ stats.tasaPagosExitosos || 100 }}%
-        </p>
-        <p class="text-xs text-gray-500 mt-1">objetivo &gt; 98%</p>
-      </div>
-
+        <p class="text-xs text-gray-500 mt-1">objetivo &gt; {{ m.objetivo }}%</p>
+      </button>
     </div>
+
+    <!-- Modal: detalle de la métrica + desglose por sede -->
+    <BottomSheet v-model="modalMetrica.abierto">
+      <template v-if="modalMetrica.cfg">
+        <h3 class="text-lg font-semibold text-white mb-1">{{ modalMetrica.cfg.titulo }}</h3>
+        <p class="text-gray-400 text-sm mb-4">{{ modalMetrica.cfg.explicacion }}</p>
+
+        <!-- Valor global -->
+        <div class="flex items-center justify-between card mb-4">
+          <span class="text-gray-300 text-sm">Global · Modo Ensayo</span>
+          <span v-if="!modalMetrica.cfg.externa" class="text-2xl font-bold"
+                :class="colorMetrica(valorGlobal(modalMetrica.key), modalMetrica.cfg.objetivo)">
+            {{ fmtPct(valorGlobal(modalMetrica.key)) }}
+          </span>
+          <span v-else class="text-sm text-gray-500">medición externa</span>
+        </div>
+
+        <!-- M4: infraestructura global, sin desglose por sede -->
+        <div v-if="modalMetrica.cfg.externa" class="text-sm text-gray-400 space-y-3">
+          <p>
+            La disponibilidad se mide con un monitor externo (UptimeRobot) que hace ping a la
+            plataforma. Es infraestructura <span class="text-white">global</span>: la app es la misma
+            para todas las sedes, así que no se divide por sede.
+          </p>
+          <a href="https://dashboard.uptimerobot.com/" target="_blank" rel="noopener noreferrer"
+             class="inline-block text-primary hover:underline">Ver reporte de uptime ↗</a>
+        </div>
+
+        <!-- M1/M2/M3/M5: desglose por sede -->
+        <template v-else>
+          <h4 class="text-white font-medium text-sm mb-2">Por sede</h4>
+          <div v-if="sedesMetrica.length === 0" class="text-gray-500 text-sm py-6 text-center">
+            Aún no hay datos de esta métrica por sede.
+          </div>
+          <div v-else class="divide-y divide-white/5 max-h-72 overflow-y-auto">
+            <div v-for="s in sedesMetrica" :key="s.venueId" class="flex items-center justify-between py-2.5 gap-3">
+              <span class="text-gray-300 text-sm truncate">{{ s.venueName }}</span>
+              <span class="text-sm font-bold flex-shrink-0"
+                    :class="colorMetrica(s[modalMetrica.key], modalMetrica.cfg.objetivo)">
+                {{ fmtPct(s[modalMetrica.key]) }}
+              </span>
+            </div>
+          </div>
+        </template>
+      </template>
+    </BottomSheet>
 
     <!-- ════ Feedback de la plataforma (Voz del usuario) ════ -->
     <div class="flex items-center justify-between mb-1 mt-10">
@@ -340,6 +353,38 @@ const pagosPendientes = ref({ count: 0, total: 0 })
 const finance = ref({})
 const money = (v) => '$' + Number(v || 0).toLocaleString('es-CL')
 
+// Métricas de rendimiento (global + por sede) y modal de detalle.
+const metrics = ref({ global: {}, porSede: [] })
+const modalMetrica = ref({ abierto: false, key: null, cfg: null })
+
+const metricasCfg = [
+  { key: 'ocupacion', titulo: 'M1 · Ocupación', objetivo: 80,
+    explicacion: 'De todos los cupos que ofrecieron las clases que abrieron a inscripción, cuántos se llenaron con alumnos. No mira la capacidad física de la sala, sino los cupos publicados. Un número alto significa que las clases se llenan.' },
+  { key: 'conversion', titulo: 'M2 · Conversión', objetivo: 70,
+    explicacion: 'De cada checkout que un alumno inició, cuántos terminaron en un pago aprobado. Los que abandonan el carrito sin pagar bajan el número. Mide si el precio y el flujo de compra convencen.' },
+  { key: 'asistencia', titulo: 'M3 · Asistencia', objetivo: 90,
+    explicacion: 'De todos los alumnos inscritos a los que el profesor pasó lista, cuántos estuvieron presentes. Se mide sobre los inscritos, no sobre la capacidad de la sala. Un número alto significa buen compromiso de los alumnos.' },
+  { key: 'disponibilidad', titulo: 'M4 · Disponibilidad', objetivo: 95, externa: true,
+    explicacion: 'Qué porcentaje del tiempo la plataforma estuvo en línea, medido por un monitor externo. Si el sitio se cae, no podría medirse a sí mismo, por eso la medición es externa.' },
+  { key: 'pagosExitosos', titulo: 'M5 · Pagos Exitosos', objetivo: 98,
+    explicacion: 'De los intentos de pago que llegaron a resolverse (excluye los abandonados), cuántos fueron exitosos. Un número bajo indica una falla técnica en el cobro (MercadoPago o el checkout), no falta de interés.' },
+]
+
+const fmtPct = (v) => (v == null ? '—' : v + '%')
+const valorGlobal = (key) => metrics.value.global?.[key]
+const colorMetrica = (v, objetivo) => (v == null ? 'text-gray-500' : (v >= objetivo ? 'text-green-400' : 'text-yellow-400'))
+
+// Sedes con dato para la métrica abierta (oculta las que no tienen denominador).
+const sedesMetrica = computed(() => {
+  const key = modalMetrica.value.key
+  if (!key) return []
+  return (metrics.value.porSede || []).filter((s) => s[key] != null)
+})
+
+function abrirMetrica(key) {
+  modalMetrica.value = { abierto: true, key, cfg: metricasCfg.find((m) => m.key === key) }
+}
+
 // Comisiones editables + estado del modal de confirmación.
 const comisiones = ref({ arriendo: 0, clases: 0 })
 const comisionesActuales = ref({})
@@ -458,10 +503,15 @@ async function cargarPagos() {
   try { finance.value = await adminService.getFinance() } catch { finance.value = {} }
 }
 
+async function cargarMetrics() {
+  try { metrics.value = await adminService.getMetrics() } catch { metrics.value = { global: {}, porSede: [] } }
+}
+
 onMounted(async () => {
   await cargarStats()
   await cargarComisiones()
   await cargarPagos()
+  await cargarMetrics()
   try { systemReviews.value = (await reviewService.getSystemReviews()).data || [] } catch { systemReviews.value = [] }
   try { sysStats.value = (await reviewService.getSystemStats()).data || {} } catch { sysStats.value = {} }
 })

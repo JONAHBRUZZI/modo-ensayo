@@ -227,5 +227,10 @@ export default {
 
   async markRefundResolved(paymentId) {
     return invokeFunction('admin-payments', { body: { action: 'markRefundResolved', paymentId } })
+  },
+
+  // Métricas de rendimiento (M1/M2/M3/M5) globales y por sede. EF admin-metrics.
+  async getMetrics() {
+    return invokeFunction('admin-metrics', { body: {} })
   }
 }

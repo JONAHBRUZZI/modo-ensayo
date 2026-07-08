@@ -218,6 +218,9 @@ Bloques de agenda generados por sala.
 | present | bool | NOT NULL |
 | marked_by | text | |
 
+> Índice único `(class_id, beneficiary_id)` (migración `20260708000000`): una marca de
+> asistencia por persona y clase, para el upsert idempotente de `save-attendance`.
+
 ## 4. Carrito y pagos
 
 ### `cart_items`

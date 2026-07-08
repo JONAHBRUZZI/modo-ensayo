@@ -174,7 +174,53 @@ y `06-API-Endpoints.md` (RPCs, `process-refunds`) al estado real del ciclo del d
 
 ---
 
-## 7. Pendiente / fuera de alcance (para contexto)
+## 7. Asistencia — "pasar lista" (desplegada)
+
+**Qué:** se rehízo el flujo de asistencia del profesor, que estaba roto:
+- **Todos parten como Presente** por defecto; el profesor solo **desmarca ausentes** y guarda
+  toda la lista de una (se asume que la mayoría asiste). Antes partían todos en ausente.
+- La página carga los **inscritos reales** (`get_venue_class_students`) en vez de filas de
+  asistencia vacías (antes mostraba "No hay alumnos" en una clase nueva).
+- **Guardado corregido:** el marcado anterior enviaba `beneficiary_id` undefined → el INSERT
+  violaba `NOT NULL` y **nunca guardaba**. Ahora una Edge Function `save-attendance` (service role)
+  resuelve el beneficiario real y hace **upsert idempotente** (el profesor no tiene policy de
+  UPDATE sobre `attendances`), así se puede corregir sin duplicar.
+**Por qué:** sin esto la métrica M3 (asistencia) no tenía datos — el guardado no funcionaba.
+**Archivos:** `views/profesor/AttendancePage.vue`, `functions/save-attendance/index.ts`,
+`services/classService.js`, `migrations/20260708000000_attendance_upsert.sql` (índice único
+`(class_id, beneficiary_id)` para el upsert), `config.toml`.
+**Estado:** frontend desplegado; Edge Function **desplegada** y migración **aplicada** (08-jul).
+
+---
+
+## 8. Métricas de rendimiento reales + desglose por sede (desplegada)
+
+**Qué:** las métricas del dashboard admin (M1–M5) mostraban valores fijos (M1/M2/M3 en 0%, M5 en
+100%) porque **nadie las calculaba**. Ahora:
+- Una Edge Function `admin-metrics` (ADMIN, service role) calcula datos reales, **globales y por sede**.
+- Las **5 métricas son clicleables** → abren un modal con **explicación humanizada**, el valor
+  global y una **tabla por sede**. M4 (Disponibilidad) se explica como uptime externo global (no
+  aplica por sede).
+
+Fórmulas:
+| Métrica | Objetivo | Fórmula | Qué mide |
+|---|---|---|---|
+| M1 Ocupación | >80% | inscripciones ACTIVE ÷ cupos de clases abiertas | Cuánto se llenan las clases (por cupos publicados, no capacidad de sala) |
+| M2 Conversión | >70% | sesiones APPROVED ÷ total sesiones | Cuántos checkouts terminan en pago (penaliza abandono) |
+| M3 Asistencia | >90% | asistencias `present` ÷ marcas totales | Cuántos inscritos asistieron (sobre inscritos, no capacidad) |
+| M4 Disponibilidad | >95% | uptime externo (UptimeRobot) | % de tiempo en línea; infra global, no por sede |
+| M5 Pagos exitosos | >98% | APPROVED ÷ (APPROVED + FAILED) | Salud técnica del cobro (excluye abandonos) |
+
+Por sede, M2/M5 se atribuyen a la(s) sede(s) que toca cada sesión (arriendo por `venueId`;
+inscripción por la sede de cada clase del carrito).
+**Archivos:** `functions/admin-metrics/index.ts`, `views/admin/AdminDashboardPage.vue`,
+`services/adminService.js`, `config.toml`.
+**Estado:** frontend desplegado; Edge Function **desplegada** (08-jul). Depende de que los profes
+pasen lista (sección 7) para que M3 tenga datos.
+
+---
+
+## 9. Pendiente / fuera de alcance (para contexto)
 
 - **Desembolso real a profesores**: `process-payouts` → `disburseToSeller` es un **stub de Fase 0**
   (money-out MercadoPago Chile sin definir). Los `teacher_payouts` quedan PENDING; el dinero no se gira.
@@ -192,3 +238,5 @@ y `06-API-Endpoints.md` (RPCs, `process-refunds`) al estado real del ciclo del d
 3. Aplicar `20260707120000_enforce_class_capacity.sql` en el SQL Editor (fix 4.5 / PR #44). ✅ aplicada 08-jul.
 4. `supabase functions deploy admin-payments` (panel de pagos 4.6). ✅ desplegada 07-jul.
 5. Aplicar `20260707000000_mp_fee_and_cutoff.sql` en el SQL Editor (panel de pagos 4.6). ✅ aplicada 07-jul.
+6. `supabase functions deploy save-attendance admin-metrics` (asistencia 7 + métricas 8). ✅ desplegadas 08-jul.
+7. Aplicar `20260708000000_attendance_upsert.sql` en el SQL Editor (asistencia 7). ✅ aplicada 08-jul.

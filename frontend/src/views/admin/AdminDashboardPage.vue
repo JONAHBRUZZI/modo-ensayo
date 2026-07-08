@@ -235,6 +235,51 @@
       </template>
     </BottomSheet>
 
+    <!-- Comportamiento · Google Analytics -->
+    <div class="flex items-center justify-between mb-1 mt-10">
+      <h2 class="text-lg font-semibold text-white">Comportamiento · Google Analytics</h2>
+      <span v-if="analytics.configured" class="flex items-center gap-1.5 text-xs text-gray-400">
+        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+        {{ analytics.activeNow }} activo{{ analytics.activeNow === 1 ? '' : 's' }} ahora
+      </span>
+    </div>
+    <p class="text-gray-500 text-sm mb-4">Uso real de la plataforma (últimos 7 días). Se actualiza cada 30s.</p>
+
+    <div v-if="!analytics.configured" class="card text-gray-400 text-sm mb-10">
+      Google Analytics aún no está conectado. Falta definir <code class="text-gray-300">GA_PROPERTY_ID</code> y
+      <code class="text-gray-300">GA_SERVICE_ACCOUNT</code> (secretos de Edge Function) y
+      <code class="text-gray-300">VITE_GA_MEASUREMENT_ID</code> (frontend).
+    </div>
+    <template v-else>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="card">
+          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Activos ahora</h3>
+          <p class="text-2xl font-bold text-green-400">{{ analytics.activeNow }}</p>
+        </div>
+        <div class="card">
+          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Usuarios (7d)</h3>
+          <p class="text-2xl font-bold text-white">{{ analytics.usuarios7d }}</p>
+        </div>
+        <div class="card">
+          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Sesiones (7d)</h3>
+          <p class="text-2xl font-bold text-blue-400">{{ analytics.sesiones7d }}</p>
+        </div>
+        <div class="card">
+          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Vistas (7d)</h3>
+          <p class="text-2xl font-bold text-purple-400">{{ analytics.vistas7d }}</p>
+        </div>
+      </div>
+      <div v-if="analytics.topPages && analytics.topPages.length" class="card mb-10">
+        <h3 class="text-white font-medium mb-3">Páginas más vistas (7 días)</h3>
+        <div class="divide-y divide-white/5">
+          <div v-for="p in analytics.topPages" :key="p.path" class="flex items-center justify-between py-2 gap-3">
+            <span class="text-gray-300 text-sm truncate">{{ p.path }}</span>
+            <span class="text-gray-400 text-sm flex-shrink-0">{{ p.views }} vistas</span>
+          </div>
+        </div>
+      </div>
+    </template>
+
     <!-- ════ Feedback de la plataforma (Voz del usuario) ════ -->
     <div class="flex items-center justify-between mb-1 mt-10">
       <h2 class="text-lg font-semibold text-white">Voz del Usuario · Modo Ensayo</h2>
@@ -328,7 +373,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import adminService from '@/services/adminService'
 import { reviewService } from '@/services/reviewService'
 import { formatDate } from '@/utils/dateFormatter'
@@ -507,12 +552,24 @@ async function cargarMetrics() {
   try { metrics.value = await adminService.getMetrics() } catch { metrics.value = { global: {}, porSede: [] } }
 }
 
+// Comportamiento (Google Analytics): se refresca cada 30s (los usuarios activos
+// en vivo cambian lento; 30s da tiempo real sin gastar cuota de la API de GA).
+const analytics = ref({ configured: false })
+let analyticsTimer = null
+async function cargarAnalytics() {
+  try { analytics.value = await adminService.getAnalytics() } catch { analytics.value = { configured: false } }
+}
+
 onMounted(async () => {
   await cargarStats()
   await cargarComisiones()
   await cargarPagos()
   await cargarMetrics()
+  await cargarAnalytics()
+  analyticsTimer = setInterval(cargarAnalytics, 30000)
   try { systemReviews.value = (await reviewService.getSystemReviews()).data || [] } catch { systemReviews.value = [] }
   try { sysStats.value = (await reviewService.getSystemStats()).data || {} } catch { sysStats.value = {} }
 })
+
+onUnmounted(() => { if (analyticsTimer) clearInterval(analyticsTimer) })
 </script>

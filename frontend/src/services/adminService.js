@@ -232,5 +232,11 @@ export default {
   // Métricas de rendimiento (M1/M2/M3/M5) globales y por sede. EF admin-metrics.
   async getMetrics() {
     return invokeFunction('admin-metrics', { body: {} })
+  },
+
+  // Métricas de comportamiento desde Google Analytics 4. EF ga-metrics.
+  // Devuelve { configured, activeNow, usuarios7d, sesiones7d, vistas7d, topPages }.
+  async getAnalytics() {
+    return invokeFunction('ga-metrics', { body: {} })
   }
 }

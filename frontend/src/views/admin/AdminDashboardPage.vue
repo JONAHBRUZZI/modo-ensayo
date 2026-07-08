@@ -181,8 +181,7 @@
         class="card text-center hover:border-primary/50 transition-colors cursor-pointer"
       >
         <h3 class="text-gray-400 text-xs mb-1">{{ m.titulo }}</h3>
-        <p v-if="m.externa" class="text-xl font-bold text-green-400 mt-1">Ver reporte ↗</p>
-        <p v-else class="text-3xl font-bold mt-1" :class="colorMetrica(valorGlobal(m.key), m.objetivo)">
+        <p class="text-3xl font-bold mt-1" :class="colorMetrica(valorGlobal(m.key), m.objetivo)">
           {{ fmtPct(valorGlobal(m.key)) }}
         </p>
         <p class="text-xs text-gray-500 mt-1">objetivo &gt; {{ m.objetivo }}%</p>
@@ -198,22 +197,19 @@
         <!-- Valor global -->
         <div class="flex items-center justify-between card mb-4">
           <span class="text-gray-300 text-sm">Global · Modo Ensayo</span>
-          <span v-if="!modalMetrica.cfg.externa" class="text-2xl font-bold"
+          <span class="text-2xl font-bold"
                 :class="colorMetrica(valorGlobal(modalMetrica.key), modalMetrica.cfg.objetivo)">
             {{ fmtPct(valorGlobal(modalMetrica.key)) }}
           </span>
-          <span v-else class="text-sm text-gray-500">medición externa</span>
         </div>
 
         <!-- M4: infraestructura global, sin desglose por sede -->
-        <div v-if="modalMetrica.cfg.externa" class="text-sm text-gray-400 space-y-3">
+        <div v-if="modalMetrica.cfg.soloGlobal" class="text-sm text-gray-400">
           <p>
-            La disponibilidad se mide con un monitor externo (UptimeRobot) que hace ping a la
-            plataforma. Es infraestructura <span class="text-white">global</span>: la app es la misma
-            para todas las sedes, así que no se divide por sede.
+            La disponibilidad es infraestructura <span class="text-white">global</span>: la plataforma
+            es la misma para todas las sedes, así que no se divide por sede. Se mide con un latido
+            interno cada 5 minutos; el porcentaje son los latidos registrados vs. los esperados.
           </p>
-          <a href="https://dashboard.uptimerobot.com/" target="_blank" rel="noopener noreferrer"
-             class="inline-block text-primary hover:underline">Ver reporte de uptime ↗</a>
         </div>
 
         <!-- M1/M2/M3/M5: desglose por sede -->
@@ -409,8 +405,8 @@ const metricasCfg = [
     explicacion: 'De cada checkout que un alumno inició, cuántos terminaron en un pago aprobado. Los que abandonan el carrito sin pagar bajan el número. Mide si el precio y el flujo de compra convencen.' },
   { key: 'asistencia', titulo: 'M3 · Asistencia', objetivo: 90,
     explicacion: 'De todos los alumnos inscritos a los que el profesor pasó lista, cuántos estuvieron presentes. Se mide sobre los inscritos, no sobre la capacidad de la sala. Un número alto significa buen compromiso de los alumnos.' },
-  { key: 'disponibilidad', titulo: 'M4 · Disponibilidad', objetivo: 95, externa: true,
-    explicacion: 'Qué porcentaje del tiempo la plataforma estuvo en línea, medido por un monitor externo. Si el sitio se cae, no podría medirse a sí mismo, por eso la medición es externa.' },
+  { key: 'disponibilidad', titulo: 'M4 · Disponibilidad', objetivo: 95, soloGlobal: true,
+    explicacion: 'Qué porcentaje del tiempo la plataforma estuvo en línea. Se mide con un latido interno cada 5 minutos: si el sistema se cae, el latido no se registra y ese hueco baja el porcentaje. Es global (la app es la misma para todas las sedes).' },
   { key: 'pagosExitosos', titulo: 'M5 · Pagos Exitosos', objetivo: 98,
     explicacion: 'De los intentos de pago que llegaron a resolverse (excluye los abandonados), cuántos fueron exitosos. Un número bajo indica una falla técnica en el cobro (MercadoPago o el checkout), no falta de interés.' },
 ]

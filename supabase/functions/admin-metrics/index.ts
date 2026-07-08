@@ -131,7 +131,26 @@ export default {
         }))
         .sort((x, y) => x.venueName.localeCompare(y.venueName));
 
-      return Response.json({ global: metrics(global), porSede: porSedeOut });
+      // ── M4 Disponibilidad: latidos registrados vs esperados (ventana 7 días) ──
+      // Se toma como inicio el primer latido (si el monitoreo empezó hace poco) para
+      // no penalizar el ramp-up; esperados = minutos de la ventana / 5.
+      const sieteDias = 7 * 24 * 60 * 60 * 1000;
+      const [{ data: primer }, { count: observados }] = await Promise.all([
+        admin.from("uptime_checks").select("checked_at").order("checked_at", { ascending: true }).limit(1).maybeSingle(),
+        admin.from("uptime_checks").select("*", { count: "exact", head: true })
+          .gte("checked_at", new Date(Date.now() - sieteDias).toISOString()),
+      ]);
+      let disponibilidad: number | null = null;
+      if (primer?.checked_at) {
+        const inicio = Math.max(new Date(primer.checked_at).getTime(), Date.now() - sieteDias);
+        const esperados = Math.max(1, Math.floor((Date.now() - inicio) / (5 * 60 * 1000)));
+        disponibilidad = Math.min(100, Math.round(((observados ?? 0) / esperados) * 1000) / 10);
+      }
+
+      return Response.json({
+        global: { ...metrics(global), disponibilidad },
+        porSede: porSedeOut,
+      });
     } catch (err) {
       logError("admin_metrics_error", err);
       return Response.json({ error: "Internal error" }, { status: 500 });

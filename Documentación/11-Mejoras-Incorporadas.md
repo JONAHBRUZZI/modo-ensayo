@@ -199,8 +199,7 @@ y `06-API-Endpoints.md` (RPCs, `process-refunds`) al estado real del ciclo del d
 100%) porque **nadie las calculaba**. Ahora:
 - Una Edge Function `admin-metrics` (ADMIN, service role) calcula datos reales, **globales y por sede**.
 - Las **5 métricas son clicleables** → abren un modal con **explicación humanizada**, el valor
-  global y una **tabla por sede**. M4 (Disponibilidad) se explica como uptime externo global (no
-  aplica por sede).
+  global y una **tabla por sede** (M4 es global, no por sede).
 
 Fórmulas:
 | Métrica | Objetivo | Fórmula | Qué mide |
@@ -208,7 +207,7 @@ Fórmulas:
 | M1 Ocupación | >80% | inscripciones ACTIVE ÷ cupos de clases abiertas | Cuánto se llenan las clases (por cupos publicados, no capacidad de sala) |
 | M2 Conversión | >70% | sesiones APPROVED ÷ total sesiones | Cuántos checkouts terminan en pago (penaliza abandono) |
 | M3 Asistencia | >90% | asistencias `present` ÷ marcas totales | Cuántos inscritos asistieron (sobre inscritos, no capacidad) |
-| M4 Disponibilidad | >95% | uptime externo (UptimeRobot) | % de tiempo en línea; infra global, no por sede |
+| M4 Disponibilidad | >95% | latidos `uptime_checks` registrados ÷ esperados | % de tiempo en línea (latido interno cada 5 min); global |
 | M5 Pagos exitosos | >98% | APPROVED ÷ (APPROVED + FAILED) | Salud técnica del cobro (excluye abandonos) |
 
 Por sede, M2/M5 se atribuyen a la(s) sede(s) que toca cada sesión (arriendo por `venueId`;
@@ -218,9 +217,35 @@ inscripción por la sede de cada clase del carrito).
 **Estado:** frontend desplegado; Edge Function **desplegada** (08-jul). Depende de que los profes
 pasen lista (sección 7) para que M3 tenga datos.
 
+### 8.1 M4 Disponibilidad: latido interno (desplegada)
+**Qué:** M4 dejó de ser un link externo (abría UptimeRobot). Ahora es una métrica real
+**autocontenida**: `pg_cron` inserta un latido en `uptime_checks` cada 5 min y M4 = latidos
+registrados ÷ esperados (ventana 7 días, desde el primer latido para no penalizar el arranque).
+Todo dentro del dashboard, sin servicios externos.
+**Archivos:** `migrations/20260708100000_uptime_heartbeat.sql`, `functions/admin-metrics/index.ts`,
+`views/admin/AdminDashboardPage.vue`.
+**Estado:** frontend desplegado; **requiere aplicar la migración + redeploy de `admin-metrics`**.
+
 ---
 
-## 9. Pendiente / fuera de alcance (para contexto)
+## 9. Comportamiento · Google Analytics 4 (desplegada)
+
+**Qué:** métricas de uso reales en el dashboard admin, vía GA4 (gratis):
+- **Tracking** (gtag) en el frontend, con `G-JLYZFQXYX8` por defecto (el Measurement ID es público);
+  envía `page_view` por ruta del SPA.
+- Sección **"Comportamiento"**: usuarios activos ahora, usuarios/sesiones/vistas de 7 días y top
+  páginas; refresco cada 30s. Edge Function `ga-metrics` consulta la Data API de GA4 con una
+  service account (JWT RS256), propiedad `544653068`.
+**Por qué:** M4 mide disponibilidad (infra), no comportamiento; GA cubre el uso real de usuarios.
+**Archivos:** `frontend/src/analytics.js`, `frontend/src/main.js`, `functions/ga-metrics/index.ts`,
+`views/admin/AdminDashboardPage.vue`, `services/adminService.js`, `config.toml`.
+**Secretos (no en el repo):** `GA_PROPERTY_ID`, `GA_SERVICE_ACCOUNT` (Supabase); `VITE_GA_MEASUREMENT_ID`
+(opcional, Vercel — el código ya trae el default).
+**Estado:** desplegado (08-jul).
+
+---
+
+## 10. Pendiente / fuera de alcance (para contexto)
 
 - **Desembolso real a profesores**: `process-payouts` → `disburseToSeller` es un **stub de Fase 0**
   (money-out MercadoPago Chile sin definir). Los `teacher_payouts` quedan PENDING; el dinero no se gira.
@@ -240,3 +265,5 @@ pasen lista (sección 7) para que M3 tenga datos.
 5. Aplicar `20260707000000_mp_fee_and_cutoff.sql` en el SQL Editor (panel de pagos 4.6). ✅ aplicada 07-jul.
 6. `supabase functions deploy save-attendance admin-metrics` (asistencia 7 + métricas 8). ✅ desplegadas 08-jul.
 7. Aplicar `20260708000000_attendance_upsert.sql` en el SQL Editor (asistencia 7). ✅ aplicada 08-jul.
+8. `supabase functions deploy ga-metrics` (Google Analytics 9) + secretos `GA_PROPERTY_ID`/`GA_SERVICE_ACCOUNT`. ✅ desplegada 08-jul.
+9. Aplicar `20260708100000_uptime_heartbeat.sql` en el SQL Editor + `supabase functions deploy admin-metrics` (M4 latido 8.1). ⏳ pendiente.

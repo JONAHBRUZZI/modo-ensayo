@@ -400,6 +400,15 @@ realizada (`COMPLETED`). Una fila por pago liberado; el giro real a MercadoPago 
 | created_at | timestamptz | DEFAULT now() |
 | paid_at | timestamptz | |
 
+### `uptime_checks`
+Latido de disponibilidad (M4). `pg_cron` inserta una fila cada 5 min; la métrica es
+latidos registrados vs. esperados. Origen: `20260708100000_uptime_heartbeat.sql`.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | bigint | PK (identity) |
+| checked_at | timestamptz | DEFAULT now() |
+
 ## 8. Enums (tipos definidos)
 
 | Enum | Valores |

@@ -1,7 +1,9 @@
-// Google Analytics 4 (gtag). Se activa solo si VITE_GA_MEASUREMENT_ID está
-// definido (ej. G-XXXXXXXXXX); sin eso es un no-op, así que en local/desarrollo
-// no rastrea nada. Envía un page_view en cada cambio de ruta del SPA.
-const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID
+// Google Analytics 4 (gtag). Usa VITE_GA_MEASUREMENT_ID si está definido; si no,
+// cae al ID de producción por defecto. El Measurement ID es PÚBLICO (va en el HTML
+// del navegador), así que dejarlo en el código es seguro y evita depender de una
+// variable en Vercel. (El JSON de la service account SÍ es secreto → vive en Supabase.)
+// Envía un page_view en cada cambio de ruta del SPA.
+const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-JLYZFQXYX8'
 
 export function initAnalytics(router) {
   if (!GA_ID) return

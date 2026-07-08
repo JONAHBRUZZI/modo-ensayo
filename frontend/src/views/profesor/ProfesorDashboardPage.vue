@@ -14,28 +14,54 @@
       </span>
     </div>
 
-    <!-- Stats -->
+    <!-- Aviso de perfil incompleto: aparece apenas el profesor entra a su panel -->
+    <router-link
+      v-if="readinessCargado && !profesorListo"
+      to="/profesor/perfil-profesional"
+      class="block mb-8 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-5 hover:bg-yellow-500/15 transition-colors"
+    >
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h2 class="text-white font-semibold">Completa tu perfil para poder publicar clases</h2>
+          <p class="text-gray-300 text-sm mt-0.5">
+            Antes de publicar tu primera clase necesitas:
+          </p>
+          <ul class="text-sm mt-1.5 space-y-0.5">
+            <li v-if="!perfilCompleto" class="text-yellow-300">• Completar tu perfil profesional (especialidad y experiencia)</li>
+            <li v-if="!mpConectado" class="text-yellow-300">• Conectar tu cuenta de MercadoPago para recibir tus pagos</li>
+          </ul>
+          <span class="inline-block mt-2 text-yellow-400 text-sm font-medium">Ir a mi perfil profesional →</span>
+        </div>
+      </div>
+    </router-link>
+
+    <!-- Stats (pulsables → detalle) -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-10">
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Clases Propias</h3>
+      <router-link to="/profesor/clases-propias" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Clases Propias</h3>
         <p class="text-3xl font-bold text-white">{{ stats.propias || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Asignadas</h3>
+      </router-link>
+      <router-link to="/profesor/clases-asignadas" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Asignadas</h3>
         <p class="text-3xl font-bold text-primary">{{ stats.asignadas || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Total Alumnos</h3>
+      </router-link>
+      <router-link to="/profesor/metricas" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Total Alumnos</h3>
         <p class="text-3xl font-bold text-green-400">{{ stats.alumnos || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Retenido</h3>
+      </router-link>
+      <router-link to="/profesor/pagos" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Retenido</h3>
         <p class="text-3xl font-bold text-yellow-400">${{ stats.totalRetenido?.toLocaleString('es-CL') || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Liberado</h3>
+      </router-link>
+      <router-link to="/profesor/pagos" class="card group hover:border-primary/50 transition-colors">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2 group-hover:text-gray-300 transition-colors">Liberado</h3>
         <p class="text-3xl font-bold text-green-400">${{ stats.totalLiberado?.toLocaleString('es-CL') || 0 }}</p>
-      </div>
+      </router-link>
     </div>
 
     <!-- Seccion: Clases por Asignar (salas reservadas sin clase configurada) -->
@@ -65,73 +91,28 @@
       </div>
     </div>
 
-    <!-- Seccion A: Clases propias activas -->
-    <div v-if="tieneReservasActivas" class="mb-10">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-white">Mis Clases Próximas</h2>
-        <router-link to="/profesor/clases-propias" class="text-primary text-sm hover:underline">Ver todas</router-link>
-      </div>
-      <div v-if="loadingPropias" class="text-gray-400 text-sm">Cargando...</div>
-      <div v-else-if="propiasFuturas.length === 0" class="card text-center py-6">
-        <p class="text-gray-400 text-sm">No hay clases próximas.</p>
-      </div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div v-for="c in propiasFuturas.slice(0, 4)" :key="c.id" class="card">
-          <div class="flex items-start justify-between">
-            <div>
-              <h3 class="text-white font-medium">{{ c.title }}</h3>
-              <p class="text-gray-400 text-sm">{{ c.discipline }} · {{ c.level }}</p>
-              <p class="text-gray-500 text-xs mt-1">{{ formatDate(c.startTime) }}</p>
-            </div>
-            <span class="text-primary font-semibold text-sm">${{ c.price?.toLocaleString('es-CL') }}</span>
-          </div>
-          <div class="flex items-center justify-between mt-3">
-            <span class="text-gray-400 text-xs">{{ c.enrolledCount || 0 }}/{{ c.capacity }} alumnos</span>
-            <router-link :to="'/profesor/asistencia/' + c.id" class="btn-primary text-xs !py-1 !px-3">Asistencia</router-link>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seccion B: Clases asignadas activas -->
-    <div v-if="tieneAsignacionesActivas" class="mb-10">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-white">Clases Asignadas</h2>
-        <router-link to="/profesor/clases-asignadas" class="text-primary text-sm hover:underline">Ver todas</router-link>
-      </div>
-      <div v-if="loadingAsignadas" class="text-gray-400 text-sm">Cargando...</div>
-      <div v-else-if="asignadasActivas.length === 0" class="card text-center py-6">
-        <p class="text-gray-400 text-sm">No hay clases asignadas activas.</p>
-      </div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div v-for="c in asignadasActivas.slice(0, 4)" :key="c.id" class="card">
-          <div class="flex items-start justify-between">
-            <div>
-              <h3 class="text-white font-medium">{{ c.title }}</h3>
-              <p class="text-gray-400 text-sm">{{ c.discipline }} · {{ c.level }}</p>
-              <p class="text-gray-500 text-xs mt-1">{{ formatDate(c.startTime) }}</p>
-            </div>
-            <span class="badge badge-blue text-xs">Asignada</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Estado vacio: sin actividad activa -->
-    <div v-if="!tieneReservasActivas && !tieneAsignacionesActivas" class="card text-center py-12 mb-10">
+    <div v-if="!tienePropias && !tieneReservasActivas && !tieneAsignacionesActivas" class="card text-center py-12 mb-10">
       <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
         <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
       </div>
       <h3 class="text-white font-semibold mb-2">Crea tu primera clase</h3>
-      <p class="text-gray-400 text-sm mb-4">Reserva una sala y publica tu clase para comenzar a recibir alumnos.</p>
-      <router-link to="/profesor/buscar-salas" class="btn-primary">Buscar Sala</router-link>
+      <p class="text-gray-400 text-sm mb-4">Reserva una sala y publícala, o prepara un borrador para asignarlo después.</p>
+      <div class="flex items-center justify-center gap-3 flex-wrap">
+        <router-link to="/profesor/buscar-salas" class="btn-primary">Buscar Sala</router-link>
+        <router-link to="/profesor/crear-borrador" class="btn-secondary">Crear Borrador</router-link>
+      </div>
     </div>
 
     <!-- Accesos rapidos -->
     <h2 class="text-lg font-semibold text-white mb-4">Accesos rapidos</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <router-link to="/profesor/crear-borrador" class="card hover:border-primary/50 transition-colors group border-primary/30">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Crear Borrador</h3>
+        <p class="text-gray-400 text-sm mt-2">Prepara una clase como plantilla y asígnala luego a una sala.</p>
+      </router-link>
       <router-link to="/profesor/perfil-profesional" class="card hover:border-primary/50 transition-colors group border-primary/30">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary transition-colors">Perfil Profesional</h3>
         <p class="text-gray-400 text-sm mt-2">Especialidad, experiencia, formacion y redes sociales.</p>
@@ -140,21 +121,9 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Agendar Sala</h3>
         <p class="text-gray-400 text-sm mt-2">Reserva una sala en una sede para tu proxima clase.</p>
       </router-link>
-      <router-link to="/profesor/metricas" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Métricas</h3>
-        <p class="text-gray-400 text-sm mt-2">Estadisticas de rendimiento y asistencia.</p>
-      </router-link>
-      <router-link to="/profesor/pagos" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Pagos</h3>
-        <p class="text-gray-400 text-sm mt-2">Historial de pagos recibidos por tus clases.</p>
-      </router-link>
-      <router-link to="/profesor/clases-propias" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Agendadas</h3>
+      <router-link to="/profesor/clases-por-asignar" class="card hover:border-primary/50 transition-colors group">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases por Asignar</h3>
         <p class="text-gray-400 text-sm mt-2">Salas reservadas. Completa los datos de tu clase.</p>
-      </router-link>
-      <router-link to="/profesor/clases-asignadas" class="card hover:border-primary/50 transition-colors group">
-        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases Asignadas</h3>
-        <p class="text-gray-400 text-sm mt-2">Clases donde fuiste asignado como profesor.</p>
       </router-link>
       <router-link to="/profesor/calendario" class="card hover:border-primary/50 transition-colors group">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Calendario</h3>
@@ -174,21 +143,25 @@ import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
 import professionalProfileService from '@/services/professionalProfileService'
-import { formatDate } from '@/utils/dateFormatter'
+import sellerService from '@/services/sellerService'
 
 const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
 
 const stats = ref({ propias: 0, asignadas: 0, alumnos: 0, totalRetenido: 0, totalLiberado: 0 })
 const averageRating = ref(null)
-const propiasFuturas = ref([])
-const asignadasActivas = ref([])
-const loadingPropias = ref(false)
-const loadingAsignadas = ref(false)
 
-const now = new Date()
+// Readiness del profesor para publicar (mismos requisitos que exige create-class).
+const perfilCompleto = ref(false)
+const mpConectado = ref(false)
+const readinessCargado = ref(false)
+const profesorListo = computed(() => perfilCompleto.value && mpConectado.value)
+
+// El estado vacío de onboarding se muestra si el profesor no tiene clases propias
+// (el flag de reservas puede estar en falso aunque existan clases).
+const tienePropias = computed(() => stats.value.propias > 0)
 
 onMounted(async () => {
-  // Stats generales
+  // Stats generales (los listados de clases se ven desde las tarjetas pulsables)
   const [propias, asignadas, earnings] = await Promise.allSettled([
     classService.getTeacherPropias(),
     classService.getTeacherAsignadas(),
@@ -198,7 +171,10 @@ onMounted(async () => {
   const propiasData = propias.status === 'fulfilled' && Array.isArray(propias.value) ? propias.value : []
   const asignadasData = asignadas.status === 'fulfilled' && Array.isArray(asignadas.value) ? asignadas.value : []
 
-  stats.value.propias = propiasData.length
+  // Cuenta solo clases propias activas (no borradores), para coincidir con la
+  // página "Clases Propias" que filtra los DRAFT (viven en "Borradores").
+  const propiasPublicadas = propiasData.filter(c => c.status !== 'DRAFT')
+  stats.value.propias = propiasPublicadas.length
   stats.value.asignadas = asignadasData.length
   stats.value.alumnos = [...propiasData, ...asignadasData].reduce((s, c) => s + (c.enrolledCount || 0), 0)
   if (earnings.status === 'fulfilled') {
@@ -206,31 +182,23 @@ onMounted(async () => {
     stats.value.totalLiberado = earnings.value?.resumen?.totalLiberado || 0
   }
 
-  // Seccion A: propias futuras
-  if (tieneReservasActivas.value) {
-    loadingPropias.value = true
-    propiasFuturas.value = propiasData
-      .filter(c => c.startTime && new Date(c.startTime) > now)
-      .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-    loadingPropias.value = false
-  }
-
-  // Seccion B: asignadas activas
-  if (tieneAsignacionesActivas.value) {
-    loadingAsignadas.value = true
-    asignadasActivas.value = asignadasData
-      .filter(c => c.startTime && new Date(c.startTime) > now)
-      .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-    loadingAsignadas.value = false
-  }
-
-  // Cargar rating promedio
+  // Perfil profesional (rating + completitud) y estado de conexión MercadoPago.
+  // Mismos criterios que exige create-class al publicar, para avisar de inmediato.
   try {
     const profile = await professionalProfileService.getMine()
     if (profile?.averageRating) averageRating.value = profile.averageRating
+    perfilCompleto.value = !!(profile && (profile.especialidad || profile.disciplinaPrincipal) &&
+      profile.experienceYears != null)
   } catch (err) {
-    console.error('Error al cargar rating del profesor', err)
+    console.error('Error al cargar perfil del profesor', err)
   }
+  try {
+    const estado = await sellerService.getStatus()
+    mpConectado.value = !!estado?.connected
+  } catch (err) {
+    console.error('Error al cargar estado de MercadoPago', err)
+  }
+  readinessCargado.value = true
 })
 
 

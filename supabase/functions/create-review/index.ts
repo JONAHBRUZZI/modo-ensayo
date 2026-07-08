@@ -13,20 +13,20 @@ const BodySchema = z.object({
 export default {
   fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
     try {
-      const { supabase, userClaims } = ctx;
+      const { supabaseAdmin: admin, userClaims } = ctx;
       const userId = userClaims!.id;
       const body = BodySchema.parse(await req.json());
 
-      const { data: enrollment } = await supabase.from("enrollments")
+      const { data: enrollment } = await admin.from("enrollments")
         .select("id").eq("class_id", body.classId).eq("student_id", userId).eq("status", "ACTIVE").maybeSingle();
-      const { data: cls } = await supabase.from("classes")
+      const { data: cls } = await admin.from("classes")
         .select("teacher_id").eq("id", body.classId).eq("teacher_id", userId).maybeSingle();
 
       if (!enrollment && !cls) {
         return Response.json({ error: "Debes haber participado en la clase para reseñar" }, { status: 403 });
       }
 
-      const { data: review, error } = await supabase.from("reviews").insert({
+      const { data: review, error } = await admin.from("reviews").insert({
         class_id: body.classId,
         reviewer_id: userId,
         target_type: body.targetType,

@@ -17,7 +17,12 @@ const BodySchema = z.object({
 export default {
   fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
     try {
-      const { supabase, userClaims } = ctx;
+      // payment_sessions/enrollments no tienen política INSERT para clientes (por
+      // diseño: solo se escriben desde funciones privilegiadas). Por eso aquí se
+      // usa el cliente service_role (admin), igual que el webhook. Con el cliente
+      // de usuario el insert de payment_sessions se denegaba por RLS silenciosamente
+      // y el webhook luego no encontraba la sesión → el pago nunca se retenía.
+      const { supabaseAdmin: admin, userClaims } = ctx;
       const userId = userClaims!.id;
       const body = BodySchema.parse(await req.json());
       const externalRef = crypto.randomUUID();
@@ -28,12 +33,12 @@ export default {
       const frontendUrl = Deno.env.get("APP_FRONTEND_URL")!;
 
       for (const item of body.items) {
-        const { data: cls, error: clsErr } = await supabase
+        const { data: cls, error: clsErr } = await admin
           .from("classes").select("id,status,capacity").eq("id", item.classId).single();
         if (clsErr || !cls || cls.status !== "PUBLISHED") {
           return Response.json({ error: `Clase ${item.classId} no disponible` }, { status: 400 });
         }
-        const { count } = await supabase
+        const { count } = await admin
           .from("enrollments").select("*", { count: "exact", head: true })
           .eq("class_id", item.classId).eq("status", "ACTIVE");
         if (count && count >= cls.capacity) {
@@ -41,10 +46,15 @@ export default {
         }
       }
 
-      await supabase.from("payment_sessions").insert({
+      const { error: sessErr } = await admin.from("payment_sessions").insert({
         owner_id: userId, external_reference: externalRef,
         cart_snapshot: body, status: "PENDING",
       });
+      if (sessErr) {
+        // Sin sesión persistida el webhook no podría retener el pago: abortar.
+        logError("payment_session_insert_failed", new Error(sessErr.message), { sessErr });
+        return Response.json({ error: "No se pudo iniciar la sesión de pago" }, { status: 500 });
+      }
 
       // MercadoPago solo acepta auto_return con back_urls https. En local (http)
       // se omite para no ser rechazado; el usuario vuelve manualmente y el webhook
@@ -76,7 +86,7 @@ export default {
         logError("mp_preference_rejected", new Error(mpResp.statusText), {
           status: mpResp.status, mpError: preference,
         });
-        await supabase.from("payment_sessions").update({ status: "FAILED" })
+        await admin.from("payment_sessions").update({ status: "FAILED" })
           .eq("external_reference", externalRef);
         return Response.json({
           error: "MercadoPago rechazó la preferencia",
@@ -85,7 +95,7 @@ export default {
         }, { status: 502 });
       }
 
-      await supabase.from("payment_sessions").update({ preference_id: preference.id })
+      await admin.from("payment_sessions").update({ preference_id: preference.id })
         .eq("external_reference", externalRef);
 
       logInfo("preference_created", { userId, preferenceId: preference.id, items: body.items.length });

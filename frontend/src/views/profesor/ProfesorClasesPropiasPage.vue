@@ -6,7 +6,7 @@
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
     <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-bold text-white">Clases Agendadas</h1>
+      <h1 class="text-3xl font-bold text-white">Clases Propias</h1>
       <router-link to="/profesor/buscar-salas" class="btn-primary text-sm">Reservar Sala</router-link>
     </div>
 
@@ -25,7 +25,12 @@
       <router-link to="/profesor/buscar-salas" class="btn-primary inline-flex mt-4">Buscar sala</router-link>
     </div>
     <div v-else class="space-y-4">
-      <div v-for="c in clases" :key="c.id" class="card">
+      <div
+        v-for="c in clases"
+        :key="c.id"
+        class="card cursor-pointer transition-colors hover:border-primary/50"
+        @click="abrirDetalle(c)"
+      >
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div class="flex items-center space-x-2 mb-1">
@@ -44,11 +49,12 @@
               <router-link
                 :to="'/profesor/crear-clase?edit=' + c.id"
                 class="btn-primary text-xs !py-1.5 !px-3"
+                @click.stop
               >
                 Completar Clase
               </router-link>
               <button
-                @click="abrirBorradorSelector(c)"
+                @click.stop="abrirBorradorSelector(c)"
                 class="btn-secondary text-xs !py-1.5 !px-3"
               >
                 Asignar Clase
@@ -59,12 +65,14 @@
               <router-link
                 :to="'/profesor/clases/' + c.id + '/reagendamiento'"
                 class="btn-secondary text-xs !py-1.5 !px-3"
+                @click.stop
               >
                 Reagendar
               </router-link>
               <router-link
                 :to="'/profesor/asistencia/' + c.id"
                 class="btn-primary text-xs !py-1.5 !px-3"
+                @click.stop
               >
                 Asistencia
               </router-link>
@@ -82,6 +90,8 @@
       :duration="reservaSeleccionada?.duration || 60"
       @close="borradorAbierto = false"
       @applied="cargar" />
+
+    <ClaseDetalleModal v-model="modalAbierto" :clase="claseSel" />
   </div>
 </template>
 
@@ -90,6 +100,7 @@ import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import BorradorSelector from '@/components/BorradorSelector.vue'
+import ClaseDetalleModal from '@/components/ClaseDetalleModal.vue'
 import { formatDate } from '@/utils/dateFormatter'
 
 const clases = ref([])
@@ -98,6 +109,14 @@ const loading = ref(true)
 const borradorAbierto = ref(false)
 const reservaSeleccionada = ref(null)
 
+const modalAbierto = ref(false)
+const claseSel = ref(null)
+
+function abrirDetalle(c) {
+  claseSel.value = c
+  modalAbierto.value = true
+}
+
 function abrirBorradorSelector(c) {
   reservaSeleccionada.value = c
   borradorAbierto.value = true
@@ -105,7 +124,12 @@ function abrirBorradorSelector(c) {
 
 async function cargar() {
   loading.value = true
-  try { clases.value = await classService.getTeacherPropias() } catch { clases.value = [] }
+  try {
+    // Solo clases agendadas (publicadas en adelante). Los borradores/reservas sin
+    // configurar viven en "Borradores" y "Por Asignar", no acá.
+    const data = await classService.getTeacherPropias()
+    clases.value = (Array.isArray(data) ? data : []).filter(c => c.status !== 'DRAFT')
+  } catch { clases.value = [] }
   loading.value = false
 }
 

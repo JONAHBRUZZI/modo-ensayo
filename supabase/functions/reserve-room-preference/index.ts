@@ -40,6 +40,16 @@ export default {
         return Response.json({ error: "Algún horario ya no está disponible" }, { status: 409 });
       }
 
+      // 2.1 No se puede reservar un horario que ya pasó. Se rechaza si algún
+      // bloque tiene inicio en el pasado (regla de negocio: solo fechas futuras).
+      const ahora = Date.now();
+      if (blocks.some((b) => new Date(b.start_time).getTime() <= ahora)) {
+        return Response.json(
+          { error: "No se puede reservar un horario que ya pasó" },
+          { status: 409 },
+        );
+      }
+
       // 3. La sede debe tener su cuenta de MercadoPago vinculada.
       const { data: seller } = await admin
         .from("mp_seller_accounts")
@@ -104,9 +114,7 @@ export default {
           failure: `${frontendUrl}/payment/failure`,
           pending: `${frontendUrl}/payment/pending`,
         },
-        // Incluye el vendedor: el webhook lo usa para consultar el pago con el
-        // token del vendedor (el pago vive en su cuenta, no en la plataforma).
-        notification_url: `${functionsBase}/mercadopago-webhook?seller=${venue.admin_id}`,
+        notification_url: `${functionsBase}/mercadopago-webhook`,
       };
       if (marketplaceFee > 0) preferenceBody.marketplace_fee = marketplaceFee;
       if (isHttps) preferenceBody.auto_return = "approved";

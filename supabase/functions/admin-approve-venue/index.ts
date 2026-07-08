@@ -29,8 +29,9 @@ export default {
 
         await admin.from("profiles").update({ tiene_sede_aprobada: true }).eq("id", venue.admin_id);
 
-        const { data: adminUser } = await admin.auth.admin.getUserById(venue.admin_id);
-        const existingRoles: string[] = adminUser.user?.app_metadata?.roles ?? [];
+        const { data: adminUser, error: userErr } = await admin.auth.admin.getUserById(venue.admin_id);
+        if (userErr || !adminUser.user) throw userErr ?? new Error(`Usuario ${venue.admin_id} no encontrado`);
+        const existingRoles: string[] = adminUser.user.app_metadata?.roles ?? [];
         if (!existingRoles.includes("VENUE_ADMIN")) {
           await admin.auth.admin.updateUserById(venue.admin_id, {
             app_metadata: { roles: [...existingRoles, "VENUE_ADMIN"] },

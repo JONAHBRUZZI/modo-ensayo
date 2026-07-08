@@ -30,6 +30,20 @@ export default {
     return { data: camelize(data) }
   },
 
+  // Reagendamientos pendientes de respuesta del alumno autenticado (para el
+  // banner en Mis Clases). El profesor ya aceptó y creó la fila de respuesta con
+  // response_type = NULL; acá traemos esas filas con la clase asociada.
+  async getMyPendingReschedules() {
+    const uid = await currentUserId()
+    const { data, error } = await supabase
+      .from('reschedule_responses')
+      .select('*, reschedule:reschedules(*, class:classes(*, room:rooms(*, venue:venues(*))))')
+      .eq('user_id', uid)
+      .is('response_type', null)
+    if (error) throw error
+    return { data: camelize(data) }
+  },
+
   async getByClass(classId) {
     const { data, error } = await supabase
       .from('reschedules').select('*').eq('class_id', classId)

@@ -2,6 +2,13 @@ import { withSupabase } from "npm:@supabase/server";
 import { logInfo, logError } from "../_shared/logger.ts";
 import { z } from "npm:zod@3";
 
+const DocumentPathSchema = z.object({
+  path: z.string().min(1),
+  tipo: z.string().min(1),
+  nombre: z.string().optional(),
+  tipoArchivo: z.string().optional(),
+});
+
 const BodySchema = z.object({
   name: z.string().min(1),
   city: z.string().optional(),
@@ -16,6 +23,7 @@ const BodySchema = z.object({
   youtube: z.string().optional(),
   sitioWeb: z.string().optional(),
   facebook: z.string().optional(),
+  documentPaths: z.array(DocumentPathSchema).optional().default([]),
 });
 
 export default {
@@ -31,7 +39,7 @@ export default {
         return Response.json({ error: "Identidad no validada. Sube tu documento primero." }, { status: 403 });
       }
 
-      const { sitioWeb, ...rest } = body;
+      const { sitioWeb, documentPaths, ...rest } = body;
       const venueData = { ...rest, sitio_web: sitioWeb ?? null };
 
       const { data: existing } = await admin.from("venues")
@@ -39,14 +47,16 @@ export default {
 
       let venue;
       if (existing) {
-        const { data: updated } = await admin.from("venues").update({
+        const { data: updated, error: updateErr } = await admin.from("venues").update({
           ...venueData, status: "PENDIENTE_APROBACION",
         }).eq("id", existing.id).select("*").single();
+        if (updateErr || !updated) throw updateErr ?? new Error("Error actualizando la sede");
         venue = updated;
       } else {
-        const { data: created } = await admin.from("venues").insert({
+        const { data: created, error: createErr } = await admin.from("venues").insert({
           ...venueData, admin_id: userId, status: "PENDIENTE_APROBACION",
         }).select("*").single();
+        if (createErr || !created) throw createErr ?? new Error("Error registrando la sede");
         venue = created;
       }
 
@@ -63,6 +73,21 @@ export default {
         resource_type: "venue",
         resource_id: venue.id,
       });
+
+      if (body.documentPaths.length > 0) {
+        const docs = body.documentPaths.map((d) => ({
+          venue_id: venue.id,
+          file_url: d.path,
+          tipo: d.tipo,
+          nombre: d.nombre ?? null,
+          tipo_archivo: d.tipoArchivo ?? null,
+          estado: "PENDIENTE",
+        }));
+        const { error: docErr } = await admin.from("venue_documents").insert(docs);
+        if (docErr) {
+          logError("venue_documents_insert_failed", new Error(docErr.message), { docErr });
+        }
+      }
 
       logInfo("venue_registered", { venueId: venue.id, adminId: userId });
       return Response.json(venue);

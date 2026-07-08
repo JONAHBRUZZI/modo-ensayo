@@ -2,12 +2,32 @@ import { supabase, currentUserId, invokeFunction, camelize } from './supabase'
 
 const CLASS_WITH_RELATIONS = '*, room:rooms(*, venue:venues(*))'
 
+// Los nombres de los profesores viven en profiles (RLS: solo el dueño lee su
+// fila), así que no se pueden embeber por PostgREST. Se resuelven con el RPC
+// seguro get_teacher_names y se anexan como `teacherName` a cada clase.
+export async function attachTeacherNames(clases) {
+  const arr = Array.isArray(clases) ? clases : (clases ? [clases] : [])
+  const ids = [...new Set(arr.map(c => c?.teacherId).filter(Boolean))]
+  if (!ids.length) return clases
+  let nombres = {}
+  try {
+    const { data, error } = await supabase.rpc('get_teacher_names', { p_ids: ids })
+    if (!error && Array.isArray(data)) {
+      for (const row of data) nombres[row.id] = row.full_name
+    }
+  } catch { /* si falla, las clases quedan sin teacherName */ }
+  for (const c of arr) {
+    if (c && c.teacherId) c.teacherName = nombres[c.teacherId] ?? null
+  }
+  return clases
+}
+
 function mapClassBody(data) {
   return {
     title: data.title,
     discipline: data.discipline ?? null,
     disciplineCategory: data.disciplineCategory ?? data.category ?? data.discipline_category ?? null,
-    level: data.level,
+    level: data.level || undefined,
     description: data.description ?? undefined,
     capacity: data.capacity,
     duration: data.duration,
@@ -17,7 +37,13 @@ function mapClassBody(data) {
     // El input datetime-local entrega 'YYYY-MM-DDTHH:mm' (sin segundos ni zona);
     // se normaliza a ISO completo porque la Edge Function valida con z.datetime().
     startTime: data.startTime ? new Date(data.startTime).toISOString() : undefined,
-    roomId: data.roomId ?? undefined
+    roomId: data.roomId ?? undefined,
+    // Clase creada por la sede: tipo ASIGNADA + profe dependiente + honorario +
+    // bloques del horario de la sala. Para clases PROPIA quedan undefined.
+    tipoClase: data.tipoClase ?? undefined,
+    teacherId: data.teacherId ?? undefined,
+    honorario: (data.honorario === '' || data.honorario == null) ? undefined : data.honorario,
+    blockIds: Array.isArray(data.blockIds) && data.blockIds.length ? data.blockIds : undefined
   }
 }
 
@@ -28,14 +54,14 @@ export default {
     if (params.level) q = q.eq('level', params.level)
     const { data, error } = await q.order('start_time', { ascending: true })
     if (error) throw error
-    return camelize(data)
+    return attachTeacherNames(camelize(data))
   },
 
   async getClassById(id) {
     const { data, error } = await supabase
       .from('classes').select(CLASS_WITH_RELATIONS).eq('id', id).maybeSingle()
     if (error) throw error
-    return camelize(data)
+    return attachTeacherNames(camelize(data))
   },
 
   async createClass(data) {
@@ -113,6 +139,15 @@ export default {
     return camelize(row)
   },
 
+  // Alumnos inscritos en una clase (+ asistencia). RPC seguro que autoriza al
+  // profesor de la clase o al admin de la sede. Devuelve [{ enrollmentId,
+  // attendeeName, studentEmail, beneficiaryType, status, present }].
+  async getClassStudents(classId) {
+    const { data, error } = await supabase.rpc('get_venue_class_students', { p_class_id: classId })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  },
+
   async getClassAttendance(classId) {
     const { data, error } = await supabase.from('attendances').select('*').eq('class_id', classId)
     if (error) throw error
@@ -166,8 +201,8 @@ export default {
     if (error) throw error
   },
 
-  async assignReserva(classId, { roomId, startTime, duration }) {
-    return invokeFunction('assign-reserva', { body: { classId, roomId, startTime, duration } })
+  async assignReserva(classId, { roomId, startTime, duration, reservationId = null }) {
+    return invokeFunction('assign-reserva', { body: { classId, roomId, startTime, duration, reservationId } })
   },
 
   // Publicar un borrador: conserva sala/horario del DRAFT, actualiza datos y pasa a PUBLISHED.
@@ -183,6 +218,26 @@ export default {
       min_age: fields.minAge ?? null,
       max_age: fields.maxAge ?? null,
       status: 'PUBLISHED'
+    }
+    const { data, error } = await supabase
+      .from('classes').update(patch).eq('id', id).select(CLASS_WITH_RELATIONS).single()
+    if (error) throw error
+    return camelize(data)
+  },
+
+  // Edita un borrador SIN publicarlo: mantiene el estado DRAFT (RLS permite al
+  // profesor actualizar sus propias clases).
+  async updateDraft(id, fields) {
+    const patch = {
+      title: fields.title,
+      discipline: fields.discipline ?? null,
+      discipline_category: fields.disciplineCategory ?? fields.category ?? null,
+      level: fields.level || null,
+      description: fields.description ?? null,
+      duration: fields.duration,
+      price: fields.price,
+      min_age: fields.minAge ?? null,
+      max_age: fields.maxAge ?? null
     }
     const { data, error } = await supabase
       .from('classes').update(patch).eq('id', id).select(CLASS_WITH_RELATIONS).single()

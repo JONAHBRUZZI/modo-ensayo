@@ -47,6 +47,30 @@
       </div>
     </div>
 
+    <!-- Conexión MercadoPago (requerida para publicar clases y cobrar) -->
+    <div class="card mb-8">
+      <h3 class="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Cobros — MercadoPago</h3>
+      <div v-if="mp.connected" class="flex items-center gap-3 flex-wrap">
+        <span class="inline-flex items-center gap-2 text-green-400 text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Cuenta conectada
+        </span>
+        <span class="text-gray-500 text-xs">Recibirás tus pagos automáticamente al confirmarse cada clase.</span>
+        <button type="button" @click="conectarMp" :disabled="mpLoading" class="btn-secondary text-xs !py-1 !px-3 ml-auto">
+          {{ mpLoading ? 'Redirigiendo...' : 'Cambiar cuenta' }}
+        </button>
+      </div>
+      <div v-else class="space-y-3">
+        <p class="text-gray-300 text-sm">
+          Conecta tu cuenta de MercadoPago para poder <strong class="text-white">publicar clases</strong> y recibir tus pagos.
+        </p>
+        <button type="button" @click="conectarMp" :disabled="mpLoading" class="btn-primary">
+          {{ mpLoading ? 'Redirigiendo...' : 'Conectar con MercadoPago' }}
+        </button>
+      </div>
+      <p v-if="mpMsg" :class="mpMsgType === 'success' ? 'text-green-400' : 'text-red-400'" class="text-xs mt-2">{{ mpMsg }}</p>
+    </div>
+
     <h2 class="text-xl font-semibold text-white mb-2">Datos Profesionales</h2>
     <p class="text-gray-400 text-sm mb-6">Esta informacion es visible para alumnos y sedes que buscan maestros.</p>
 
@@ -211,6 +235,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import professionalProfileService from '@/services/professionalProfileService'
+import sellerService from '@/services/sellerService'
 import { useAuth } from '@/stores/auth'
 import { reviewService } from '@/services/reviewService'
 import { formatDate } from '@/utils/dateFormatter'
@@ -248,6 +273,24 @@ const msg = ref('')
 const msgType = ref('')
 const reviews = ref([])
 
+// Conexión MercadoPago (vendedor)
+const mp = ref({ connected: false, status: 'DISCONNECTED' })
+const mpLoading = ref(false)
+const mpMsg = ref('')
+const mpMsgType = ref('')
+
+async function conectarMp() {
+  mpLoading.value = true
+  mpMsg.value = ''
+  try {
+    await sellerService.connect() // redirige a MercadoPago
+  } catch (e) {
+    mpLoading.value = false
+    mpMsg.value = e?.response?.data?.error || e?.message || 'No se pudo iniciar la conexión'
+    mpMsgType.value = 'error'
+  }
+}
+
 const promedioReviews = computed(() => {
   if (!reviews.value.length) return 0
   return reviews.value.reduce((sum, r) => sum + r.score, 0) / reviews.value.length
@@ -260,6 +303,21 @@ const iniciales = computed(() => {
 })
 
 onMounted(async () => {
+  // Resultado del retorno desde el OAuth de MercadoPago (?mp=connected|error|expired)
+  const mpResult = route.query.mp
+  if (mpResult === 'connected') {
+    mpMsg.value = '¡Cuenta de MercadoPago conectada!'
+    mpMsgType.value = 'success'
+  } else if (mpResult === 'error' || mpResult === 'expired') {
+    mpMsg.value = 'No se pudo conectar MercadoPago. Inténtalo de nuevo.'
+    mpMsgType.value = 'error'
+  }
+  try {
+    mp.value = await sellerService.getStatus()
+  } catch (err) {
+    console.error('Error al cargar estado de MercadoPago', err)
+  }
+
   try {
     const data = await professionalProfileService.getMine()
     if (data) {

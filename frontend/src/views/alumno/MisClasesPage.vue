@@ -24,11 +24,30 @@
       <div v-for="(grupo, nombre) in clasesAgrupadas" :key="nombre" class="space-y-3">
         <h2 class="text-lg font-semibold text-gray-300 border-b border-white/10 pb-2">{{ nombre }}</h2>
         <div v-for="c in grupo" :key="c.enrollmentId || c.classId" class="card">
+          <!-- Reagendamiento pendiente de respuesta -->
+          <router-link
+            v-if="reagendaPendiente(c.classId)"
+            :to="'/alumno/reagendamiento/' + reagendaPendiente(c.classId).rescheduleId"
+            class="flex items-center gap-3 mb-3 rounded-lg border border-yellow-400/30 bg-yellow-400/10 px-3 py-2 hover:bg-yellow-400/20 transition-colors"
+          >
+            <svg class="w-4 h-4 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div class="flex-1 min-w-0">
+              <p class="text-yellow-300 text-xs font-semibold">Reagendamiento pendiente</p>
+              <p class="text-yellow-400/80 text-xs">Nuevo horario: {{ formatDate(reagendaPendiente(c.classId).proposedTime) }} · toca para responder</p>
+            </div>
+            <span class="text-yellow-400 text-xs font-medium whitespace-nowrap">Responder →</span>
+          </router-link>
           <div class="flex items-center justify-between">
             <router-link :to="'/alumno/clases/' + c.classId" class="flex-1 min-w-0 mr-4">
               <h3 class="text-lg font-semibold text-white hover:text-primary transition-colors">{{ c.title }}</h3>
               <p class="text-gray-400 text-sm">{{ c.discipline }} {{ c.level ? '— ' + c.level : '' }}</p>
               <p class="text-gray-500 text-xs mt-1">{{ formatDate(c.startTime) }}</p>
+              <p v-if="c.teacherName" class="text-gray-500 text-xs mt-0.5">Prof. {{ c.teacherName }}</p>
+              <p v-if="c.venueName" class="text-gray-500 text-xs mt-0.5">
+                {{ c.venueName }}<span v-if="c.venueAddress"> · {{ c.venueAddress }}</span><span v-else-if="c.venueComuna"> · {{ c.venueComuna }}</span>
+              </p>
             </router-link>
             <div class="flex items-center gap-3 flex-shrink-0">
               <span class="text-primary font-semibold text-sm">${{ c.price?.toLocaleString('es-CL') }}</span>
@@ -57,12 +76,14 @@
 import { ref, computed, onMounted } from 'vue'
 import paymentService from '@/services/paymentService'
 import { reviewService } from '@/services/reviewService'
+import rescheduleService from '@/services/rescheduleService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import { formatDate } from '@/utils/dateFormatter'
 
 const clases = ref([])
 const loading = ref(true)
 const clasesElegibles = ref(new Set())
+const reagendasPorClase = ref({})
 
 const clasesAgrupadas = computed(() => {
   const grupos = {}
@@ -81,12 +102,20 @@ onMounted(async () => {
 async function cargarClases() {
   loading.value = true
   try {
-    const [data, eligible] = await Promise.all([
+    const [data, eligible, pendientes] = await Promise.all([
       paymentService.getMyEnrollments(),
-      reviewService.getStudentEligible().then(r => r.data).catch(() => [])
+      reviewService.getStudentEligible().then(r => r.data).catch(() => []),
+      rescheduleService.getMyPendingReschedules().then(r => r.data).catch(() => [])
     ])
     clases.value = Array.isArray(data) ? data : []
     clasesElegibles.value = new Set((Array.isArray(eligible) ? eligible : []).map(e => e.classId))
+    // Indexo el reagendamiento pendiente por classId para pintar el banner.
+    const idx = {}
+    for (const p of (Array.isArray(pendientes) ? pendientes : [])) {
+      const r = p.reschedule
+      if (r?.classId) idx[r.classId] = { rescheduleId: r.id, proposedTime: r.proposedTime }
+    }
+    reagendasPorClase.value = idx
   } catch {
     clases.value = []
   } finally {
@@ -96,5 +125,9 @@ async function cargarClases() {
 
 function pendienteReseña(classId) {
   return clasesElegibles.value.has(classId)
+}
+
+function reagendaPendiente(classId) {
+  return reagendasPorClase.value[classId] || null
 }
 </script>

@@ -1,4 +1,6 @@
 import { supabase, currentUserId, invokeFunction, camelize } from './supabase'
+import { attachTeacherNames } from './classService'
+import associateService from './associateService'
 
 export default {
   async addToCart(classId, beneficiaryType = 'SELF', beneficiaryId = null) {
@@ -45,12 +47,19 @@ export default {
 
   async getCart() {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.id) return { items: [] }
+    if (!session?.user?.id) {
+      console.log('[getCart] sin sesión → carrito vacío')
+      return { items: [] }
+    }
     const uid = session.user.id
     const { data, error } = await supabase
       .from('cart_items').select('*').eq('owner_id', uid)
       .order('created_at', { ascending: false })
-    if (error) throw error
+    if (error) {
+      console.error('[getCart] error de Supabase →', { message: error.message, code: error.code })
+      throw error
+    }
+    console.log('[getCart] items cargados →', data?.length ?? 0)
     return { items: camelize(data) }
   },
 
@@ -96,7 +105,19 @@ export default {
       beneficiaryType: c.beneficiaryType || 'SELF',
       beneficiaryId: c.beneficiaryId || null
     }))
-    return invokeFunction('mercadopago-create-preference', { body: { items } })
+    console.log('[createPreference] invocando mercadopago-create-preference con items →', items)
+    try {
+      const res = await invokeFunction('mercadopago-create-preference', { body: { items } })
+      console.log('[createPreference] respuesta de la Edge Function →', res)
+      return res
+    } catch (err) {
+      console.error('[createPreference] la Edge Function falló →', {
+        status: err?.response?.status,
+        data: err?.response?.data,
+        message: err?.message
+      })
+      throw err
+    }
   },
 
   async getMyEnrollments() {
@@ -107,7 +128,47 @@ export default {
       .eq('student_id', uid)
       .order('created_at', { ascending: false })
     if (error) throw error
-    return camelize(data)
+    const rows = camelize(data) || []
+    // El nombre del profesor se resuelve por RPC (RLS de profiles) y se anexa a
+    // la clase anidada de cada inscripción.
+    await attachTeacherNames(rows.map(r => r.class).filter(Boolean))
+    // Mapa id → nombre de los asociados, para etiquetar a cada beneficiario.
+    let asociados = {}
+    try {
+      const list = await associateService.getAssociates()
+      for (const a of (Array.isArray(list) ? list : [])) asociados[a.id] = a.name
+    } catch { /* sin asociados: los beneficiarios propios se agrupan en "Yo" */ }
+    // Aplano la inscripción + su clase a la forma que consumen las vistas
+    // (título, fecha, estado de la clase, sede, dirección y profesor).
+    return rows.map((e) => {
+      const cl = e.class || {}
+      const venue = cl.room?.venue || {}
+      const esPropio = !e.beneficiaryId || e.beneficiaryType === 'SELF'
+      return {
+        enrollmentId: e.id,
+        classId: e.classId,
+        enrollmentStatus: e.status,
+        beneficiaryType: e.beneficiaryType,
+        beneficiaryId: e.beneficiaryId,
+        beneficiaryName: esPropio ? null : (asociados[e.beneficiaryId] || 'Asociado'),
+        title: cl.title,
+        discipline: cl.discipline,
+        level: cl.level,
+        description: cl.description,
+        startTime: cl.startTime,
+        endTime: cl.endTime,
+        duration: cl.duration,
+        price: cl.price,
+        status: cl.status,
+        minAge: cl.minAge,
+        maxAge: cl.maxAge,
+        roomName: cl.room?.name || null,
+        venueName: venue.name || null,
+        venueAddress: venue.address || null,
+        venueComuna: venue.comuna || null,
+        teacherName: cl.teacherName || null
+      }
+    })
   },
 
   async getMyPaymentHistory() {

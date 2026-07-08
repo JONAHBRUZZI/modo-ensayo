@@ -14,6 +14,16 @@ export default {
       const userId = userClaims!.id;
       const body = BodySchema.parse(await req.json());
 
+      // Verificar que el reagendamiento existe y obtener la clase asociada
+      const { data: resched, error: reschedErr } = await admin.from("reschedules")
+        .select("class_id").eq("id", body.rescheduleId).single();
+      if (reschedErr || !resched) return Response.json({ error: "Reagendamiento no encontrado" }, { status: 404 });
+
+      // Verificar que el alumno está inscrito en esa clase
+      const { data: enrollment } = await admin.from("enrollments")
+        .select("id").eq("class_id", resched.class_id).eq("student_id", userId).eq("status", "ACTIVE").maybeSingle();
+      if (!enrollment) return Response.json({ error: "No estás inscrito en esta clase" }, { status: 403 });
+
       const { data: resp, error } = await admin.from("reschedule_responses")
         .select("*").eq("reschedule_id", body.rescheduleId).eq("user_id", userId)
         .is("response_type", null).single();
@@ -26,10 +36,8 @@ export default {
       }).eq("id", resp.id);
 
       if (!body.accepted) {
-        const { data: resched } = await admin.from("reschedules")
-          .select("class_id").eq("id", body.rescheduleId).single();
         const { data: enrollments } = await admin.from("enrollments")
-          .select("id").eq("class_id", resched?.class_id).eq("student_id", userId).eq("status", "ACTIVE");
+          .select("id").eq("class_id", resched.class_id).eq("student_id", userId).eq("status", "ACTIVE");
         if (enrollments) {
           for (const e of enrollments) {
             await admin.from("payments").update({ status: "REFUND_PENDING" })

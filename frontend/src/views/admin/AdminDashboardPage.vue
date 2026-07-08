@@ -53,15 +53,76 @@
         </div>
       </div>
 
-      <!-- Ingresos mensuales (Line) -->
-      <div class="card flex flex-col items-center">
-        <h3 class="text-white font-medium mb-4 self-start">Ingresos Mensuales</h3>
+      <!-- Ingresos por fuente (Line, 3 series) -->
+      <div class="card flex flex-col">
+        <div class="flex items-center justify-between mb-4 w-full">
+          <h3 class="text-white font-medium">Ingresos por fuente</h3>
+          <div class="inline-flex rounded-lg border border-white/10 overflow-hidden text-xs">
+            <button @click="setGranularidad('month')" :class="granularidad === 'month' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'" class="px-3 py-1 transition-colors">Mensual</button>
+            <button @click="setGranularidad('year')" :class="granularidad === 'year' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'" class="px-3 py-1 transition-colors">Anual</button>
+          </div>
+        </div>
         <div v-if="chartIngresos.labels.length > 0" class="w-full h-64">
           <Line :data="chartIngresos" :options="lineOptions" />
         </div>
         <p v-else class="text-gray-500 text-sm text-center py-16">Sin datos de ingresos aun</p>
       </div>
     </div>
+
+    <!-- KPIs de ingresos por fuente -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Ingresos Clases</h3>
+        <p class="text-2xl font-bold text-purple-400">${{ totalesIngreso.clases.toLocaleString('es-CL') }}</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Ingresos Arriendos</h3>
+        <p class="text-2xl font-bold text-blue-400">${{ totalesIngreso.arriendos.toLocaleString('es-CL') }}</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-1">Ingresos Total</h3>
+        <p class="text-2xl font-bold text-green-400">${{ totalesIngreso.total.toLocaleString('es-CL') }}</p>
+      </div>
+    </div>
+
+    <!-- Comisiones de la plataforma -->
+    <h2 class="text-lg font-semibold text-white mb-1 mt-6">Comisiones de la plataforma</h2>
+    <p class="text-gray-500 text-sm mb-4">Aplican solo a transacciones futuras. Cada pago guarda su propia comisión al procesarse.</p>
+    <div class="card grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Comisión arriendo de salas (%)</label>
+        <div class="flex gap-3">
+          <input type="number" v-model.number="comisiones.arriendo" min="0" max="100" class="input-field" />
+          <button @click="pedirGuardar('room_reservation_commission_pct', comisiones.arriendo)" class="btn-primary text-sm whitespace-nowrap">Guardar</button>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Actual: {{ comisionesActuales.room_reservation_commission_pct ?? '—' }}%</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Comisión clases (%)</label>
+        <div class="flex gap-3">
+          <input type="number" v-model.number="comisiones.clases" min="0" max="100" class="input-field" />
+          <button @click="pedirGuardar('marketplace_commission_pct', comisiones.clases)" class="btn-primary text-sm whitespace-nowrap">Guardar</button>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Actual: {{ comisionesActuales.marketplace_commission_pct ?? '—' }}%</p>
+      </div>
+    </div>
+
+    <!-- Modal de confirmación de cambio de comisión -->
+    <BottomSheet v-model="modalComision.abierto">
+      <h3 class="text-lg font-semibold text-white mb-2">Confirmar cambio de comisión</h3>
+      <p class="text-sm text-gray-400 mb-4">
+        Vas a cambiar la comisión de <span class="text-white font-medium">{{ modalComision.label }}</span> de
+        <span class="text-white font-medium">{{ modalComision.actual }}%</span> →
+        <span class="text-primary font-medium">{{ modalComision.nuevo }}%</span>.
+        Aplica solo a transacciones futuras.
+      </p>
+      <div class="flex justify-end gap-3">
+        <button @click="modalComision.abierto = false" class="text-sm text-gray-400 hover:text-white">Cancelar</button>
+        <button @click="confirmarGuardar" :disabled="guardandoComision" class="btn-primary text-sm disabled:opacity-50">
+          {{ guardandoComision ? 'Guardando...' : 'Confirmar' }}
+        </button>
+      </div>
+    </BottomSheet>
 
     <!-- Métricas del docente -->
     <h2 class="text-lg font-semibold text-white mb-4 mt-6">Métricas de Rendimiento</h2>
@@ -212,6 +273,8 @@ import { ref, computed, onMounted } from 'vue'
 import adminService from '@/services/adminService'
 import { reviewService } from '@/services/reviewService'
 import { formatDate } from '@/utils/dateFormatter'
+import BottomSheet from '@/components/BottomSheet.vue'
+import { useToast } from '@/composables/useToast'
 import { Pie, Bar, Line } from 'vue-chartjs'
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale,
@@ -220,9 +283,17 @@ import {
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler)
 
+const toast = useToast()
 const stats = ref({})
 const systemReviews = ref([])
 const sysStats = ref({})
+const granularidad = ref('month')
+
+// Comisiones editables + estado del modal de confirmación.
+const comisiones = ref({ arriendo: 0, clases: 0 })
+const comisionesActuales = ref({})
+const guardandoComision = ref(false)
+const modalComision = ref({ abierto: false, key: null, label: '', actual: 0, nuevo: 0 })
 
 const estrellas = (s) => { const n = Math.round(s || 0); return '★'.repeat(n) + '☆'.repeat(5 - n) }
 const distCount = (n) => (sysStats.value.distribucion?.[n]) || 0
@@ -258,25 +329,78 @@ const chartClases = computed(() => ({
   }]
 }))
 
-const chartIngresos = computed(() => ({
-  labels: (stats.value.ingresosMensuales || []).map(i => i.mes?.substring(5) || ''),
-  datasets: [{
-    label: 'Ingresos $',
-    data: (stats.value.ingresosMensuales || []).map(i => i.ingresos || 0),
-    borderColor: '#8b5cf6',
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
-    fill: true,
-    tension: 0.3
-  }]
-}))
+const chartIngresos = computed(() => {
+  const serie = stats.value.ingresosPorPeriodo || []
+  return {
+    labels: serie.map(i => i.periodo || ''),
+    datasets: [
+      { label: 'Clases', data: serie.map(i => i.clases || 0), borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.15)', fill: false, tension: 0.3 },
+      { label: 'Arriendos', data: serie.map(i => i.arriendos || 0), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.15)', fill: false, tension: 0.3 },
+      { label: 'Total', data: serie.map(i => i.total || 0), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', fill: true, tension: 0.3 }
+    ]
+  }
+})
+
+// Totales acumulados por fuente (KPIs).
+const totalesIngreso = computed(() => (stats.value.ingresosPorPeriodo || []).reduce((a, i) => {
+  a.clases += Number(i.clases || 0); a.arriendos += Number(i.arriendos || 0); a.total += Number(i.total || 0)
+  return a
+}, { clases: 0, arriendos: 0, total: 0 }))
 
 const pieOptions = { plugins: { legend: { labels: { color: '#9ca3af' } } } }
 const barOptions = { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9ca3af' } }, y: { ticks: { color: '#9ca3af' } } } }
 const clasesOptions = { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9ca3af' } }, y: { ticks: { color: '#9ca3af' } } } }
-const lineOptions = { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9ca3af' } }, y: { ticks: { color: '#9ca3af' } } } }
+const lineOptions = { plugins: { legend: { display: true, labels: { color: '#9ca3af' } } }, scales: { x: { ticks: { color: '#9ca3af' } }, y: { ticks: { color: '#9ca3af' } } } }
+
+async function cargarStats() {
+  try { stats.value = await adminService.getStats(granularidad.value) } catch { stats.value = {} }
+}
+
+function setGranularidad(g) {
+  if (granularidad.value === g) return
+  granularidad.value = g
+  cargarStats()
+}
+
+async function cargarComisiones() {
+  try {
+    const s = await adminService.getSettings()
+    comisionesActuales.value = s
+    comisiones.value.arriendo = s.room_reservation_commission_pct ?? 0
+    comisiones.value.clases = s.marketplace_commission_pct ?? 0
+  } catch { /* sin permiso / sin datos */ }
+}
+
+// Abre el modal de confirmación mostrando valor actual → nuevo.
+function pedirGuardar(key, nuevo) {
+  const labels = { room_reservation_commission_pct: 'arriendo de salas', marketplace_commission_pct: 'clases' }
+  modalComision.value = {
+    abierto: true,
+    key,
+    label: labels[key] || key,
+    actual: comisionesActuales.value[key] ?? 0,
+    nuevo: Number(nuevo)
+  }
+}
+
+async function confirmarGuardar() {
+  const { key, nuevo } = modalComision.value
+  guardandoComision.value = true
+  try {
+    await adminService.updateSetting(key, nuevo)
+    comisionesActuales.value = { ...comisionesActuales.value, [key]: nuevo }
+    modalComision.value.abierto = false
+    toast.success('Comisión actualizada.')
+  } catch (e) {
+    toast.error(e?.message || 'No se pudo actualizar la comisión.')
+  } finally {
+    guardandoComision.value = false
+  }
+}
 
 onMounted(async () => {
-  try { stats.value = await adminService.getStats() } catch { stats.value = {} }
+  await cargarStats()
+  await cargarComisiones()
   try { systemReviews.value = (await reviewService.getSystemReviews()).data || [] } catch { systemReviews.value = [] }
   try { sysStats.value = (await reviewService.getSystemStats()).data || {} } catch { sysStats.value = {} }
 })

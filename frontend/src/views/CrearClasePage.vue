@@ -86,7 +86,7 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Disciplina *</label>
-          <input v-model="form.discipline" required class="input-field" placeholder="Ej: Guitarra, Ballet, Karate..." list="discipline-list" autocomplete="off" />
+          <input v-model="form.discipline" required class="input-field" placeholder="Ej: Guitarra, Ballet, Karate..." list="discipline-list" autocomplete="off" @blur="form.discipline = normalizarDisciplina(form.discipline)" />
           <datalist id="discipline-list">
             <optgroup v-for="g in disciplineGroups" :key="g.category || 'otras'" :label="g.label">
               <option v-for="item in g.items" :key="item" :value="item" />
@@ -111,8 +111,9 @@
       <!-- Capacidad, Duracion, Precio -->
       <div class="grid grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Capacidad *</label>
-          <input type="number" v-model.number="form.capacity" min="1" required class="input-field" />
+          <label class="block text-sm font-medium text-gray-300 mb-1">Capacidad</label>
+          <input type="number" :value="form.capacity || ''" readonly disabled class="input-field opacity-70 cursor-not-allowed" placeholder="Según la sala" />
+          <p class="text-[10px] text-gray-500 mt-0.5">La define la sala</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Duracion (min) *</label>
@@ -173,6 +174,7 @@ import { useRouter, useRoute } from 'vue-router'
 import classService from '@/services/classService'
 import { useAuth } from '@/stores/auth'
 import BorradorSelector from '@/components/BorradorSelector.vue'
+import { normalizarDisciplina } from '@/utils/disciplina'
 
 const router = useRouter()
 const route = useRoute()
@@ -244,8 +246,16 @@ watch(() => form.value.venueId, async (id) => {
   try { rooms.value = await classService.getVenueRooms(id) } catch { rooms.value = [] }
 })
 
+// La capacidad la define la sala seleccionada (su tope), no se escribe a mano.
+watch(() => form.value.roomId, (id) => {
+  if (isEditing.value) return
+  const sala = rooms.value.find(r => r.id === id)
+  if (sala?.capacity) form.value.capacity = sala.capacity
+})
+
 async function handleCreate() {
   error.value = ''
+  form.value.discipline = normalizarDisciplina(form.value.discipline)
   creating.value = true
   try {
     if (isEditing.value) {

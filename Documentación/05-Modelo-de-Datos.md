@@ -203,6 +203,11 @@ Bloques de agenda generados por sala.
 | beneficiary_id | uuid | |
 | status | text | DEFAULT 'ACTIVE' |
 
+> **Unicidad:** índice único `enrollments_unique_beneficiary` sobre
+> `(class_id, beneficiary_type, COALESCE(beneficiary_id, student_id))`. Un mismo
+> beneficiario no se repite en la clase, pero un alumno sí puede inscribir a
+> varios beneficiarios distintos (él mismo + asociados) en la misma clase.
+
 ### `attendances`
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -365,6 +370,26 @@ State temporal del flujo OAuth (anti-CSRF). Se borra al completar el callback.
 |-----|---------------|-------------|
 | `room_reservation_commission_pct` | numeric (0–100) | Comisión de la plataforma sobre el arriendo. Default: 0 |
 
+### `teacher_payouts`
+Registro del desembolso del honorario al profesor cuando su clase se confirma como
+realizada (`COMPLETED`). Una fila por pago liberado; el giro real a MercadoPago queda
+`tracked` (Fase 0). Origen: migración `20260622000100_marketplace_payouts.sql`.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | uuid | PK |
+| payment_id | uuid | UNIQUE, FK → payments(id) |
+| teacher_id | uuid | FK → auth.users(id) |
+| class_id | uuid | FK → classes(id) |
+| gross_amount | numeric | Monto bruto del pago |
+| commission_amount | numeric | DEFAULT 0 — comisión de la plataforma |
+| net_amount | numeric | Neto a girar al profesor |
+| mp_reference | text | Referencia del giro en MercadoPago |
+| status | text | CHECK PENDING / PAID / FAILED |
+| error_detail | text | Detalle si el giro falla |
+| created_at | timestamptz | DEFAULT now() |
+| paid_at | timestamptz | |
+
 ## 8. Enums (tipos definidos)
 
 | Enum | Valores |
@@ -390,10 +415,16 @@ State temporal del flujo OAuth (anti-CSRF). Se borra al completar el callback.
   permiten. Las operaciones privilegiadas pasan por Edge Functions con la clave
   de servicio.
 - **Funciones / triggers**: `handle_new_user` (crea `profiles` al registrarse),
-  `get_my_attributes` (atributos derivados del usuario), `release_expired_holds`
+  `get_my_attributes` (atributos derivados del usuario), `get_teacher_names(uuid[])`
+  (nombre público de profesores, `SECURITY DEFINER` acotado; salta la RLS de
+  `profiles` para mostrar el profesor en las vistas de clases), `track_class_status`
+  (audita transiciones en `class_status_history`), `enforce_class_capacity`
+  (trigger `BEFORE INSERT` en `enrollments`: bloquea la fila de la clase con
+  `FOR UPDATE` y rechaza si el cupo ACTIVE está lleno — cupo a prueba de
+  concurrencia), `release_expired_holds`
   (libera bloques HELD vencidos cada 5 min vía `pg_cron`), más helpers de RLS y
   jobs de `pg_cron` para tareas programadas (regeneración de bloques, timeouts
-  de reagendamiento, etc.).
+  de reagendamiento, `process-refunds` cada 10 min, `process-payouts` cada 15 min).
 - **Migraciones**: el schema se versiona en `supabase/migrations/`. La base
   hosteada es la fuente de verdad; se sincroniza con la CLI.
 

@@ -11,12 +11,27 @@ const BodySchema = z.object({
 export default {
   fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
     try {
-      const admin = ctx.supabaseAdmin;
+      const { supabaseAdmin: admin, userClaims } = ctx;
+      const userId = userClaims!.id;
+      const roles: string[] = (userClaims!.appMetadata?.roles as string[]) ?? [];
       const body = BodySchema.parse(await req.json());
 
       const { data: cls, error: clsErr } = await admin.from("classes")
-        .select("id,status,teacher_id").eq("id", body.classId).eq("status", "PUBLISHED").single();
+        .select("id,status,teacher_id,room_id").eq("id", body.classId).eq("status", "PUBLISHED").single();
       if (clsErr || !cls) return Response.json({ error: "Clase no encontrada" }, { status: 404 });
+
+      // Solo ADMIN o el VENUE_ADMIN dueño de la sede donde ocurre la clase pueden proponer reagendamiento
+      if (!roles.includes("ADMIN")) {
+        if (!roles.includes("VENUE_ADMIN")) {
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        }
+        const { data: room } = await admin.from("rooms")
+          .select("venues(admin_id)").eq("id", cls.room_id).single();
+        const venueAdminId = (room as any)?.venues?.admin_id;
+        if (venueAdminId !== userId) {
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        }
+      }
 
       const { data: reschedule, error } = await admin.from("reschedules").insert({
         class_id: body.classId,

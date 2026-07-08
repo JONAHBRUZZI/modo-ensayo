@@ -121,6 +121,12 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'alumno/reagendamiento/:rescheduleId',
+        name: 'AlumnoReagendamiento',
+        component: () => import('@/views/alumno/AlumnoReagendamientoPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'alumno/pagos',
         name: 'PagosHistorial',
         component: () => import('@/views/alumno/PagosHistorialPage.vue'),
@@ -314,6 +320,12 @@ const routes = [
         path: 'admin/sedes',
         name: 'AdminSedes',
         component: () => import('@/views/admin/AdminSedesPage.vue'),
+        meta: { requiresAuth: true, roles: ['ADMIN'] }
+      },
+      {
+        path: 'admin/sedes/:venueId/documentos',
+        name: 'AdminVenueDocumentos',
+        component: () => import('@/views/admin/AdminVenueDocumentosPage.vue'),
         meta: { requiresAuth: true, roles: ['ADMIN'] }
       },
       {

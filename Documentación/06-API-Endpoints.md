@@ -50,6 +50,9 @@ Funciones RPC (PostgreSQL) invocadas con `supabase.rpc(...)`:
 | RPC | Descripción |
 |-----|-------------|
 | `get_my_attributes` | Atributos derivados del usuario (identidad, reservas, estado de profesor, sede, etc.) |
+| `get_teacher_names(uuid[])` | Nombre público (`id` + `full_name`) de los profesores de una lista de clases. `SECURITY DEFINER` acotado: solo devuelve usuarios que son profesor de alguna clase, saltando la RLS de `profiles`. Lo usa el frontend para mostrar el profesor en las vistas de clases del alumno. |
+| `get_venue_class_students(uuid)` | Alumnos inscritos + asistencia de una clase; autoriza al profesor de la clase o al admin de la sede. |
+| `list_teacher_candidates()` | Candidatos (email + nombre) para asignar como profesor dependiente en una sede. |
 
 ---
 
@@ -79,6 +82,14 @@ Definidas en `supabase/functions/`. `verify_jwt` se configura por función en
 | `mp-connect-start` | Inicia OAuth de MercadoPago Connect; genera state anti-CSRF y devuelve URL de autorización |
 | `mp-connect-callback` | Callback OAuth (sin JWT); valida state, canjea code→tokens y guarda cuenta del vendedor |
 | `reserve-room-preference` | Crea preferencia de arriendo de sala con split automático a la cuenta MercadoPago de la sede |
+| `mp-oauth-start` | Inicia OAuth de MercadoPago para conectar la cuenta del **profesor** (payouts); genera `state` anti-CSRF en `mp_oauth_states` y devuelve la URL de autorización |
+| `mp-oauth-callback` | Callback OAuth del profesor (sin JWT); valida `state`, canjea code→tokens y guarda la cuenta del vendedor |
+| `process-refunds` | Batch (pg_cron `*/10`, service role): procesa `payments` en REFUND_PENDING vía API MercadoPago. Reembolso **parcial** por el monto exacto de la inscripción (`{ amount: payment.amount }`) con `X-Idempotency-Key` por `payment.id`, y pasa a REFUNDED de forma idempotente. Errores 4xx de MP (permanentes) → `FAILED` + `audit_logs` (`payment.refund_failed`) para atención manual; 5xx/429 se reintentan en la próxima pasada |
+| `process-payouts` | Batch (pg_cron `*/15`, service role): liquida `teacher_payouts` en PENDING → PAID. **El desembolso real (`disburseToSeller`) es un stub de Fase 0** (money-out MercadoPago Chile pendiente); crea el payout pero no gira dinero aún |
+
+> Nota: `mp-oauth-*` conecta la cuenta del **profesor** (para recibir el honorario
+> vía `teacher_payouts`), mientras que `mp-connect-*` conecta la cuenta de la
+> **sede** (para el split del arriendo de salas). Son dos flujos OAuth distintos.
 
 ---
 

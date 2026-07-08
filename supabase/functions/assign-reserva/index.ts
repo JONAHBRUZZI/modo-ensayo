@@ -7,6 +7,9 @@ const BodySchema = z.object({
   roomId: z.string().uuid(),
   startTime: z.string().datetime(),
   duration: z.number().int().positive(),
+  // Clase "placeholder" de la reserva a la que se asigna el borrador. Se excluye
+  // del chequeo de conflicto (es la reserva misma) y se le pasan sus bloques.
+  reservationId: z.string().uuid().nullish(),
 });
 
 export default {
@@ -29,33 +32,28 @@ export default {
 
       const start = new Date(body.startTime);
       const end = new Date(start.getTime() + body.duration * 60000);
-      const { data: conflicts } = await admin.from("classes")
+      let conflictQuery = admin.from("classes")
         .select("id").eq("room_id", body.roomId)
         .neq("status", "CANCELLED").neq("status", "SUSPENDED")
         .lt("start_time", end.toISOString()).gt("end_time", start.toISOString());
+      // La reserva misma ocupa ese horario: se excluye del chequeo de conflicto.
+      if (body.reservationId) conflictQuery = conflictQuery.neq("id", body.reservationId);
+      const { data: conflicts } = await conflictQuery;
       if (conflicts && conflicts.length > 0) {
         return Response.json({ error: "Conflicto de horario en la sala" }, { status: 409 });
       }
 
-      const { data: cls, error: clsErr } = await admin.from("classes").insert({
-        title: draft.title,
-        discipline: draft.discipline,
-        discipline_category: draft.discipline_category,
-        level: draft.level,
-        description: draft.description,
-        capacity: draft.capacity,
+      // Publicar el draft existente en vez de crear una fila nueva. La capacidad
+      // de la clase la define la sala (su tope), no el borrador.
+      const { data: cls, error: clsErr } = await admin.from("classes").update({
         duration: body.duration,
-        price: draft.price,
-        min_age: draft.min_age,
-        max_age: draft.max_age,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
         room_id: body.roomId,
-        teacher_id: userId,
+        capacity: (room as any).capacity,
         status: "PUBLISHED",
-        tipo_clase: draft.tipo_clase,
-      }).select("*").single();
-      if (clsErr) throw clsErr;
+      }).eq("id", body.classId).eq("teacher_id", userId).eq("status", "DRAFT").select("*").single();
+      if (clsErr || !cls) throw clsErr ?? new Error("Error publicando el borrador");
 
       await admin.from("room_schedule_blocks")
         .update({ status: "OCCUPIED", class_id: cls.id })
@@ -63,6 +61,15 @@ export default {
         .lte("start_time", start.toISOString())
         .gte("end_time", end.toISOString())
         .eq("status", "AVAILABLE");
+
+      // La reserva ya ocupaba esos bloques (OCCUPIED con el id del placeholder):
+      // se reasignan al borrador publicado para que no queden huérfanos al
+      // eliminar la reserva.
+      if (body.reservationId) {
+        await admin.from("room_schedule_blocks")
+          .update({ status: "OCCUPIED", class_id: cls.id })
+          .eq("class_id", body.reservationId);
+      }
 
       let atributosActualizados = false;
       if (!roles.includes("TEACHER")) {
@@ -80,7 +87,7 @@ export default {
         metadata: { draftId: body.classId, roomId: body.roomId },
       });
 
-      logInfo("reserva_asignada", { classId: cls.id, teacherId: userId, roomId: body.roomId });
+      logInfo("reserva_asignada", { classId: body.classId, teacherId: userId, roomId: body.roomId });
       return Response.json({ ...cls, ...(atributosActualizados ? { atributosActualizados: true } : {}) });
 
     } catch (err) {

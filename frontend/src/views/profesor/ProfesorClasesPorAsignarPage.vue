@@ -210,10 +210,11 @@ async function asignarBorrador() {
   const borrador = borradoresSeleccionado.value
   try {
     // 1. Asignar la sala de la reserva al borrador seleccionado (lo publica)
-    await api.post(`/profesor/clases/${borrador.id}/asignar-reserva`, {
+    await classService.assignReserva(borrador.id, {
       roomId: reserva.roomId,
-      startTime: reserva.startTime,
-      duration: reserva.duration || 60
+      startTime: new Date(reserva.startTime).toISOString(),
+      duration: reserva.duration || 60,
+      reservationId: reserva.id
     })
     // 2. Eliminar el draft de la reserva original
     await classService.deleteDraft(reserva.id)
@@ -222,7 +223,7 @@ async function asignarBorrador() {
     modalBorrador.value.abierto = false
     router.push('/profesor/clases-propias')
   } catch (e) {
-    modalBorrador.value.error = e?.response?.data?.message || 'Error al asignar el borrador'
+    modalBorrador.value.error = e?.response?.data?.error || e?.response?.data?.message || 'Error al asignar el borrador'
   }
   modalBorrador.value.procesando = false
 }

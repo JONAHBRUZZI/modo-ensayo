@@ -6,26 +6,119 @@
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
   >
     <h1 class="text-3xl font-bold text-white mb-2">Panel de Sede</h1>
-    <p class="text-gray-400 mb-8">Gestióna tu sede de ensayo</p>
+    <p class="text-gray-400 mb-8">Gestiona tu sede de ensayo</p>
 
-    <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <!-- Stats operativos -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Salas</h3>
         <p class="text-3xl font-bold text-white">{{ stats.salas || 0 }}</p>
-      </div>
-      <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Clases Hoy</h3>
-        <p class="text-3xl font-bold text-primary">{{ stats.clasesHoy || 0 }}</p>
       </div>
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Por Confirmar</h3>
         <p class="text-3xl font-bold text-yellow-400">{{ stats.porConfirmar || 0 }}</p>
       </div>
       <div class="card">
-        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingresos</h3>
-        <p class="text-3xl font-bold text-green-400">${{ stats.ingresos?.toLocaleString() || 0 }}</p>
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Total</h3>
+        <p class="text-3xl font-bold text-green-400">${{ ingresoTotal.toLocaleString('es-CL') }}</p>
+        <p class="text-[10px] text-gray-500 mt-1">Arriendo + clases (antes de pagar profes)</p>
       </div>
+    </div>
+
+    <!-- Ingresos y egresos -->
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <h2 class="text-lg font-semibold text-white">Ingresos y egresos</h2>
+      <div class="inline-flex rounded-lg border border-white/10 overflow-hidden text-sm">
+        <button
+          @click="setGranularidad('month')"
+          :class="granularidad === 'month' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'"
+          class="px-4 py-1.5 transition-colors"
+        >Mensual</button>
+        <button
+          @click="setGranularidad('year')"
+          :class="granularidad === 'year' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'"
+          class="px-4 py-1.5 transition-colors"
+        >Anual</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Arriendo</h3>
+        <p class="text-2xl font-bold text-blue-400">${{ totales.arriendo.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Reservas de sala pagadas</p>
+      </div>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Clases</h3>
+        <p class="text-2xl font-bold text-purple-400">${{ totales.clases.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Recaudación de alumnos</p>
+      </div>
+      <!-- Egreso profesores: clickeable, despliega el detalle por profesor -->
+      <button
+        type="button"
+        @click="mostrarEgreso = !mostrarEgreso"
+        class="card text-left hover:border-primary/50 transition-colors"
+      >
+        <div class="flex items-center justify-between">
+          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Egreso Profesores</h3>
+          <svg :class="['w-4 h-4 text-gray-400 transition-transform', mostrarEgreso && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <p class="text-2xl font-bold text-red-400">${{ totales.egreso.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Honorarios a profes asociados · ver detalle</p>
+      </button>
+      <div class="card">
+        <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Resultado</h3>
+        <p class="text-2xl font-bold" :class="neto >= 0 ? 'text-green-400' : 'text-red-400'">${{ neto.toLocaleString('es-CL') }}</p>
+        <p class="text-xs text-gray-500 mt-1">Ingresos − egresos</p>
+      </div>
+    </div>
+
+    <!-- Detalle de egreso por profesor -->
+    <div v-if="mostrarEgreso" class="card mb-6">
+      <h3 class="text-white font-medium mb-3">Pago a profesores asociados</h3>
+      <div v-if="payoutsLoading" class="text-gray-500 text-sm py-3">Cargando...</div>
+      <div v-else-if="payouts.length === 0" class="text-gray-500 text-sm py-3">Aún no hay honorarios comprometidos.</div>
+      <div v-else class="space-y-2">
+        <div v-for="p in payouts" :key="p.teacherId" class="flex items-center justify-between border-t border-white/5 pt-2 first:border-0 first:pt-0">
+          <div>
+            <p class="text-white text-sm font-medium">{{ p.fullName || p.email || 'Profesor' }}</p>
+            <p class="text-gray-500 text-xs">{{ p.clases }} clase{{ Number(p.clases) > 1 ? 's' : '' }}</p>
+          </div>
+          <p class="text-red-400 font-semibold">${{ Number(p.totalHonorario).toLocaleString('es-CL') }}</p>
+        </div>
+        <div class="flex items-center justify-between border-t border-white/10 pt-3 mt-1">
+          <p class="text-gray-300 text-sm font-medium">Total a pagar</p>
+          <p class="text-red-400 font-bold">${{ totales.egreso.toLocaleString('es-CL') }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalle por período -->
+    <div v-if="metricasLoading" class="text-gray-500 text-sm py-6 text-center">Cargando...</div>
+    <div v-else-if="metricas.length" class="card overflow-x-auto mb-8">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-gray-500 text-xs uppercase">
+            <th class="text-left py-2 px-2">{{ granularidad === 'year' ? 'Año' : 'Mes' }}</th>
+            <th class="text-right py-2 px-2">Arriendo</th>
+            <th class="text-right py-2 px-2">Clases</th>
+            <th class="text-right py-2 px-2">Egreso profes</th>
+            <th class="text-right py-2 px-2">Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="m in metricas" :key="m.periodo" class="border-t border-white/5">
+            <td class="py-2 px-2 text-gray-300">{{ m.periodo }}</td>
+            <td class="py-2 px-2 text-right text-blue-400">${{ Number(m.ingresoArriendo).toLocaleString('es-CL') }}</td>
+            <td class="py-2 px-2 text-right text-purple-400">${{ Number(m.ingresoClases).toLocaleString('es-CL') }}</td>
+            <td class="py-2 px-2 text-right text-red-400">${{ Number(m.egresoProfes).toLocaleString('es-CL') }}</td>
+            <td class="py-2 px-2 text-right font-medium" :class="Number(m.total) >= 0 ? 'text-green-400' : 'text-red-400'">${{ Number(m.total).toLocaleString('es-CL') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-else class="card text-center py-8 mb-8">
+      <p class="text-gray-500 text-sm">Aún no hay movimientos registrados.</p>
     </div>
 
     <!-- Alerta urgente: clases pendientes de confirmación -->
@@ -62,25 +155,44 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import venueService from '@/services/venueService'
 
-const stats = ref({ salas: 0, clasesHoy: 0, porConfirmar: 0, ingresos: 0 })
+const stats = ref({ salas: 0, porConfirmar: 0 })
+const metricas = ref([])
+const metricasLoading = ref(true)
+const granularidad = ref('month')
+
+// Egreso a profesores: detalle desplegable.
+const mostrarEgreso = ref(false)
+const payouts = ref([])
+const payoutsLoading = ref(true)
+
+// Totales sumando todos los períodos.
+const totales = computed(() => {
+  return metricas.value.reduce((acc, m) => {
+    acc.arriendo += Number(m.ingresoArriendo || 0)
+    acc.clases += Number(m.ingresoClases || 0)
+    acc.egreso += Number(m.egresoProfes || 0)
+    return acc
+  }, { arriendo: 0, clases: 0, egreso: 0 })
+})
+// Ingreso = arriendo + recaudación de clases (antes de pagar profes).
+const ingresoTotal = computed(() => totales.value.arriendo + totales.value.clases)
+// Resultado neto = ingresos − egresos.
+const neto = computed(() => ingresoTotal.value - totales.value.egreso)
 
 onMounted(async () => {
-  try {
-    const [metrics, pendingProm] = await Promise.allSettled([
-      venueService.getVenueMetrics(),
-      venueService.getPendingClasses()
-    ])
-    if (metrics.status === 'fulfilled' && metrics.value) {
-      stats.value.ingresos = metrics.value.ingresos || 0
-      stats.value.clasesHoy = metrics.value.totalClases || 0
-    }
-    if (pendingProm.status === 'fulfilled' && pendingProm.value) {
-      stats.value.porConfirmar = pendingProm.value.length || 0
-    }
+  await cargarMetricas()
+  try { payouts.value = await venueService.getVenueTeacherPayouts() } catch { payouts.value = [] }
+  payoutsLoading.value = false
 
+  try {
+    const pendientes = await venueService.getPendingClasses()
+    stats.value.porConfirmar = Array.isArray(pendientes) ? pendientes.length : 0
+  } catch { stats.value.porConfirmar = 0 }
+
+  try {
     const myVenues = await venueService.getMyVenues()
     const vArr = Array.isArray(myVenues) ? myVenues : myVenues?.content || []
     let totalSalas = 0
@@ -94,7 +206,24 @@ onMounted(async () => {
     }
     stats.value.salas = totalSalas
   } catch (err) {
-    console.error('Error al cargar estadísticas de la sede', err)
+    console.error('Error al cargar salas de la sede', err)
   }
 })
+
+async function cargarMetricas() {
+  metricasLoading.value = true
+  try {
+    metricas.value = await venueService.getVenueMetrics(granularidad.value)
+  } catch (err) {
+    console.error('Error al cargar métricas de la sede', err)
+    metricas.value = []
+  }
+  metricasLoading.value = false
+}
+
+function setGranularidad(g) {
+  if (granularidad.value === g) return
+  granularidad.value = g
+  cargarMetricas()
+}
 </script>

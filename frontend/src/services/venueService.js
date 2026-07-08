@@ -1,8 +1,7 @@
 import { supabase, currentUserId, invokeFunction, camelize } from './supabase'
 
-const NOT_MIGRATED = (name, extra = '') => {
-  throw { response: { status: 501, data: { message: `"${name}" pendiente de migración${extra ? ': ' + extra : ''}` } } }
-}
+const NOT_MIGRATED = (name, extra = '') =>
+  Promise.reject({ response: { status: 501, data: { message: `"${name}" pendiente de migración${extra ? ': ' + extra : ''}` } } })
 
 function mapVenueBody(data) {
   // `|| undefined` convierte strings vacíos a undefined: los campos opcionales
@@ -260,19 +259,132 @@ export default {
       .map(r => camelize({ ...r, photo_url: byRoom[r.id] }))
   },
 
+  // Clases agendadas en las salas de la sede del usuario. Usa el RPC
+  // get_venue_classes (SECURITY DEFINER, auto-scopeado a auth.uid()), que
+  // cubre el hueco de RLS sin ampliar las policies de `classes`.
+  async getVenueClasses() {
+    const { data, error } = await supabase.rpc('get_venue_classes')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(c => camelize(c))
+  },
+  // Clases pendientes de validación de la sede (status POR_VALIDAR).
+  async getPendingClasses() {
+    const { data, error } = await supabase.rpc('get_venue_classes', { p_status: 'POR_VALIDAR' })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(c => camelize(c))
+  },
+
   // Pendientes (huecos de RLS / flujo de Storage / lógica de agregación):
-  // - getVenueClasses/getPendingClasses: RLS de classes no permite al admin de sede ver clases ajenas.
   // - registrarVenueConDocumentos: requiere subir archivos a Storage primero.
   // - deleteVenueDocument: falta policy DELETE en venue_documents.
   // - deletePhoto: falta policy DELETE en venue_photos para algunos casos.
   // - getVenueMetrics/getVenueProfessors: requieren agregación server-side.
-  getVenueClasses() { return NOT_MIGRATED('getVenueClasses', 'RLS de classes para admin de sede') },
-  getPendingClasses() { return NOT_MIGRATED('getPendingClasses', 'RLS de classes para admin de sede') },
-  registrarVenueConDocumentos() { return NOT_MIGRATED('registrarVenueConDocumentos', 'flujo de Storage') },
+  async registrarVenueConDocumentos(fd) {
+    const userId = await currentUserId()
+
+    // 1. Subir cada archivo a Storage bajo {userId}/{uuid}.ext
+    const documentPaths = []
+    const files = fd.getAll('documentos')
+    const tipos = fd.getAll('tiposDocumento')
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const tipo = tipos[i]
+      const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin'
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`
+
+      const { error: upErr } = await supabase.storage
+        .from('venue-documents')
+        .upload(path, file, { contentType: file.type, upsert: false })
+
+      if (upErr) {
+        throw { response: { status: 500, data: { message: `Error al subir documento: ${upErr.message}` } } }
+      }
+
+      documentPaths.push({ path, tipo, nombre: file.name, tipoArchivo: file.type })
+    }
+
+    // 2. Crear la sede con los paths ya subidos (el EF inserta venue_documents)
+    return invokeFunction('register-venue', {
+      body: {
+        name: fd.get('nombre'),
+        city: fd.get('ciudad') || undefined,
+        region: fd.get('region') || undefined,
+        comuna: fd.get('comuna') || undefined,
+        address: fd.get('direccion') || undefined,
+        description: fd.get('descripcion') || undefined,
+        phone: fd.get('teléfono') || undefined,
+        email: fd.get('email') || undefined,
+        tipo: fd.get('tipo') || 'SEDE',
+        instagram: fd.get('instagram') || undefined,
+        sitioWeb: fd.get('sitioWeb') || undefined,
+        documentPaths,
+      }
+    })
+  },
   deleteVenueDocument() { return NOT_MIGRATED('deleteVenueDocument', 'falta policy DELETE') },
   deletePhoto() { return NOT_MIGRATED('deletePhoto', 'falta policy DELETE') },
-  getVenueMetrics() { return NOT_MIGRATED('getVenueMetrics', 'agregación server-side') },
-  getVenueProfessors() { return NOT_MIGRATED('getVenueProfessors', 'agregación server-side') }
+
+  // Ingresos de la sede por fuente (arriendo/clases) y total, agrupados por
+  // período. granularidad: 'month' (default) | 'year'. RPC SECURITY DEFINER.
+  async getVenueMetrics(granularidad = 'month') {
+    const { data, error } = await supabase.rpc('get_venue_metrics', { p_granularidad: granularidad })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  },
+
+  // Profesores dependientes de las sedes del usuario (RPC SECURITY DEFINER).
+  // Cada fila: { id (venue_teachers.id), venueId, teacherId, status, email, fullName }.
+  async getVenueProfessors() {
+    const { data, error } = await supabase.rpc('get_venue_professors')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  },
+
+  // Agrega un profe dependiente por email (el RPC valida la sede y resuelve el
+  // email en auth.users, inaccesible desde el cliente).
+  async addVenueTeacher(venueId, email) {
+    const { error } = await supabase.rpc('add_venue_teacher', { p_venue_id: venueId, p_email: email })
+    if (error) throw { response: { status: 400, data: { message: error.message } } }
+    return { status: 'ok' }
+  },
+
+  // Quita un profe dependiente (la policy DELETE permite al admin de la sede).
+  async removeVenueTeacher(id) {
+    const { error } = await supabase.from('venue_teachers').delete().eq('id', id)
+    if (error) throw error
+  },
+
+  // Candidatos a profesor (rol TEACHER o con perfil profesional) para sugerir el
+  // correo al agregar un profe dependiente. Devuelve [{ email, fullName }].
+  async getTeacherCandidates() {
+    const { data, error } = await supabase.rpc('list_teacher_candidates')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  },
+
+  // Cuánto se le debe a cada profesor dependiente (honorarios comprometidos).
+  // Devuelve [{ teacherId, fullName, email, totalHonorario, clases }].
+  async getVenueTeacherPayouts() {
+    const { data, error } = await supabase.rpc('get_venue_teacher_payouts')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  },
+
+  // Detalle completo de una clase de la sede (info + profesor + cupos).
+  async getVenueClassDetail(classId) {
+    const { data, error } = await supabase.rpc('get_venue_class_detail', { p_class_id: classId })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    const row = Array.isArray(data) ? data[0] : data
+    return row ? camelize(row) : null
+  },
+
+  // Alumnos/beneficiarios inscritos en una clase de la sede (+ asistencia).
+  async getVenueClassStudents(classId) {
+    const { data, error } = await supabase.rpc('get_venue_class_students', { p_class_id: classId })
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return (data || []).map(r => camelize(r))
+  }
 }
 
 // Convierte el payload de sala (camelCase) a columnas snake_case conocidas.

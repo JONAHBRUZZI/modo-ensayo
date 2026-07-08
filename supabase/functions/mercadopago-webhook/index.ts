@@ -24,17 +24,23 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
   const lastEnd = blocks[blocks.length - 1].end_time;
   const durationMin = blockIds.length * 60;
 
+  // La capacidad de la clase la define la sala (su tope).
+  const { data: roomRow } = await admin.from("rooms").select("capacity").eq("id", cart.roomId).single();
+  const roomCapacity = (roomRow?.capacity as number) ?? 1;
+
   let classId: string | null = cart.borradorId ?? null;
   if (classId) {
-    // Asigna sala/horario al borrador existente y lo publica.
+    // Asigna sala/horario al borrador existente y lo publica. La duración la
+    // define el horario reservado (bloques), no lo que traía el borrador.
     await admin.from("classes").update({
-      room_id: cart.roomId, start_time: firstStart, end_time: lastEnd, status: "PUBLISHED",
+      room_id: cart.roomId, start_time: firstStart, end_time: lastEnd,
+      duration: durationMin, capacity: roomCapacity, status: "PUBLISHED",
     }).eq("id", classId).eq("teacher_id", ownerId);
   } else {
     // Crea un borrador de reserva (el profesor lo completa luego).
     const { data: nueva } = await admin.from("classes").insert({
       title: `Reserva - ${cart.roomName}`,
-      level: "BASICO", capacity: 1, duration: durationMin, price: cart.amount,
+      level: "BASICO", capacity: roomCapacity, duration: durationMin, price: cart.amount,
       start_time: firstStart, end_time: lastEnd,
       room_id: cart.roomId, teacher_id: ownerId,
       status: "DRAFT", tipo_clase: "PROPIA",
@@ -57,74 +63,94 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
   } catch (_e) { /* best-effort */ }
 }
 
+// Consulta un pago en la API de MercadoPago con un access_token dado.
+// Devuelve el JSON del pago, o null si el token no puede leerlo (404/401).
+async function fetchMpPayment(paymentId: string, token: string) {
+  const resp = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!resp.ok) return null;
+  return await resp.json();
+}
+
 // auth: "none" — MercadoPago no envía JWT. Verificamos via HMAC SHA-256.
 // Recordar: verify_jwt = false para esta función en supabase/config.toml.
 export default {
   fetch: withSupabase({ auth: "none" }, async (req, ctx) => {
     try {
+      const url = new URL(req.url);
+
+      // Solo procesamos notificaciones de pago. merchant_order y otros topics se
+      // ignoran con 200 (no hacemos nada con ellos) para no spamear reintentos
+      // ni ensuciar los logs con 403 de firma que no aplican.
+      const topic = url.searchParams.get("topic") ?? url.searchParams.get("type");
+      if (topic && topic !== "payment") return new Response("ok", { status: 200 });
+
       const body = await req.text();
 
       const secret = Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET");
-      if (secret) {
-        const signature = req.headers.get("x-signature");
-        const requestId = req.headers.get("x-request-id");
-        if (!signature || !requestId) {
-          logError("webhook_signature_missing", new Error("Missing signature headers"));
-          return new Response("Forbidden", { status: 403 });
-        }
-
-        let ts: string | null = null;
-        let v1: string | null = null;
-        for (const part of signature.split(",")) {
-          const [k, val] = part.split("=").map((s) => s.trim());
-          if (k === "ts") ts = val;
-          if (k === "v1") v1 = val;
-        }
-        if (!ts || !v1) return new Response("Forbidden", { status: 403 });
-
-        const url = new URL(req.url);
-        const dataId = url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "";
-        const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
-        const encoder = new TextEncoder();
-        const key = await crypto.subtle.importKey(
-          "raw", encoder.encode(secret),
-          { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-        );
-        const expected = Array.from(
-          new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(manifest)))
-        ).map((b) => b.toString(16).padStart(2, "0")).join("");
-
-        if (expected !== v1) {
-          logError("webhook_signature_invalid", new Error("HMAC verification failed"));
-          return new Response("Forbidden", { status: 403 });
-        }
-        logInfo("webhook_signature_verified", { requestId });
+      if (!secret) {
+        logError("webhook_secret_missing", new Error("MERCADOPAGO_WEBHOOK_SECRET not configured"));
+        return new Response("Internal Server Error", { status: 500 });
       }
 
+      const signature = req.headers.get("x-signature");
+      const requestId = req.headers.get("x-request-id");
+      if (!signature || !requestId) {
+        logError("webhook_signature_missing", new Error("Missing signature headers"));
+        return new Response("Forbidden", { status: 403 });
+      }
+
+      let ts: string | null = null;
+      let v1: string | null = null;
+      for (const part of signature.split(",")) {
+        const [k, val] = part.split("=").map((s) => s.trim());
+        if (k === "ts") ts = val;
+        if (k === "v1") v1 = val;
+      }
+      if (!ts || !v1) return new Response("Forbidden", { status: 403 });
+
+      // El manifest de MP usa data.id en minúsculas (relevante para ids alfanuméricos).
+      const dataId = (url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "").toString().toLowerCase();
+      const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        "raw", encoder.encode(secret),
+        { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+      );
+      const expected = Array.from(
+        new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(manifest)))
+      ).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+      if (expected !== v1) {
+        logError("webhook_signature_invalid", new Error("HMAC verification failed"));
+        return new Response("Forbidden", { status: 403 });
+      }
+      logInfo("webhook_signature_verified", { requestId });
+
       const payload = JSON.parse(body);
-      const paymentId = payload.data?.id;
+      const paymentId = payload.data?.id ?? url.searchParams.get("data.id");
       if (!paymentId) return new Response("ok", { status: 200 });
 
       const admin = ctx.supabaseAdmin;
 
-      // En pagos marketplace (arriendo de sala) la preferencia se crea con el
-      // token del VENDEDOR, por lo que el pago vive en SU cuenta y el token de la
-      // plataforma no puede consultarlo. La notification_url incluye ?seller=<id>
-      // para saber con qué token consultar el pago.
-      let mpToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")!;
-      const sellerId = new URL(req.url).searchParams.get("seller");
-      if (sellerId) {
-        const { data: sellerAcc } = await admin
-          .from("mp_seller_accounts").select("access_token")
-          .eq("user_id", sellerId).maybeSingle();
-        if (sellerAcc?.access_token) mpToken = sellerAcc.access_token;
+      // El pago de una inscripción a clase vive en la cuenta de la plataforma,
+      // pero el de una reserva de sala vive en la cuenta del VENDEDOR (la sede,
+      // que creó la preferencia con su propio token). Probamos primero el token
+      // de la plataforma y, si no puede leer el pago, los de las sedes conectadas.
+      const platformToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")!;
+      let payment = await fetchMpPayment(paymentId, platformToken);
+      if (!payment?.external_reference) {
+        const { data: sellers } = await admin
+          .from("mp_seller_accounts")
+          .select("access_token").eq("status", "CONNECTED");
+        for (const s of sellers ?? []) {
+          if (!s.access_token) continue;
+          const sellerPayment = await fetchMpPayment(paymentId, s.access_token);
+          if (sellerPayment?.external_reference) { payment = sellerPayment; break; }
+        }
       }
-
-      const mpResp = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-        headers: { Authorization: `Bearer ${mpToken}` },
-      });
-      const payment = await mpResp.json();
-      if (payment.status !== "approved") return new Response("ok", { status: 200 });
+      if (!payment || payment.status !== "approved") return new Response("ok", { status: 200 });
 
       const { data: session, error: sessErr } = await admin
         .from("payment_sessions").select("*")
@@ -141,6 +167,11 @@ export default {
         await materializeRoomReservation(admin, session, cart);
       } else {
         // Inscripción a clases (flujo original): crea enrollments + payments.
+        // agregadosPorClase cuenta las inscripciones ya creadas a cada clase EN ESTE
+        // carrito: el count de la BD no las ve hasta confirmarse cada insert, así que
+        // sin esto un carrito con varias inscripciones a la misma clase podría pasar
+        // el cupo (todas leen el mismo count inicial).
+        const agregadosPorClase: Record<string, number> = {};
         for (const item of cart.items) {
           const { data: cls } = await admin.from("classes")
             .select("id,status,capacity").eq("id", item.classId).single();
@@ -149,7 +180,8 @@ export default {
           const { count } = await admin.from("enrollments")
             .select("*", { count: "exact", head: true })
             .eq("class_id", item.classId).eq("status", "ACTIVE");
-          if (count && count >= cls.capacity) continue;
+          const yaAgregados = agregadosPorClase[item.classId] ?? 0;
+          if ((count ?? 0) + yaAgregados >= cls.capacity) continue;
 
           const { data: enrollment } = await admin.from("enrollments").insert({
             class_id: item.classId,
@@ -160,6 +192,7 @@ export default {
           }).select("id").single();
 
           if (enrollment) {
+            agregadosPorClase[item.classId] = yaAgregados + 1;
             await admin.from("payments").insert({
               enrollment_id: enrollment.id,
               amount: item.price,

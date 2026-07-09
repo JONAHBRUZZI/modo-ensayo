@@ -3,6 +3,21 @@
 > **Versión:** 1.0 — 30-may-2026
 > **Marco:** Scrum adaptado a equipo de 3 personas con sprints semanales
 
+## 0. Ciclo de vida del proyecto
+
+El proyecto siguió un **ciclo de vida iterativo e incremental**: en lugar de construir todo el
+sistema de una sola vez, se entregó en incrementos funcionales sucesivos (un incremento por
+sprint semanal), cada uno desplegado y validado en producción, iterando sobre lo anterior a
+partir de la retroalimentación recibida.
+
+Este ciclo de vida se justifica por la naturaleza del proyecto:
+
+- Los **requerimientos se refinaban** con la retroalimentación semanal del profesor, por lo que un enfoque en cascada (todo especificado al inicio) no era adecuado.
+- Un **equipo pequeño** necesitaba entregar valor temprano y de forma continua para sostener el ritmo.
+- El **núcleo del producto** —los pagos condicionados— debía validarse funcionando en un incremento antes de construir el resto de las funcionalidades alrededor.
+
+Dentro de este ciclo de vida se aplicó **Scrum** como marco ágil (sección 1).
+
 ## 1. Marco de trabajo
 
 Adoptamos **Scrum con sprints semanales** según la recomendación del docente. La elección se basa en:

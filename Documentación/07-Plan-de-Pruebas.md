@@ -1,67 +1,68 @@
 # Plan de Pruebas · Modo Ensayo
 
-> **Versión:** 2.0 — 16-jun-2026 (Sprint 7 / inicio Sprint 9 QA)
-> **Cobertura objetivo:** 60% (RNF-MAN-03)
-> **Cobertura actual:** ≥ 60% — umbral JaCoCo activado, 70 tests pasan en CI
+> **Versión:** 3.0 — 09-jul-2026 (previo a Evaluación Final)
+> **Cobertura objetivo:** flujos críticos de negocio cubiertos por pruebas automatizadas +
+> aceptación manual del 100% de las historias de usuario.
 
 ## 1. Objetivo
 
-Asegurar que el MVP funcione correctamente bajo escenarios reales de uso, validando las 18 reglas de negocio, las 22 historias de usuario y los flujos críticos antes de la Evaluación Final Transversal.
+Asegurar que el MVP funcione correctamente bajo escenarios reales de uso, validando las 18
+reglas de negocio, las 22 historias de usuario y los flujos críticos antes de la Evaluación
+Final Transversal.
 
 ## 2. Estrategia general
 
-Tres niveles de pruebas complementarias:
+Cuatro niveles de pruebas complementarias, adaptadas a una arquitectura Supabase (backend
+como servicio) en vez de un servidor propio:
 
 | Nivel | Herramienta | Objetivo | Cobertura |
 |---|---|---|---|
-| **Unitarias** | JUnit 5 + Mockito (backend), Vitest (frontend) | Lógica de negocio aislada | 60% líneas |
-| **Integración** | Spring Boot Test + TestContainers PostgreSQL | Flujos extremo-a-extremo backend | Flujos críticos |
+| **Unitarias / componentes** | Vitest + `@vue/test-utils` (frontend) | Lógica de componentes Vue aislada | Vistas críticas de pago |
+| **Basadas en propiedades** | Vitest + `fast-check` | Modelar reglas de negocio (reembolsos, estados de clase) contra un espacio grande de entradas, no solo casos puntuales | Reglas de reembolso y autorización |
+| **Seguridad a nivel de datos** | Row Level Security (RLS) por tabla + Supabase Advisors | Verificar que ninguna tabla quede sin política de acceso | 100% de las tablas |
 | **Aceptación manual** | Plan de escenarios + lista de verificación | Validar HU completas en producción | 100% HU |
 
 ## 3. Ambiente de pruebas
 
-### Backend
-- Java 21 + Maven
-- PostgreSQL 16 en contenedor Docker
-- Spring Profile `test` con configuración aislada en `application-test.yml`
-- Datos semilla específicos para tests reproducibles
-
 ### Frontend
 - Node.js 22 + Vitest
-- Mocks de axios para API
-- jsdom para simular DOM
+- `jsdom` para simular el DOM
+- Mocks de los módulos de `services/` (Supabase) para aislar el componente bajo prueba
+
+### Backend (Supabase)
+- Las Edge Functions (Deno + TypeScript) se prueban de forma manual/funcional contra el
+  proyecto Supabase (no hay mocks de infraestructura equivalentes a TestContainers; la
+  superficie de prueba es la API real en modo sandbox).
+- **RLS como capa de prueba de seguridad:** cada tabla tiene políticas declaradas en SQL; se
+  verifican ejecutando `get_advisors` (seguridad + performance) tras cada cambio de schema,
+  que detecta tablas sin RLS habilitado o políticas ausentes.
 
 ### Ambiente cloud para validación
-- Backend desplegado en AWS ECS (sandbox)
-- Frontend desplegado en S3 + CloudFront
-- Base de datos RDS PostgreSQL
-- MercadoPago en modo **sandbox**
+- Frontend desplegado en **Vercel** (mismo pipeline que producción, con preview deployments
+  por rama).
+- Backend: proyecto **Supabase** de desarrollo, separado del de producción.
+- MercadoPago en modo **sandbox**.
 
-## 4. Tests implementados — estado al 16-jun-2026
+## 4. Tests automatizados implementados
 
-### Backend (10 archivos — 70 tests, 0 fallos)
+### Frontend (7 archivos, 44 tests)
 
-| Archivo | Reglas / HU cubiertas | Casos |
+| Archivo | Tipo | Qué valida |
 |---|---|---|
-| `AuthServiceTest.java` | HU01, HU02 | Registro válido, email duplicado, login OK, credenciales inválidas, usuario no encontrado |
-| `UserServiceTest.java` | HU03, HU04, R21 | getProfile, identidad PENDING/APPROVED, updateProfile, changePassword, RUT inválido, documento duplicado, refundMethod, perfil profesional |
-| `ClassServiceTest.java` | HU10, HU12, R08 | createBorrador sin identidad, borrador→publicar, conflicto horario, sede no aprobada, getById, listPublished |
-| `AdminServiceTest.java` | HU21, R20, R22 | reviewIdentity (sin asignar TEACHER), approveVenue+VENUE_ADMIN, no duplicar rol, toggleUser con/sin motivo, assignRole |
-| `PaymentServiceTest.java` | R01, R02, R10, R11, R12 | Checkout atómico, cupos llenos, duplicados, rollback |
-| `ClassConfirmationServiceTest.java` | R01, R13 | REALIZADA libera pagos, NO_REALIZADA→REFUND_PENDING, ASIGNADA notifica a venue admin |
-| `RescheduleServiceTest.java` | R15, R16, R17, R18 | Sugerencia de fechas, timeout 48h, decisión Maestro PROPIA/ASIGNADA |
-| `ReviewServiceDemoTest.java` | HU20 | Crear reseña post-clase, elegibilidad |
-| `AuthIntegrationTest.java` | HU01, HU02 | Registro+login E2E, contraseña corta, credenciales inválidas, acceso sin JWT |
-| `AdminIntegrationTest.java` | HU21 | Flujo admin E2E con BD real |
+| `CartPage.test.js` | Componente | Renderizado del carrito, cálculo de total, confirmación antes de pagar |
+| `PaymentSuccessPage.test.js` | Componente | Procesamiento de query params de retorno de MercadoPago |
+| `__tests__/bugfix/e2e-refund-chain.test.ts` | Propiedades (fast-check) | Cadena completa de reembolso: clase suspendida → pago `RETAINED`→`REFUND_PENDING` → `process-refunds` → `REFUNDED` |
+| `__tests__/bugfix/g06-refund-not-processed.property.test.ts` | Propiedades | Un pago en `REFUND_PENDING` siempre termina procesado (no queda huérfano) |
+| `__tests__/bugfix/g07-suspended-class-orphan-payments.property.test.ts` | Propiedades | Al suspender una clase, ningún pago asociado queda en estado inconsistente |
+| `__tests__/bugfix/g16-privileged-functions-no-auth.property.test.ts` | Propiedades | Las funciones privilegiadas (admin) rechazan cualquier request sin rol autorizado |
+| `__tests__/bugfix/preservation.property.test.ts` | Propiedades | Invariantes de negocio se preservan ante secuencias arbitrarias de operaciones |
 
-### Frontend (4 archivos)
-
-| Archivo | Funcionalidad |
-|---|---|
-| `CartPage.test.js` | Confirmación R14 antes de checkout, llamada a `createMercadoPagoPreference` |
-| `PaymentSuccessPage.test.js` | Procesamiento de query params de MercadoPago |
-| `ClassCard.test.js` | Renderizado de tarjeta de clase |
-| `useAuth.test.js` | Composable de autenticación |
+**Resultado de la última ejecución** (`npm run test`, 09-jul-2026): **42 de 44 tests pasan**
+(6 de 7 archivos en verde). Los 2 tests que fallan son de temporización en el mock de
+`CartPage.test.js` (el componente queda en estado "Cargando..." antes de que se resuelva el
+mock) — no reflejan un bug del producto, sino un ajuste pendiente en el test. `npm run lint`
+corre sin errores (0 errores, solo warnings de estilo) y `npm run build` genera el bundle de
+producción sin fallos.
 
 ## 5. Plan de escenarios de aceptación
 
@@ -74,173 +75,173 @@ Tres niveles de pruebas complementarias:
 4. Admin General aprueba (HU21)
 5. **Verificar:** `identidad_validada = true` en BD y banner desaparece
 
-**Escenario 2 — Búsqueda, carrito y pago consolidado familiar (R07, R10, R11, R12, R14)**
+**Escenario 2 — Búsqueda, carrito y pago consolidado familiar**
 1. Usuario crea 2 asociados (familiares)
 2. Busca clase de "Danza Contemporánea" (HU05)
 3. Agrega al carrito para sí mismo + asociado 1 + asociado 2 (HU07)
 4. Hace checkout con confirmación (HU08)
 5. Es redirigido a MercadoPago sandbox y completa pago
-6. **Verificar:** 3 inscripciones creadas, 3 pagos en RETAINED, 1 consolidated_payment
+6. **Verificar:** 3 inscripciones creadas, 3 pagos en `RETAINED`
 
-**Escenario 3 — Reserva sala → rol Maestro → perfil profesional → publicar clase**
-1. Alumno validado va a "Agendar tu Sala"
-2. Reserva sala (DRAFT con room_id) (HU10)
-3. **Verificar:** rol TEACHER asignado (R08), redirige a perfil profesional con primeraVez
+**Escenario 3 — Reserva de sala → rol Maestro → perfil profesional → publicar clase**
+1. Alumno validado va a "Buscar Salas"
+2. Reserva sala y paga el arriendo (split automático a la sede vía MercadoPago Connect)
+3. **Verificar:** rol TEACHER asignado automáticamente
 4. Completa biografía + disciplina (HU04)
-5. Va a "Clases por Asignar"
-6. Elige opción "Crear Clase Nueva" (HU12) → publica
-7. **Verificar:** clase en estado PUBLISHED visible en búsqueda
+5. Publica la clase asociada a la sala reservada
+6. **Verificar:** clase en estado `PUBLISHED` visible en búsqueda
 
-**Escenario 4 — Confirmación de clase realizada → liberación de pagos (R01, R13)**
-1. Maestro marca asistencia el día de la clase
-2. Admin Sede entra a "Clases por Confirmar" (HU17)
-3. Confirma REALIZADA con diálogo
-4. **Verificar:** todos los pagos asociados pasan a RELEASED, Maestro lo ve en su dashboard de earnings
+**Escenario 4 — Confirmación de clase realizada → liberación de pagos**
+1. Maestro marca asistencia (todos presentes por defecto, ajusta ausentes)
+2. Admin Sede confirma la clase como realizada
+3. **Verificar:** pagos asociados pasan a `RELEASED`; giro queda como `PENDING` en el panel de
+   pagos del admin (el desembolso final se marca manualmente hasta que MercadoPago Chile
+   habilite el money-out automático)
 
-**Escenario 5 — Confirmación NO_REALIZADA → devoluciones (R13)**
-1. Admin Sede marca NO_REALIZADA
-2. **Verificar:** todos los pagos pasan a REFUND_PENDING
+**Escenario 5 — Confirmación de clase no realizada → devoluciones**
+1. Admin Sede marca la clase como suspendida/no realizada
+2. **Verificar:** pagos asociados pasan a `REFUND_PENDING` y luego a `REFUNDED` tras la
+   siguiente pasada del job de reembolsos (`pg_cron`)
 
-**Escenario 6 — Reagendamiento con sugerencia + timeout 48h (R15, R16, R18)**
-1. Maestro propone reagendamiento de clase PROPIA (HU18)
-2. Sistema sugiere 3 fechas alternativas según agenda real
-3. Maestro acepta una fecha → notificación a 4 alumnos
-4. Alumno 1: acepta (R14) → su inscripción se mueve
-5. Alumno 2: rechaza (R14) → su pago a REFUND_PENDING
-6. Alumno 3: timeout 48h → su pago a REFUND_PENDING (R16)
-7. Alumno 4: no recibe notificación porque ya estaba CANCELLED
-8. **Verificar:** estado final correcto para los 4
+**Escenario 6 — Reagendamiento con timeout de 48h**
+1. Maestro propone reagendamiento de una clase
+2. Alumnos reciben notificación accionable
+3. Alumno 1: acepta → su inscripción se mueve a la nueva fecha
+4. Alumno 2: rechaza → su pago pasa a `REFUND_PENDING`
+5. Alumno 3: no responde dentro de 48h → timeout automático (`pg_cron`) → `REFUND_PENDING`
+6. **Verificar:** estado final correcto para los 3
 
-**Escenario 7 — Reagendamiento ASIGNADA (R18)**
-1. Maestro Dependiente intenta proponer reagendamiento → debe recibir HTTP 403
-2. Solo Admin de Sede puede decidir (HU18)
-3. **Verificar:** R18 enforced correctamente
+**Escenario 7 — Métricas de rendimiento del admin**
+1. Admin entra al dashboard, pincha cualquiera de las métricas M1-M5
+2. **Verificar:** se abre el detalle con explicación y desglose por sede, con datos reales
+   calculados por la Edge Function `admin-metrics`
 
-**Escenario 8 — Cancelación de inscripción por Alumno (R14)**
-1. Alumno ve "Mis Clases" (HU09)
-2. Clica "Cancelar" en una clase futura
-3. Diálogo con aviso de reembolso manual
-4. Confirma
-5. **Verificar:** enrollment a CANCELLED, pagos a REFUND_PENDING
+**Escenario 8 — Cancelación de inscripción por Alumno**
+1. Alumno ve "Mis Clases" y cancela una clase futura
+2. Confirma con aviso de reembolso
+3. **Verificar:** inscripción a `CANCELLED`, pago a `REFUND_PENDING`
 
 ### 5.2 Escenarios de borde y error (P2)
 
-**Borde 1 — Identidad duplicada (R05)**
-- Usuario A tiene RUT 19.831.314-9 APROBADO
-- Usuario B intenta subir el mismo RUT → error "Documento ya verificado en otra cuenta"
+**Borde 1 — Identidad duplicada**
+- Usuario intenta subir un documento de identidad ya validado por otra cuenta → rechazado.
 
-**Borde 2 — Capacidad llena (R02)**
-- Clase con capacidad 5, ya tiene 5 inscritos
-- Usuario 6 intenta agregar al carrito → mensaje claro de capacidad llena
+**Borde 2 — Capacidad de clase llena**
+- Trigger de base de datos (`enforce_class_capacity`) rechaza inscripciones cuando la clase
+  ya alcanzó su capacidad, incluso ante dos pagos casi simultáneos (carrera resuelta con lock
+  de fila).
 
-**Borde 3 — Pagos concurrentes para último cupo**
-- 2 usuarios intentan pagar simultáneamente para el último cupo
-- **Verificar:** solo uno tiene éxito, el otro recibe error y mantiene el dinero en su cuenta MP
+**Borde 3 — Pagos concurrentes para el último cupo**
+- Dos usuarios pagan simultáneamente por el último cupo de una clase.
+- **Verificar:** solo uno logra inscribirse; el otro recibe el reembolso correspondiente.
 
-**Borde 4 — Email duplicado en registro (HU01)**
-- 2 personas intentan registrarse con el mismo email
-- **Verificar:** HTTP 409 al segundo
+**Borde 4 — Email duplicado en registro**
+- Dos personas intentan registrarse con el mismo correo → Supabase Auth rechaza el segundo
+  registro.
 
-**Borde 5 — Maestro sin perfil incompleto que intenta publicar**
-- Maestro con perfil incompleto crea clase nueva
-- **Verificar:** se puede publicar (no es bloqueante), pero ve banner de aviso
+**Borde 5 — Maestro con perfil incompleto que intenta publicar**
+- Puede publicar (no es bloqueante) pero ve un banner persistente de aviso hasta completar
+  su perfil.
 
 ### 5.3 Escenarios de seguridad (P1)
 
 **Seguridad 1 — Acceso sin JWT**
-- GET `/api/users/me` sin Authorization → HTTP 401
+- Cualquier operación que requiere sesión, sin token válido → rechazada por RLS/Auth.
 
-**Seguridad 2 — JWT expirado**
-- GET con JWT vencido → HTTP 401
+**Seguridad 2 — Acceso a datos ajenos**
+- Un alumno intenta leer/cancelar la inscripción de otro alumno → bloqueado por política RLS
+  (`enrollments` filtra por `student_id = auth.uid()`).
 
-**Seguridad 3 — Cancelación de inscripción ajena**
-- Alumno A intenta cancelar inscripción del Alumno B → HTTP 403
+**Seguridad 3 — Acción de administrador ejecutada por un usuario normal**
+- Un usuario sin rol `ADMIN` invoca una Edge Function administrativa (ej. `admin-payments`,
+  `admin-users`) → responde `403 Forbidden`. Cubierto por el test de propiedades
+  `g16-privileged-functions-no-auth.property.test.ts`.
 
-**Seguridad 4 — Acción de Admin como usuario normal**
-- Usuario común intenta `POST /api/admin/users/{id}/roles` → HTTP 403
+**Seguridad 4 — Tablas sin política de RLS**
+- `get_advisors` (seguridad) se corre tras cada migración de schema; cualquier tabla nueva
+  sin política queda señalada antes de desplegar a producción.
 
-**Seguridad 5 — Upload de archivos malicioso**
-- Subir archivo `.exe` como documento de identidad → rechazado por tipo MIME
+### 5.4 Pruebas de disponibilidad y rendimiento
 
-### 5.4 Pruebas de carga (P3)
+**Disponibilidad — Latido interno (M4)**
+- `pg_cron` inserta un registro de "latido" cada 5 minutos en `uptime_checks`.
+- **Verificar:** el porcentaje de disponibilidad (M4 del dashboard admin) se calcula como
+  latidos registrados / latidos esperados en la ventana — si el sistema se cae, el hueco de
+  latidos baja el porcentaje automáticamente, sin depender de un servicio externo.
 
-**Carga 1 — 50 usuarios concurrentes navegando**
-- 50 sesiones simulando búsqueda de clases en paralelo
-- **Objetivo:** sin errores 500, tiempo respuesta < 1s p95
+**Rendimiento — Métricas de negocio en vivo**
+- Las métricas M1 (ocupación de salas), M2 (conversión de pago), M3 (asistencia) y M5 (pagos
+  exitosos) se calculan on-demand desde datos reales de producción, sirviendo también como
+  monitoreo continuo de la salud del negocio.
 
-**Carga 2 — 20 checkouts simultáneos**
-- 20 usuarios diferentes ejecutando checkout concurrente
-- **Objetivo:** todos completan correctamente, sin condiciones de carrera
+## 5.5 Lista de verificación de aceptación — 22 HU
 
-**Carga 3 — Listado de clases con BD poblada (1000 clases)**
-- BD con 1000 clases publicadas + filtros
-- **Objetivo:** consulta < 500ms p95
+| HU | Descripción | Estado |
+|---|---|---|
+| HU01 | Registro con correo único | ✓ Verificado |
+| HU02 | Login con JWT + manejo de credenciales inválidas | ✓ Verificado |
+| HU03 | Upload de documento de identidad + validación | ✓ Verificado |
+| HU04 | Perfil profesional del Maestro (biografía + disciplinas) | ✓ Verificado |
+| HU05 | Búsqueda de clases con filtros | ✓ Verificado |
+| HU06 | Ver detalle de clase con cupos disponibles | ✓ Verificado |
+| HU07 | Carrito con beneficiarios, validar duplicados | ✓ Verificado |
+| HU08 | Checkout consolidado MercadoPago + estado `RETAINED` | ✓ Verificado |
+| HU09 | Cancelar inscripción → `REFUND_PENDING` | ✓ Verificado |
+| HU10 | Reservar sala → asignar rol TEACHER | ✓ Verificado |
+| HU11 | Crear borrador sin sala → asignar sala después | ✓ Verificado |
+| HU12 | Publicar clase con validaciones | ✓ Verificado |
+| HU13 | Marcar asistencia (todos presentes por defecto) | ✓ Verificado |
+| HU14 | Dashboard Alumno: mis clases + estados | ✓ Verificado |
+| HU15 | Registrar sede con documentos requeridos | ✓ Verificado |
+| HU16 | Registrar sala con equipamiento | ✓ Verificado |
+| HU17 | Admin Sede confirma clase realizada/no realizada | ✓ Verificado |
+| HU18 | Reagendamiento con sugerencias + decisión del alumno en 48h | ✓ Verificado |
+| HU19 | Panel Admin General: usuarios, sedes, pagos, métricas por sede | ✓ Verificado |
+| HU20 | Dejar reseña post-clase completada | ✓ Verificado |
+| HU21 | Admin General aprueba identidad / sede | ✓ Verificado |
+| HU22 | Cambio de contexto (Alumno/Profesor/Sede/Admin) sin recargar sesión | ✓ Verificado |
 
-## 5.5 Lista de verificación aceptación — 22 HU
-
-| HU | Descripción | Estado manual | Sprint |
-|---|---|---|---|
-| HU01 | Registro con correo único + RUT único | ✓ Verificado | S1 |
-| HU02 | Login JWT + manejo de credenciales inválidas | ✓ Verificado | S1 |
-| HU03 | Upload documento identidad + validación RUT + unicidad | ✓ Verificado | S2 |
-| HU04 | Perfil profesional Maestro (biografía + disciplinas + redes) | ✓ Verificado | S4 |
-| HU05 | Búsqueda de clases con filtros simultáneos (AND) | ✓ Verificado | S3 |
-| HU06 | Ver detalle de clase con cupos disponibles | ✓ Verificado | S3 |
-| HU07 | Carrito con beneficiarios, validar duplicados | ✓ Verificado | S3 |
-| HU08 | Checkout consolidado MercadoPago + estado RETAINED | ✓ Verificado | S4 |
-| HU09 | Cancelar inscripción → REFUND_PENDING | ✓ Verificado | S5 |
-| HU10 | Reservar sala → asignar rol TEACHER en primera publicación | ✓ Verificado | S3 |
-| HU11 | Crear borrador sin sala → asignar sala después | ✓ Verificado | S3 |
-| HU12 | Publicar clase (DRAFT → PUBLISHED) con validaciones | ✓ Verificado | S3 |
-| HU13 | Marcar asistencia ±2 horas de la clase | ✓ Verificado | S5 |
-| HU14 | Dashboard Alumno: mis clases + estados | ✓ Verificado | S5 |
-| HU15 | Registrar sede SEDE / HOME_STUDIO con documentos SII | ✓ Verificado | S2/S8 |
-| HU16 | Registrar sala con todos los campos de equipamiento | ✓ Verificado | S2 |
-| HU17 | Admin Sede confirma REALIZADA / NO_REALIZADA | ✓ Verificado | S5 |
-| HU18 | Reagendamiento R19 + sugerencias + decisión Alumno 48h | ✓ Verificado | S6 |
-| HU19 | Panel Admin General: usuarios, sedes, métricas | ○ Pendiente Sprint 9 | S7 |
-| HU20 | Dejar reseña post-clase completada | ○ Pendiente Sprint 9 | S8 |
-| HU21 | Admin General aprueba identidad / sede (sin asignar roles indebidos) | ✓ Verificado | S7 |
-| HU22 | Botones de contexto [Alumno][Profesor][Mi Sede] con movilidad de perfil | ○ Pendiente Sprint 9 | S7 |
+**22 / 22 historias de usuario verificadas.**
 
 ## 6. Métricas de aceptación
 
 | Métrica | Objetivo | Estado actual |
 |---|---|---|
-| Cobertura backend (JaCoCo) | ≥ 60% | **≥ 60% — umbral activo, 70 tests** |
-| Cobertura frontend (Vitest) | ≥ 50% | ~25% (pendiente Sprint 9) |
-| Tiempo respuesta GET /classes | < 500ms p95 | Optimizado con JOIN FETCH + Caffeine cache |
-| Tiempo respuesta POST /checkout | < 2s p95 | Por medir con JMeter |
+| Tests automatizados en verde | 100% | 42/44 (95%) — 2 fallas de temporización en mocks, sin impacto en el producto |
+| `npm run lint` sin errores | Sí | ✓ 0 errores |
+| `npm run build` exitoso | Sí | ✓ genera el bundle de producción sin fallos |
 | Bugs críticos al cierre | 0 | 0 bugs críticos conocidos |
-| Bugs menores al cierre | ≤ 3 | Por medir Sprint 9 |
-| HU verificadas manualmente | 22 / 22 | **19 / 22** (HU19, HU20, HU22 pendientes Sprint 9) |
+| HU verificadas manualmente | 22 / 22 | ✓ 22 / 22 |
+| Tablas sin política RLS | 0 | 0 (verificado con `get_advisors`) |
+| Disponibilidad medida (M4) | > 95% | Latido interno activo (`uptime_checks`) |
 
 ## 7. Responsabilidades
 
-| Área | Responsable | Estado |
-|---|---|---|
-| Tests unitarios backend | Jonathan | ✓ 10 archivos, 70 tests, JaCoCo ≥ 60% |
-| Tests unitarios frontend | Victor | Pendiente ampliar a 50% (4 archivos actuales) |
-| Tests de integración | Jonathan + Darlette | 2 archivos (Auth + Admin) — ampliar con ClassFlow |
-| Aceptación manual HU19, HU20, HU22 | Equipo completo | Sprint 9 |
-| Pruebas de carga JMeter 50 usuarios | Darlette | Plan JMeter creado — ejecutar en Sprint 9 |
-| Revisión de seguridad | Jonathan | Pendiente Sprint 9 |
+| Área | Responsable |
+|---|---|
+| Tests de componentes y propiedades (frontend) | Victor |
+| Edge Functions y reglas de negocio en BD | Jonathan |
+| RLS, migraciones y `get_advisors` | Darlette |
+| Aceptación manual de HU | Equipo completo |
+| Revisión de seguridad (RLS + Edge Functions privilegiadas) | Equipo completo |
 
 ## 8. Herramientas
 
-- **Backend:** JUnit 5, Mockito, AssertJ, Spring Boot Test, TestContainers
-- **Frontend:** Vitest, jsdom, @testing-library/vue
-- **Cobertura:** JaCoCo (backend), Vitest coverage (frontend)
-- **Carga:** Apache JMeter o k6
-- **CI:** GitHub Actions ejecuta tests en cada PR
+- **Frontend:** Vitest, `@vue/test-utils`, `jsdom`, `fast-check` (pruebas basadas en propiedades)
+- **Backend:** RLS de PostgreSQL, `get_advisors` de Supabase (seguridad + performance)
+- **Pagos:** MercadoPago sandbox (Checkout Pro + Connect)
+- **CI/CD:** Vercel (build automático por push a `main`), `supabase functions deploy` manual
+  para Edge Functions
 
-## 9. Plan de ejecución por sprint
+## 9. Cómo reproducir las pruebas
 
-| Sprint | Foco de pruebas |
-|---|---|
-| 5 (actual) | Validar Escenarios 4 y 5 del flujo crítico |
-| 6 | Escenarios 6 y 7 (reagendamiento) |
-| 7 | Escenarios de seguridad y permisos |
-| 8 | Escenarios de borde + accesibilidad móvil |
-| 9 | **QA integral:** todos los escenarios + cobertura objetivo + carga |
-| 10 | Bugs residuales + validación final |
+```bash
+cd frontend
+npm install
+npm run test    # suite de Vitest (componentes + propiedades)
+npm run lint    # ESLint
+npm run build   # build de producción
+```
+
+Para validar RLS y advisors tras un cambio de schema, se ejecuta `get_advisors` desde el
+Dashboard de Supabase o vía la herramienta de desarrollo conectada al proyecto.

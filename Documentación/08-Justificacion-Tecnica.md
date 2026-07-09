@@ -1,8 +1,9 @@
 # Justificación de Decisiones Técnicas · Modo Ensayo
 
-> **Versión:** 1.0 — 30-may-2026
+> **Versión:** 2.0 — 09-jul-2026
 
-Este documento explica el "por qué" detrás de cada decisión técnica y de arquitectura del proyecto. La intención es demostrar que las elecciones son fundamentadas, no arbitrarias.
+Este documento explica el "por qué" detrás de cada decisión técnica y de arquitectura del
+proyecto. La intención es demostrar que las elecciones son fundamentadas, no arbitrarias.
 
 ---
 
@@ -19,9 +20,10 @@ Este documento explica el "por qué" detrás de cada decisión técnica y de arq
 | SFC (Single File Component) | ✓ (claros, separación natural) | Mezcla JSX | ✓ pero más verboso |
 | Reactividad implícita | ✓ (`ref`, `reactive`, `computed`) | useState/useEffect | RxJS observables |
 | Tamaño bundle base | ~33 KB gzip | ~42 KB gzip | ~150 KB gzip |
-| Equipo familiarizado | ✓ Victor | Parcial | No |
+| Equipo familiarizado | ✓ | Parcial | No |
 
-**Decisión:** Vue 3 con Composition API por su curva más amigable, reactividad explícita y tamaño de bundle reducido. El equipo (Victor) ya tenía experiencia previa.
+**Decisión:** Vue 3 con Composition API por su curva más amigable, reactividad explícita y
+tamaño de bundle reducido.
 
 **¿Por qué Vite y no Webpack/Vue CLI?**
 - Vite usa ESM nativo en dev → HMR instantáneo.
@@ -35,34 +37,33 @@ Este documento explica el "por qué" detrás de cada decisión técnica y de arq
 
 ---
 
-### 1.2 Backend: Spring Boot 3.2 + Java 21
+### 1.2 Backend: Supabase (PostgreSQL + Auth + Storage + Edge Functions)
 
-**¿Por qué Spring Boot y no Node.js/Django/FastAPI?**
+**¿Por qué Supabase (BaaS) y no un backend propio (Node/Django/FastAPI con servidor dedicado)?**
 
-| Criterio | Spring Boot | Node.js (Express/Nest) | Django | FastAPI |
-|---|---|---|---|---|
-| Tipado fuerte en runtime | ✓ (Java) | Solo con TypeScript estricto | Limitado | ✓ (Pydantic) |
-| Madurez del ecosistema | Alta | Alta | Alta | Media |
-| ORM robusto | ✓ JPA/Hibernate | TypeORM/Prisma | ORM nativo | SQLAlchemy |
-| Manejo de transacciones | ✓ Declarativo `@Transactional` | Manual | ✓ Decoradores | Manual |
-| Seguridad nativa | ✓ Spring Security | Passport.js (terceros) | Django Auth | OAuth2 (terceros) |
-| Scheduled tasks | ✓ `@Scheduled` nativo | node-cron (terceros) | Celery | Background tasks |
-| Soporte académico | Asignatura cubre Java | No cubierto | No cubierto | No cubierto |
+| Criterio | Supabase | Backend propio (Node/Django) |
+|---|---|---|
+| Auth con roles y JWT | ✓ nativo (Supabase Auth) | Hay que construirlo (Passport/JWT manual) |
+| Autorización a nivel de fila | ✓ RLS declarativo en SQL | Manual en cada endpoint |
+| API autogenerada (PostgREST) | ✓ sobre las tablas | Hay que escribir cada endpoint CRUD |
+| Tareas programadas | ✓ `pg_cron` nativo | node-cron / Celery (terceros) |
+| Almacenamiento de archivos | ✓ Storage integrado con RLS | S3 + lógica de permisos aparte |
+| Tiempo de setup para equipo de 3 en 11 semanas | Bajo (sin servidor que mantener) | Alto (infra + auth + storage desde cero) |
+| Escalado | Gestionado por la plataforma | Requiere configurar orquestación |
 
-**Decisión:** Spring Boot por:
-- **Cumplimiento curricular:** la asignatura usa Java; aprovechamos la base aprendida.
-- **`@Transactional`:** crítico para la **atomicidad del checkout (R11)** sin bibliotecas externas.
-- **`@Scheduled`:** clave para implementar el **timeout 48h de reagendamiento (R16)** sin terceros.
-- **Spring Security:** JWT y manejo de roles maduro.
-
-**¿Por qué Java 21 (no 17 o 11)?**
-- LTS vigente al inicio del proyecto.
-- Features modernas: `record`, `pattern matching`, virtual threads.
-- Compatible con Spring Boot 3.2 (recomendación oficial).
+**Decisión:** Supabase por:
+- **Row Level Security (RLS):** la autorización vive en la base de datos, no repartida en
+  cada endpoint — es la **última línea de defensa** ante bugs de lógica de negocio.
+- **Edge Functions (Deno + TypeScript):** lógica de negocio sensible (pagos, transiciones de
+  estado, acciones de admin) corre con la clave de servicio, fuera del alcance del cliente.
+- **`pg_cron`:** habilita tareas programadas (liberar bloques expirados, timeout de
+  reagendamiento de 48h, latido de disponibilidad) sin infraestructura adicional.
+- **Equipo de 3 personas, 11 semanas:** un backend propio hubiera consumido tiempo de
+  desarrollo en infraestructura (auth, storage, cron) en vez de en funcionalidad de negocio.
 
 ---
 
-### 1.3 Base de datos: PostgreSQL 16
+### 1.3 Base de datos: PostgreSQL 16 (gestionado por Supabase)
 
 **¿Por qué PostgreSQL y no MySQL/MongoDB?**
 
@@ -71,23 +72,28 @@ Este documento explica el "por qué" detrás de cada decisión técnica y de arq
 | Soporte de constraints CHECK | ✓ | Limitado (8.0+) | No (validators) |
 | Triggers complejos | ✓ Robustos | Limitados | No nativos |
 | JSON nativo (JSONB) | ✓ Indexable | JSON (lento) | Nativo pero sin schemas |
-| UUID nativo | ✓ `uuid_generate_v4()` | Sólo VARCHAR | ObjectId |
+| UUID nativo | ✓ `gen_random_uuid()` | Sólo VARCHAR | ObjectId |
 | Procedimientos almacenados | ✓ PL/pgSQL maduro | OK | No |
+| Row Level Security nativo | ✓ | No | No |
 | Transacciones ACID | ✓ | ✓ (InnoDB) | Limitadas |
 
 **Decisión:** PostgreSQL 16 por:
-- **Triggers de negocio** críticos: `trg_release_payment`, `trg_check_capacity`, `trg_class_status_change`.
-- **CHECK constraints** sobre enums (R02, R13).
+- **Triggers de negocio** críticos: `track_class_status`, `enforce_class_capacity`, cálculo
+  automático de estados de pago.
+- **CHECK constraints** sobre enums (estados de clase, de pago, de reserva).
 - **UUID v4** como PK (mejor para sistemas distribuidos sin coordinación de IDs).
-- **JSONB indexable** para `notifications.data` y `refund_methods.details`.
+- **JSONB indexable** para `cart_snapshot`, `metadata` de auditoría.
+- **Row Level Security nativo**, la razón principal de elegir Supabase como plataforma.
 
-**¿Por qué tener lógica en triggers de BD?**
-- Es la **última línea de defensa**. Si un bug del backend permite un INSERT inválido, la BD lo rechaza.
-- La liberación automática de pagos (`trg_release_payment`) garantiza R01 incluso si se modifica el código del servicio.
+**¿Por qué tener lógica en triggers y funciones de BD?**
+- Es la **última línea de defensa**. Si un bug del frontend o de una Edge Function permite
+  una operación inválida, la base de datos la rechaza.
+- Reglas críticas (ej. capacidad de clase, transiciones de estado) quedan garantizadas
+  incluso si se modifica el código del cliente.
 
 ---
 
-### 1.4 Pagos: MercadoPago Checkout Pro
+### 1.4 Pagos: MercadoPago Checkout Pro + Connect (marketplace)
 
 **¿Por qué MercadoPago y no Stripe/Khipu/PayPal?**
 
@@ -95,198 +101,194 @@ Este documento explica el "por qué" detrás de cada decisión técnica y de arq
 |---|---|---|---|---|
 | Mercado chileno (target) | ✓ Líder | Limitado | ✓ | ✓ |
 | Sandbox completo | ✓ | ✓ | Limitado | ✓ |
-| SDK Java oficial | ✓ | ✓ | No | ✓ |
+| SDK/API REST bien documentada | ✓ | ✓ | No | ✓ |
 | Webhooks robustos | ✓ | ✓ | Básicos | ✓ |
+| Marketplace con split de pagos | ✓ Connect | ✓ Connect | No | Limitado |
 | Comisiones razonables | ~4% | ~3.6% | ~1.5% | ~4% |
 | Documentación en español | ✓ | Parcial | ✓ | ✓ |
 
-**Decisión:** MercadoPago Checkout Pro por:
+**Decisión:** MercadoPago por:
 - **Mercado objetivo:** plataforma chilena para usuarios chilenos.
 - **Sandbox real:** permite pruebas extremo a extremo sin costo.
-- **SDK Java oficial:** integración directa con backend Spring Boot.
-- **Pago consolidado** soportado nativamente (un solo cobro con múltiples items).
+- **Checkout Pro** para inscripción a clases (pago simple) y **Connect** para arriendo de
+  salas, donde el dinero va directo a la cuenta de la sede con una comisión de plataforma
+  (`marketplace_fee`) — la plataforma nunca custodia el dinero de terceros.
+- **Integración real** (no simulada): en producción solo cambian las credenciales de TEST a
+  producción.
 
-**No fue simulado:** La integración con MercadoPago es **real** (no mocked). En producción solo se cambian las credenciales de TEST a producción.
+---
+
+### 1.5 Hosting: Vercel (frontend) + Supabase (backend gestionado)
+
+**¿Por qué Vercel y no un servidor propio / S3+CloudFront administrado a mano?**
+
+| Criterio | Vercel | Servidor propio |
+|---|---|---|
+| CI/CD automático por push a `main` | ✓ | Hay que configurarlo |
+| CDN global | ✓ nativo | Requiere configuración aparte |
+| HTTPS automático | ✓ | Requiere certificado manual |
+| Variables de entorno por ambiente | ✓ | Manual |
+| Costo para el volumen del proyecto | Gratis (plan Hobby) | Costo de servidor + mantención |
+
+**Decisión:** Vercel + Supabase por:
+- **Sin servidores que administrar:** ni el frontend ni el backend requieren mantención de
+  infraestructura por parte del equipo.
+- **Costo:** gratuito en desarrollo (plan Free de Supabase + Hobby de Vercel), ~US$25/mes en
+  producción (Supabase Pro) — apropiado para el volumen de tráfico esperado del MVP.
+- **Deploy automático:** cada push a `main` publica el frontend; las Edge Functions se
+  despliegan con `supabase functions deploy`.
 
 ---
 
 ## 2. Decisiones de arquitectura
 
-### 2.1 Monolito modular vs Microservicios
+### 2.1 Monolito modular (no microservicios)
 
-**Decisión:** Monolito modular con 6 dominios (auth, classes, payments, reschedules, users, venues, admin, etc.)
-
-**Justificación:**
-- Equipo de 3 personas en 11 semanas: complejidad operativa de microservicios (k8s, service mesh, mensajería) supera el beneficio para este alcance.
-- La **transaccionalidad del checkout (R11)** es crítica y trivial en monolito (`@Transactional` Spring), difícil en microservicios (saga pattern).
-- Migración futura a microservicios es viable porque cada dominio ya está aislado en su propio package.
-
-### 2.2 Package by Feature (no by Layer)
-
-**Decisión:** Cada dominio (`payments`, `classes`, etc.) tiene su propia estructura completa: controller, service, repository, domain, dto.
+**Decisión:** Un solo backend (Supabase) organizado por dominios (auth, classes, payments,
+reschedules, venues, admin), con Edge Functions independientes por operación de negocio.
 
 **Justificación:**
-- Cuando un integrante trabaja en una feature, no salta entre 5 carpetas (`controllers/`, `services/`, `models/`...).
+- Equipo de 3 personas en 11 semanas: la complejidad operativa de microservicios (orquestación,
+  comunicación entre servicios, consistencia distribuida) supera el beneficio para este alcance.
+- La **transaccionalidad del checkout** es crítica y se resuelve de forma simple con
+  transacciones de PostgreSQL, sin necesidad de patrones de coordinación distribuida (saga).
+- Cada Edge Function es una unidad de despliegue independiente (se puede desplegar una sola
+  sin afectar las demás), lo que da parte de la flexibilidad de microservicios sin su costo
+  operativo.
+
+### 2.2 Servicios por dominio en el frontend (Package by Feature)
+
+**Decisión:** `frontend/src/services/` tiene un módulo por dominio (`classService.js`,
+`venueService.js`, `paymentService.js`, etc.), cada uno con sus propias operaciones.
+
+**Justificación:**
+- Cuando un integrante trabaja en una funcionalidad, encuentra todo lo relacionado a ese
+  dominio en un solo archivo.
 - Cohesión alta dentro del dominio, acoplamiento bajo entre dominios.
-- Refactor de un dominio es local.
 
-### 2.3 DTOs obligatorios (nunca exponer entidades JPA)
+### 2.3 RLS como capa de autorización (no lógica repartida en el cliente)
 
-**Decisión:** Todos los endpoints retornan DTOs específicos (`UserProfileResponse`, `ClassResponse`, etc.), no entidades.
-
-**Justificación:**
-- **Seguridad:** evita exponer accidentalmente campos sensibles (`password_hash`).
-- **Estabilidad de API:** cambios en entidades no rompen contratos REST.
-- **Optimización:** los DTOs traen solo lo necesario, evitando N+1 en `@OneToMany`.
-
-### 2.4 Triggers de BD para reglas críticas
-
-**Decisión:** R01 (liberación de pagos), R02 (capacidad), R03 (auditoría) están implementadas también como triggers.
+**Decisión:** Cada tabla tiene Row Level Security; el frontend usa la clave pública
+(anon/publishable) y solo puede leer/escribir lo que las políticas permiten.
 
 **Justificación:**
-- Defensa en profundidad: incluso si un bug pasa por el servicio, la BD rechaza la operación inválida.
-- Triggers de PostgreSQL son confiables y no tienen overhead notorio.
-- La auditoría histórica no se puede "olvidar" en código de aplicación.
+- **Seguridad:** un usuario no puede ver ni modificar datos de otro aunque manipule las
+  peticiones desde el navegador — la restricción está en la base de datos, no en el cliente.
+- **Estabilidad:** las políticas no dependen de que cada vista del frontend "recuerde" filtrar
+  correctamente.
 
-### 2.5 JWT stateless
+### 2.4 Triggers y funciones de BD para reglas críticas
 
-**Decisión:** Autenticación 100% stateless con JWT firmado HMAC256, sin sesión en backend.
-
-**Justificación:**
-- Escalabilidad horizontal sin sticky sessions.
-- Despliegue en ECS Fargate con N instancias trivial.
-- Compatible con SPAs (frontend almacena en localStorage).
-
-**Trade-off conocido:** invalidar un JWT antes de su expiración requiere blacklist en BD. Lo aceptamos porque el JWT dura 24h y los usuarios pueden cerrar sesión limpiando localStorage.
-
-### 2.6 Auto-sync de atributos vía interceptor Axios
-
-**Decisión:** El backend retorna `atributosActualizados: true` en respuestas relevantes; el frontend tiene un interceptor que dispara `syncAtributos()` automáticamente.
+**Decisión:** Reglas como control de capacidad de clase, seguimiento de estados y liberación
+de bloques de horario expirados están implementadas como triggers y funciones de PostgreSQL.
 
 **Justificación:**
-- Evita que el frontend tenga que conocer en qué endpoints cambia el estado del usuario.
-- Mantiene el store sincronizado con BD sin lógica manual repetitiva.
-- Permite que la asignación dinámica del rol TEACHER (R08) se refleje inmediatamente en la UI.
+- Defensa en profundidad: incluso si un bug pasa por el frontend o una Edge Function, la BD
+  rechaza la operación inválida.
+- No tienen overhead notorio y son confiables.
+
+### 2.5 JWT stateless (Supabase Auth)
+
+**Decisión:** Autenticación 100% stateless con JWT emitido por Supabase Auth, sin sesión en
+servidor propio.
+
+**Justificación:**
+- Escalabilidad horizontal sin necesidad de sesiones compartidas.
+- Compatible con una SPA (frontend almacena el token y lo refresca automáticamente).
+
+**Trade-off conocido:** invalidar un JWT antes de su expiración requiere revocación explícita
+(ban de usuario) en vez de una simple blacklist local; se acepta porque el token dura 24h y
+el usuario puede cerrar sesión limpiando el almacenamiento local.
 
 ---
 
-## 3. Decisiones de infraestructura
+## 3. Decisiones de UX
 
-### 3.1 Docker Compose para desarrollo local
+### 3.1 Modos de contexto (Alumno / Maestro / Sede / Admin)
 
-**Decisión:** Un solo `docker-compose up -d` levanta Postgres + Backend + Frontend + pgAdmin.
-
-**Justificación:**
-- Onboarding de 5 minutos para cualquier integrante.
-- Ambiente idéntico en todas las máquinas (Windows, macOS, Linux).
-- Aisla dependencias del sistema.
-
-### 3.2 AWS ECS Fargate (no EC2/Beanstalk)
-
-**Decisión:** ECS Fargate gestionado, sin instancias EC2 que mantener.
-
-**Justificación:**
-- **Sin gestión de servidores:** AWS administra el cluster.
-- **Pago por uso:** ideal para tráfico bajo durante el proyecto.
-- **Escala automática:** definida en task definition.
-- **CI/CD trivial:** push de imagen Docker a ECR + actualización de service.
-
-### 3.3 RDS PostgreSQL en subnet privada
-
-**Decisión:** RDS con multi-AZ deshabilitado (costo), en subnet privada, accesible solo desde ECS.
-
-**Justificación:**
-- **Sin acceso público a BD:** se accede solo vía bastion host SSH o el propio backend.
-- **Backups automáticos:** RDS hace snapshots diarios sin código adicional.
-
-### 3.4 S3 + CloudFront para frontend
-
-**Decisión:** Frontend estático servido por CloudFront, con S3 como origen.
-
-**Justificación:**
-- CDN global → latencia mínima desde cualquier país.
-- HTTPS automático con certificado ACM.
-- Sin servidor que mantener para servir archivos estáticos.
-
----
-
-## 4. Decisiones de UX
-
-### 4.1 Modos de contexto (Alumno / Maestro / Sede / Admin)
-
-**Decisión:** En lugar de portales separados, un solo dashboard con switcher de "contexto activo" que cambia la navbar y las acciones disponibles.
+**Decisión:** En lugar de portales separados, un solo dashboard con switcher de "contexto
+activo" que cambia la navegación y las acciones disponibles.
 
 **Justificación:**
 - Un usuario puede ser Alumno + Maestro + Admin de Sede simultáneamente.
 - Forzar cambio de URL/login entre contextos rompería la experiencia.
-- El sistema persiste `modoActual` por usuario para recordar la última vista.
+- El sistema persiste el contexto activo por usuario para recordar la última vista.
 
-### 4.2 Confirmación explícita en cada acción irreversible (R14)
+### 3.2 Confirmación explícita en acciones irreversibles
 
-**Decisión:** Componente `ConfirmModal.vue` reutilizable que se invoca antes de cualquier acción no recuperable.
-
-**Justificación:**
-- Reduce errores costosos (pago accidental, cancelación errónea).
-- Cumple R14 sin duplicar código en cada vista.
-- Patrón consistente que el usuario aprende.
-
-### 4.3 Banners persistentes sobre estado incompleto
-
-**Decisión:** Cuando el Maestro no tiene perfil profesional completo, un banner amarillo visible en TODO el contexto Maestro lo recuerda y permite completarlo en 1 click.
+**Decisión:** Componentes de confirmación (modales) reutilizables antes de cualquier acción
+no recuperable (pago, cancelación, rechazo de reagendamiento).
 
 **Justificación:**
-- Maestros con perfil incompleto son invisibles para alumnos → conversión cero.
-- El banner no bloquea (no es un dialog modal) sino que persiste como reminder.
-- Desaparece automáticamente al cumplir los mínimos.
+- Reduce errores costosos.
+- Patrón consistente que el usuario aprende una vez y reconoce en toda la plataforma.
+
+### 3.3 Banners persistentes sobre estado incompleto
+
+**Decisión:** Cuando un Maestro no tiene su perfil profesional completo (o falta cuenta de
+MercadoPago), un banner visible en todo el contexto Maestro lo recuerda y permite completarlo
+en un clic.
+
+**Justificación:**
+- Un perfil incompleto lo hace invisible para los alumnos → conversión cero.
+- El banner no bloquea (no es un diálogo modal), persiste como recordatorio y desaparece
+  automáticamente al cumplirse los requisitos.
 
 ---
 
-## 5. Coherencia entre problemática, solución y tecnologías
+## 4. Coherencia entre problemática, solución y tecnologías
 
 ### Problemática
-> *Los Maestros freelance de artes pierden ingresos por cancelaciones de última hora, y los Alumnos tienen pocas plataformas confiables para reservar clases. Las plataformas existentes no garantizan al Maestro su pago hasta que la clase se realice.*
+> *Los profesores freelance de artes escénicas pierden ingresos por cancelaciones de última
+> hora, y la organización de clases se maneja de forma informal (WhatsApp, papel,
+> transferencias sin control), sin garantía de pago para el profesor ni trazabilidad para el
+> alumno o la sede.*
 
 ### Solución
-Modo Ensayo introduce **pagos retenidos condicionados a la realización efectiva de la clase** (R01), confirmados por una tercera parte (Admin de Sede), con un mecanismo de reagendamiento orquestado (R15-R18) para minimizar pérdidas tanto para Maestros como Alumnos.
+Modo Ensayo introduce **pagos retenidos condicionados a la realización efectiva de la
+clase**, confirmados por la sede, con un mecanismo de reagendamiento orquestado para
+minimizar pérdidas tanto para profesores como para alumnos.
 
 ### Cómo las tecnologías habilitan la solución
 
 | Necesidad del producto | Tecnología que la habilita |
 |---|---|
-| Garantía de atomicidad en checkout (R11) | Spring `@Transactional` + PostgreSQL ACID |
-| Liberación automática de pagos al confirmar clase (R01) | Trigger `trg_release_payment` en PostgreSQL |
-| Timeout 48h para decisión del Alumno (R16) | Spring `@Scheduled` + `@EnableScheduling` |
-| Confirmación explícita en cada decisión (R14) | Componente Vue + validación backend |
-| Pago real con sandbox para pruebas | MercadoPago Checkout Pro + SDK Java |
-| Múltiples roles simultáneos por usuario (R08) | Many-to-many `user_roles` + JWT con array de roles |
-| Auditoría completa de cambios | Triggers de PostgreSQL escribiendo en tablas históricas |
-| Despliegue público para evaluación | AWS ECS Fargate + RDS + CloudFront |
+| Garantía de atomicidad en el checkout | Transacciones ACID de PostgreSQL |
+| Liberación automática de pagos al confirmar la clase | Trigger + función de PostgreSQL |
+| Timeout de 48h para la decisión del alumno en un reagendamiento | `pg_cron` |
+| Confirmación explícita en cada decisión | Componente Vue + validación en RLS/Edge Function |
+| Pago real con sandbox para pruebas | MercadoPago Checkout Pro + Connect |
+| Múltiples roles simultáneos por usuario | `app_metadata.roles` en el JWT de Supabase Auth |
+| Auditoría completa de cambios | Tabla `audit_logs` + triggers de PostgreSQL |
+| Split automático del arriendo de sala a la cuenta correcta | MercadoPago Connect (OAuth) + `marketplace_fee` |
+| Disponibilidad medible sin depender de servicios externos | Latido interno (`pg_cron` + tabla `uptime_checks`) |
+| Métricas de uso reales | Google Analytics 4 vía Edge Function con service account |
 
 ---
 
-## 6. Decisiones que se evaluaron y descartaron
+## 5. Decisiones que se evaluaron y descartaron
 
 | Opción descartada | Razón |
 |---|---|
-| Microservicios | Equipo pequeño + plazo corto, complejidad operativa no se compensa |
+| Microservicios | Equipo pequeño + plazo corto; la complejidad operativa no se compensa para este alcance |
+| Backend propio (Node/Django) en vez de Supabase | Reconstruir auth, RLS-equivalente y cron consumiría tiempo de desarrollo sin aportar valor de negocio |
 | GraphQL | Curva de aprendizaje no justificada para el alcance |
-| WebSockets para notificaciones | Polling cada 30s es suficiente y más simple |
-| Redis para caché | Tráfico esperado no lo requiere; PostgreSQL alcanza |
-| Stripe en lugar de MercadoPago | Mercado chileno usa MP mayoritariamente |
-| Next.js / Nuxt en lugar de SPA pura | SEO no es prioridad del MVP (búsqueda interna sí) |
-| Firebase Auth | Pierde control sobre el flujo de validación de identidad personalizado |
+| WebSockets para notificaciones | Polling periódico es suficiente y más simple de mantener |
+| Redis para caché | El tráfico esperado no lo requiere; PostgreSQL alcanza |
+| Stripe en lugar de MercadoPago | El mercado chileno usa MercadoPago mayoritariamente |
+| Next.js/Nuxt en lugar de SPA pura | SEO no es prioridad del MVP (la búsqueda interna sí) |
+| Firebase Auth | Se prefirió mantener el control del flujo de validación de identidad dentro de Supabase Auth |
 
 ---
 
-## 7. Decisiones futuras (post-MVP)
+## 6. Decisiones futuras (post-MVP)
 
 | Necesidad futura | Decisión propuesta |
 |---|---|
 | Notificaciones push | Firebase Cloud Messaging |
-| Email transaccionales | AWS SES |
-| Analytics de uso | PostHog (self-hosted) o Plausible |
-| Caché agresivo | Redis si tráfico supera 1000 req/s |
-| Búsqueda full-text avanzada | Elasticsearch o pg_trgm |
-| Backup off-site | Snapshots RDS replicados a S3 cross-region |
+| Email transaccionales | Proveedor de email transaccional (ej. Resend) |
+| Caché agresivo | Redis si el tráfico supera niveles actuales |
+| Búsqueda full-text avanzada | `pg_trgm` o Elasticsearch |
+| Desembolso automático a profesores | Integración de money-out cuando MercadoPago Chile lo habilite |
 
 Estas decisiones no son parte del MVP pero quedan documentadas como roadmap.

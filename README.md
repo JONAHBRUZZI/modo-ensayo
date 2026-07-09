@@ -78,11 +78,14 @@ Detalles en [`Documentación/A2-Setup-Local.md`](./Documentación/A2-Setup-Local
 
 ---
 
-## Estado del proyecto al 24-jun-2026
+## Estado del proyecto al 08-jul-2026
 
-- **MVP completado:** ~95%
-- **Pagos**: inscripción a clases + arriendo de sala con split MercadoPago Connect (marketplace)
-- **Pendiente de despliegue**: migraciones MP Connect + Edge Functions `mp-connect-start`, `mp-connect-callback`, `reserve-room-preference` (ver [`DESPLIEGUE_MERCADOPAGO.md`](./DESPLIEGUE_MERCADOPAGO.md))
-- **Funcionalidades implementadas (fuera del plan original):** 30+
+- **MVP completado:** 100% (todo desplegado)
+- **Pagos**: inscripción a clases + arriendo de sala con split MercadoPago Connect (marketplace), desplegado
+- **Panel de admin de pagos**: giros manuales a profesores, reembolsos fallidos, día de corte mensual y **margen real de MercadoPago** (comisión cobrada vs. costo MP)
+- **Métricas de rendimiento (M1–M5)**: reales y clicleables, con **desglose por sede** (M4 Disponibilidad con latido interno de uptime)
+- **Comportamiento**: **Google Analytics 4** integrado en el dashboard admin (usuarios activos, sesiones, vistas)
+- **Asistencia**: flujo de "pasar lista" corregido (todos presentes por defecto)
+- **Funcionalidades implementadas (fuera del plan original):** 40+
 
-Detalle en la [Carta Gantt actualizada](./Documentación/Carta-Gantt-13jun2026.md).
+Detalle completo en el [changelog de mejoras](./Documentación/11-Mejoras-Incorporadas.md) y la [Carta Gantt actualizada](./Documentación/Carta-Gantt-13jun2026.md).

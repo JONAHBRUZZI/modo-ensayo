@@ -247,12 +247,17 @@ async function confirmarSuspension() {
     const email = suspendTarget.value.email
     await adminService.toggleUser(suspendTarget.value.id, suspendMotivo.value)
     suspendTarget.value.enabled = !suspendTarget.value.enabled
-    cerrarSuspender()
+    // Cierra el modal directamente (cerrarSuspender() no cierra mientras
+    // suspendiendo === true por su guard interno).
+    suspendTarget.value = null
+    suspendMotivo.value = ''
+    suspendMotivoError.value = ''
     toast.success(`Usuario ${email} suspendido.`)
   } catch (e) {
     toast.error(e?.response?.data?.message || 'Error al suspender el usuario')
+  } finally {
+    suspendiendo.value = false
   }
-  suspendiendo.value = false
 }
 
 function abrirModalEliminar(u) {

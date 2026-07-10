@@ -50,7 +50,7 @@
                   <span v-if="sedeConfirmarCount > 0" class="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{{ sedeConfirmarCount }}</span>
                 </router-link>
                 <router-link to="/sede/profesores" class="nav-link">Profesores</router-link>
-                <router-link to="/sede/metricas" class="nav-link">Métricas</router-link>
+                <router-link to="/sede/metricas" class="nav-link">Estadísticas</router-link>
                 <router-link to="/sede/configuracion" class="nav-link">Config</router-link>
                 <router-link to="/reviews" class="nav-link">Reseñas</router-link>
               </template>
@@ -209,7 +209,7 @@
                 <span v-if="sedeConfirmarCount > 0" class="ml-2 bg-yellow-500 text-black text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{{ sedeConfirmarCount }}</span>
               </router-link>
               <router-link to="/sede/profesores" class="nav-link-mobile" @click="showMobileMenu = false">Profesores</router-link>
-              <router-link to="/sede/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Métricas</router-link>
+              <router-link to="/sede/metricas" class="nav-link-mobile" @click="showMobileMenu = false">Estadísticas</router-link>
               <router-link to="/sede/configuracion" class="nav-link-mobile" @click="showMobileMenu = false">Config</router-link>
               <router-link to="/reviews" class="nav-link-mobile" @click="showMobileMenu = false">Reseñas</router-link>
             </template>

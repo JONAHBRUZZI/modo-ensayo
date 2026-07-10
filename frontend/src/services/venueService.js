@@ -333,6 +333,15 @@ export default {
     return (data || []).map(r => camelize(r))
   },
 
+  // Estadísticas por datos de la sede: ocupación por sala, disciplinas con mayor
+  // demanda, franjas horarias con baja ocupación y KPIs. Scoped a las sedes del
+  // usuario. El RPC ya devuelve las claves en camelCase → se consume tal cual.
+  async getVenueStats() {
+    const { data, error } = await supabase.rpc('get_venue_stats')
+    if (error) throw { response: { status: 500, data: { message: error.message } } }
+    return data || { kpis: {}, salas: [], disciplinas: [], horarios: [] }
+  },
+
   // Profesores dependientes de las sedes del usuario (RPC SECURITY DEFINER).
   // Cada fila: { id (venue_teachers.id), venueId, teacherId, status, email, fullName }.
   async getVenueProfessors() {

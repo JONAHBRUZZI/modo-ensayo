@@ -112,7 +112,7 @@ Un único pago en MercadoPago genera una sesión de pago (`payment_sessions`, un
 
 Cuando el Admin de Sede confirma una clase como:
 - **`COMPLETED`** (realizada) → todas las filas de `payments` asociadas pasan a `RELEASED`, se crea el `teacher_payouts` (PENDING) y se **liberan los bloques** de horario (`room_schedule_blocks` OCCUPIED → AVAILABLE).
-- **`SUSPENDED`** (no realizada) → todas las filas de `payments` pasan a `REFUND_PENDING`, se **cancelan las inscripciones** (`enrollments` → CANCELLED), se **liberan los bloques** y se notifica a cada alumno.
+- **`SUSPENDED`** (no realizada) → **NO se reembolsa de inmediato**: se abre una **ventana de reagendamiento de 24h** (`classes.reschedule_deadline`); los `payments` quedan `RETAINED` y las `enrollments` `ACTIVE`, se liberan los bloques del horario viejo y se notifica al responsable (ver R16). El reembolso es **diferido**: si nadie reagenda dentro del plazo, el cron `process_class_reschedule_timeouts` (cada hora) pasa los pagos a `REFUND_PENDING`, cancela las inscripciones y notifica.
 
 Esta confirmación (Edge Function `confirm-class`) es la **única forma** de liberar pagos.
 
@@ -157,6 +157,19 @@ Cuando el Maestro acepta un reagendamiento, los alumnos inscritos reciben una no
 - El pago pasa a `REFUND_PENDING` según método preferido.
 
 - **Implementación:** Edge Function `student-decision` (aceptar/rechazar del alumno; el rechazo pasa su `payments` a REFUND_PENDING) + la vista `AlumnoReagendamientoPage` (`/alumno/reagendamiento/:id`) con banner en "Mis Clases" y notificación accionable. El vencimiento a las 48 h lo procesa un job `pg_cron` que marca las respuestas sin responder como `TIMEOUT`.
+
+---
+
+## R16.1 — Reagendamiento de una clase NO realizada (ventana de 24h, reembolso diferido)
+
+Cuando la sede marca una clase como **no realizada**, en vez de reembolsar de inmediato se abre una ventana de **24h** (`classes.reschedule_deadline`) para reagendarla. **Reloj único**: corre desde la marca de "no realizada"; la responsabilidad de avisar a tiempo es del responsable.
+
+- **Clase `PROPIA` (profesor independiente):** `confirm-class` lo notifica (`CLASS_RESCHEDULE_OFFERED`). En `/profesor/reagendamientos` (con cuenta regresiva) pone un **motivo obligatorio** y **paga un arriendo nuevo** de sala (arriendo normal con split a la sede) usando la clase caída como `borradorId`. Al aprobarse el pago, el webhook republica la clase en el nuevo horario y dispara la decisión de los alumnos.
+- **Clase `ASIGNADA` (creada por la sede):** la sede reagenda desde `/sede/reagendar/:classId` eligiendo una sala **propia** (sin pago), con motivo obligatorio; la Edge Function `sede-reschedule-class` republica la clase, dispara la decisión de los alumnos y **notifica al profesor dependiente** (solo aviso).
+- En ambos casos, los alumnos **aceptan o rechazan** la nueva fecha (reusa R16 / `student-decision`, 48h; el que rechaza recibe reembolso).
+- **Vencimiento:** si nadie reagenda en 24h, el cron `process_class_reschedule_timeouts` reembolsa (RETAINED → REFUND_PENDING), cancela inscripciones y cierra la ventana.
+
+**Decisiones fijadas:** independiente **paga** el arriendo nuevo; sede **no paga** (usa su sala). *Fuera de alcance (futuro):* reglas de plazo 7d/72h para cobro parcial del reagendamiento.
 
 ---
 

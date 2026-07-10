@@ -7,6 +7,11 @@
       class="card max-w-md w-full"
     >
       <h1 class="text-2xl font-bold text-white text-center mb-8">Iniciar sesión</h1>
+
+      <div v-if="aviso" class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-6">
+        <p class="text-yellow-300 text-sm">{{ aviso }}</p>
+      </div>
+
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
@@ -33,18 +38,27 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/stores/auth'
 import GoogleLoginButton from '@/components/GoogleLoginButton.vue'
 
 const router = useRouter()
+const route = useRoute()
 const { login } = useAuth()
 
 const email = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+
+// Aviso mostrado cuando el usuario llega redirigido por una sesión cortada
+// (eliminado/suspendido por el admin, o token expirado en pleno uso).
+const aviso = computed(() =>
+  route.query.motivo === 'sesion'
+    ? 'Tu sesión finalizó. Si tu cuenta fue suspendida, contacta al administrador. Vuelve a iniciar sesión para continuar.'
+    : ''
+)
 
 async function handleLogin() {
   error.value = ''

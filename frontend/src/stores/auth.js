@@ -92,6 +92,11 @@ function rolesFromSession(session) {
 
 const store = new AuthStore()
 
+// Distingue un cierre de sesión intencional (botón "Cerrar sesión") de uno
+// involuntario (usuario eliminado/suspendido en el panel de admin → el refresh
+// del token falla → Supabase emite SIGNED_OUT). En el segundo caso avisamos.
+let intentionalLogout = false
+
 /**
  * Construye el objeto de usuario a partir de la sesión Supabase:
  * roles desde app_metadata (JWT), datos desde `profiles`, derivados desde la RPC.
@@ -144,7 +149,20 @@ function mapAtributos(d) {
 // (login, refresh automático del token, logout en otra pestaña, etc.).
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT' || !session) {
+    const teniaToken = !!store.token.value
     store.clearAuth()
+    // Sesión invalidada de forma involuntaria (usuario eliminado o suspendido,
+    // o token no renovable): si estábamos autenticados en una página protegida,
+    // llevamos a /login con un aviso. No aplica al logout normal (intencional)
+    // ni a la carga inicial sin sesión (INITIAL_SESSION, event !== SIGNED_OUT).
+    if (event === 'SIGNED_OUT' && teniaToken && !intentionalLogout && typeof window !== 'undefined') {
+      const path = window.location.pathname
+      const publicas = ['/', '/login', '/register']
+      if (!publicas.includes(path)) {
+        window.location.replace('/login?motivo=sesion')
+      }
+    }
+    intentionalLogout = false
     return
   }
   store.setToken(session.access_token, session.refresh_token)
@@ -244,6 +262,9 @@ export function useAuth() {
   }
 
   async function logout() {
+    // Marca el cierre como intencional para que onAuthStateChange no muestre
+    // el aviso de "sesión finalizada" (ese aviso es sólo para cortes involuntarios).
+    intentionalLogout = true
     // 1. Invalidar sesión en Supabase (esto borra sb-*-auth-token de localStorage)
     try {
       await supabase.auth.signOut({ scope: 'local' })
@@ -397,10 +418,21 @@ export function useAuth() {
   }
 }
 
-/** Convierte un AuthError de Supabase al shape estilo-axios que las vistas esperan. */
+/** Convierte un AuthError de Supabase al shape estilo-axios que las vistas esperan,
+ *  traduciendo los casos comunes a un mensaje claro en español. */
 function normalizeAuthError(error) {
+  const code = error?.code || ''
+  const raw = (error?.message || '').toLowerCase()
+  let message = error?.message || 'Error al iniciar sesión'
+  if (code === 'user_banned' || raw.includes('banned')) {
+    message = 'Tu cuenta se encuentra temporalmente suspendida. Si crees que es un error, contacta al administrador.'
+  } else if (code === 'invalid_credentials' || raw.includes('invalid login')) {
+    message = 'Email o contraseña incorrectos.'
+  } else if (raw.includes('email not confirmed')) {
+    message = 'Debes confirmar tu email antes de iniciar sesión.'
+  }
   return {
-    response: { status: error.status || 400, data: { message: error.message } },
-    message: error.message
+    response: { status: error?.status || 400, data: { message } },
+    message
   }
 }

@@ -438,6 +438,9 @@ verify_jwt = true
 [functions.admin-payments]
 verify_jwt = true
 
+[functions.sede-reschedule-class]
+verify_jwt = true
+
 [functions.admin-metrics]
 verify_jwt = true
 

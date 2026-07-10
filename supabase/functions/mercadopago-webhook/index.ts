@@ -1,5 +1,6 @@
 import { withSupabase } from "npm:@supabase/server";
 import { logInfo, logError } from "../_shared/logger.ts";
+import { triggerStudentReschedule } from "../_shared/reschedule.ts";
 
 // deno-lint-ignore no-explicit-any
 type Admin = any;
@@ -9,6 +10,7 @@ type Admin = any;
 // lo hizo MercadoPago (el cobro se generó con el token de la sede + marketplace_fee).
 async function materializeRoomReservation(admin: Admin, session: { id: string; owner_id: string }, cart: {
   roomId: string; roomName: string; blockIds: string[]; borradorId?: string | null; amount: number;
+  rescheduleReason?: string | null;
 }) {
   const blockIds: string[] = cart.blockIds || [];
   const ownerId = session.owner_id;
@@ -29,12 +31,22 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
   const roomCapacity = (roomRow?.capacity as number) ?? 1;
 
   let classId: string | null = cart.borradorId ?? null;
+  let reagendabaDeadline: string | null = null;
   if (classId) {
+    // Si el "borrador" es en realidad una clase caída (no realizada) que está en
+    // ventana de reagendamiento, esto la republica en el nuevo horario y luego
+    // dispara la decisión de los alumnos.
+    const { data: prev } = await admin.from("classes")
+      .select("reschedule_deadline").eq("id", classId).single();
+    reagendabaDeadline = (prev?.reschedule_deadline as string | null) ?? null;
+
     // Asigna sala/horario al borrador existente y lo publica. La duración la
     // define el horario reservado (bloques), no lo que traía el borrador.
+    // Si venía de reagendamiento, se cierra la ventana (reschedule_deadline=null).
     await admin.from("classes").update({
       room_id: cart.roomId, start_time: firstStart, end_time: lastEnd,
       duration: durationMin, capacity: roomCapacity, status: "PUBLISHED",
+      reschedule_deadline: null,
     }).eq("id", classId).eq("teacher_id", ownerId);
   } else {
     // Crea un borrador de reserva (el profesor lo completa luego).
@@ -61,6 +73,17 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
       await admin.auth.admin.updateUserById(ownerId, { app_metadata: { roles: [...roles, "TEACHER"] } });
     }
   } catch (_e) { /* best-effort */ }
+
+  // Si esta reserva completó un reagendamiento de una clase caída, notifica a los
+  // alumnos para que acepten/rechacen la nueva fecha (reusa student-decision).
+  if (classId && reagendabaDeadline) {
+    await triggerStudentReschedule(admin, {
+      classId,
+      teacherId: ownerId,
+      newStartTime: firstStart,
+      reason: cart.rescheduleReason || "Reagendamiento del profesor",
+    });
+  }
 }
 
 // Consulta un pago en la API de MercadoPago con un access_token dado.

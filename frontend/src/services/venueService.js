@@ -161,6 +161,12 @@ export default {
     return invokeFunction('confirm-class', { body: { classId, realized: false } })
   },
 
+  // Reagenda una clase caída (ASIGNADA) a una sala propia de la sede, sin pago.
+  // classId de la clase SUSPENDED en ventana; roomId + blockIds del nuevo horario.
+  sedeRescheduleClass(classId, roomId, blockIds, reason) {
+    return invokeFunction('sede-reschedule-class', { body: { classId, roomId, blockIds, reason } })
+  },
+
   // ── Documentos de sede ──
   async getVenueDocuments(venueId) {
     const { data, error } = await supabase.from('venue_documents').select('*').eq('venue_id', venueId)

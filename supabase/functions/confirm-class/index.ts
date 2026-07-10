@@ -33,8 +33,8 @@ export default {
       const { data: enrollments } = await admin.from("enrollments")
         .select("id, student_id").eq("class_id", body.classId).eq("status", "ACTIVE");
 
-      let refundPendingCount = 0;
       let payoutsCreated = 0;
+      let rescheduleDeadline: string | null = null;
 
       if (body.realized) {
         const { data: setting } = await admin.from("app_settings")
@@ -93,36 +93,33 @@ export default {
           .update({ status: "AVAILABLE", class_id: null })
           .eq("class_id", body.classId).eq("status", "OCCUPIED");
       } else {
-        // Pagos RETAINED → REFUND_PENDING (corrección G-07)
-        if (enrollments) {
-          for (const e of enrollments) {
-            const { data: updated } = await admin.from("payments").update({ status: "REFUND_PENDING" })
-              .eq("enrollment_id", e.id).eq("status", "RETAINED").select("id");
-            refundPendingCount += updated?.length ?? 0;
+        // No realizada: NO se reembolsa de inmediato. Se abre una ventana de 24h para
+        // reagendar; los pagos quedan RETAINED y las inscripciones ACTIVE. Si nadie
+        // reagenda en el plazo, el cron process_class_reschedule_timeouts hace el refund.
+        rescheduleDeadline = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
 
-            // Notificación al alumno
-            await admin.from("notifications").insert({
-              user_id: e.student_id,
-              title: "Clase suspendida",
-              message: "La clase fue suspendida. Se procesará tu reembolso.",
-              type: "CLASS_SUSPENDED",
-            });
-          }
-        }
-
-        // Cancelar enrollments (la clase no se realizó)
-        await admin.from("enrollments")
-          .update({ status: "CANCELLED" })
-          .eq("class_id", body.classId).eq("status", "ACTIVE");
-
-        // Liberar bloques OCCUPIED (la sede recupera el horario)
+        // Libera los bloques del horario viejo (la clase no ocurrió ahí).
         await admin.from("room_schedule_blocks")
           .update({ status: "AVAILABLE", class_id: null })
           .eq("class_id", body.classId).eq("status", "OCCUPIED");
+
+        // Notifica al responsable de reagendar según el tipo de clase.
+        const tipoClase = (cls as any).tipo_clase;
+        if (tipoClase !== "ASIGNADA") {
+          // PROPIA: el profesor independiente decide si reagenda.
+          await admin.from("notifications").insert({
+            user_id: (cls as any).teacher_id,
+            title: "Clase marcada como no realizada",
+            message: "Tienes 24 horas para reagendarla; si no, se reembolsará a los alumnos.",
+            type: "CLASS_RESCHEDULE_OFFERED",
+          });
+        }
+        // ASIGNADA: la sede (que la marcó) gestiona el reagendamiento desde su UI.
       }
 
       await admin.from("classes").update({
         status: body.realized ? "COMPLETED" : "SUSPENDED",
+        reschedule_deadline: rescheduleDeadline,
       }).eq("id", body.classId);
 
       await admin.from("audit_logs").insert({
@@ -132,7 +129,7 @@ export default {
         resource_id: body.classId,
         ...(body.realized
           ? { metadata: { payouts_created: payoutsCreated } }
-          : { metadata: { payments_refund_pending: refundPendingCount } }),
+          : { metadata: { reschedule_deadline: rescheduleDeadline } }),
       });
 
       logInfo(body.realized ? "class_confirmed" : "class_not_realized", { classId: body.classId });

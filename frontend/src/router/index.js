@@ -225,6 +225,12 @@ const routes = [
         meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
       },
       {
+        path: 'profesor/reagendamientos',
+        name: 'ProfesorReagendamientos',
+        component: () => import('@/views/profesor/ProfesorReagendamientosPage.vue'),
+        meta: { requiresAuth: true, roles: ['TEACHER'], requiresIdentity: true }
+      },
+      {
         path: 'profesor/crear-borrador',
         name: 'ProfesorCrearBorrador',
         component: () => import('@/views/profesor/ProfesorCrearBorradorPage.vue'),
@@ -265,6 +271,12 @@ const routes = [
         path: 'sede/clases-por-confirmar',
         name: 'SedeClasesPorConfirmar',
         component: () => import('@/views/sede/SedeClasesPorConfirmarPage.vue'),
+        meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
+      },
+      {
+        path: 'sede/reagendar/:classId',
+        name: 'SedeReagendarClase',
+        component: () => import('@/views/sede/SedeReagendarClasePage.vue'),
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {

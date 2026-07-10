@@ -31,6 +31,7 @@ BEGIN
     FROM pg_constraint con
     WHERE con.contype = 'f'
       AND con.confrelid = 'auth.users'::regclass
+      AND con.connamespace = 'public'::regnamespace  -- sólo tablas de public (no el esquema auth de Supabase, que no nos pertenece)
       AND array_length(con.conkey, 1) = 1   -- sólo FKs de una columna (todas lo son)
   LOOP
     SELECT attname, NOT attnotnull

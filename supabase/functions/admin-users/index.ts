@@ -85,7 +85,10 @@ export default {
     } catch (err) {
       logError("admin_users_error", err);
       if (err instanceof z.ZodError) return Response.json({ error: "Invalid input", details: err.flatten() }, { status: 400 });
-      return Response.json({ error: "Internal error" }, { status: 500 });
+      // Se expone el mensaje real (función solo para ADMIN) para que el panel
+      // muestre la causa concreta en vez de un "Error interno" opaco.
+      const message = err instanceof Error ? err.message : "Error interno";
+      return Response.json({ error: message, message }, { status: 500 });
     }
   }),
 };

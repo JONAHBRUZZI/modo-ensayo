@@ -231,6 +231,7 @@ async function toggleUser(u) {
   try {
     await adminService.toggleUser(u.id, '')
     u.enabled = !u.enabled
+    toast.success(`Usuario ${u.email} activado.`)
   } catch (e) {
     toast.error(e?.response?.data?.message || 'Error al cambiar estado del usuario')
   }
@@ -243,9 +244,11 @@ async function confirmarSuspension() {
   }
   suspendiendo.value = true
   try {
+    const email = suspendTarget.value.email
     await adminService.toggleUser(suspendTarget.value.id, suspendMotivo.value)
     suspendTarget.value.enabled = !suspendTarget.value.enabled
     cerrarSuspender()
+    toast.success(`Usuario ${email} suspendido.`)
   } catch (e) {
     toast.error(e?.response?.data?.message || 'Error al suspender el usuario')
   }
@@ -267,10 +270,12 @@ async function confirmarEliminacion() {
   if (!usuarioAEliminar.value) return
   eliminando.value = true
   errorEliminar.value = ''
+  const email = usuarioAEliminar.value.email
   try {
     await adminService.deleteUser(usuarioAEliminar.value.id)
     users.value = users.value.filter(u => u.id !== usuarioAEliminar.value.id)
     usuarioAEliminar.value = null
+    toast.success(`El usuario ${email} ha sido eliminado.`)
   } catch (e) {
     errorEliminar.value = e?.response?.data?.message || 'Error al eliminar el usuario'
   } finally {

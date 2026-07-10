@@ -245,7 +245,26 @@ Todo dentro del dashboard, sin servicios externos.
 
 ---
 
-## 10. Pendiente / fuera de alcance (para contexto)
+## 10. Gestión de usuarios (admin): eliminación en cascada + mensajes de confirmación (desplegada)
+
+**Qué:** en el panel de usuarios del admin, el botón **Eliminar** fallaba con "Error al eliminar
+el usuario" cuando el usuario tenía datos asociados, porque muchas FKs a `auth.users` no tenían
+acción de borrado (violación de llave foránea). Ahora:
+- **Migración** `20260709000000_user_delete_cascade.sql`: recorre todas las FKs que apuntan a
+  `auth.users` y las ajusta — NOT NULL (propiedad del usuario) → `ON DELETE CASCADE`; NULLABLE
+  (revisor / actor de auditoría) → `ON DELETE SET NULL` (conserva el registro histórico). El
+  borrado de un usuario ahora limpia sus datos en cascada.
+- **`admin-users`**: la Edge Function ahora devuelve el **mensaje de error real** (antes un
+  "Internal error" opaco), útil para el admin.
+- **Frontend**: se agregan **mensajes de éxito** ("El usuario … ha sido eliminado", "… suspendido",
+  "… activado"). Los modales de confirmación (con motivo obligatorio en suspender) ya existían.
+**Archivos:** `migrations/20260709000000_user_delete_cascade.sql`, `functions/admin-users/index.ts`,
+`views/admin/AdminUsuariosPage.vue`.
+**Estado:** frontend desplegado; **requiere aplicar la migración + redeploy de `admin-users`**.
+
+---
+
+## 11. Pendiente / fuera de alcance (para contexto)
 
 - **Desembolso real a profesores**: `process-payouts` → `disburseToSeller` es un **stub de Fase 0**
   (money-out MercadoPago Chile sin definir). Los `teacher_payouts` quedan PENDING; el dinero no se gira.
@@ -267,3 +286,4 @@ Todo dentro del dashboard, sin servicios externos.
 7. Aplicar `20260708000000_attendance_upsert.sql` en el SQL Editor (asistencia 7). ✅ aplicada 08-jul.
 8. `supabase functions deploy ga-metrics` (Google Analytics 9) + secretos `GA_PROPERTY_ID`/`GA_SERVICE_ACCOUNT`. ✅ desplegada 08-jul.
 9. Aplicar `20260708100000_uptime_heartbeat.sql` en el SQL Editor + `supabase functions deploy admin-metrics` (M4 latido 8.1). ⏳ pendiente.
+10. Aplicar `20260709000000_user_delete_cascade.sql` en el SQL Editor + `supabase functions deploy admin-users` (gestión de usuarios 10). ⏳ pendiente.

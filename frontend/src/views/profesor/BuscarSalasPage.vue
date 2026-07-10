@@ -273,6 +273,8 @@ const auth = useAuth()
 const { syncAtributos, identidadValidada } = auth
 
 const borradorId = computed(() => route.query.borradorId || null)
+// Si viene de reagendar una clase caída, el motivo se envía al crear la reserva.
+const rescheduleReason = computed(() => route.query.rescheduleReason || null)
 const alertaIdentidad = ref(false)
 const venues = ref([])
 const loading = ref(true)
@@ -624,7 +626,7 @@ async function pagar() {
     if (!blockIds.length) throw new Error('sin bloques')
 
     const { initPoint } = await paymentService.reserveRoomPreference(
-      room.id, blockIds, borradorId.value || null
+      room.id, blockIds, borradorId.value || null, rescheduleReason.value || null
     )
     if (initPoint) { window.location.href = initPoint; return }
     throw new Error('sin initPoint')

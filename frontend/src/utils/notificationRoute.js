@@ -7,6 +7,9 @@
 const RUTAS_POR_TIPO = {
   RESCHEDULE_PENDING: '/alumno/mis-clases',
   RESCHEDULE_REJECTED: '/alumno/mis-clases',
+  // El profesor independiente, ante una clase caída, va a su pestaña de
+  // reagendamientos para decidir si reagenda dentro del plazo de 24h.
+  CLASS_RESCHEDULE_OFFERED: '/profesor/reagendamientos',
 }
 
 export function rutaNotificacion(type) {

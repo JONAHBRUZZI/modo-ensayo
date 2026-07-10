@@ -10,6 +10,8 @@ const BodySchema = z.object({
   roomId: z.string().uuid(),
   blockIds: z.array(z.string().uuid()).min(1).max(24),
   borradorId: z.string().uuid().nullish(),
+  // Motivo cuando el arriendo completa un reagendamiento de una clase caída.
+  rescheduleReason: z.string().max(500).nullish(),
 });
 
 export default {
@@ -93,6 +95,7 @@ export default {
           roomId: body.roomId, roomName: room.name, venueId: venue.id,
           sellerUserId: venue.admin_id, blockIds: body.blockIds,
           borradorId: body.borradorId ?? null, amount, marketplaceFee,
+          rescheduleReason: body.rescheduleReason ?? null,
         },
       });
 

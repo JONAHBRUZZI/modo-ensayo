@@ -90,8 +90,8 @@ export default {
   // Crea la preferencia de pago (con split) para arrendar una sala. Devuelve
   // { initPoint } al que se redirige al profesor. La reserva se materializa en
   // el webhook al aprobarse el pago.
-  async reserveRoomPreference(roomId, blockIds, borradorId = null) {
-    return invokeFunction('reserve-room-preference', { body: { roomId, blockIds, borradorId } })
+  async reserveRoomPreference(roomId, blockIds, borradorId = null, rescheduleReason = null) {
+    return invokeFunction('reserve-room-preference', { body: { roomId, blockIds, borradorId, rescheduleReason } })
   },
 
   async createMercadoPagoPreference() {

@@ -99,6 +99,19 @@ export default {
     return camelize(data)
   },
 
+  // Clases PROPIA caídas (no realizadas) dentro de la ventana de reagendamiento
+  // (reschedule_deadline no nulo). El profe decide reagendar antes del plazo.
+  async getMyRescheduleClasses() {
+    const uid = await currentUserId()
+    const { data, error } = await supabase
+      .from('classes').select(CLASS_WITH_RELATIONS)
+      .eq('teacher_id', uid).eq('status', 'SUSPENDED')
+      .not('reschedule_deadline', 'is', null)
+      .order('reschedule_deadline', { ascending: true })
+    if (error) throw error
+    return attachTeacherNames(camelize(data))
+  },
+
   async getTeacherDrafts() {
     const uid = await currentUserId()
     const { data, error } = await supabase

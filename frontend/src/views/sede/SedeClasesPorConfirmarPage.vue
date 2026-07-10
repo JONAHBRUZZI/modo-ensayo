@@ -119,13 +119,15 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import venueService from '@/services/venueService'
 import { formatDate } from '@/utils/dateFormatter'
 import BottomSheet from '@/components/BottomSheet.vue'
 
+const router = useRouter()
 const clases = ref([])
 const loading = ref(true)
-const modal = reactive({ abierto: false, titulo: '', mensaje: '', claseId: null, confirmandoRealizada: false, enviando: false })
+const modal = reactive({ abierto: false, titulo: '', mensaje: '', claseId: null, tipoClase: null, confirmandoRealizada: false, enviando: false })
 const detalle = reactive({ abierto: false, cargando: false, clase: null, alumnos: [] })
 const feedback = ref({ tipo: '', mensaje: '' })
 
@@ -162,6 +164,7 @@ async function abrirDetalle(c) {
 function abrirConfirmacion(c, realizada) {
   feedback.value = { tipo: '', mensaje: '' }
   modal.claseId = c.id
+  modal.tipoClase = c.tipoClase
   modal.confirmandoRealizada = realizada
   if (realizada) {
     modal.titulo = 'Confirmar clase realizada'
@@ -175,17 +178,26 @@ function abrirConfirmacion(c, realizada) {
 
 async function ejecutarConfirmacion() {
   modal.enviando = true
+  const classId = modal.claseId
+  const esNoRealizadaAsignada = !modal.confirmandoRealizada && modal.tipoClase === 'ASIGNADA'
   try {
-    if (modal.confirmandoRealizada) await venueService.confirmClassRealized(modal.claseId)
-    else await venueService.confirmClassNotRealized(modal.claseId)
-    clases.value = clases.value.filter(c => c.id !== modal.claseId)
+    if (modal.confirmandoRealizada) await venueService.confirmClassRealized(classId)
+    else await venueService.confirmClassNotRealized(classId)
+    clases.value = clases.value.filter(c => c.id !== classId)
     modal.abierto = false
     detalle.abierto = false
-    feedback.value = { tipo: 'success', mensaje: modal.confirmandoRealizada ? 'Clase confirmada como realizada.' : 'Clase marcada como no realizada.' }
+    modal.enviando = false
+    // Clase de la propia sede marcada no realizada → ofrecer reagendar de una vez
+    // (dentro de la ventana de 24h). Las PROPIA las reagenda el profesor.
+    if (esNoRealizadaAsignada) {
+      router.push(`/sede/reagendar/${classId}`)
+      return
+    }
+    feedback.value = { tipo: 'success', mensaje: modal.confirmandoRealizada ? 'Clase confirmada como realizada.' : 'Clase marcada como no realizada. El profesor puede reagendarla.' }
     setTimeout(() => feedback.value = { tipo: '', mensaje: '' }, 4000)
   } catch (e) {
     feedback.value = { tipo: 'error', mensaje: e?.response?.data?.message || 'Error al confirmar la clase.' }
+    modal.enviando = false
   }
-  modal.enviando = false
 }
 </script>

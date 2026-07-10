@@ -125,6 +125,10 @@
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Clases por Asignar</h3>
         <p class="text-gray-400 text-sm mt-2">Salas reservadas. Completa los datos de tu clase.</p>
       </router-link>
+      <router-link to="/profesor/reagendamientos" class="card hover:border-primary/50 transition-colors group">
+        <h3 class="text-lg font-semibold text-white group-hover:text-primary">Reagendamientos</h3>
+        <p class="text-gray-400 text-sm mt-2">Clases marcadas no realizadas para reagendar antes del plazo.</p>
+      </router-link>
       <router-link to="/profesor/calendario" class="card hover:border-primary/50 transition-colors group">
         <h3 class="text-lg font-semibold text-white group-hover:text-primary">Calendario</h3>
         <p class="text-gray-400 text-sm mt-2">Vista semanal de todas tus clases y reservas.</p>

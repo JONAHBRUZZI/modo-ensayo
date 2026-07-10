@@ -8,16 +8,33 @@
     <h1 class="text-3xl font-bold text-white mb-2">Panel de Sede</h1>
     <p class="text-gray-400 mb-8">Gestiona tu sede de ensayo</p>
 
+    <!-- Alerta urgente: clases pendientes de confirmación (siempre arriba) -->
+    <div v-if="stats.porConfirmar > 0" class="mb-8 rounded-xl bg-yellow-500/10 border border-yellow-500/30 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+      <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        <span class="text-yellow-200 text-sm font-medium">
+          {{ stats.porConfirmar === 1 ? 'Hay 1 clase esperando tu confirmación.' : `Hay ${stats.porConfirmar} clases esperando tu confirmación.` }}
+        </span>
+      </div>
+      <router-link to="/sede/clases-por-confirmar" class="px-4 py-2 rounded-lg bg-yellow-500 text-black text-sm font-semibold hover:bg-yellow-400 transition-colors whitespace-nowrap flex-shrink-0">
+        Confirmar ahora
+      </router-link>
+    </div>
+
     <!-- Stats operativos -->
     <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-      <div class="card">
+      <router-link to="/sede/salas" class="card hover:border-primary/50 transition-colors">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Salas</h3>
         <p class="text-3xl font-bold text-white">{{ stats.salas || 0 }}</p>
-      </div>
-      <div class="card">
+        <p class="text-[10px] text-gray-500 mt-1">Ver y gestionar salas →</p>
+      </router-link>
+      <router-link to="/sede/clases-por-confirmar" class="card hover:border-primary/50 transition-colors">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Por Confirmar</h3>
         <p class="text-3xl font-bold text-yellow-400">{{ stats.porConfirmar || 0 }}</p>
-      </div>
+        <p class="text-[10px] text-gray-500 mt-1">Confirmar clases realizadas →</p>
+      </router-link>
       <div class="card">
         <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingreso Total</h3>
         <p class="text-3xl font-bold text-green-400">${{ ingresoTotal.toLocaleString('es-CL') }}</p>
@@ -119,21 +136,6 @@
     </div>
     <div v-else class="card text-center py-8 mb-8">
       <p class="text-gray-500 text-sm">Aún no hay movimientos registrados.</p>
-    </div>
-
-    <!-- Alerta urgente: clases pendientes de confirmación -->
-    <div v-if="stats.porConfirmar > 0" class="mb-8 rounded-xl bg-yellow-500/10 border border-yellow-500/30 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
-      <div class="flex items-center gap-3">
-        <svg class="w-5 h-5 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-        </svg>
-        <span class="text-yellow-200 text-sm font-medium">
-          {{ stats.porConfirmar === 1 ? 'Hay 1 clase esperando tu confirmación.' : `Hay ${stats.porConfirmar} clases esperando tu confirmación.` }}
-        </span>
-      </div>
-      <router-link to="/sede/clases-por-confirmar" class="px-4 py-2 rounded-lg bg-yellow-500 text-black text-sm font-semibold hover:bg-yellow-400 transition-colors whitespace-nowrap flex-shrink-0">
-        Confirmar ahora
-      </router-link>
     </div>
 
     <!-- Acciones rápidas -->

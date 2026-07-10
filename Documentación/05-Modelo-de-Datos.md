@@ -184,6 +184,8 @@ Bloques de agenda generados por sala.
 | teacher_id | uuid | FK → auth.users(id), NOT NULL |
 | status | `class_status` | DEFAULT 'DRAFT' |
 | tipo_clase | `tipo_clase` | DEFAULT 'PROPIA' |
+| reschedule_deadline | timestamptz | Ventana de 24h para reagendar tras marcarse "no realizada"; NULL fuera de ella. El cron `process_class_reschedule_timeouts` reembolsa al vencer. |
+| honorario | numeric | Solo ASIGNADA: monto fijo al profesor dependiente |
 
 ### `class_status_history`
 | Columna | Tipo | Notas |
@@ -441,9 +443,12 @@ latidos registrados vs. esperados. Origen: `20260708100000_uptime_heartbeat.sql`
   (trigger `BEFORE INSERT` en `enrollments`: bloquea la fila de la clase con
   `FOR UPDATE` y rechaza si el cupo ACTIVE está lleno — cupo a prueba de
   concurrencia), `release_expired_holds`
-  (libera bloques HELD vencidos cada 5 min vía `pg_cron`), más helpers de RLS y
-  jobs de `pg_cron` para tareas programadas (regeneración de bloques, timeouts
-  de reagendamiento, `process-refunds` cada 10 min, `process-payouts` cada 15 min).
+  (libera bloques HELD vencidos cada 5 min vía `pg_cron`),
+  `process_reschedule_timeouts` (timeout 48h de la decisión del alumno) y
+  `process_class_reschedule_timeouts` (cada hora: reembolso diferido de las clases
+  no realizadas que no se reagendaron dentro de las 24h), más helpers de RLS y
+  jobs de `pg_cron` para tareas programadas (regeneración de bloques,
+  `process-refunds` cada 10 min, `process-payouts` cada 15 min).
 - **Migraciones**: el schema se versiona en `supabase/migrations/`. La base
   hosteada es la fuente de verdad; se sincroniza con la CLI.
 

@@ -264,7 +264,31 @@ acción de borrado (violación de llave foránea). Ahora:
 
 ---
 
-## 11. Pendiente / fuera de alcance (para contexto)
+## 11. Reagendamiento de clase NO realizada (reembolso diferido 24h) — PR #47 (desplegada 10-jul)
+
+**Qué:** al marcar una clase "no realizada", ya **no se reembolsa de inmediato**; se abre una
+ventana de **24h** (`classes.reschedule_deadline`) para reagendar. Pagos quedan `RETAINED`,
+inscripciones `ACTIVE`. Si nadie reagenda, el cron `process_class_reschedule_timeouts` (cada hora)
+reembolsa. Al reagendar, los alumnos aceptan/rechazan la nueva fecha (reusa `student-decision`).
+
+**Flujos:**
+- **PROPIA** (profe independiente): `confirm-class` notifica al profe (`CLASS_RESCHEDULE_OFFERED`);
+  en `/profesor/reagendamientos` (cuenta regresiva) pone motivo obligatorio y **paga** un arriendo
+  nuevo (`reserve-room-preference` con la clase como `borradorId` + `rescheduleReason`); el webhook
+  republica la clase y dispara la decisión del alumno.
+- **ASIGNADA** (clase de sede): la sede reagenda en su sala **sin pago** (`sede-reschedule-class` →
+  `/sede/reagendar/:classId`) y avisa al profesor dependiente.
+- Ambos reusan `_shared/reschedule.ts` (crea `reschedules` TEACHER_ACCEPTED + `reschedule_responses`
+  + notifica RESCHEDULE_PENDING, con el cron de 48h existente).
+
+**Archivos:** migración `20260708120000_class_reschedule_window.sql`; EFs `confirm-class`,
+`reserve-room-preference`, `mercadopago-webhook`, `sede-reschedule-class`, `_shared/reschedule.ts`;
+frontend `ProfesorReagendamientosPage.vue`, `SedeReagendarClasePage.vue`, `SedeClasesPorConfirmarPage.vue`,
+servicios y `notificationRoute.js`.
+**Decisiones:** reloj único 24h; independiente paga arriendo, sede no. *Futuro:* reglas 7d/72h.
+**Estado:** migración aplicada + EFs desplegadas + frontend en `main` (10-jul). **Prueba end-to-end pendiente.**
+
+## 12. Pendiente / fuera de alcance (para contexto)
 
 - **Desembolso real a profesores**: `process-payouts` → `disburseToSeller` es un **stub de Fase 0**
   (money-out MercadoPago Chile sin definir). Los `teacher_payouts` quedan PENDING; el dinero no se gira.
@@ -287,3 +311,4 @@ acción de borrado (violación de llave foránea). Ahora:
 8. `supabase functions deploy ga-metrics` (Google Analytics 9) + secretos `GA_PROPERTY_ID`/`GA_SERVICE_ACCOUNT`. ✅ desplegada 08-jul.
 9. Aplicar `20260708100000_uptime_heartbeat.sql` en el SQL Editor + `supabase functions deploy admin-metrics` (M4 latido 8.1). ⏳ pendiente.
 10. Aplicar `20260709000000_user_delete_cascade.sql` en el SQL Editor + `supabase functions deploy admin-users` (gestión de usuarios 10). ⏳ pendiente.
+11. Aplicar `20260708120000_class_reschedule_window.sql` + `supabase functions deploy confirm-class reserve-room-preference mercadopago-webhook sede-reschedule-class` (reagendamiento 11). ✅ aplicada + desplegadas 10-jul.

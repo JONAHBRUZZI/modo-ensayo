@@ -28,6 +28,10 @@ AS $$
     SELECT id FROM public.venues WHERE admin_id = auth.uid()
   ),
   -- Una fila por clase ofertada (no borrador ni cancelada) en las salas del usuario.
+  --   alumnos   = inscripciones ACTIVE          → numerador de OCUPACIÓN
+  --   capacidad = capacidad de la SALA          → denominador de OCUPACIÓN
+  --   presentes = asistentes marcados presentes → numerador de ASISTENCIA
+  --   marcados  = alumnos con lista pasada      → denominador de ASISTENCIA
   base AS (
     SELECT c.id,
            c.discipline,
@@ -36,7 +40,11 @@ AS $$
            r.name                                    AS sala,
            COALESCE(r.capacity, 0)                   AS capacidad,
            (SELECT COUNT(*) FROM public.enrollments e
-              WHERE e.class_id = c.id AND e.status = 'ACTIVE') AS alumnos
+              WHERE e.class_id = c.id AND e.status = 'ACTIVE')    AS alumnos,
+           (SELECT COUNT(*) FROM public.attendances a
+              WHERE a.class_id = c.id AND a.present)              AS presentes,
+           (SELECT COUNT(*) FROM public.attendances a
+              WHERE a.class_id = c.id)                            AS marcados
     FROM public.classes c
     JOIN public.rooms r ON r.id = c.room_id
     WHERE r.venue_id IN (SELECT id FROM mis_sedes)
@@ -49,6 +57,11 @@ AS $$
       CASE WHEN SUM(capacidad) > 0
            THEN ROUND(100.0 * SUM(alumnos) / SUM(capacidad))
            ELSE 0 END                                 AS "ocupacionPromedio",
+      -- Asistencia = presentes ÷ inscritos con lista pasada. NULL si aún no se
+      -- ha pasado lista en ninguna clase (el frontend muestra "—").
+      CASE WHEN SUM(marcados) > 0
+           THEN ROUND(100.0 * SUM(presentes) / SUM(marcados))
+           ELSE NULL END                              AS "asistencia",
       COALESCE(SUM(alumnos * precio), 0)              AS "ingresos"
     FROM base
   ),
@@ -57,7 +70,9 @@ AS $$
            COUNT(*)          AS clases,
            SUM(alumnos)      AS alumnos,
            CASE WHEN SUM(capacidad) > 0
-                THEN ROUND(100.0 * SUM(alumnos) / SUM(capacidad)) ELSE 0 END AS ocupacion
+                THEN ROUND(100.0 * SUM(alumnos) / SUM(capacidad)) ELSE 0 END AS ocupacion,
+           CASE WHEN SUM(marcados) > 0
+                THEN ROUND(100.0 * SUM(presentes) / SUM(marcados)) ELSE NULL END AS asistencia
     FROM base
     GROUP BY sala
   ),
@@ -66,7 +81,9 @@ AS $$
            COUNT(*)      AS clases,
            SUM(alumnos)  AS alumnos,
            CASE WHEN SUM(capacidad) > 0
-                THEN ROUND(100.0 * SUM(alumnos) / SUM(capacidad)) ELSE 0 END AS ocupacion
+                THEN ROUND(100.0 * SUM(alumnos) / SUM(capacidad)) ELSE 0 END AS ocupacion,
+           CASE WHEN SUM(marcados) > 0
+                THEN ROUND(100.0 * SUM(presentes) / SUM(marcados)) ELSE NULL END AS asistencia
     FROM base
     GROUP BY discipline
   ),
@@ -75,9 +92,11 @@ AS $$
            COUNT(*)      AS clases,
            SUM(alumnos)  AS alumnos,
            CASE WHEN SUM(capacidad) > 0
-                THEN ROUND(100.0 * SUM(alumnos) / SUM(capacidad)) ELSE 0 END AS ocupacion
+                THEN ROUND(100.0 * SUM(alumnos) / SUM(capacidad)) ELSE 0 END AS ocupacion,
+           CASE WHEN SUM(marcados) > 0
+                THEN ROUND(100.0 * SUM(presentes) / SUM(marcados)) ELSE NULL END AS asistencia
     FROM (
-      SELECT alumnos, capacidad,
+      SELECT alumnos, capacidad, presentes, marcados,
              CASE
                WHEN start_time IS NULL THEN 'Sin fecha'
                WHEN EXTRACT(HOUR FROM (start_time AT TIME ZONE 'America/Santiago')) < 12 THEN 'Mañana (06–12 h)'

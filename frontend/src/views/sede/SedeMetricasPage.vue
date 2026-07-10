@@ -19,7 +19,7 @@
 
     <div v-else class="space-y-10">
       <!-- KPIs -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         <div class="card">
           <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Total Clases</h3>
           <p class="text-3xl font-bold text-white">{{ kpis.totalClases || 0 }}</p>
@@ -29,8 +29,14 @@
           <p class="text-3xl font-bold text-green-400">{{ kpis.totalAlumnos || 0 }}</p>
         </div>
         <div class="card">
-          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ocupación Promedio</h3>
+          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ocupación</h3>
           <p class="text-3xl font-bold text-primary">{{ kpis.ocupacionPromedio || 0 }}%</p>
+          <p class="text-[10px] text-gray-500 mt-1">Inscritos ÷ capacidad de sala</p>
+        </div>
+        <div class="card">
+          <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Asistencia</h3>
+          <p class="text-3xl font-bold" :class="ocupacionColor(kpis.asistencia)">{{ pct(kpis.asistencia) }}</p>
+          <p class="text-[10px] text-gray-500 mt-1">Presentes ÷ inscritos</p>
         </div>
         <div class="card">
           <h3 class="text-gray-500 text-xs uppercase tracking-wider mb-2">Ingresos</h3>
@@ -50,6 +56,7 @@
                 <th class="text-right py-2 px-2">Clases</th>
                 <th class="text-right py-2 px-2">Alumnos</th>
                 <th class="text-right py-2 px-2">Ocupación</th>
+                <th class="text-right py-2 px-2">Asistencia</th>
               </tr>
             </thead>
             <tbody>
@@ -58,6 +65,7 @@
                 <td class="py-2 px-2 text-right text-gray-400">{{ d.clases }}</td>
                 <td class="py-2 px-2 text-right text-green-400 font-medium">{{ d.alumnos }}</td>
                 <td class="py-2 px-2 text-right"><span :class="ocupacionColor(d.ocupacion)">{{ d.ocupacion }}%</span></td>
+                <td class="py-2 px-2 text-right"><span :class="ocupacionColor(d.asistencia)">{{ pct(d.asistencia) }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -76,6 +84,7 @@
                 <th class="text-right py-2 px-2">Clases</th>
                 <th class="text-right py-2 px-2">Alumnos</th>
                 <th class="text-right py-2 px-2">Ocupación</th>
+                <th class="text-right py-2 px-2">Asistencia</th>
               </tr>
             </thead>
             <tbody>
@@ -84,6 +93,7 @@
                 <td class="py-2 px-2 text-right text-gray-400">{{ s.clases }}</td>
                 <td class="py-2 px-2 text-right text-gray-300">{{ s.alumnos }}</td>
                 <td class="py-2 px-2 text-right"><span :class="ocupacionColor(s.ocupacion)">{{ s.ocupacion }}%</span></td>
+                <td class="py-2 px-2 text-right"><span :class="ocupacionColor(s.asistencia)">{{ pct(s.asistencia) }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -99,6 +109,7 @@
             <h3 class="text-gray-300 text-sm font-medium mb-2">{{ h.franja }}</h3>
             <p class="text-2xl font-bold mb-1" :class="ocupacionColor(h.ocupacion)">{{ h.ocupacion }}%</p>
             <p class="text-xs text-gray-500">{{ h.clases }} clase{{ h.clases === 1 ? '' : 's' }} · {{ h.alumnos }} alumno{{ h.alumnos === 1 ? '' : 's' }}</p>
+            <p class="text-xs text-gray-500 mt-1">Asistencia: <span :class="ocupacionColor(h.asistencia)">{{ pct(h.asistencia) }}</span></p>
           </div>
         </div>
       </section>
@@ -119,9 +130,16 @@ const disciplinas = computed(() => stats.value.disciplinas || [])
 const horarios = computed(() => stats.value.horarios || [])
 const sinDatos = computed(() => !kpis.value.totalClases)
 
-// Verde (buena ocupación) → amarillo → rojo (baja ocupación, necesita atención).
-function ocupacionColor(pct) {
-  const n = Number(pct) || 0
+// Muestra el porcentaje, o "—" cuando el dato no aplica (p. ej. asistencia sin
+// lista pasada todavía → viene null desde la RPC).
+function pct(v) {
+  return v === null || v === undefined ? '—' : `${v}%`
+}
+
+// Verde (bueno) → amarillo → rojo (bajo, necesita atención). Gris si no hay dato.
+function ocupacionColor(v) {
+  if (v === null || v === undefined) return 'text-gray-500'
+  const n = Number(v) || 0
   if (n >= 70) return 'text-green-400'
   if (n >= 40) return 'text-yellow-400'
   return 'text-red-400'

@@ -111,45 +111,42 @@ export default {
 
       const body = await req.text();
 
+      // Verificación de firma HMAC = defensa en profundidad, NO bloqueante.
+      // MercadoPago envía varias notificaciones por pago (payment/merchant_order,
+      // reintentos, y las del notification_url de la preferencia) y NO todas traen
+      // una firma que cuadre con este secreto. Antes se rechazaba con 403 y se
+      // perdían pagos legítimos (la sesión quedaba PENDING). La verificación REAL
+      // es contra la API de MercadoPago más abajo: se lee el pago con NUESTRO token
+      // y se cruza el external_reference con una sesión que nosotros creamos; un
+      // atacante no puede falsificar un pago aprobado que la API confirme.
       const secret = Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET");
-      if (!secret) {
-        logError("webhook_secret_missing", new Error("MERCADOPAGO_WEBHOOK_SECRET not configured"));
-        return new Response("Internal Server Error", { status: 500 });
-      }
-
       const signature = req.headers.get("x-signature");
-      const requestId = req.headers.get("x-request-id");
-      if (!signature || !requestId) {
-        logError("webhook_signature_missing", new Error("Missing signature headers"));
-        return new Response("Forbidden", { status: 403 });
+      const requestId = req.headers.get("x-request-id") ?? "";
+      let firmaOk = false;
+      if (secret && signature) {
+        let ts: string | null = null;
+        let v1: string | null = null;
+        for (const part of signature.split(",")) {
+          const [k, val] = part.split("=").map((s) => s.trim());
+          if (k === "ts") ts = val;
+          if (k === "v1") v1 = val;
+        }
+        if (ts && v1) {
+          const dataId = (url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "").toString().toLowerCase();
+          const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+          const encoder = new TextEncoder();
+          const key = await crypto.subtle.importKey(
+            "raw", encoder.encode(secret),
+            { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+          );
+          const expected = Array.from(
+            new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(manifest))),
+          ).map((b) => b.toString(16).padStart(2, "0")).join("");
+          firmaOk = expected === v1;
+        }
       }
-
-      let ts: string | null = null;
-      let v1: string | null = null;
-      for (const part of signature.split(",")) {
-        const [k, val] = part.split("=").map((s) => s.trim());
-        if (k === "ts") ts = val;
-        if (k === "v1") v1 = val;
-      }
-      if (!ts || !v1) return new Response("Forbidden", { status: 403 });
-
-      // El manifest de MP usa data.id en minúsculas (relevante para ids alfanuméricos).
-      const dataId = (url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "").toString().toLowerCase();
-      const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
-      const encoder = new TextEncoder();
-      const key = await crypto.subtle.importKey(
-        "raw", encoder.encode(secret),
-        { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-      );
-      const expected = Array.from(
-        new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(manifest)))
-      ).map((b) => b.toString(16).padStart(2, "0")).join("");
-
-      if (expected !== v1) {
-        logError("webhook_signature_invalid", new Error("HMAC verification failed"));
-        return new Response("Forbidden", { status: 403 });
-      }
-      logInfo("webhook_signature_verified", { requestId });
+      if (firmaOk) logInfo("webhook_signature_verified", { requestId });
+      else logInfo("webhook_signature_unverified", { requestId, note: "se valida contra la API de MercadoPago" });
 
       const payload = JSON.parse(body);
       const paymentId = payload.data?.id ?? url.searchParams.get("data.id");

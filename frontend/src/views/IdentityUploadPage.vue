@@ -26,6 +26,7 @@
           <label class="block text-sm font-medium text-gray-300 mb-1">Numero de documento *</label>
           <input v-model="form.documentNumber" required class="input-field" :placeholder="form.documentType === 'RUT' ? '12.345.678-9' : 'Numero de pasaporte'" @input="formatearRut" @blur="validarRut" />
           <p v-if="rutError" class="text-xs text-red-400 mt-1">{{ rutError }}</p>
+          <p v-else-if="rutExiste" class="text-xs text-yellow-400 mt-1">RUT existente en la plataforma. Revisa que tus datos sean correctos.</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Nombre completo (segun documento) *</label>
@@ -103,6 +104,7 @@ const msg = ref('')
 const msgType = ref('')
 const form = reactive({ documentType: '', documentNumber: '', fullName: '', birthDate: '' })
 const rutError = ref('')
+const rutExiste = ref(false)
 const fullNameError = ref('')
 
 const maxBirthDate = computed(() => {
@@ -131,16 +133,27 @@ function formatearRut() {
   form.documentNumber = formatearRutUtil(form.documentNumber)
 }
 
-function validarRut() {
+async function validarRut() {
   rutError.value = ''
+  rutExiste.value = false
   if (form.documentType !== 'RUT' || !form.documentNumber) return
-  if (!validateRutUtil(form.documentNumber)) rutError.value = 'RUT invalido: el digito verificador no coincide'
+  if (!validateRutUtil(form.documentNumber)) {
+    rutError.value = 'RUT invalido: el digito verificador no coincide'
+    return
+  }
+  // RUT válido → consultar si ya está en la plataforma (no bloquea si la consulta falla).
+  try {
+    rutExiste.value = await userService.rutYaRegistrado(form.documentNumber)
+  } catch (err) {
+    console.error('Error al verificar RUT existente', err)
+  }
 }
 
 async function upload() {
   if (!file.value) { msg.value = 'Debes subir un documento'; msgType.value = 'error'; return }
   if (file.value.size > 5 * 1024 * 1024) { msg.value = 'El archivo no debe superar los 5MB'; msgType.value = 'error'; return }
   if (rutError.value) { msg.value = 'Corrige el RUT antes de enviar'; msgType.value = 'error'; return }
+  if (rutExiste.value) { msg.value = 'RUT existente en la plataforma. Revisa que tus datos sean correctos.'; msgType.value = 'error'; return }
 
   const fullName = form.fullName.trim()
   if (fullName.split(/\s+/).length < 2) {

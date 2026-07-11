@@ -71,6 +71,14 @@ export default {
     return camelize(data)
   },
 
+  // ¿El RUT ya está en uso por otra cuenta? RPC seguro (SECURITY DEFINER) que
+  // solo devuelve booleano; no expone de quién es (RLS impide leer RUT ajenos).
+  async rutYaRegistrado(rut) {
+    const { data, error } = await supabase.rpc('rut_ya_registrado', { p_rut: rut })
+    if (error) throw error
+    return !!data
+  },
+
   async uploadIdentityDocument(documentUrl, formData) {
     const uid = await currentUserId()
     const { data: row, error } = await supabase

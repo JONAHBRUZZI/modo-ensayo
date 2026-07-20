@@ -441,6 +441,9 @@ verify_jwt = true
 [functions.sede-reschedule-class]
 verify_jwt = true
 
+[functions.teacher-reschedule-class]
+verify_jwt = true
+
 [functions.admin-metrics]
 verify_jwt = true
 

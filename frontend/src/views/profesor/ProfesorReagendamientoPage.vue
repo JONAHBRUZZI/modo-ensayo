@@ -1,96 +1,199 @@
 <template>
-  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-3xl font-bold text-white mb-2">Reagendar Clase</h1>
-    <p class="text-gray-400 text-sm mb-8">Elige uno de los horarios disponibles de la sede y explica el motivo. Los alumnos serán notificados para aceptar o rechazar.</p>
+  <div
+    v-motion
+    :initial="{ opacity: 0, y: 16 }"
+    :enter="{ opacity: 1, y: 0, transition: { duration: 400 } }"
+    class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+  >
+    <div class="flex items-center justify-between mb-2">
+      <h1 class="text-2xl font-bold text-white">Reagendar clase</h1>
+      <router-link to="/profesor/clases-propias" class="text-sm text-gray-400 hover:text-white">← Volver</router-link>
+    </div>
+    <p class="text-gray-500 text-sm mb-8">
+      Elige otro horario disponible de la misma sala que ya arriendas y explica el motivo.
+      Los alumnos inscritos serán notificados para aceptar o rechazar.
+    </p>
 
-    <div v-if="loading" class="card text-center py-10 text-gray-400">Cargando horarios disponibles...</div>
-
-    <div v-else-if="slots.length === 0" class="card text-center py-10">
-      <p class="text-gray-300 font-medium">No hay horarios disponibles</p>
-      <p class="text-gray-500 text-sm mt-1">La sede no tiene bloques horarios libres para reagendar esta clase. Contacta a la sede para que habilite disponibilidad.</p>
+    <div v-if="loading" class="text-center text-gray-500 py-20">
+      <div class="inline-block w-6 h-6 border-2 border-primary/40 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-sm">Cargando...</p>
     </div>
 
-    <form v-else @submit.prevent="submit" class="card space-y-5">
-      <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">Nuevo horario *</label>
-        <div class="space-y-2">
-          <label v-for="s in slots" :key="s.id"
-                 class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-                 :class="slotSel === s.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/20'">
-            <input type="radio" :value="s.id" v-model="slotSel" class="text-primary" />
-            <div>
-              <p class="text-white text-sm">{{ formatSlot(s.startTime, s.endTime) }}</p>
-              <p class="text-gray-500 text-xs">{{ s.roomName }}</p>
-            </div>
-          </label>
+    <div v-else-if="error" class="card text-center py-10">
+      <p class="text-red-300 font-medium">{{ error }}</p>
+      <button @click="cargar" class="btn-secondary text-sm mt-4">Reintentar</button>
+    </div>
+
+    <div v-else class="space-y-6">
+      <div class="card">
+        <p class="text-gray-500 text-xs uppercase tracking-wider mb-1">Clase</p>
+        <p class="text-white font-semibold">{{ clase?.title || 'Clase' }}</p>
+        <p v-if="clase?.startTime" class="text-gray-500 text-xs mt-1">
+          Horario actual: {{ formatDate(clase.startTime) }}
+        </p>
+        <p v-if="nombreSala" class="text-gray-500 text-xs">Sala: {{ nombreSala }}</p>
+      </div>
+
+      <!-- Horarios disponibles de la misma sala -->
+      <div class="card">
+        <label class="block text-sm font-medium text-gray-300 mb-3">Nuevo horario</label>
+        <div v-if="cargandoBloques" class="text-gray-500 text-sm py-4">Cargando horarios...</div>
+        <div v-else-if="bloquesPorDia.length === 0" class="py-4">
+          <p class="text-gray-300 text-sm font-medium">No hay horarios disponibles</p>
+          <p class="text-gray-500 text-xs mt-1">
+            Esta sala no tiene bloques libres en los próximos 30 días. Contacta a la sede para que habilite disponibilidad.
+          </p>
         </div>
+        <div v-else class="space-y-4 max-h-96 overflow-y-auto pr-1">
+          <div v-for="dia in bloquesPorDia" :key="dia.fecha">
+            <p class="text-gray-400 text-xs font-medium mb-2">{{ dia.label }}</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="b in dia.bloques"
+                :key="b.id"
+                type="button"
+                @click="toggleBloque(b.id)"
+                :class="seleccionados.includes(b.id) ? 'bg-primary text-white border-primary' : 'text-gray-300 border-white/10 hover:border-primary/50'"
+                class="text-xs px-3 py-1.5 rounded-lg border transition-colors"
+              >
+                {{ hora(b.startTime) }}–{{ hora(b.endTime) }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <p v-if="seleccionados.length" class="text-primary text-xs mt-3">
+          {{ seleccionados.length }} bloque(s) seleccionado(s)
+        </p>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">Motivo *</label>
-        <textarea v-model="reason" rows="3" required class="input-field" placeholder="Explica el motivo del reagendamiento"></textarea>
+      <!-- Motivo -->
+      <div class="card">
+        <label class="block text-sm font-medium text-gray-300 mb-1">Motivo del reagendamiento *</label>
+        <textarea v-model="motivo" rows="3" maxlength="500" class="input-field w-full"
+                  placeholder="Se notificará a los alumnos con este motivo."></textarea>
       </div>
 
-      <p v-if="msg" :class="msgType === 'error' ? 'text-red-400' : 'text-green-400'" class="text-sm">{{ msg }}</p>
-
-      <button type="submit" :disabled="sending || !slotSel || !reason" class="btn-primary w-full">
-        {{ sending ? 'Enviando...' : 'Solicitar Reagendamiento' }}
+      <button @click="pedirConfirmar" :disabled="!puedeConfirmar" class="btn-primary w-full disabled:opacity-50">
+        Reagendar
       </button>
-    </form>
+    </div>
+
+    <BottomSheet v-model="confirmAbierto">
+      <h3 class="text-lg font-semibold text-white mb-2">¿Seguro del horario?</h3>
+      <p class="text-sm text-gray-400 mb-4">
+        La clase se moverá al horario seleccionado. Cada alumno inscrito tendrá 48 horas para aceptar
+        o rechazar; a quien rechace se le devuelve su pago.
+      </p>
+      <div class="flex justify-end gap-3">
+        <button @click="confirmAbierto = false" class="text-sm text-gray-400 hover:text-white">Revisar nuevamente</button>
+        <button @click="confirmar" :disabled="guardando" class="btn-primary text-sm disabled:opacity-50">
+          {{ guardando ? 'Reagendando...' : 'Estoy seguro' }}
+        </button>
+      </div>
+    </BottomSheet>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import classService from '@/services/classService'
+import scheduleService from '@/services/scheduleService'
 import rescheduleService from '@/services/rescheduleService'
+import BottomSheet from '@/components/BottomSheet.vue'
+import { useToast } from '@/composables/useToast'
+import { formatDate } from '@/utils/dateFormatter'
 
 const route = useRoute()
 const router = useRouter()
-const slots = ref([])
-const slotSel = ref(null)
-const reason = ref('')
-const loading = ref(true)
-const sending = ref(false)
-const msg = ref('')
-const msgType = ref('')
+const toast = useToast()
 
-onMounted(async () => {
-  try {
-    const res = await rescheduleService.getAvailableSlots(route.params.claseId)
-    slots.value = Array.isArray(res.data) ? res.data : []
-  } catch {
-    slots.value = []
-  } finally {
-    loading.value = false
+const loading = ref(true)
+const error = ref('')
+const clase = ref(null)
+const bloques = ref([])
+const cargandoBloques = ref(false)
+const seleccionados = ref([])
+const motivo = ref('')
+const confirmAbierto = ref(false)
+const guardando = ref(false)
+
+const nombreSala = computed(() => clase.value?.room?.name || '')
+const puedeConfirmar = computed(() => seleccionados.value.length > 0 && motivo.value.trim())
+
+const bloquesPorDia = computed(() => {
+  const map = {}
+  for (const b of bloques.value) {
+    const fecha = (b.startTime || '').slice(0, 10)
+    if (!map[fecha]) map[fecha] = { fecha, label: etiquetaDia(b.startTime), bloques: [] }
+    map[fecha].bloques.push(b)
   }
+  return Object.values(map)
 })
 
-async function submit() {
-  const slot = slots.value.find(s => s.id === slotSel.value)
-  if (!slot) return
-  sending.value = true
-  msg.value = ''
+function hora(iso) {
+  return new Date(iso).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+}
+function etiquetaDia(iso) {
+  return new Date(iso).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+function toggleBloque(id) {
+  const i = seleccionados.value.indexOf(id)
+  if (i >= 0) seleccionados.value.splice(i, 1)
+  else seleccionados.value.push(id)
+}
+
+// La clase se reagenda dentro de la MISMA sala (ya arrendada), así que los
+// horarios se leen de esa sala. Un error acá se muestra: no se disfraza de
+// "no hay horarios", que era lo que ocultaba el problema antes.
+async function cargar() {
+  loading.value = true
+  error.value = ''
+  seleccionados.value = []
   try {
-    await rescheduleService.propose(route.params.claseId, slot.startTime, reason.value)
-    msg.value = 'Reagendamiento solicitado. Los alumnos serán notificados para confirmar.'
-    msgType.value = 'success'
-    setTimeout(() => router.push('/profesor/clases-propias'), 1800)
-  } catch (e) {
-    msg.value = e.response?.data?.message || 'Error al solicitar reagendamiento'
-    msgType.value = 'error'
+    clase.value = await classService.getClassById(route.params.claseId)
+    if (!clase.value) {
+      error.value = 'No se encontró la clase.'
+      return
+    }
+    if (!clase.value.roomId) {
+      error.value = 'Esta clase no tiene una sala asignada, así que no se puede reagendar.'
+      return
+    }
+    cargandoBloques.value = true
+    const desde = new Date().toISOString()
+    const hasta = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
+    const data = await scheduleService.getRoomSchedule(clase.value.roomId, desde, hasta)
+    const ahora = Date.now()
+    bloques.value = (Array.isArray(data) ? data : [])
+      .filter(b => b.status === 'AVAILABLE' && new Date(b.startTime).getTime() > ahora)
+  } catch (err) {
+    console.error('Error al cargar horarios para reagendar', err)
+    error.value = err?.response?.data?.error || 'No se pudieron cargar los horarios disponibles.'
   } finally {
-    sending.value = false
+    cargandoBloques.value = false
+    loading.value = false
   }
 }
 
-function formatSlot(start, end) {
-  if (!start) return ''
-  const s = new Date(start)
-  const e = end ? new Date(end) : null
-  const fecha = s.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
-  const horaIni = s.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
-  const horaFin = e ? e.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
-  return `${fecha}, ${horaIni}${horaFin ? ' - ' + horaFin : ''}`
+function pedirConfirmar() {
+  if (puedeConfirmar.value) confirmAbierto.value = true
 }
+
+async function confirmar() {
+  guardando.value = true
+  try {
+    await rescheduleService.teacherRescheduleClass(
+      route.params.claseId, seleccionados.value, motivo.value.trim()
+    )
+    toast.success('Clase reagendada. Los alumnos fueron notificados para confirmar.')
+    router.push('/profesor/clases-propias')
+  } catch (err) {
+    toast.error(err?.response?.data?.error || 'No se pudo reagendar la clase')
+    guardando.value = false
+    confirmAbierto.value = false
+  }
+}
+
+onMounted(cargar)
 </script>

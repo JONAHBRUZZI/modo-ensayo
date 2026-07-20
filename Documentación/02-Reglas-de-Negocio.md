@@ -173,6 +173,19 @@ Cuando la sede marca una clase como **no realizada**, en vez de reembolsar de in
 
 ---
 
+## R16.2 — Reagendamiento de una clase PUBLICADA (antes de que ocurra)
+
+Distinto de R16.1 (clase ya caída), el **profesor** puede mover una clase suya que **todavía no ocurre** (`PUBLISHED` o `FULL`, con `start_time` futuro) desde `/profesor/clases/:claseId/reagendamiento`.
+
+- Solo a otro horario de la **misma sala** que ya arrienda → **no hay pago** (cambiar de sala implicaría un arriendo nuevo; queda fuera de alcance).
+- Motivo **obligatorio**; se muestran los bloques `AVAILABLE` reales de esa sala (30 días).
+- La Edge Function `teacher-reschedule-class` toma los bloques nuevos con guard atómico (si otro los tomó → 409 y la clase queda intacta), **libera los bloques del horario viejo** y actualiza `start_time`/`end_time`/`duration`. La sala y el cupo no cambian.
+- Los alumnos inscritos **aceptan o rechazan** la nueva fecha (reusa R16 / `student-decision`, 48h; el que rechaza recibe reembolso).
+
+*Fuera de alcance (futuro):* antelación mínima para reagendar y tope de reagendamientos por clase.
+
+---
+
 ## R17 — Reagendamiento masivo si Maestro rechaza
 
 Si el Maestro rechaza la propuesta de reagendamiento o no responde:

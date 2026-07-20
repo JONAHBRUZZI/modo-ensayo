@@ -250,12 +250,6 @@ const routes = [
         meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
       },
       {
-        path: 'sede/clases/:claseId/reagendamiento',
-        name: 'SedeReagendamiento',
-        component: () => import('@/views/sede/SedeReagendamientoPage.vue'),
-        meta: { requiresAuth: true, roles: ['VENUE_ADMIN'], requiresIdentity: true }
-      },
-      {
         path: 'sede/crear-clase',
         name: 'SedeCrearClase',
         component: () => import('@/views/sede/SedeCrearClasePage.vue'),

@@ -52,8 +52,11 @@ export default {
     return { data: camelize(data) }
   },
 
-  getAvailableSlots() {
-    throw { response: { status: 501, data: { message: 'getAvailableSlots requiere una Edge Function/RPC aún no migrada' } } }
+  // El profesor mueve una clase publicada suya a otro horario de la MISMA sala
+  // que ya arrienda (sin pago). Los alumnos inscritos deciden después.
+  async teacherRescheduleClass(classId, blockIds, reason) {
+    const data = await invokeFunction('teacher-reschedule-class', { body: { classId, blockIds, reason } })
+    return { data }
   },
 
   // Notificaciones (misma tabla que notificationService)

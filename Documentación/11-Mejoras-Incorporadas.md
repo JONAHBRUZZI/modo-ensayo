@@ -288,6 +288,28 @@ servicios y `notificationRoute.js`.
 **Decisiones:** reloj único 24h; independiente paga arriendo, sede no. *Futuro:* reglas 7d/72h.
 **Estado:** migración aplicada + EFs desplegadas + frontend en `main` (10-jul). **Prueba end-to-end pendiente.**
 
+## 11.1. Reagendar una clase PUBLICADA (profesor) — pantalla legacy arreglada
+
+**Problema:** `/profesor/clases/:id/reagendamiento` mostraba **siempre** "No hay horarios
+disponibles", aunque la sede tuviera bloques libres. Era una pantalla heredada de la migración
+desde Spring que **nunca funcionó**: `rescheduleService.getAvailableSlots()` era un **stub que
+lanzaba 501** y la página lo llamaba con un `catch` vacío, así que el error se ocultaba tras el
+mensaje de "sin horarios". Además, aunque hubiera horarios, `propose-reschedule` **respondía 403
+al profesor** (solo permitía ADMIN o VENUE_ADMIN).
+
+**Qué:** nueva EF `teacher-reschedule-class` (ver R16.2) + reescritura de la página, que ahora lee
+los bloques `AVAILABLE` **reales** de la sala de la clase con `scheduleService.getRoomSchedule`
+(mismo patrón que `SedeReagendarClasePage`), exige motivo, confirma en `BottomSheet` y **muestra
+los errores en pantalla** en vez de disfrazarlos de "no hay horarios".
+
+**Archivos:** EF `teacher-reschedule-class` (reusa `_shared/reschedule.ts`), `config.toml`,
+`rescheduleService.js` (stub 501 → `teacherRescheduleClass`), `ProfesorReagendamientoPage.vue`.
+Se elimina la vista legacy `SedeReagendamientoPage.vue` y su ruta: también estaba rota (usaba una
+variable `reason` inexistente → ReferenceError, y la sala elegida nunca se enviaba) y ninguna vista
+enlazaba a ella; la sede conserva `/sede/reagendar/:classId`.
+**Nota:** con esto `rescheduleService.propose` y la EF `propose-reschedule` quedan sin uso desde el
+frontend (no se eliminan por ahora).
+
 ## 12. Pendiente / fuera de alcance (para contexto)
 
 - **Desembolso real a profesores**: `process-payouts` → `disburseToSeller` es un **stub de Fase 0**
@@ -312,3 +334,4 @@ servicios y `notificationRoute.js`.
 9. Aplicar `20260708100000_uptime_heartbeat.sql` en el SQL Editor + `supabase functions deploy admin-metrics` (M4 latido 8.1). ⏳ pendiente.
 10. Aplicar `20260709000000_user_delete_cascade.sql` en el SQL Editor + `supabase functions deploy admin-users` (gestión de usuarios 10). ⏳ pendiente.
 11. Aplicar `20260708120000_class_reschedule_window.sql` + `supabase functions deploy confirm-class reserve-room-preference mercadopago-webhook sede-reschedule-class` (reagendamiento 11). ✅ aplicada + desplegadas 10-jul.
+12. `supabase functions deploy teacher-reschedule-class` (reagendar clase publicada 11.1). ⏳ pendiente. **Sin migración.**

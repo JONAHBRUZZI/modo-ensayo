@@ -31,20 +31,41 @@ modo-ensayo/
       features/             # Módulos por dominio (auth, cart, classes, payments, reschedules)
       hooks/                # Hooks (useNotifications)
       layouts/              # Layout compartido
-      pages/                # Vistas de acceso
       router/               # Vue Router con guards
       services/             # Clientes de dominio sobre el SDK de Supabase
       stores/               # Store de auth (singleton sobre Supabase Auth)
       utils/                # Utilidades (jwt, formato de fecha, validación RUT)
-      views/                # Vistas por rol (alumno, profesor, sede, admin)
+      views/                # >50 vistas organizadas por rol — es donde vive
+                             # el grueso de la UI (ver subsección siguiente)
   supabase/
     migrations/             # Migraciones SQL versionadas (schema, RLS, cron, etc.)
-    functions/              # Edge Functions (Deno + TypeScript)
+    functions/              # Edge Functions (Deno + TypeScript, ~28 funciones)
     config.toml             # Configuración del proyecto y verify_jwt por función
   Documentación/            # Documentación del proyecto
   Producto/                 # Artefactos del producto
   Gestión/                  # Gestión del equipo
 ```
+
+> Nota: `pages/` no existe como directorio propio — las vistas de acceso (login,
+> registro, home, carrito) son archivos `.vue` sueltos directamente en `views/`.
+
+### `frontend/src/views/` — dónde vive la mayoría del código de UI
+
+| Directorio | Rol |
+|---|---|
+| `views/alumno/` | Alumno — explorar/inscribirse, calendario, historial de pagos, reagendamiento |
+| `views/profesor/` | Profesor — clases propias/asignadas, borradores, calendario, métricas, reagendamiento |
+| `views/sede/` | Sede — salas, horarios, confirmaciones, métricas, reagendamiento |
+| `views/admin/` | Admin — usuarios, sedes, roles, pagos (`/admin/pagos`), métricas |
+| `views/*.vue` (raíz) | Compartidas: login, registro, carrito, home |
+
+Servicios adicionales no listados antes que sostienen flujos centrales:
+`sellerService.js` (conexión MercadoPago del profesor/sede),
+`professionalProfileService.js`, `uploadService.js`, `reviewService.js`.
+Edge Functions del ecosistema MercadoPago Connect/payouts que respaldan el flujo
+de pagos descrito más abajo: `mp-connect-start`/`mp-connect-callback` (OAuth de
+sede), `mp-oauth-start`/`mp-oauth-callback` (OAuth de profesor), `process-payouts`
+(liquidación de honorarios, stub Fase 0).
 
 ## Capa de servicios del frontend
 

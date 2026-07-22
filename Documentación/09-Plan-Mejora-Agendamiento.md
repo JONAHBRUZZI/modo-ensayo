@@ -1,8 +1,13 @@
 # Plan de Mejora · Sistema de Agendamiento y Reserva de Salas
 
-> **Versión:** 1.0 — 18-jun-2026
+> **Versión:** 1.1 — Actualizado 19-jul-2026 (auditoría doc vs. código)
 > **Complementa:** `07-Sistema-de-Agenda.md` (modelo base de horarios y bloques)
-> **Estado:** especificación aprobada, pendiente de implementación
+> **Estado real:** ⚠️ este documento seguía rotulado como "pendiente de
+> implementación", pero **6 de las 8 fases ya están implementadas** (Fases 1,
+> 2, 3, 4, 6, 7 — ver detalle en §7). **Solo la Fase 5 (clase-plantilla
+> reutilizable, no consumida al asignar) sigue siendo una brecha real y
+> vigente.** La Fase 8 (cierre de código muerto) está parcial. Ver también
+> `11-Mejoras-Incorporadas.md` para los PRs que fueron cerrando cada fase.
 
 Este documento captura la visión acordada para el flujo de **descubrimiento y
 reserva de salas** del maestro, el **calendario del alumno**, y el modelo de
@@ -116,49 +121,53 @@ experiencia. Se **agrupan según el tipo** de sala/disciplina:
 
 ---
 
-## 7. Plan de trabajo (8 fases)
+## 7. Plan de trabajo (8 fases) — estado real al 19-jul-2026
 
-### Fase 1 — Modelo de datos
-- Agregar `region` y `comuna` a `Venue` (entidad + columnas + formulario de
-  registro de sede + visible en admin y búsqueda). Lista estándar de regiones y
-  comunas de Chile.
-- **Clase-plantilla reutilizable:** la clase creada queda como plantilla
-  permanente (`DRAFT`); asignarla a una reserva **clona** una instancia
-  (`PUBLISHED` con sala + horario), dejando la plantilla intacta.
+### Fase 1 — Modelo de datos ✅ implementada
+- `region`/`comuna` en `venues` — presentes en el schema y usados como filtro
+  en `BuscarSalasPage.vue`.
+- **Clase-plantilla reutilizable:** ⚠️ **NO implementada** (ver Fase 5 — quedó
+  documentada aquí en la Fase 1 pero es, en la práctica, la misma brecha que
+  la Fase 5 describe con más detalle).
 
-### Fase 2 — Horario de la sede
-- Pulir la página de horario: acceso claro, botón **crear/editar horario**, y
-  CTA cuando la sede no tiene horario.
-- Migrar y limpiar el sistema viejo (`RoomAvailability`, `SedeSalaAgenda`
-  primitiva, seeder) → todo a `RoomScheduleBlock`.
+### Fase 2 — Horario de la sede ✅ implementada
+- Página de horario funcional; CTA cuando falta configurar.
+- `RoomAvailability` (el sistema viejo) **ya no existe** en el repo — no quedan
+  referencias en `frontend/src` ni `supabase/`.
 
-### Fase 3 — Características de sala por tipo
-- Agrupar/mostrar características según tipo (Danza vs Música) en el formulario
-  de sala, según la documentación.
+### Fase 3 — Características de sala por tipo ✅ implementada
+- `BuscarSalasPage.vue` agrupa características por disciplina
+  (`caracteristicasPorDisciplina`) y filtra según `filtros.disciplina`.
 
-### Fase 4 — Buscador visual del maestro
-- Filtros: región · comuna · disciplina · horario (rango) · características según
-  disciplina.
-- Resultados → sedes → salas → calendario → pinchar slot libre → **reserva**
-  (`bookSlot`).
+### Fase 4 — Buscador visual del maestro ✅ implementada
+- `BuscarSalasPage.vue` implementa la jerarquía sede → sala → calendario, con
+  los filtros descritos.
 
-### Fase 5 — Crear clase (plantilla) + asignar
-- "Crear Clase" del maestro = crear plantilla reutilizable.
-- "Mis reservas" → asignar una clase creada a una o varias reservas (reuso).
-- Migrar `asignarReserva`: clonar plantilla → instancia, sin consumir el
-  borrador.
+### Fase 5 — Crear clase (plantilla) + asignar ⚠️ NO implementada — brecha real vigente
+- `assign-reserva/index.ts` sigue **consumiendo** el borrador
+  (`UPDATE classes SET status='PUBLISHED' ... WHERE id = classId AND status='DRAFT'`
+  sobre la **misma fila**) en vez de clonarlo en una instancia nueva. Una clase-
+  plantilla no puede reutilizarse en varias reservas hoy — sigue siendo tal
+  cual la brecha original de este plan.
 
-### Fase 6 — Reagendar con calendario
-- Reagendar = pinchar sala → calendario tomado/libre → elegir slot.
-- Migrar `RescheduleService` a `RoomScheduleBlock` (quitar el bypass temporal).
+### Fase 6 — Reagendar con calendario ✅ implementada
+- El mecanismo vigente (`teacher-reschedule-class`, `sede-reschedule-class`,
+  ver `02-Reglas-de-Negocio.md` R16.1/R16.2) ya usa `room_schedule_blocks` real,
+  con guard atómico y sin bypass. El mecanismo viejo (`propose-reschedule` +
+  `teacher-decision`) sigue en el código pero está huérfano de UI (ver R15/R18).
 
-### Fase 7 — Calendario del alumno
-- `MisClasesCalendario`: vistas **propio · por asociado · mixto**.
-- Verificar/implementar `GET /users/me/calendar`.
+### Fase 7 — Calendario del alumno ✅ implementada (con matiz)
+- `MisClasesCalendarioPage.vue` tiene las vistas **propio · por asociado ·
+  mixto**. `scheduleService.getUserCalendar()` sigue siendo un stub que lanza
+  error 501, pero **el calendario del alumno no depende de él** — usa otra
+  fuente de datos real. El stub es código muerto, no una brecha funcional.
 
-### Fase 8 — Cierre
-- Eliminar código muerto del sistema viejo.
-- Verificación E2E de cada flujo + ajustar tests.
+### Fase 8 — Cierre ⚠️ parcial
+- Se fue eliminando código muerto de forma incremental (ver
+  `11-Mejoras-Incorporadas.md` §11.1: se retiró `SedeReagendamientoPage.vue`).
+  Pendiente: limpiar el mecanismo huérfano `propose-reschedule`/`teacher-decision`
+  si se confirma que no se retomará (ver R15/R17/R18), y resolver la Fase 5.
 
-**Orden de construcción:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8. Cada fase deja algo
-usable y verificable.
+**Conclusión:** de las 8 fases, **6 están implementadas**, la **Fase 5 sigue
+pendiente** (es la única brecha funcional real de este plan) y la **Fase 8 es
+un cierre continuo**, no un hito único.

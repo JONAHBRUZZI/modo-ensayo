@@ -1,9 +1,11 @@
 # Modelo de Datos · Modo Ensayo
 
 > **Motor:** PostgreSQL 16 (Supabase)
-> **Esquema:** `public` (27 tablas) + `auth` (gestionado por Supabase Auth)
+> **Esquema:** `public` (34 tablas: 27 de la migración base + `mp_seller_accounts`,
+> `mp_oauth_states`, `app_settings`, `teacher_payouts`, `uptime_checks`,
+> `venue_teachers` de migraciones posteriores) + `auth` (gestionado por Supabase Auth)
 > **Seguridad:** Row Level Security (RLS) habilitado en todas las tablas
-> **Generado a partir del schema real del proyecto hosteado.**
+> **Generado a partir del schema real del proyecto hosteado. Actualizado 19-jul-2026.**
 
 ## 1. Identidad y autenticación
 
@@ -21,11 +23,11 @@ PK `id` = `auth.users.id`.
 | full_name | text | NOT NULL |
 | social_name | text | |
 | phone | text | |
-| rut | text | |
+| rut | text | UNIQUE |
 | identidad_validada | bool | DEFAULT false |
 | identidad_estado | text | DEFAULT 'SIN_VALIDAR' |
 | tiene_sede_aprobada | bool | DEFAULT false |
-| preferred_refund_method_id | uuid | FK → refund_methods(id) |
+| preferred_refund_method_id | uuid | **sin `REFERENCES` real** (relación "blanda" a `refund_methods.id`, no hay FK declarada en la BD) |
 | created_at / updated_at | timestamptz | |
 
 ### `professional_profiles`
@@ -88,6 +90,27 @@ Beneficiarios/familiares a cargo de un usuario.
 | tipo | `tipo_sede` | DEFAULT 'SEDE' |
 | rejection_reason | text | |
 | instagram, youtube, sitio_web, facebook | text | |
+| capacidad_maxima | int | Tope declarado de personas de la sede (`20260626000100_venue_capacity_fields.sql`) |
+| cantidad_salas | int | Cantidad de salas declaradas de la sede |
+
+### `venue_teachers`
+Vincula un **profesor dependiente** ("Maestro Dependiente") a una sede — la base
+de todo el flujo de clases `ASIGNADA`/`honorario`. Su migración de creación no
+está versionada en el repo (se aplicó directo en la BD hosteada); solo hay
+migraciones posteriores que la ajustan
+(`20260704000000_venue_teachers_polish.sql`, `20260703000000_venue_metrics_arriendo_y_add_teacher.sql`).
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | uuid | PK |
+| venue_id | uuid | FK → venues(id) |
+| teacher_id | uuid | FK → auth.users(id) ON DELETE CASCADE |
+| status | text | DEFAULT 'ACTIVE' |
+| created_at | timestamptz | |
+
+> **Unicidad:** `UNIQUE (venue_id, teacher_id)`. RLS: `vt_select_own` (el propio
+> profesor o el admin de esa sede). La escritura (alta de profesor dependiente)
+> ocurre vía el RPC `add_venue_teacher(venue_id, email)`, no directo desde el cliente.
 
 ### `rooms`
 Salas de una sede, con un amplio set de atributos de equipamiento.
@@ -145,7 +168,10 @@ Horario de apertura por día.
 | gap_between_blocks_min | int | DEFAULT 15 |
 
 ### `room_schedule_blocks`
-Bloques de agenda generados por sala.
+Bloques de agenda generados por sala. `UNIQUE (room_id, start_time)` (constraint
+`uq_rsb_room_start`, `20260623000000_fix_schedule_timezone.sql`) — es la que
+permite que `regenerate_schedule_blocks` use `ON CONFLICT DO NOTHING` real para
+no duplicar ni re-disponibilizar un bloque ya `OCCUPIED`.
 
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -153,7 +179,7 @@ Bloques de agenda generados por sala.
 | room_id | uuid | FK → rooms(id) |
 | start_time, end_time | timestamptz | |
 | status | `block_status` | DEFAULT 'AVAILABLE' |
-| class_id | uuid | FK → classes(id) |
+| class_id | uuid | **sin `REFERENCES` real** (relación "blanda" a `classes.id`; se limpia con `UPDATE ... class_id = NULL` directo, sin FK que lo obligue) |
 | held_until | timestamptz | Hasta cuándo está reservado temporalmente (HELD) |
 | held_by | uuid | FK → auth.users(id); usuario que inició el pago |
 
@@ -435,20 +461,59 @@ latidos registrados vs. esperados. Origen: `20260708100000_uptime_heartbeat.sql`
   frontend usa la clave anon/publishable y solo accede a lo que las políticas
   permiten. Las operaciones privilegiadas pasan por Edge Functions con la clave
   de servicio.
-- **Funciones / triggers**: `handle_new_user` (crea `profiles` al registrarse),
-  `get_my_attributes` (atributos derivados del usuario), `get_teacher_names(uuid[])`
-  (nombre público de profesores, `SECURITY DEFINER` acotado; salta la RLS de
-  `profiles` para mostrar el profesor en las vistas de clases), `track_class_status`
-  (audita transiciones en `class_status_history`), `enforce_class_capacity`
-  (trigger `BEFORE INSERT` en `enrollments`: bloquea la fila de la clase con
-  `FOR UPDATE` y rechaza si el cupo ACTIVE está lleno — cupo a prueba de
-  concurrencia), `release_expired_holds`
-  (libera bloques HELD vencidos cada 5 min vía `pg_cron`),
+- **Funciones / triggers de negocio**: `handle_new_user` (crea `profiles` al
+  registrarse), `get_my_attributes` (atributos derivados del usuario),
+  `get_teacher_names(uuid[])` (nombre público de profesores, `SECURITY DEFINER`
+  acotado; salta la RLS de `profiles` para mostrar el profesor en las vistas de
+  clases), `track_class_status` (audita transiciones en `class_status_history`),
+  `enforce_class_capacity` (trigger `BEFORE INSERT` en `enrollments`: bloquea la
+  fila de la clase con `FOR UPDATE` y rechaza si el cupo ACTIVE está lleno — cupo
+  a prueba de concurrencia, `20260707120000_enforce_class_capacity.sql`),
+  **`enforce_teacher_mp_connected`** (trigger que bloquea a nivel de BD que una
+  clase pase a `status='PUBLISHED'` si el profesor no tiene
+  `mp_seller_accounts.status='CONNECTED'`, `20260622000400_enforce_teacher_mp_connected.sql`),
+  `release_expired_holds` (libera bloques HELD vencidos cada 5 min vía `pg_cron`),
   `process_reschedule_timeouts` (timeout 48h de la decisión del alumno) y
   `process_class_reschedule_timeouts` (cada hora: reembolso diferido de las clases
-  no realizadas que no se reagendaron dentro de las 24h), más helpers de RLS y
-  jobs de `pg_cron` para tareas programadas (regeneración de bloques,
-  `process-refunds` cada 10 min, `process-payouts` cada 15 min).
+  no realizadas que no se reagendaron dentro de las 24h).
+
+- **RPCs de negocio invocables desde el frontend** (`supabase.rpc(...)`), además
+  de `get_my_attributes`:
+
+  | RPC | Uso |
+  |---|---|
+  | `get_my_seller_status()` | Estado de conexión MercadoPago del usuario (sin exponer tokens) |
+  | `rut_ya_registrado(p_rut)` | Chequeo de RUT duplicado en verificación de identidad (R05) |
+  | `get_teacher_names(uuid[])` | Nombre público de profesores para vistas de clases |
+  | `get_venue_classes(p_status)` | Clases de las sedes administradas por el usuario, con `tipo_clase`/nombre del profesor |
+  | `get_venue_class_detail(class_id)` / `get_venue_class_students(class_id)` | Detalle de una clase de sede + sus alumnos (también usado por el profesor dependiente) |
+  | `get_venue_metrics(p_granularidad)` | Ingresos por arriendo/clases y egreso a profesores por período |
+  | `get_venue_stats()` | KPIs de ocupación/asistencia/ingresos por sede |
+  | `add_venue_teacher(venue_id, email)` | Alta de un profesor dependiente en `venue_teachers` |
+  | `list_teacher_candidates()` | Sugerencias de email para autocompletar al vincular profesor dependiente |
+  | `get_venue_teacher_payouts()` | Cuánto se debe a cada profesor dependiente de la sede |
+
+  El resto de funciones (`is_enrolled`, `is_venue_admin`, `is_class_teacher`,
+  `assign_default_role`, `set_updated_at`) son helpers de RLS/triggers, no RPCs
+  pensadas para invocarse directo desde el cliente.
+
+- **Jobs de `pg_cron`** (12 en total):
+
+  | Job | Frecuencia | Efecto |
+  |---|---|---|
+  | `process-class-completion` | cada 30 min | `PUBLISHED` → `POR_VALIDAR` cuando `start_time` ya pasó |
+  | `process-reschedule-timeouts` | cada hora | Timeout 48h de decisión del alumno (mecanismo R16, huérfano de UI en su variante `teacher-decision`) |
+  | `process-class-reschedule-timeouts` | cada hora | Reembolso diferido de clases no realizadas sin reagendar en 24h (R16.1) |
+  | `regenerate-schedule-blocks` | semanal (lunes 04:00) | Regenera `room_schedule_blocks` 7 días adelante, `ON CONFLICT DO NOTHING` real |
+  | `release-expired-holds` | cada 5 min | Libera bloques `HELD` vencidos (arriendo de sala sin pago completado) |
+  | `process-refunds` | cada 10 min | Reembolsos parciales vía API MercadoPago |
+  | `process-payouts` | cada 15 min | Liquidación de `teacher_payouts` (stub Fase 0) |
+  | `health-check-rls` | cada 15 min | Cuenta tablas sin RLS habilitada, alerta en `system_metrics` |
+  | `snapshot-metrics` | cada hora | Snapshot de KPIs del sistema en `system_metrics` |
+  | `cleanup-old-metrics` | diario 03:00 | Purga `system_metrics` con más de 90 días |
+  | `uptime-heartbeat` | cada 5 min | Inserta un latido en `uptime_checks` (M4 disponibilidad) |
+  | `cleanup-uptime-checks` | diario 03:00 | Purga `uptime_checks` con más de 30 días |
+
 - **Migraciones**: el schema se versiona en `supabase/migrations/`. La base
   hosteada es la fuente de verdad; se sincroniza con la CLI.
 

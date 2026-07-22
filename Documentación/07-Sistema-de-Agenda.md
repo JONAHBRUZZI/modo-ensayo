@@ -1,7 +1,11 @@
 # Sistema de Agenda y Calendario · Modo Ensayo
 
-> **Versión:** 1.0 — 18-jun-2026
-> **Reemplaza:** `RoomAvailability` (entidad obsoleta)
+> **Versión:** 1.1 — Actualizado 19-jul-2026 (auditoría doc vs. código)
+> **Reemplaza:** `RoomAvailability` (entidad obsoleta, migración completada — ver §7)
+>
+> ⚠️ La **sección 6 (endpoints planificados)** describe una API REST estilo
+> Spring que nunca se implementó así — se reemplaza por Edge Functions +
+> PostgREST directo (ver la versión corregida de esa sección).
 
 ---
 
@@ -38,9 +42,11 @@ El sistema de agenda permite a cada Sede definir su horario laboral, generar aut
 | room_id | UUID | FK → rooms(id) ON DELETE CASCADE |
 | start_time | TIMESTAMPTZ | NOT NULL |
 | end_time | TIMESTAMPTZ | NOT NULL |
-| status | VARCHAR(15) | NOT NULL, CHECK IN ('AVAILABLE','OCCUPIED','MAINTENANCE') |
-| class_id | UUID | FK → classes(id), nullable (solo si OCCUPIED) |
-| INDEX | (room_id, start_time, status) | |
+| status | `block_status` (enum) | `AVAILABLE`, **`HELD`**, `OCCUPIED`, `MAINTENANCE` — `HELD` se agregó el 24-jun-2026 (`20260624000001_block_status_held.sql`), no estaba en la versión 1.0 de este doc |
+| class_id | UUID | **sin `REFERENCES` real** (relación "blanda"; nullable, se usa cuando `OCCUPIED`) |
+| held_until | TIMESTAMPTZ | Solo si `HELD`: hasta cuándo está reservado temporalmente mientras se paga el arriendo |
+| held_by | UUID | FK → auth.users(id); quién inició el pago que sostiene el `HELD` |
+| UNIQUE | (room_id, start_time) | `uq_rsb_room_start` — permite que la regeneración use `ON CONFLICT DO NOTHING` real (ver §7) |
 
 ### 2.4 `room_maintenances` — Registro histórico de mantenciones
 | Columna | Tipo | Constraints |
@@ -58,14 +64,23 @@ El sistema de agenda permite a cada Sede definir su horario laboral, generar aut
 ## 3. Estados de bloque
 
 ```
-AVAILABLE ──┬──→ OCCUPIED (al agendar clase)
+AVAILABLE ──┬──→ HELD (arriendo de sala: pago iniciado, ~15 min)
+            ├──→ OCCUPIED (al agendar clase directo, o al pagarse un HELD)
             ├──→ MAINTENANCE (admin marca mantención)
             └── (se mantiene)
+
+HELD ────────┬──→ OCCUPIED (pago aprobado)
+             └──→ AVAILABLE (cron release_expired_holds, held_until vencido)
 
 OCCUPIED ────→ AVAILABLE (al cancelar clase o reagendar)
 
 MAINTENANCE ──→ AVAILABLE (admin libera)
 ```
+
+`HELD` es el estado que sostiene un bloque mientras el profesor paga el arriendo
+de una sala (`reserve-room-preference`, MercadoPago Connect) — sin él, dos
+profesores podrían pagar por el mismo horario. Un cron cada 5 min
+(`release_expired_holds`) libera los `HELD` cuyo pago no se completó.
 
 ---
 
@@ -95,10 +110,17 @@ MAINTENANCE ──→ AVAILABLE (admin libera)
 - Filtrar por sala individual o ver todas
 
 ### Maestro Independiente
-- Buscador con filtros checkboxes (disciplina, características de sala)
+- Buscador con filtros checkboxes (disciplina, características de sala) —
+  `BuscarSalasPage.vue`
 - Calendario semanal combinado (todas las salas) o individual
 - Solo muestra AVAILABLE
-- Click en slot → formulario de reserva (crear clase nueva o asignar borrador)
+- Click en slot → **implica un pago real**: `reserve-room-preference` marca los
+  bloques elegidos como `HELD`, crea la preferencia de MercadoPago con split a
+  la sede (comisión configurable) y redirige al Checkout. Al aprobarse el pago,
+  el webhook los pasa a `OCCUPIED` y publica/crea la clase. Si no paga, el cron
+  `release_expired_holds` los libera. (El método `scheduleService.bookSlot()`
+  sigue existiendo en el código pero **ninguna vista lo invoca**; el flujo real
+  y único es el de pago vía `reserve-room-preference`.)
 
 ### Maestro Dependiente
 - Calendario semanal solo con SUS clases asignadas (OCCUPIED)
@@ -115,35 +137,33 @@ MAINTENANCE ──→ AVAILABLE (admin libera)
 
 ---
 
-## 6. Endpoints planificados
+## 6. Acceso real (Supabase, no REST propio)
 
-### Admin Sede
-| Method | Endpoint | Description |
-|---|---|---|
-| PUT | `/api/venues/{id}/schedule` | Configurar/editar horario laboral |
-| GET | `/api/venues/{id}/schedule` | Ver horario laboral |
-| PUT | `/api/venues/{id}/block-config` | Configurar duración de bloques |
-| GET | `/api/venues/{id}/block-config` | Ver configuración de bloques |
-| GET | `/api/venues/{id}/rooms/schedule` | Ver calendario de todas las salas |
-| GET | `/api/venues/rooms/{id}/schedule` | Ver calendario de una sala |
-| POST | `/api/venues/rooms/{id}/maintenance` | Marcar bloque como mantención |
-| DELETE | `/api/venues/rooms/maintenance/{id}` | Liberar mantención |
+No existe una API REST `/api/...` — el acceso es PostgREST directo (sujeto a
+RLS) o Edge Functions para lo privilegiado. Superficie real (ver también
+`06-API-Endpoints.md`):
 
-### Maestro
-| Method | Endpoint | Description |
+| Acceso | Vía | Uso |
 |---|---|---|
-| GET | `/api/rooms/available` | Buscar disponibilidad con filtros |
-| POST | `/api/rooms/{id}/book` | Reservar slot |
-
-### Alumno
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/users/me/calendar` | Calendario de mis clases |
+| Ver/editar horario laboral | `supabase.from('venue_schedules')` (PostgREST) | Admin de sede |
+| Ver/editar config. de bloques | `supabase.from('venue_block_configs')` | Admin de sede |
+| Ver calendario de una sala | `scheduleService.getRoomSchedule(roomId, from, to)` → `room_schedule_blocks` | Todos los roles (RLS filtra `AVAILABLE` para público) |
+| Marcar/liberar mantención | `scheduleService.markMaintenance()` / `releaseMaintenance()` → `room_maintenances` + `room_schedule_blocks` | Admin de sede |
+| Regenerar bloques manualmente | Edge Function `generate-blocks` → RPC `regenerate_schedule_blocks()` | Admin de sede / Admin |
+| Reservar sala (con pago) | Edge Function `reserve-room-preference` | Profesor (arriendo) |
+| Reservar sala (sin pago, uso interno) | Edge Function `book-slot` | Profesor/sede — sin caller real en el frontend hoy |
+| Calendario de mis clases (alumno) | `MisClasesCalendarioPage.vue` (fuente propia, no depende de `scheduleService.getUserCalendar()`) | Alumno. `getUserCalendar()` sigue siendo un stub que lanza error 501, pero ya no es la fuente real del calendario |
 
 ---
 
-## 7. Migración desde RoomAvailability
+## 7. Migración desde RoomAvailability — completada
 
-- `RoomAvailability` se elimina al final (Fase 7)
-- Los datos de disponibilidad se regeneran desde `RoomScheduleBlock`
-- Las clases existentes se vinculan a sus bloques OCCUPIED correspondientes
+- `RoomAvailability` **ya fue eliminado**: no queda ninguna referencia en el
+  repo (`frontend/src` ni `supabase/`). Esta migración terminó (ver también
+  `09-Plan-Mejora-Agendamiento.md`, Fase 2).
+- Los datos de disponibilidad se generan/regeneran desde `room_schedule_blocks`
+  (`regenerate_schedule_blocks()`, con `UNIQUE(room_id, start_time)` real desde
+  el 23-jun-2026 — antes de eso el `ON CONFLICT` no tenía constraint que lo
+  respaldara).
+- Las clases se vinculan a sus bloques `OCCUPIED` mediante `class_id` (relación
+  blanda, sin FK declarada en la BD).

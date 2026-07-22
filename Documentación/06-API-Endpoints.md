@@ -64,17 +64,17 @@ Definidas en `supabase/functions/`. `verify_jwt` se configura por función en
 
 | Función | Propósito |
 |---------|-----------|
-| `create-class` | Crear/publicar una clase (validaciones de negocio) |
-| `book-slot` | Reservar un cupo en una clase |
-| `assign-reserva` | Asignar una reserva a una clase |
-| `confirm-class` | Confirmar la realización de una clase |
-| `propose-reschedule` | Proponer una reprogramación |
-| `teacher-decision` | Decisión del profesor sobre reprogramación |
-| `student-decision` | Decisión del alumno sobre reprogramación |
-| `generate-blocks` | Generar bloques de horario |
-| `create-review` | Crear una reseña |
-| `register-venue` | Registrar una sede |
-| `admin-approve-venue` | Aprobar/rechazar sede (admin) |
+| `create-class` | Crea/publica una clase. Dos flujos con reglas de autorización propias: **`ASIGNADA`** (crea el `VENUE_ADMIN`/`ADMIN`, requiere `roomId`+`teacherId`, valida que la sala pertenezca a esa sede y que el profesor sea dependiente `ACTIVE` de esa misma sede vía `venue_teachers`) vs. **`PROPIA`** (crea el propio profesor; si publica, requiere identidad validada solo si ya tiene el rol `TEACHER` — R04 —, y además perfil profesional completo y MercadoPago conectado — R04.1/R04.2 —, con códigos `PROFILE_INCOMPLETE`/`MP_NOT_CONNECTED`). Asigna automáticamente el rol `TEACHER` si publica su primera clase sin tenerlo (R08). La capacidad se toma de `rooms.capacity`, no del formulario (R02) |
+| `book-slot` | Marca un **bloque de horario de sala** (`room_schedule_blocks`) como `OCCUPIED` y lo vincula a una clase — no es una inscripción de alumno (eso ocurre en `mercadopago-webhook`). Usa `service_role` con guard atómico (`.eq('status','AVAILABLE')`) contra dobles reservas; autoriza al `TEACHER` dueño de la clase o al `VENUE_ADMIN` dueño de la sede |
+| `assign-reserva` | Asigna un borrador (`DRAFT`) del profesor a una sala/horario concreto: valida que el borrador le pertenezca y esté en `DRAFT`, chequea conflicto de horario, reasigna los bloques `OCCUPIED` de la reserva-placeholder al borrador publicado, y asigna el rol `TEACHER` si el usuario no lo tiene aún |
+| `confirm-class` | Solo el `VENUE_ADMIN` dueño de la sede o `ADMIN` confirma si una clase se realizó. Si `realized=true`: pagos `RETAINED→RELEASED`, crea `teacher_payouts` (con `honorario` fijo si es `ASIGNADA`, o `gross - comisión` si es `PROPIA`), libera bloques. Si `realized=false`: **no reembolsa de inmediato** — abre ventana de 24h de reagendamiento (R16.1), pagos quedan `RETAINED`, notifica al profesor solo si la clase es `PROPIA` |
+| `propose-reschedule` ⚠️ | Solo `ADMIN` o el `VENUE_ADMIN` dueño de la sede puede proponer un reagendamiento (`reschedules` en `PROPOSED`) para una clase `PUBLISHED`, con una fecha arbitraria (no valida disponibilidad real de sala). **Huérfana**: ninguna vista del frontend la invoca desde el 19-jul-2026 (ver R15/R18) |
+| `teacher-decision` ⚠️ | El profesor dueño de la clase, o cualquier `VENUE_ADMIN`/`ADMIN`, acepta o rechaza una propuesta `PROPOSED` — no distingue `tipo_clase` (ver R18). Al aceptar mueve `classes.start_time/end_time` **sin tocar `room_schedule_blocks`** y abre 48h para los alumnos. Al rechazar, pasa los pagos `RETAINED` de esa clase a `REFUND_PENDING` (la clase **no** queda `CANCELLED`, ver R17). **Huérfana**: sin caller en el frontend |
+| `student-decision` | El alumno acepta o rechaza un reagendamiento propuesto (mecanismo R16, usado tanto por el flujo huérfano `teacher-decision` como por el vigente R16.1/R16.2 `triggerStudentReschedule`); al rechazar, sus `payments RETAINED` pasan a `REFUND_PENDING` |
+| `generate-blocks` | El `VENUE_ADMIN`/`ADMIN` dispara manualmente `regenerate_schedule_blocks()` (el mismo RPC que corre semanalmente por cron) |
+| `create-review` | Crea una reseña polimórfica (`CLASS`/`VENUE`/`STUDENT`, score 1–5); exige que el autor haya **participado** en la clase (inscrito `ACTIVE` o profesor de la clase) |
+| `register-venue` | Registra una sede/home studio; exige identidad validada (403 si no) del usuario; si el mismo admin tiene una sede previa `RECHAZADA`, la **reutiliza** (actualiza) en vez de crear una nueva |
+| `admin-approve-venue` | `ADMIN` aprueba o rechaza una sede. Al aprobar: `status='APROBADA'`, asigna el rol `VENUE_ADMIN` al dueño, marca `profiles.tiene_sede_aprobada=true` y notifica |
 | `admin-stats` | Estadísticas de la plataforma (admin) |
 | `admin-users` | Gestión de usuarios y roles (admin) |
 | `admin-payments` | Panel de pagos (admin, service role). Acciones: `list` (giros `teacher_payouts` PENDING enriquecidos + reembolsos `payments` FAILED con su error de `audit_logs`), `finance` (costo real de MercadoPago vs. comisión cobrada = **margen** del ciclo de corte), `markPayoutPaid` (PENDING→PAID + `mp_reference`), `retryRefund` (FAILED→REFUND_PENDING) y `markRefundResolved` (FAILED→REFUNDED). No-admin → 403 |
@@ -90,7 +90,7 @@ Definidas en `supabase/functions/`. `verify_jwt` se configura por función en
 | `mp-oauth-start` | Inicia OAuth de MercadoPago para conectar la cuenta del **profesor** (payouts); genera `state` anti-CSRF en `mp_oauth_states` y devuelve la URL de autorización |
 | `mp-oauth-callback` | Callback OAuth del profesor (sin JWT); valida `state`, canjea code→tokens y guarda la cuenta del vendedor |
 | `process-refunds` | Batch (pg_cron `*/10`, service role): procesa `payments` en REFUND_PENDING vía API MercadoPago. Reembolso **parcial** por el monto exacto de la inscripción (`{ amount: payment.amount }`) con `X-Idempotency-Key` por `payment.id`, y pasa a REFUNDED de forma idempotente. Errores 4xx de MP (permanentes) → `FAILED` + `audit_logs` (`payment.refund_failed`) para atención manual; 5xx/429 se reintentan en la próxima pasada |
-| `process-payouts` | Batch (pg_cron `*/15`, service role): liquida `teacher_payouts` en PENDING → PAID. **El desembolso real (`disburseToSeller`) es un stub de Fase 0** (money-out MercadoPago Chile pendiente); crea el payout pero no gira dinero aún |
+| `process-payouts` | Batch (pg_cron `*/15`, service role): intenta liquidar `teacher_payouts` en PENDING → PAID. **El desembolso real (`disburseToSeller`) es un stub de Fase 0** (money-out MercadoPago Chile pendiente): hoy la función **siempre falla** salvo que exista `MP_PAYOUT_MODE=live`, y aun en ese modo `disburseToSeller` no tiene implementación real — el cron no llega a marcar ningún payout `PAID` todavía |
 
 > Nota: `mp-oauth-*` conecta la cuenta del **profesor** (para recibir el honorario
 > vía `teacher_payouts`), mientras que `mp-connect-*` conecta la cuenta de la

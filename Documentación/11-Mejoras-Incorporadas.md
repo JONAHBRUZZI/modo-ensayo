@@ -288,6 +288,37 @@ servicios y `notificationRoute.js`.
 **Decisiones:** reloj único 24h; independiente paga arriendo, sede no. *Futuro:* reglas 7d/72h.
 **Estado:** migración aplicada + EFs desplegadas + frontend en `main` (10-jul). **Prueba end-to-end pendiente.**
 
+## 11.2. Auditoría de documentación vs. código + cierre RLS G-19/G-20 — 19-jul-2026
+
+**Qué:** auditoría completa de `Documentación/*.md` contra el código real (Edge
+Functions, migraciones, frontend). Se corrigieron `00-PRD.md`,
+`02-Reglas-de-Negocio.md`, `04-Arquitectura.md`, `05-Modelo-de-Datos.md`,
+`06-API-Endpoints.md`, `07-Sistema-de-Agenda.md`, `09-Plan-Mejora-Agendamiento.md`
+y `10-Analisis-Integracion.md`. Como parte de la re-verificación de hallazgos
+previos (capítulo 4 de `10-Analisis-Integracion.md`), se confirmó que **G-19 y
+G-20 seguían siendo vulnerabilidades RLS activas y explotables** (no solo
+teóricas): las políticas `resched_insert_auth` (`reschedules`) y
+`csh_insert_system` (`class_status_history`) tenían `WITH CHECK (true)` para
+`authenticated`, permitiendo a cualquier usuario logueado insertar directo vía
+PostgREST reagendamientos falsos o historial de auditoría falsificado.
+
+**Por qué se pudieron cerrar sin reemplazo:** ambas escrituras legítimas
+(`propose-reschedule` vía `service_role`; el trigger `track_class_status()`
+`SECURITY DEFINER`) bypasean RLS por completo, así que no dependían de estas
+políticas — se pudieron retirar sin agregar ninguna condición nueva, mismo
+patrón que ya usan `payment_sessions`/`enrollments`/`payments`/`audit_logs`.
+
+**Hallazgo adicional de la auditoría:** el mecanismo viejo de reagendamiento
+(`propose-reschedule` + `teacher-decision`) quedó **huérfano de UI** desde el
+PR #53 (19-jul-2026, ver 11.1) — ninguna vista lo invoca ya. Sus bugs de agenda
+(G-13/G-14/G-15: no sincroniza `room_schedule_blocks`, no valida disponibilidad)
+siguen presentes en el código pero ya no son alcanzables desde el frontend.
+
+**Archivos:** migración `20260719000000_fix_rls_reschedule_and_status_history.sql`;
+los 8 documentos listados arriba.
+**Estado:** migración **por aplicar** en SQL Editor; documentación en `main`
+tras mergear esta rama. Sin cambios de Edge Functions ni frontend.
+
 ## 12. Pendiente / fuera de alcance (para contexto)
 
 - **Desembolso real a profesores**: `process-payouts` → `disburseToSeller` es un **stub de Fase 0**
@@ -312,3 +343,4 @@ servicios y `notificationRoute.js`.
 9. Aplicar `20260708100000_uptime_heartbeat.sql` en el SQL Editor + `supabase functions deploy admin-metrics` (M4 latido 8.1). ⏳ pendiente.
 10. Aplicar `20260709000000_user_delete_cascade.sql` en el SQL Editor + `supabase functions deploy admin-users` (gestión de usuarios 10). ⏳ pendiente.
 11. Aplicar `20260708120000_class_reschedule_window.sql` + `supabase functions deploy confirm-class reserve-room-preference mercadopago-webhook sede-reschedule-class` (reagendamiento 11). ✅ aplicada + desplegadas 10-jul.
+12. Aplicar `20260719000000_fix_rls_reschedule_and_status_history.sql` en el SQL Editor (cierre G-19/G-20, auditoría 11.2). ⏳ pendiente. **Sin deploy de Edge Functions.**

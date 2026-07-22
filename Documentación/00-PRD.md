@@ -18,17 +18,20 @@ Los profesores freelance de artes escenicas pierden dinero cuando los alumnos ca
 - **Carrito de compras** para agregar clases con beneficiarios (asociados)
 - **Pago con MercadoPago Checkout Pro** (sandbox en dev)
 - **Sistema de pagos retenidos**: pago queda en estado RETAINED hasta que la clase se completa
-- **Liberacion automatica** de pagos al completar la clase (trigger en BD)
+- **Liberacion de pagos** al completar la clase (Edge Function `confirm-class`, no un trigger de BD — ver `02-Reglas-de-Negocio.md` R01/R13)
 - **Verificacion de identidad** de usuarios (documentos)
-- **Gestion de reembolsos** con metodos configurados por usuario
-- **Panel de administracion** con aprobacion de sedes, verificaciones de identidad, y gestion de roles
+- **Gestion de reembolsos** siempre via la API de MercadoPago (no via metodos configurados por el usuario — ver R09, corregida)
+- **Panel de administracion** con aprobacion de sedes, verificaciones de identidad, gestion de roles y panel de pagos/giros (`/admin/pagos`)
 
-### Funcionalidades Futuras (post-MVP)
+### Funcionalidades Futuras (post-MVP) ⚠️ ya implementadas, quedaron desactualizadas
 
-- Notificaciones en-app y por email
-- Reagendamiento de clases
-- Reportes y estadisticas
-- Calificaciones/resenas de clases y profesores
+> Esta lista describía funcionalidades como pendientes al momento de escribir
+> este PRD. Todas ya están implementadas (ver `11-Mejoras-Incorporadas.md`):
+
+- ~~Notificaciones en-app y por email~~ → notificaciones in-app implementadas (`notifications`, campana); email no implementado
+- ~~Reagendamiento de clases~~ → implementado end-to-end (`02-Reglas-de-Negocio.md` R16, R16.1, R16.2)
+- ~~Reportes y estadisticas~~ → implementado (`admin-stats`, `admin-metrics`, dashboards por rol)
+- ~~Calificaciones/resenas de clases y profesores~~ → implementado (`create-review`, tabla `reviews`)
 
 ## Roles
 
@@ -41,7 +44,12 @@ Los profesores freelance de artes escenicas pierden dinero cuando los alumnos ca
 ## Estados Operacionales
 
 ### Clase
-`SCHEDULED -> IN_PROGRESS -> COMPLETED -> [archivada]`
+
+> ⚠️ El enum real `class_status` no tiene `SCHEDULED` — es `PUBLISHED`. Estado
+> real (ver `05-Modelo-de-Datos.md` §8):
+
+`DRAFT -> PUBLISHED -> IN_PROGRESS -> POR_VALIDAR -> COMPLETED | SUSPENDED`
+(más `CANCELLED` — hoy inalcanzable en el código, ver R17 — y `FULL`, cupo lleno).
 
 ### Pago
 `RETAINED -> RELEASED` (al completar la clase)

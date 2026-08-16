@@ -288,6 +288,27 @@ servicios y `notificationRoute.js`.
 **Decisiones:** reloj único 24h; independiente paga arriendo, sede no. *Futuro:* reglas 7d/72h.
 **Estado:** migración aplicada + EFs desplegadas + frontend en `main` (10-jul). **Prueba end-to-end pendiente.**
 
+### 4.7 Fixes de robustez del webhook de MercadoPago — 11-jul-2026
+
+**Qué (2 commits, mismo día):**
+- **Inscribir aunque la clase haya cambiado de estado:** el webhook solo creaba la inscripción si
+  la clase seguía `PUBLISHED`. Si entre el pago y la llegada del webhook la clase pasaba a
+  `POR_VALIDAR` o `FULL` (por el cron de cierre de clase o por otro alumno llenando el cupo), el
+  alumno quedaba **cobrado pero sin inscripción**, sin que nadie lo viera. Ahora acepta
+  `PUBLISHED`/`POR_VALIDAR`/`FULL`, y cualquier ítem cobrado-pero-no-inscrito queda auditado en
+  `audit_logs` (`enrollment.skipped`) para seguimiento/reembolso manual del admin.
+- **HMAC como defensa en profundidad, no como bloqueo:** MercadoPago envía varias notificaciones
+  por pago y no todas traen una firma que matchee `MERCADOPAGO_WEBHOOK_SECRET`; el webhook las
+  rechazaba con 403 y perdía pagos legítimos (sesión atascada en `PENDING`, alumno cobrado y sin
+  inscribir). Ahora el chequeo HMAC solo se **loguea** si falla; la verificación real es contra la
+  **API de MercadoPago** (lee el pago con el token propio y cruza `external_reference` contra una
+  `payment_session` creada por el propio backend).
+
+**Por qué:** ambos son bugs de correctitud/seguridad en el punto más crítico del sistema de pagos —
+alumnos cobrados sin quedar inscritos.
+**Archivos:** `supabase/functions/mercadopago-webhook/index.ts`.
+**Estado:** commits en `main` (11-jul). **Despliegue sin confirmar** — ver ítem 13 de la checklist.
+
 ## 12. Pendiente / fuera de alcance (para contexto)
 
 - **Desembolso real a profesores**: `process-payouts` → `disburseToSeller` es un **stub de Fase 0**
@@ -296,6 +317,35 @@ servicios y `notificationRoute.js`.
 - **Cupo entre carritos concurrentes**: ver 4.4.
 - **Validaciones de perfil server-side**: hoy solo en frontend (faltan triggers/constraints).
 - **Rendimiento**: paralelizar cascadas de llamadas en las vistas calientes.
+
+---
+
+## 13. Incidente: drift entre historial de migraciones local y remoto — 16-ago-2026
+
+**Qué:** una auditoría del CLI (`supabase migration list`) mostró 22 migraciones locales
+(`20260622000000` → `20260710000001`) como "no aplicadas" en remoto, y 4 timestamps en remoto sin
+archivo local (`20260622192727`, `20260622192754`, `20260622192832`, `20260627060217`).
+
+**Causa:** parte del trabajo de ese período se aplicó vía el conector MCP de Supabase
+(`apply_migration`) en vez de `supabase db push` — el schema real quedó correcto, pero el CLI nunca
+se enteró (su tabla de tracking `supabase_migrations.schema_migrations` no se actualizó con esos
+nombres de archivo).
+
+**Diagnóstico:** se comparó objeto por objeto (`supabase db dump --schema public`) contra las 22
+migraciones "pendientes": **21 de 22 ya estaban aplicadas en el schema real** (solo era un problema
+de tracking). La única realmente faltante era el trigger de seguridad
+`enforce_teacher_mp_connected` (`20260622000400`) — bloquea publicar una clase sin MercadoPago
+conectado. Se aplicó ese día.
+
+**Resolución:**
+1. `supabase migration repair --status reverted <4 timestamps huérfanos>`.
+2. `supabase migration repair --status applied <21 migraciones ya presentes en el schema real>`.
+3. `supabase db push --include-all` para aplicar la única migración realmente faltante.
+4. Verificado con un nuevo `supabase db dump` que el trigger quedó creado.
+
+**Lección para el equipo:** si se usa el conector MCP para aplicar cambios de schema, hay que
+correr `supabase migration list` después para detectar drift, en vez de asumir que coincide con lo
+que hizo `db push` en otra sesión. Ver también checklist de despliegue en `A1-Despliegue.md`.
 
 ---
 
@@ -309,6 +359,8 @@ servicios y `notificationRoute.js`.
 6. `supabase functions deploy save-attendance admin-metrics` (asistencia 7 + métricas 8). ✅ desplegadas 08-jul.
 7. Aplicar `20260708000000_attendance_upsert.sql` en el SQL Editor (asistencia 7). ✅ aplicada 08-jul.
 8. `supabase functions deploy ga-metrics` (Google Analytics 9) + secretos `GA_PROPERTY_ID`/`GA_SERVICE_ACCOUNT`. ✅ desplegada 08-jul.
-9. Aplicar `20260708100000_uptime_heartbeat.sql` en el SQL Editor + `supabase functions deploy admin-metrics` (M4 latido 8.1). ⏳ pendiente.
-10. Aplicar `20260709000000_user_delete_cascade.sql` en el SQL Editor + `supabase functions deploy admin-users` (gestión de usuarios 10). ⏳ pendiente.
+9. Aplicar `20260708100000_uptime_heartbeat.sql` en el SQL Editor + `supabase functions deploy admin-metrics` (M4 latido 8.1). ✅ migración confirmada aplicada en remoto (auditoría 16-ago, tabla `uptime_checks` presente en el schema real); deploy de la función no verificado en esta sesión.
+10. Aplicar `20260709000000_user_delete_cascade.sql` en el SQL Editor + `supabase functions deploy admin-users` (gestión de usuarios 10). ✅ migración confirmada aplicada en remoto (auditoría 16-ago, `ON DELETE CASCADE`/`SET NULL` verificados en los FKs a `auth.users`); deploy de la función no verificado en esta sesión.
 11. Aplicar `20260708120000_class_reschedule_window.sql` + `supabase functions deploy confirm-class reserve-room-preference mercadopago-webhook sede-reschedule-class` (reagendamiento 11). ✅ aplicada + desplegadas 10-jul.
+12. Aplicar `20260622000400_enforce_teacher_mp_connected.sql` (trigger que bloquea publicar una clase sin MercadoPago conectado). ⚠️ **Quedó sin aplicar desde el 22-jun** — detectado y corregido recién en la auditoría del 16-ago-2026 (ver sección 13). El resto de las 21 migraciones "pendientes" que reportaba el CLI ese día ya estaban aplicadas en el schema real; era solo un problema de tracking (ver 13).
+13. `supabase functions deploy mercadopago-webhook` (fixes 4.7, 11-jul). ⏳ **estado de despliegue sin confirmar** — no se pudo verificar en la auditoría del 16-ago (el CLI perdió el contexto del proyecto a mitad de sesión). Confirmar manualmente en el Dashboard (Edge Functions → mercadopago-webhook → última versión/fecha) antes de asumir que están en producción.

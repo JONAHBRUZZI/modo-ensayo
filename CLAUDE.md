@@ -103,8 +103,10 @@ Route guards in `router/index.js` read the auth store via `decodeJwt` to enforce
 - `composables/` — reusable Composition API utilities (`useToast`, `useTheme`,
   `usePlacesAutocomplete`)
 - `hooks/useNotifications.js` — notification hook
-- `features/` — self-contained feature slices (`auth`, `cart`, `classes`,
-  `payments`, `reschedules`)
+- `features/` — scaffolding for future self-contained feature slices (`auth`,
+  `cart`, `classes`, `payments`, `reschedules`); currently **empty**
+  (`.gitkeep` only in each subfolder). Real logic for these domains lives in
+  `services/` + `views/`, not here.
 - `layouts/DefaultLayout.vue` — single shared shell
 - No Pinia; no global state beyond the auth store singleton
 

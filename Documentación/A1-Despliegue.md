@@ -57,6 +57,41 @@ En Supabase Dashboard → Authentication → Providers, habilitar Google y regis
 el client ID/secret. En URL Configuration, agregar el dominio de Vercel a las
 **Redirect URLs** y **Site URL**.
 
+### Respaldo de la base de datos y réplica del ambiente de producción en pruebas
+
+Procedimientos que garantizan que el ambiente de pruebas refleje fielmente el de producción
+(ver también `Documentación/13-Respaldo-Rubrica.md`, punto 12 y `Documentación/07-Plan-de-Pruebas.md`
+sección 3):
+
+**1. Copia de seguridad de la base de datos de producción en el entorno de pruebas**
+
+- Supabase genera respaldos automáticos (snapshots) diarios de la base de datos de producción,
+  sin código adicional.
+- Para llevar datos de producción al entorno de pruebas: volcado con `pg_dump` de la base de
+  producción y restauración (`pg_restore` / `psql`) en el proyecto de desarrollo; alternativamente,
+  branching de Supabase (`supabase branches create`).
+- El esquema se reproduce de forma idéntica aplicando las migraciones versionadas de
+  `supabase/migrations/` con `supabase db push`, evitando divergencias entre ambientes.
+
+**2. Configuración del servidor (cloud) para que refleje producción**
+
+```bash
+supabase link --project-ref <project-ref-desarrollo>
+supabase functions deploy            # mismas Edge Functions que producción
+supabase secrets set ...             # mismos secretos (valores de sandbox)
+```
+
+El frontend se publica en Vercel con las mismas variables de entorno (`VITE_SUPABASE_URL`,
+`VITE_SUPABASE_ANON_KEY`) apuntando al proyecto de desarrollo correspondiente.
+
+**3. Instalación de lenguajes, bibliotecas y herramientas del servidor de producción**
+
+- Lenguajes / runtimes: Node.js 22 y npm (frontend), Deno (Edge Functions), PostgreSQL 16
+  (gestionado por Supabase).
+- Herramientas: Supabase CLI para gestionar esquema y funciones; Git para control de versiones.
+- Bibliotecas: se restauran de forma reproducible con `npm install` a partir de
+  `package-lock.json`, garantizando las mismas versiones exactas en cualquier máquina.
+
 ## 2. Frontend: Vercel
 
 El repo ya trae `vercel.json` en la raíz:
@@ -112,3 +147,17 @@ NAT Gateway, ~US$75-85/mes).
   `verify_jwt = false` en `config.toml` y la URL registrada en MercadoPago.
 - **Variables faltantes en build de Vercel**: confirma `VITE_SUPABASE_URL` y
   `VITE_SUPABASE_ANON_KEY` en el entorno del proyecto.
+- **`supabase migration list` muestra migraciones locales como no aplicadas en
+  remoto (o timestamps en remoto sin archivo local)**: es **drift de tracking**,
+  no necesariamente un schema desincronizado — pasa cuando algún cambio se aplicó
+  vía el conector MCP (`apply_migration`) en vez de `supabase db push`. Antes de
+  reparar nada:
+  1. Comparar contra el schema real con `supabase db dump --schema public` (buscar
+     los objetos — tablas/funciones/triggers — que crea cada migración "pendiente").
+  2. Si el objeto ya existe en el dump, reparar el tracking como aplicado:
+     `supabase migration repair --status applied <timestamp>`.
+  3. Si un timestamp remoto no tiene archivo local equivalente, marcarlo
+     `--status reverted` (asumiendo que su contenido real ya está cubierto por
+     otra migración local — verificar antes).
+  4. Recién ahí `supabase db push` para aplicar lo que realmente falte.
+  Ver el incidente documentado en `11-Mejoras-Incorporadas.md`, sección 13.

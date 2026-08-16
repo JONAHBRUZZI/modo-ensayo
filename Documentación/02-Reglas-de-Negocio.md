@@ -1,6 +1,6 @@
 # Reglas de Negocio · Modo Ensayo
 
-> **Versión:** 2.1 — Actualizado al 07-jul-2026
+> **Versión:** 2.2 — Actualizado al 16-ago-2026
 > **Total de reglas:** 18 reglas formales del MVP
 
 Estas reglas son las restricciones e invariantes del sistema, sus mecanismos de aplicación y consecuencias documentadas. Todas están implementadas, validadas en código y/o en la base de datos.
@@ -38,7 +38,7 @@ Cada transición de estado de una clase debe quedar registrada en `class_status_
 Cualquier usuario que quiera operar como **Maestro** o **Administrador de Sede** debe pasar previamente por verificación de identidad: subir documento (RUT u otra cédula), revisión manual por Admin General y aprobación con estado `APROBADO`.
 
 - **Estados:** `SIN_VALIDAR` → `PENDING` → `APPROVED` o `REJECTED`.
-- **Implementación:** Validación en `UserService.uploadIdentity()` y `ClassService.createClassInternal()`.
+- **Implementación:** subida del documento vía `userService.uploadIdentity()` (frontend) → fila en `identity_verifications`. Revisión manual del Admin General vía `adminService.reviewIdentity()` (`frontend/src/services/adminService.js`): actualiza `identity_verifications.status` y `profiles.identidad_validada`/`identidad_estado` directo por PostgREST, protegido por policy RLS admin-only (no es una Edge Function).
 - **Una sola vez:** Una vez aprobada, la identidad es permanente y vale para todos los contextos.
 
 ---
@@ -47,7 +47,7 @@ Cualquier usuario que quiera operar como **Maestro** o **Administrador de Sede**
 
 Un mismo documento de identidad no puede estar `APROBADO` en más de una cuenta de usuario. Esto previene suplantación y duplicación de cuentas validadas.
 
-- **Implementación:** `IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`.
+- **⚠️ Estado real: NO implementado.** El backend Spring Boot original tenía este chequeo (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`), pero se perdió en la migración a Supabase: no existe constraint único sobre `identity_verifications.document_number`, y `adminService.reviewIdentity()` aprueba sin verificar duplicados contra otras cuentas. Es una **regresión conocida** — ver roadmap (`15-Roadmap-y-Pendientes.md`, sección Crítico).
 
 ---
 
@@ -76,6 +76,8 @@ Los roles se asignan automáticamente al sistema según las acciones del usuario
 
 Una vez adquirido, un rol es **permanente** (no se pierde aunque el usuario deje de tener actividades).
 
+- **Implementación:** asignación/revocación manual de rol vía Edge Function `admin-users` (`action: assignRole` / `revokeRole`, solo admin, service role).
+
 ---
 
 ## R09 — Método de devolución preferido
@@ -96,7 +98,7 @@ Un mismo beneficiario no puede inscribirse dos veces en la misma clase, ni siqui
 
 El proceso de checkout debe ser atómico: o se inscriben **todos** los items del carrito y se crean todos los pagos, o no se hace ninguna inscripción y se devuelve el dinero al carrito. No puede quedar estado parcial.
 
-- **Implementación:** `PaymentService.checkout()` en transacción Spring `@Transactional`.
+- **Implementación:** Edge Functions `mercadopago-create-preference` (crea la preferencia y la `payment_session`) + `mercadopago-webhook` (al aprobarse el pago, crea todas las `enrollments`/`payments` del carrito de una vez). No hay transacción ACID explícita como en Spring; la atomicidad depende de que el webhook procese el carrito completo en una sola invocación.
 
 ---
 
@@ -146,7 +148,7 @@ Toda decisión irreversible o de alto impacto requiere confirmación explícita 
 
 Al iniciar un reagendamiento, el sistema sugiere fechas alternativas calculadas sobre la **agenda real de la sala** (no horarios genéricos). Solo se ofrecen slots libres en sala y horarios donde el Maestro no tiene otra clase.
 
-- **Implementación:** `RescheduleService.sugerirFechas()` con consulta a `class` + `room_availability`.
+- **Implementación:** Edge Function `propose-reschedule`, que consulta la disponibilidad real de `room_schedule_blocks` de la sala y las clases del profesor antes de sugerir horarios.
 
 ---
 
@@ -193,7 +195,7 @@ La decisión sobre un reagendamiento depende del `tipoClase`:
 
 Si la decisión la intenta el actor incorrecto, el sistema rechaza con error 403.
 
-- **Implementación:** Validación en `RescheduleService.teacherDecision()` con chequeo de `Class.tipoClase`.
+- **Implementación:** Validación en la Edge Function `teacher-decision` (chequea `classes.tipo_clase` y que el actor sea el `teacher_id` correcto); para clases `ASIGNADA` la decisión la toma la sede vía `sede-reschedule-class`.
 
 ---
 
@@ -239,18 +241,18 @@ PROPUESTO → DECISION_MAESTRO ─── acepta ──→ NOTIFICADO_ALUMNOS
 | R01 | Edge Function `confirm-class` | Manual + SQL Editor |
 | R02 | Edge Functions `create-class` / `mercadopago-webhook` + índice `enrollments_unique_beneficiary` | Manual + integration |
 | R03 | Trigger `trg_classes_status` → `track_class_status()` | Manual |
-| R04 | `UserService.uploadIdentity()`, `ClassService.createBorrador()` | Integration |
-| R05 | `IdentityVerificationRepository` | Manual |
-| R06 | `AdminController.aprobarSede()` | Manual |
-| R07 | `AssociateController`, `CartItem.beneficiaryType` | Integration |
-| R08 | `ClassService.asignarRolTeacher()` | Integration |
-| R09 | `RefundMethodService` | Manual |
-| R10 | Constraint UNIQUE en `enrollments` | BD |
-| R11 | `PaymentService.checkout() @Transactional` | `PaymentServiceTest.java` |
-| R12 | `PaymentService.createMercadoPagoPreference()` | Sandbox |
-| R13 | `ClassConfirmationService` | `ClassConfirmationServiceTest.java` |
-| R14 | `ConfirmModal.vue` + validación `confirmacion` | `CartPage.test.js` |
-| R15 | `RescheduleService.sugerirFechas()` | `RescheduleServiceTest.java` |
-| R16 | `RescheduleTimeoutProcessor @Scheduled` | `RescheduleServiceTest.java` |
-| R17 | `RescheduleService.teacherDecision(rechazo)` | `RescheduleServiceTest.java` |
-| R18 | `RescheduleService.teacherDecision()` validación actor | `RescheduleServiceTest.java` |
+| R04 | `userService.uploadIdentity()` (frontend) + `adminService.reviewIdentity()` (PostgREST + RLS admin) | Manual |
+| R05 | **Ninguno — no implementado** (ver nota en la sección R05) | — |
+| R06 | Edge Function `admin-approve-venue` | Manual |
+| R07 | `associateService.js`, `cart_items.beneficiary_type`/`beneficiary_id` | Manual |
+| R08 | Edge Function `admin-users` (`assignRole`/`revokeRole`) | Manual |
+| R09 | `userService.js` (CRUD sobre `refund_methods`) | Manual |
+| R10 | Índice único `enrollments_unique_beneficiary` en `enrollments` | BD |
+| R11 | Edge Functions `mercadopago-create-preference` + `mercadopago-webhook` | Manual (sandbox) |
+| R12 | Edge Functions `mercadopago-create-preference` + `mercadopago-webhook` | Sandbox |
+| R13 | Edge Function `confirm-class` | Manual + SQL Editor |
+| R14 | `ConfirmModal.vue` + validación `confirmacion` | `CartPage.test.js` (frontend, Vitest) |
+| R15 | Edge Function `propose-reschedule` | Manual |
+| R16 | Edge Function `student-decision` + job `pg_cron` (timeout 48h) | Manual |
+| R17 | Edge Function `teacher-decision` (rechazo → `REFUND_PENDING` masivo) | Manual |
+| R18 | Edge Functions `teacher-decision` / `sede-reschedule-class` según `tipo_clase` | Manual |

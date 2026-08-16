@@ -17,6 +17,8 @@ Toda la documentación técnica, funcional y de planificación del proyecto.
 | [`06-API-Endpoints.md`](./06-API-Endpoints.md) | Catálogo de endpoints REST |
 | [`07-Plan-de-Pruebas.md`](./07-Plan-de-Pruebas.md) | Plan preliminar de pruebas y cobertura |
 | [`08-Justificacion-Tecnica.md`](./08-Justificacion-Tecnica.md) | Por qué cada decisión técnica |
+| [`11-Mejoras-Incorporadas.md`](./11-Mejoras-Incorporadas.md) | Changelog funcional — mejoras y fixes no reflejados en la doc base |
+| [`15-Roadmap-y-Pendientes.md`](./15-Roadmap-y-Pendientes.md) | Roadmap: bugs conocidos, deuda técnica y pendientes de producto |
 
 ### Anexos
 

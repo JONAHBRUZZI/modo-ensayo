@@ -1,7 +1,7 @@
 # Modelo de Datos · Modo Ensayo
 
 > **Motor:** PostgreSQL 16 (Supabase)
-> **Esquema:** `public` (27 tablas) + `auth` (gestionado por Supabase Auth)
+> **Esquema:** `public` (33 tablas) + `auth` (gestionado por Supabase Auth)
 > **Seguridad:** Row Level Security (RLS) habilitado en todas las tablas
 > **Generado a partir del schema real del proyecto hosteado.**
 

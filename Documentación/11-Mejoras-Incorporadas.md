@@ -387,6 +387,41 @@ controlada (reservar una sala de bajo costo y cancelarla) antes de confiar en el
 
 ---
 
+## 15. Módulo de pago agnóstico: base para desembolso a profesores vía Fintoc — 16-ago-2026
+
+**Qué:** primer paso para sacar el desembolso a profesores del vendor lock-in de MercadoPago
+(pedido explícito del usuario, "no hacer vendor lock con MercadoPago"). Investigación previa:
+- MercadoPago no tiene API de money-out (confirmado contra su documentación oficial): solo permite
+  split en el momento del cobro, no transferir a una cuenta ya conectada después.
+- Se evaluó Stripe Connect: soporta el patrón "cobrar ahora, transferir después", pero exige que la
+  **plataforma** tenga entidad legal en EE.UU./UK/UE/Canadá/Suiza — no viable para un equipo
+  registrado en Chile (Chile sí es país válido como cuenta *receptora*, pero no como plataforma).
+- **Fintoc** (open banking chileno) resuelve esto de forma nativa: transferencia directa a
+  cualquier cuenta bancaria chilena, sin OAuth, sin entidad extranjera — el mismo patrón de datos
+  que ya modela `refund_methods` (usado hoy para reembolsos a alumnos).
+
+**Cómo (lo que se hizo en este pase, sin credenciales de Fintoc todavía):**
+- Migración `20260816030000_payout_provider_agnostic.sql`: nuevo trigger
+  `enforce_teacher_payout_method` (reemplaza a `enforce_teacher_mp_connected`) — bloquea publicar
+  una clase si el profesor no tiene datos bancarios cargados (`refund_methods`), en vez de exigir
+  MercadoPago conectado. `teacher_payouts.provider` nueva columna.
+- `create-class`: el chequeo de negocio espejo del trigger también cambió de `mp_seller_accounts` a
+  `refund_methods`.
+- Frontend: `ProfesionalProfilePage.vue` y `ProfesorDashboardPage.vue` ya no piden "conectar
+  MercadoPago" — piden cargar datos bancarios, reutilizando el flujo existente de
+  `/profile/refund-method` (mismo formulario que usan los alumnos).
+- Scaffold `supabase/functions/_shared/payoutProvider.ts`: interfaz `PayoutProvider` agnóstica
+  (`sendPayout`), sin implementación real todavía.
+- `mp-oauth-start`/`mp-oauth-callback` quedaron **huérfanas** (nada del frontend las invoca ya) —
+  no se borraron en este pase, decisión de limpieza pendiente.
+**Archivos:** `migrations/20260816030000_payout_provider_agnostic.sql`,
+`functions/create-class/index.ts`, `functions/_shared/payoutProvider.ts`,
+`functions/process-payouts/index.ts` (comentarios), `views/profesor/ProfesionalProfilePage.vue`,
+`views/profesor/ProfesorDashboardPage.vue`, `views/profesor/ProfesorPagosPage.vue`.
+**Estado:** código listo. Migración y despliegue de `create-class` pendientes. La implementación
+real de `FintocPayoutProvider` queda pendiente de que el usuario consiga credenciales de Fintoc —
+`process-payouts` sigue en Fase 0 hasta entonces.
+
 ## Acciones de despliegue pendientes de este documento
 
 1. `supabase functions deploy process-refunds` (fix 4.2 / PR #43). ✅ desplegada 07-jul.
@@ -405,3 +440,5 @@ controlada (reservar una sala de bajo costo y cancelarla) antes de confiar en el
 14. `supabase db push` de `20260710000002_full_delete_cascade.sql` (renombrada por colisión de timestamp con `venue_stats.sql`) y `20260711000000_rut_exists_rpc.sql` (aviso de RUT duplicado). ✅ aplicadas 16-ago.
 15. Aplicar `20260816020000_room_reservation_cancel.sql` (R19). ✅ aplicada 16-ago.
 16. `supabase functions deploy cancel-room-reservation mercadopago-webhook` (R19 — el webhook cambió para guardar `payment_session_id`). ✅ desplegadas 16-ago.
+17. Aplicar `20260816030000_payout_provider_agnostic.sql` (nuevo trigger `enforce_teacher_payout_method`, columna `teacher_payouts.provider`). ⏳ pendiente.
+18. `supabase functions deploy create-class` (chequeo de datos bancarios en vez de MercadoPago conectado). ⏳ pendiente.

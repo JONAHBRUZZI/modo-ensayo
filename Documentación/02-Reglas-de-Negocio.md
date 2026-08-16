@@ -143,8 +143,13 @@ Usa `X-Idempotency-Key` por `payment.id`. Un error permanente de MP (4xx) marca 
 pago `FAILED` para atención manual; los transitorios (5xx/429) se reintentan.
 
 **Desembolso al profesor (`process-payouts`, cron cada 15 min):** el giro real
-(`disburseToSeller`) es un **stub de Fase 0** (money-out MercadoPago Chile
-pendiente): el `teacher_payouts` queda registrado pero el dinero aún no se gira.
+(`disburseToSeller`) sigue en **stub de Fase 0**: el `teacher_payouts` queda registrado pero el
+dinero aún no se gira automáticamente. **Decisión de arquitectura (16-ago):** MercadoPago no tiene
+API de money-out (confirmado — su API solo permite split al cobrar, no transferir entre cuentas ya
+conectadas), así que el giro real se hará con **Fintoc** (transferencia directa a los datos
+bancarios de `refund_methods`) detrás de una interfaz agnóstica `PayoutProvider`, no con MP. Stripe
+Connect se descartó: exige que la plataforma tenga entidad legal fuera de Chile. Scaffold de la
+interfaz creado; integración real pendiente de credenciales de Fintoc.
 
 ---
 

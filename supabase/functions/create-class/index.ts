@@ -92,13 +92,14 @@ export default {
           }, { status: 409 });
         }
 
-        // 2. MercadoPago conectado (se le liquida el pago al confirmarse la clase).
-        const { data: seller } = await admin.from("mp_seller_accounts")
-          .select("status").eq("user_id", userId).maybeSingle();
-        if (!seller || seller.status !== "CONNECTED") {
+        // 2. Datos bancarios cargados (se le liquida el pago al confirmarse la clase).
+        // Espeja el trigger de BD trg_enforce_payout_method.
+        const { data: refundMethod } = await admin.from("refund_methods")
+          .select("id").eq("user_id", userId).limit(1).maybeSingle();
+        if (!refundMethod) {
           return Response.json({
-            error: "Debes conectar tu cuenta de MercadoPago antes de publicar una clase",
-            code: "MP_NOT_CONNECTED",
+            error: "Debes cargar tus datos bancarios antes de publicar una clase",
+            code: "PAYOUT_METHOD_MISSING",
           }, { status: 409 });
         }
       }

@@ -48,11 +48,11 @@
       </div>
     </div>
 
-    <!-- Liquidaciones a tu cuenta MercadoPago -->
+    <!-- Liquidaciones a tu cuenta bancaria -->
     <h2 class="text-xl font-bold text-white mt-12 mb-4">Liquidaciones</h2>
     <div v-if="payouts.length === 0" class="card text-center py-10">
       <p class="text-gray-400">Aún no hay liquidaciones.</p>
-      <p class="text-gray-500 text-sm mt-2">Se generan cuando se confirma una clase realizada y se pagan a tu MercadoPago.</p>
+      <p class="text-gray-500 text-sm mt-2">Se generan cuando se confirma una clase realizada y se pagan a tu cuenta bancaria.</p>
     </div>
     <div v-else class="space-y-3">
       <div v-for="po in payouts" :key="po.id" class="card flex items-center justify-between">

@@ -110,18 +110,18 @@ async function processOnePayout(admin: any, payout: PayoutRow): Promise<void> {
 }
 
 /**
- * Ejecuta la transferencia del neto a la cuenta MercadoPago del profesor.
+ * Ejecuta el desembolso del neto al profesor.
  *
- * ⚠️ PENDIENTE FASE 0 (spike): el mecanismo de desembolso depende de lo que
- * habilite la cuenta MP de la plataforma en Chile. Dos opciones:
- *   (ii) Money-out / transferencia entre cuentas MP (este punto).
- *   (i)  Split nativo con `release` del pago retenido (requiere cambiar también
- *        create-preference para crear el split con el token del profesor).
+ * ⚠️ PENDIENTE (16-ago): MercadoPago no tiene API de money-out (confirmado
+ * contra su propia documentación — su API es solo para vender productos y
+ * servicios, no para transferir entre cuentas ya conectadas). El mecanismo
+ * real se implementará con Fintoc (open banking chileno, transferencia
+ * directa a los datos bancarios de `refund_methods`) detrás de la interfaz
+ * `PayoutProvider` (`_shared/payoutProvider.ts`), pendiente de credenciales
+ * de Fintoc. Ver Documentación/15-Roadmap-y-Pendientes.md.
  *
- * Hasta confirmar el endpoint correcto, lanza para que el payout quede PENDING
- * (seguro y reintentable) en vez de marcar PAID sin mover dinero real.
- * Cuando se confirme el mecanismo, implementar aquí la llamada a la API de MP
- * usando `accessToken`/`mpUserId` y devolver la referencia de la transferencia.
+ * Hasta entonces, lanza para que el payout quede PENDING (seguro y
+ * reintentable) en vez de marcar PAID sin mover dinero real.
  */
 async function disburseToSeller(_args: {
   accessToken: string;
@@ -129,12 +129,13 @@ async function disburseToSeller(_args: {
   amount: number;
   externalReference: string;
 }): Promise<string> {
-  const mode = Deno.env.get("MP_PAYOUT_MODE"); // "live" cuando el mecanismo esté confirmado
+  const mode = Deno.env.get("MP_PAYOUT_MODE"); // "live" cuando FintocPayoutProvider esté implementado
   if (mode !== "live") {
     throw new Error(
-      "Desembolso no configurado: definir el mecanismo MP (Fase 0) y MP_PAYOUT_MODE=live",
+      "Desembolso no configurado: implementar FintocPayoutProvider y setear MP_PAYOUT_MODE=live",
     );
   }
-  // TODO(Fase 0): implementar la llamada real de desembolso/transfer/release MP.
-  throw new Error("disburseToSeller live no implementado: pendiente confirmación del endpoint MP");
+  // TODO: reemplazar por PayoutProvider.sendPayout() (FintocPayoutProvider) cuando existan
+  // las credenciales de Fintoc. Ver _shared/payoutProvider.ts.
+  throw new Error("disburseToSeller live no implementado: pendiente de FintocPayoutProvider");
 }

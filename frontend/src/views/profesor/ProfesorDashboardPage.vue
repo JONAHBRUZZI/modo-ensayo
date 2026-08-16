@@ -33,7 +33,7 @@
           </p>
           <ul class="text-sm mt-1.5 space-y-0.5">
             <li v-if="!perfilCompleto" class="text-yellow-300">• Completar tu perfil profesional (especialidad y experiencia)</li>
-            <li v-if="!mpConectado" class="text-yellow-300">• Conectar tu cuenta de MercadoPago para recibir tus pagos</li>
+            <li v-if="!tieneDatosBancarios" class="text-yellow-300">• Cargar tus datos bancarios para recibir tus pagos</li>
           </ul>
           <span class="inline-block mt-2 text-yellow-400 text-sm font-medium">Ir a mi perfil profesional →</span>
         </div>
@@ -147,7 +147,7 @@ import { useAuth } from '@/stores/auth'
 import classService from '@/services/classService'
 import EstadoProfesorBadge from '@/components/EstadoProfesorBadge.vue'
 import professionalProfileService from '@/services/professionalProfileService'
-import sellerService from '@/services/sellerService'
+import userService from '@/services/userService'
 
 const { displayName, tieneReservasActivas, tieneAsignacionesActivas, reservasSinClase, reservasSinClaseCount, estadoProfesor } = useAuth()
 
@@ -156,9 +156,9 @@ const averageRating = ref(null)
 
 // Readiness del profesor para publicar (mismos requisitos que exige create-class).
 const perfilCompleto = ref(false)
-const mpConectado = ref(false)
+const tieneDatosBancarios = ref(false)
 const readinessCargado = ref(false)
-const profesorListo = computed(() => perfilCompleto.value && mpConectado.value)
+const profesorListo = computed(() => perfilCompleto.value && tieneDatosBancarios.value)
 
 // El estado vacío de onboarding se muestra si el profesor no tiene clases propias
 // (el flag de reservas puede estar en falso aunque existan clases).
@@ -166,7 +166,7 @@ const tienePropias = computed(() => stats.value.propias > 0)
 
 onMounted(async () => {
   // Las 5 llamadas son independientes entre sí — se cargan todas en paralelo
-  // (stats generales + perfil profesional + estado de MercadoPago).
+  // (stats generales + perfil profesional + datos bancarios).
   const [propias, asignadas, earnings] = await Promise.allSettled([
     classService.getTeacherPropias(),
     classService.getTeacherAsignadas(),
@@ -187,10 +187,10 @@ onMounted(async () => {
 
     (async () => {
       try {
-        const estado = await sellerService.getStatus()
-        mpConectado.value = !!estado?.connected
+        const metodos = await userService.getRefundMethods()
+        tieneDatosBancarios.value = Array.isArray(metodos) && metodos.length > 0
       } catch (err) {
-        console.error('Error al cargar estado de MercadoPago', err)
+        console.error('Error al cargar datos bancarios', err)
       }
     })()
   ])

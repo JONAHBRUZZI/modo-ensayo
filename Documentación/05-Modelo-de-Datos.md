@@ -385,8 +385,9 @@ escribe; el admin la lee/edita vía Edge Functions y policies `has_role('ADMIN')
 
 ### `teacher_payouts`
 Registro del desembolso del honorario al profesor cuando su clase se confirma como
-realizada (`COMPLETED`). Una fila por pago liberado; el giro real a MercadoPago queda
-`tracked` (Fase 0). Origen: migración `20260622000100_marketplace_payouts.sql`.
+realizada (`COMPLETED`). Una fila por pago liberado; el giro real queda
+`PENDING` hasta implementarse (Fase 0 → ver nota de proveedor abajo). Origen: migración
+`20260622000100_marketplace_payouts.sql`.
 
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -397,11 +398,21 @@ realizada (`COMPLETED`). Una fila por pago liberado; el giro real a MercadoPago 
 | gross_amount | numeric | Monto bruto del pago |
 | commission_amount | numeric | DEFAULT 0 — comisión de la plataforma |
 | net_amount | numeric | Neto a girar al profesor |
-| mp_reference | text | Referencia del giro en MercadoPago |
+| mp_reference | text | Referencia del giro (nombre heredado; ya no es específico de MercadoPago) |
 | status | text | CHECK PENDING / PAID / FAILED |
 | error_detail | text | Detalle si el giro falla |
+| provider | text | DEFAULT 'MANUAL' (agregado 16-ago) — distingue giros manuales (admin) de futuros giros automáticos por proveedor (ej. `FINTOC`) |
 | created_at | timestamptz | DEFAULT now() |
 | paid_at | timestamptz | |
+
+> **Desembolso real (16-ago):** MercadoPago no tiene API de money-out (confirmado contra su propia
+> documentación — solo permite split en el momento del cobro, no transferencias entre cuentas ya
+> conectadas). Se decidió implementar el desembolso real con **Fintoc** (open banking chileno,
+> transferencia directa a los datos bancarios de `refund_methods`) detrás de una interfaz agnóstica
+> `PayoutProvider` (`supabase/functions/_shared/payoutProvider.ts`). Se evaluó Stripe Connect pero
+> requiere que la plataforma tenga una entidad legal en EE.UU./UK/UE/Canadá/Suiza — no viable para
+> un equipo registrado en Chile. **Estado: scaffold de la interfaz creado, integración real
+> pendiente de credenciales de Fintoc.**
 
 ### `uptime_checks`
 Latido de disponibilidad (M4). `pg_cron` inserta una fila cada 5 min; la métrica es
@@ -447,7 +458,10 @@ latidos registrados vs. esperados. Origen: `20260708100000_uptime_heartbeat.sql`
   (libera bloques HELD vencidos cada 5 min vía `pg_cron`),
   `process_reschedule_timeouts` (timeout 48h de la decisión del alumno) y
   `process_class_reschedule_timeouts` (cada hora: reembolso diferido de las clases
-  no realizadas que no se reagendaron dentro de las 24h), más helpers de RLS y
+  no realizadas que no se reagendaron dentro de las 24h), `enforce_teacher_payout_method`
+  (trigger `BEFORE INSERT/UPDATE` en `classes`: bloquea `PUBLISHED` si el profesor no tiene
+  una fila en `refund_methods` — reemplazó a `enforce_teacher_mp_connected` el 16-ago,
+  ver `02-Reglas-de-Negocio.md` R13), más helpers de RLS y
   jobs de `pg_cron` para tareas programadas (regeneración de bloques,
   `process-refunds` cada 10 min, `process-payouts` cada 15 min).
 - **Migraciones**: el schema se versiona en `supabase/migrations/`. La base

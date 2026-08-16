@@ -432,19 +432,40 @@ documentado por Fintoc (protected header `{alg, nonce, ts, crit}` + raw body, am
 firmados con la private key) implementado con Web Crypto nativo de Deno (`crypto.subtle`), sin
 dependencias externas. `process-payouts` ya llama a este provider en vez del stub de MercadoPago.
 
-**⚠️ Sin probar contra la API real de Fintoc en esta sesión.** Gaps conocidos, documentados en el
-propio archivo:
-- El usuario todavía no generó el **par de llaves JWS** (es distinto de la Secret/Public Key que ya
-  tiene) ni lo subió al dashboard de Fintoc — sin eso, ninguna transferencia real puede firmarse.
-- El header `Authorization` se implementó como valor directo (sin prefijo `Bearer`) — no se pudo
-  confirmar con certeza absoluta contra la documentación pública; ajustar si la API devuelve 401.
+**⚠️ Sin probar contra la API real de Fintoc.** Se re-verificó todo el request contra
+`docs.fintoc.com` directamente (el MCP de Fintoc conectado por el usuario no expone creación de
+transfers, solo lectura de payouts/movements y la API de cobro — no sirvió para probar el flujo,
+pero la cuenta conectada también está vacía: 0 payouts, 0 links, 0 webhooks). Confirmado contra la
+doc oficial:
+- JWS (protected header `{alg,nonce,ts,crit}` + raw body, ambos base64url, `RS256`, header
+  `Fintoc-JWS-Signature`) — coincide exactamente con lo implementado.
+- `Authorization: <secret_key>` sin prefijo `Bearer` — confirmado.
+- `account_type` para Chile (`checking`/`sight`) — confirmado
+  (`docs.fintoc.com/api/transfers-api/transfers/transfer-object`).
+
+Se encontraron y corrigieron dos bugs reales durante la verificación (no solo gaps):
+1. **Sin `Idempotency-Key`.** El código asumía que `reference_id` daba idempotencia — es solo un
+   campo de reconciliación. La idempotencia real la da el header `Idempotency-Key`
+   (`docs.fintoc.com/reference/idempotent-requests`), ausente. Sin él, un reintento del cron de
+   `process-payouts` (ante timeout de red o un transfer que sigue "pending") podía crear una
+   **segunda transferencia bancaria real** al mismo profesor. Corregido: se envía
+   `externalReference` (UUID estable del payout) como `Idempotency-Key`.
+2. **Estados terminales fallidos nunca marcaban `FAILED`.** `rejected`/`failed`/`returned`/
+   `reject_failed` (estados reales del Transfer object) se colapsaban a `PENDING`, y
+   `process-payouts` reintentaba indefinidamente un payout ya rechazado por el banco en vez de
+   marcarlo `FAILED` (columna que ya existía en el schema, `CHECK` de
+   `20260622000100_marketplace_payouts.sql`, pero nunca se escribía). Corregido: nuevo
+   `mapTransferStatus()` distingue los tres casos; `process-payouts` marca `FAILED` sin reintentar
+   cuando corresponde.
+
+Gaps que siguen sin resolver (no se pueden cerrar sin credenciales/datos reales):
+- El usuario todavía no generó el **par de llaves JWS** (distinto de la Secret/Public Key) ni lo
+  subió al dashboard de Fintoc — sin eso, ninguna transferencia real puede firmarse.
 - El mapeo `refund_methods.bank` (texto libre) → `institution_id` de Fintoc (`cl_banco_estado`,
   `cl_banco_de_chile`, etc.) solo cubre los bancos chilenos más comunes — si un profesor escribe el
   nombre del banco distinto a como está en el mapeo, la transferencia falla con error claro (no se
   intenta adivinar). Mejora a futuro: cambiar el formulario a un selector que consuma
   `GET /v2/institutions`.
-- `refund_methods.account_type` (CORRIENTE/VISTA/AHORRO, texto libre) se mapea a `checking`/`sight`
-  con una heurística razonable, también sin confirmar.
 **Archivos:** `functions/_shared/fintocPayoutProvider.ts`, `functions/process-payouts/index.ts`.
 **Estado:** código escrito y sintácticamente verificado (Node `--experimental-strip-types --check`,
 sin Deno disponible en esta sesión para un chequeo de tipos completo). **No desplegado, no probado

@@ -9,19 +9,24 @@
 
 ## 🔴 Crítico / bugs conocidos
 
-### 1. R05 — Identidad duplicada NO se rechaza
+### 1. R05 — Identidad duplicada: solo aviso en frontend, sin constraint en BD
 La documentación (`02-Reglas-de-Negocio.md`, regla R05, y `07-Plan-de-Pruebas.md`, escenario
 "Borde 1 — Identidad duplicada") dice que un documento de identidad ya aprobado en otra cuenta se
-rechaza. **En el código real no hay ningún chequeo de este tipo**: no existe constraint único sobre
-`identity_verifications.document_number`, y `adminService.reviewIdentity()`
-(`frontend/src/services/adminService.js:115-129`) aprueba directamente sin verificar duplicados.
+rechaza. El **11-jul** se agregó una mitigación parcial (RPC `rut_ya_registrado`,
+`SECURITY DEFINER`) que avisa en el formulario de verificación si el RUT ya está registrado
+(`PENDING`/`APPROVED` en `identity_verifications` o en `profiles.rut` de otra cuenta) y bloquea el
+envío. Pero **sigue sin haber un constraint único en la base de datos**: `adminService.reviewIdentity()`
+(`frontend/src/services/adminService.js:115-129`) aprueba sin reverificar, y una aprobación vía API
+directa (bypaseando el frontend) no queda bloqueada.
 
-- **Riesgo:** suplantación de identidad / una persona con múltiples cuentas validadas.
-- **Era una regresión de la migración**: el backend Spring Boot original sí lo tenía
-  (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`).
+- **Riesgo:** suplantación de identidad / una persona con múltiples cuentas validadas, si no pasa
+  por el formulario normal.
+- **Era una regresión de la migración**: el backend Spring Boot original lo tenía como constraint
+  duro (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`).
 - **Fix sugerido:** constraint único parcial en Postgres —
   `CREATE UNIQUE INDEX ON identity_verifications (document_number) WHERE status = 'APPROVED'` — o
-  chequeo explícito en `reviewIdentity()` antes de aprobar.
+  chequeo explícito en `reviewIdentity()` antes de aprobar, para cerrar el gap que el aviso del
+  frontend no cubre.
 
 ### 2. Confirmar despliegue de los fixes del webhook de pago (11-jul)
 Dos commits del 2026-07-11 corrigen bugs de correctitud en `mercadopago-webhook` (ver
@@ -32,8 +37,14 @@ desplegada en producción ya incluye estos cambios** (el CLI perdió el contexto
 poder chequear `supabase functions list`).
 
 - **Acción:** entrar al Dashboard de Supabase → Edge Functions → `mercadopago-webhook` → revisar
-  fecha/versión del último deploy y compararla contra el commit `337f3ff`/`a4dd59d` (11-jul). Si es
-  anterior, `supabase functions deploy mercadopago-webhook`.
+  fecha/versión del último deploy y compararla contra el commit `337f3ff`/`a4dd59d` (11-jul, ya en
+  `main`). Si es anterior, `supabase functions deploy mercadopago-webhook`.
+
+### 3. Verificar deploy de la migración `20260710000000_full_delete_cascade.sql`
+Commit `32f366c fix(admin): cascada de borrado completa para eliminar admins de sede`, mergeado a
+`main` después del corte de esta auditoría (no estaba en el schema comparado el 16-ago). Confirmar
+con `supabase migration list` / `supabase db push` que quedó aplicada en remoto antes de asumir que
+el borrado de admins de sede funciona en producción.
 
 ### ✅ Cerrado en esta misma auditoría (16-ago-2026)
 - **Trigger `enforce_teacher_mp_connected` faltante en producción** (migración `20260622000400`,

@@ -47,7 +47,17 @@ Cualquier usuario que quiera operar como **Maestro** o **Administrador de Sede**
 
 Un mismo documento de identidad no puede estar `APROBADO` en más de una cuenta de usuario. Esto previene suplantación y duplicación de cuentas validadas.
 
-- **⚠️ Estado real: NO implementado.** El backend Spring Boot original tenía este chequeo (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`), pero se perdió en la migración a Supabase: no existe constraint único sobre `identity_verifications.document_number`, y `adminService.reviewIdentity()` aprueba sin verificar duplicados contra otras cuentas. Es una **regresión conocida** — ver roadmap (`15-Roadmap-y-Pendientes.md`, sección Crítico).
+- **⚠️ Estado real: mitigación parcial, no la regla completa.** El backend Spring Boot original
+  tenía este chequeo como constraint duro
+  (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`), y se perdió en
+  la migración a Supabase. El 11-jul se agregó un aviso en el frontend (RPC
+  `rut_ya_registrado`, `SECURITY DEFINER`, migración `20260711000000_rut_exists_rpc.sql`): al
+  ingresar el RUT en la verificación de identidad, consulta si ya existe (en
+  `identity_verifications` PENDING/APPROVED o en `profiles.rut` de otra cuenta) y **bloquea el
+  envío del formulario** con un aviso. Es un chequeo del lado del cliente en el momento de subir el
+  documento — **no hay constraint único en la base de datos**, así que no cubre aprobaciones vía
+  API directa ni condiciones de carrera. `adminService.reviewIdentity()` sigue aprobando sin
+  reverificar. Ver roadmap (`15-Roadmap-y-Pendientes.md`, sección Crítico).
 
 ---
 

@@ -111,45 +111,42 @@ export default {
 
       const body = await req.text();
 
+      // Verificación de firma HMAC = defensa en profundidad, NO bloqueante.
+      // MercadoPago envía varias notificaciones por pago (payment/merchant_order,
+      // reintentos, y las del notification_url de la preferencia) y NO todas traen
+      // una firma que cuadre con este secreto. Antes se rechazaba con 403 y se
+      // perdían pagos legítimos (la sesión quedaba PENDING). La verificación REAL
+      // es contra la API de MercadoPago más abajo: se lee el pago con NUESTRO token
+      // y se cruza el external_reference con una sesión que nosotros creamos; un
+      // atacante no puede falsificar un pago aprobado que la API confirme.
       const secret = Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET");
-      if (!secret) {
-        logError("webhook_secret_missing", new Error("MERCADOPAGO_WEBHOOK_SECRET not configured"));
-        return new Response("Internal Server Error", { status: 500 });
-      }
-
       const signature = req.headers.get("x-signature");
-      const requestId = req.headers.get("x-request-id");
-      if (!signature || !requestId) {
-        logError("webhook_signature_missing", new Error("Missing signature headers"));
-        return new Response("Forbidden", { status: 403 });
+      const requestId = req.headers.get("x-request-id") ?? "";
+      let firmaOk = false;
+      if (secret && signature) {
+        let ts: string | null = null;
+        let v1: string | null = null;
+        for (const part of signature.split(",")) {
+          const [k, val] = part.split("=").map((s) => s.trim());
+          if (k === "ts") ts = val;
+          if (k === "v1") v1 = val;
+        }
+        if (ts && v1) {
+          const dataId = (url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "").toString().toLowerCase();
+          const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+          const encoder = new TextEncoder();
+          const key = await crypto.subtle.importKey(
+            "raw", encoder.encode(secret),
+            { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+          );
+          const expected = Array.from(
+            new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(manifest))),
+          ).map((b) => b.toString(16).padStart(2, "0")).join("");
+          firmaOk = expected === v1;
+        }
       }
-
-      let ts: string | null = null;
-      let v1: string | null = null;
-      for (const part of signature.split(",")) {
-        const [k, val] = part.split("=").map((s) => s.trim());
-        if (k === "ts") ts = val;
-        if (k === "v1") v1 = val;
-      }
-      if (!ts || !v1) return new Response("Forbidden", { status: 403 });
-
-      // El manifest de MP usa data.id en minúsculas (relevante para ids alfanuméricos).
-      const dataId = (url.searchParams.get("data.id") ?? JSON.parse(body).data?.id ?? "").toString().toLowerCase();
-      const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
-      const encoder = new TextEncoder();
-      const key = await crypto.subtle.importKey(
-        "raw", encoder.encode(secret),
-        { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-      );
-      const expected = Array.from(
-        new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(manifest)))
-      ).map((b) => b.toString(16).padStart(2, "0")).join("");
-
-      if (expected !== v1) {
-        logError("webhook_signature_invalid", new Error("HMAC verification failed"));
-        return new Response("Forbidden", { status: 403 });
-      }
-      logInfo("webhook_signature_verified", { requestId });
+      if (firmaOk) logInfo("webhook_signature_verified", { requestId });
+      else logInfo("webhook_signature_unverified", { requestId, note: "se valida contra la API de MercadoPago" });
 
       const payload = JSON.parse(body);
       const paymentId = payload.data?.id ?? url.searchParams.get("data.id");
@@ -195,18 +192,45 @@ export default {
         // sin esto un carrito con varias inscripciones a la misma clase podría pasar
         // el cupo (todas leen el mismo count inicial).
         const agregadosPorClase: Record<string, number> = {};
+        // Estados en los que una clase PAGADA aún se puede inscribir. Entre crear la
+        // preferencia y llegar el webhook, la clase pudo pasar de PUBLISHED a
+        // POR_VALIDAR (cron process_class_completion cuando start_time < now()) o a
+        // FULL; el alumno YA pagó, así que igual hay que inscribirlo. Solo se rechaza
+        // si la clase no existe o quedó CANCELLED/SUSPENDED/DRAFT.
+        const INSCRIBIBLE = ["PUBLISHED", "POR_VALIDAR", "FULL"];
+
+        // Registra en auditoría un ítem cobrado que NO se pudo inscribir (para que el
+        // admin lo vea y reembolse; antes esto se saltaba en silencio).
+        const registrarSalto = async (classId: string, price: number, motivo: string) => {
+          await admin.from("audit_logs").insert({
+            actor_id: session.owner_id,
+            action: "enrollment.skipped",
+            resource_type: "class",
+            resource_id: classId,
+            metadata: { motivo, session_id: session.id, payment_id: String(paymentId), amount: price },
+          });
+          logError("enrollment_skipped", new Error(motivo), { classId, sessionId: session.id });
+        };
+
         for (const item of cart.items) {
           const { data: cls } = await admin.from("classes")
             .select("id,status,capacity").eq("id", item.classId).single();
-          if (!cls || cls.status !== "PUBLISHED") continue;
+
+          if (!cls || !INSCRIBIBLE.includes(cls.status)) {
+            await registrarSalto(item.classId, item.price, cls ? `clase en estado ${cls.status}` : "clase inexistente");
+            continue;
+          }
 
           const { count } = await admin.from("enrollments")
             .select("*", { count: "exact", head: true })
             .eq("class_id", item.classId).eq("status", "ACTIVE");
           const yaAgregados = agregadosPorClase[item.classId] ?? 0;
-          if ((count ?? 0) + yaAgregados >= cls.capacity) continue;
+          if ((count ?? 0) + yaAgregados >= cls.capacity) {
+            await registrarSalto(item.classId, item.price, "clase llena (cupo alcanzado)");
+            continue;
+          }
 
-          const { data: enrollment } = await admin.from("enrollments").insert({
+          const { data: enrollment, error: enrErr } = await admin.from("enrollments").insert({
             class_id: item.classId,
             student_id: session.owner_id,
             beneficiary_type: item.beneficiaryType || "SELF",
@@ -221,6 +245,8 @@ export default {
               amount: item.price,
               status: "RETAINED",
             });
+          } else {
+            await registrarSalto(item.classId, item.price, `insert de inscripción falló: ${enrErr?.message ?? "desconocido"}`);
           }
         }
         await admin.from("cart_items").delete().eq("owner_id", session.owner_id);

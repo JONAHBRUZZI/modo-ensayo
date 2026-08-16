@@ -104,6 +104,17 @@
             </div>
           </div>
         </div>
+        <!-- R19: cancelar arriendo pagado por el profesor (no aplica a clases ASIGNADA, esas no tienen pago de sala) -->
+        <div v-if="detalle.tipoClase === 'PROPIA' && !['CANCELLED', 'COMPLETED', 'SUSPENDED'].includes(detalle.status)" class="mt-6 pt-4 border-t border-white/5">
+          <button
+            :disabled="cancelando"
+            class="text-red-400 hover:text-red-300 text-sm transition-colors"
+            @click="cancelarArriendo"
+          >
+            {{ cancelando ? 'Procesando...' : 'Cancelar arriendo y reembolsar' }}
+          </button>
+          <p class="text-gray-600 text-xs mt-1">Reembolso total. Solo hasta 24h antes del horario y sin alumnos inscritos.</p>
+        </div>
       </div>
       <div v-else class="text-gray-500 text-sm py-6 text-center">No se pudo cargar el detalle.</div>
     </BottomSheet>
@@ -116,7 +127,9 @@ import venueService from '@/services/venueService'
 import EstadoBadge from '@/components/EstadoBadge.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
+import { useToast } from '@/composables/useToast'
 
+const toast = useToast()
 const clases = ref([])
 const loading = ref(true)
 
@@ -124,6 +137,7 @@ const modalAbierto = ref(false)
 const detalle = ref(null)
 const alumnos = ref([])
 const detalleLoading = ref(false)
+const cancelando = ref(false)
 
 onMounted(async () => {
   try {
@@ -149,5 +163,19 @@ async function abrirDetalle(c) {
     detalle.value = null
   }
   detalleLoading.value = false
+}
+
+async function cancelarArriendo() {
+  if (!detalle.value) return
+  cancelando.value = true
+  try {
+    await venueService.cancelRoomReservation(detalle.value.id)
+    toast.success('Arriendo cancelado. El reembolso ya fue procesado.')
+    clases.value = clases.value.filter(c => c.id !== detalle.value.id)
+    modalAbierto.value = false
+  } catch (e) {
+    toast.error(e?.response?.data?.error || e?.message || 'No se pudo cancelar el arriendo')
+  }
+  cancelando.value = false
 }
 </script>

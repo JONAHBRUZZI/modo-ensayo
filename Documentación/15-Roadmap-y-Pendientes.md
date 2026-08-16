@@ -43,7 +43,6 @@ misma sesión. Ver "Cerrado" abajo para el detalle de cada uno.
 |---|---|---|
 | Desembolso real a profesores | `process-payouts` → `disburseToSeller` es un stub de Fase 0; los `teacher_payouts` quedan `PENDING` pero el dinero no se gira automáticamente (money-out de MercadoPago Chile pendiente de habilitar). **Decisión de alcance del equipo, no deuda olvidada** — ver `02-Reglas-de-Negocio.md` R13 y `14-Preguntas-Tecnicas-Jonathan.md` | `supabase/functions/process-payouts/` |
 | Advisors reales de Supabase nunca ejecutados formalmente | En esta auditoría se replicaron a mano los checks más importantes (RLS habilitado, `search_path` en funciones `SECURITY DEFINER`) por no tener el conector MCP disponible, pero nunca se corrió el motor real de Advisors del Dashboard. **Acción manual, no de código** | [Dashboard → Advisors](https://supabase.com/dashboard/project/remznaanexwgzeeupctv/advisors/security) |
-| Reembolso de arriendos de sala | No hay flujo para anular/devolver un `ROOM_RESERVATION` una vez pagado. **Decisión de producto ya tomada (R19, 16-ago):** cancela el profesor o la sede, hasta 24h antes, reembolso total. **Falta implementar.** Plan técnico: extender `payment_session_status` con estados de reembolso (o campo de estado propio en `payment_sessions`, ya que un arriendo no genera fila en `payments`); nueva Edge Function (o extensión de `process-refunds`) que reembolse con el **token de la sede** (`mp_seller_accounts`, no el de la plataforma, porque el arriendo se cobró con split); liberar `room_schedule_blocks` de vuelta a `AVAILABLE`; UI de cancelación en `BuscarSalasPage`/`SedeAgendaSalaPage` o equivalente | `supabase/functions/reserve-room-preference/`, `payment_sessions`, `02-Reglas-de-Negocio.md` R19 |
 
 **✅ Cerrado el 16-ago-2026 (segunda sesión, deuda técnica):**
 - CLI de Supabase actualizada v2.78.1 → v2.114.0 (`scoop update supabase`).
@@ -68,6 +67,13 @@ misma sesión. Ver "Cerrado" abajo para el detalle de cada uno.
   con `Promise.all`), `ProfesorDashboardPage.vue` (2 llamadas sueltas después del primer
   `Promise.allSettled` → sumadas al mismo). Verificado: lint sin errores nuevos, 44/44 tests, build
   de producción limpio.
+- **Reembolso de arriendos de sala (R19)**: implementado — Edge Function `cancel-room-reservation`
+  (reembolso total con el token de la sede, guarda de "sin inscripciones activas", ventana de 24h),
+  columna `classes.payment_session_id`, UI en `ProfesorBorradoresPage.vue` y `SedeMisClasesPage.vue`.
+  De paso se corrigió un bug preexistente: "Eliminar borrador" con sala reservada no liberaba
+  realmente el bloque (`room_schedule_blocks.class_id` no tiene FK) ni reembolsaba — ver
+  `11-Mejoras-Incorporadas.md` §14. **Código en `main`, migración y deploy de Edge Functions
+  pendientes** (sin ambiente de staging conectado en esta sesión para probar un reembolso real).
 
 ---
 

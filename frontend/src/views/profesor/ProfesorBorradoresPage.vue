@@ -107,7 +107,7 @@
               @click="confirmarEliminar(c)"
               class="text-red-400 hover:text-red-300 text-sm transition-colors"
             >
-              Eliminar
+              {{ c.roomId ? 'Cancelar reserva' : 'Eliminar' }}
             </button>
           </div>
         </div>
@@ -153,18 +153,21 @@
       </div>
     </div>
 
-    <!-- Modal confirmacion eliminar -->
+    <!-- Modal confirmacion eliminar / cancelar reserva -->
     <BottomSheet :model-value="!!borrandoId" @update:model-value="$event || (borrandoId = null)">
-      <h3 class="text-white font-semibold mb-2">Eliminar borrador</h3>
-      <p class="text-gray-400 text-sm mb-6">
-        Estas seguro de eliminar este borrador?
-        <span v-if="borrandoConSala" class="text-yellow-400"> Se liberara la sala reservada.</span>
-        Esta accion no se puede deshacer.
+      <h3 class="text-white font-semibold mb-2">{{ borrandoConSala ? 'Cancelar arriendo de sala' : 'Eliminar borrador' }}</h3>
+      <p v-if="borrandoConSala" class="text-gray-400 text-sm mb-6">
+        Se cancelará el arriendo y se reembolsará el <strong class="text-white">100% del pago</strong>.
+        Solo es posible hasta 24 horas antes del horario reservado y si la clase no tiene alumnos
+        inscritos. Esta acción no se puede deshacer.
+      </p>
+      <p v-else class="text-gray-400 text-sm mb-6">
+        Estas seguro de eliminar este borrador? Esta accion no se puede deshacer.
       </p>
       <div class="flex space-x-3">
         <button @click="eliminarBorrador" :disabled="eliminando"
           class="btn-primary flex-1 bg-red-600 hover:bg-red-700 border-red-600">
-          {{ eliminando ? 'Eliminando...' : 'Si, eliminar' }}
+          {{ eliminando ? 'Procesando...' : (borrandoConSala ? 'Sí, cancelar y reembolsar' : 'Sí, eliminar') }}
         </button>
         <button @click="borrandoId = null"
           class="flex-1 px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-[var(--bg-elevated)]">
@@ -180,6 +183,7 @@ import { ref, onMounted } from 'vue'
 import classService from '@/services/classService'
 import { formatDate, formatTime } from '@/utils/dateFormatter'
 import { useToast } from '@/composables/useToast'
+import venueService from '@/services/venueService'
 import BottomSheet from '@/components/BottomSheet.vue'
 
 const toast = useToast()
@@ -223,10 +227,19 @@ async function eliminarBorrador() {
   if (!borrandoId.value) return
   eliminando.value = true
   try {
-    await classService.deleteDraft(borrandoId.value)
+    if (borrandoConSala.value) {
+      // Reserva de sala pagada: cancela y reembolsa (R19), no un simple delete.
+      await venueService.cancelRoomReservation(borrandoId.value)
+      toast.success('Arriendo cancelado. El reembolso ya fue procesado.')
+    } else {
+      await classService.deleteDraft(borrandoId.value)
+    }
     borradores.value = borradores.value.filter(c => c.id !== borrandoId.value)
     borrandoId.value = null
-  } catch {
+  } catch (e) {
+    if (borrandoConSala.value) {
+      toast.error(e?.response?.data?.error || e?.message || 'No se pudo cancelar el arriendo')
+    }
     borrandoId.value = null
   }
   eliminando.value = false

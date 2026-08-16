@@ -3,7 +3,7 @@
 > **Versión:** 2.3 — Actualizado al 16-ago-2026
 > **Total de reglas:** 19 reglas formales del MVP
 
-Estas reglas son las restricciones e invariantes del sistema, sus mecanismos de aplicación y consecuencias documentadas. La mayoría están implementadas y validadas en código y/o en la base de datos; R19 es una decisión de producto documentada, pendiente de implementación (ver nota en la regla).
+Estas reglas son las restricciones e invariantes del sistema, sus mecanismos de aplicación y consecuencias documentadas. La mayoría están implementadas y validadas en código y/o en la base de datos; R19 está implementada en código, pendiente de desplegar en producción (ver nota en la regla).
 
 ---
 
@@ -227,11 +227,16 @@ Decisión tomada para cerrar el gap de "reembolso de arriendos de sala" (ver
   Pasado ese plazo, no se puede cancelar por esta vía.
 - **Reembolso:** **total** — se devuelve el 100% de lo pagado (incluida la comisión de la
   plataforma), sin penalidad.
+- **Guarda adicional (criterio de implementación, no pedida explícitamente):** no se puede cancelar
+  si la clase ya tiene inscripciones `ACTIVE` — ese caso lo cubre el flujo existente de "clase no
+  realizada" (R13/R16.1).
 
-**⚠️ Estado: decisión documentada, no implementada todavía.** No existe hoy ninguna Edge
-Function, migración ni UI para este flujo — ver `15-Roadmap-y-Pendientes.md` para el plan técnico
-(extender `payment_session_status`, reembolsar con el token de la **sede**, no el de la plataforma,
-ya que el arriendo se cobra con split; liberar `room_schedule_blocks` de vuelta a `AVAILABLE`).
+- **Implementación (16-ago):** Edge Function `cancel-room-reservation`. Reembolsa con el token de la
+  **sede** (no la plataforma, porque el arriendo se cobró con split) contra la API de MercadoPago;
+  libera `room_schedule_blocks` a `AVAILABLE` y pasa la clase a `CANCELLED`. Columna
+  `classes.payment_session_id` (migración `20260816020000_room_reservation_cancel.sql`) ubica el
+  pago a reembolsar. **Migración y despliegue de Edge Functions pendientes de aplicar en
+  producción** — ver `11-Mejoras-Incorporadas.md` §14.
 
 ---
 

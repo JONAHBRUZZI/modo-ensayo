@@ -470,6 +470,9 @@ verify_jwt = false
 [functions.reserve-room-preference]
 verify_jwt = true
 
+[functions.cancel-room-reservation]
+verify_jwt = true
+
 [functions.mp-oauth-start]
 verify_jwt = true
 

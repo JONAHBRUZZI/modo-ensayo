@@ -186,6 +186,7 @@ Bloques de agenda generados por sala.
 | tipo_clase | `tipo_clase` | DEFAULT 'PROPIA' |
 | reschedule_deadline | timestamptz | Ventana de 24h para reagendar tras marcarse "no realizada"; NULL fuera de ella. El cron `process_class_reschedule_timeouts` reembolsa al vencer. |
 | honorario | numeric | Solo ASIGNADA: monto fijo al profesor dependiente |
+| payment_session_id | uuid | FK → payment_sessions(id). Solo si la clase nació de un arriendo de sala pagado (materializado por `mercadopago-webhook`); permite ubicar el pago en O(1) al cancelar (R19, `cancel-room-reservation`) |
 
 ### `class_status_history`
 | Columna | Tipo | Notas |
@@ -419,7 +420,7 @@ latidos registrados vs. esperados. Origen: `20260708100000_uptime_heartbeat.sql`
 | `class_status` | DRAFT, PUBLISHED, IN_PROGRESS, FULL, CANCELLED, COMPLETED, SUSPENDED, POR_VALIDAR |
 | `estado_sede` | PENDIENTE_APROBACION, APROBADA, RECHAZADA, SUSPENDIDA |
 | `nivel_clase` | BASICO, INTERMEDIO, AVANZADO |
-| `payment_session_status` | PENDING, APPROVED, FAILED |
+| `payment_session_status` | PENDING, APPROVED, FAILED, REFUNDED (agregado 16-ago, R19 — reembolso de arriendos de sala) |
 | `payment_status` | RETAINED, RELEASED, REFUND_PENDING, REFUNDED, FAILED |
 | `reschedule_status` | PROPOSED, TEACHER_ACCEPTED, TEACHER_REJECTED, COMPLETED |
 | `response_type` | ACCEPTED, REJECTED, TIMEOUT, RECHAZADO_AUTOMATICO |

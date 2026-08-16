@@ -86,6 +86,7 @@ Definidas en `supabase/functions/`. `verify_jwt` se configura por función en
 | `mp-connect-start` | Inicia OAuth de MercadoPago Connect; genera state anti-CSRF y devuelve URL de autorización |
 | `mp-connect-callback` | Callback OAuth (sin JWT); valida state, canjea code→tokens y guarda cuenta del vendedor |
 | `reserve-room-preference` | Crea preferencia de arriendo de sala con split automático a la cuenta MercadoPago de la sede. Acepta `borradorId` (publica ese borrador/clase al pagar) y `rescheduleReason` (cuando el arriendo completa un reagendamiento de una clase caída) |
+| `cancel-room-reservation` | R19: cancela un arriendo de sala pagado y reembolsa el 100% con el token de la **sede** (no la plataforma). Solo el profesor dueño o el admin de la sede; hasta 24h antes del horario y sin inscripciones `ACTIVE`. Libera los `room_schedule_blocks` a `AVAILABLE` y pasa la clase a `CANCELLED` |
 | `sede-reschedule-class` | La **sede** reagenda una clase ASIGNADA (no realizada) a una sala propia **sin pago**: ocupa bloques, republica la clase en el nuevo horario, dispara la decisión de los alumnos y avisa al profesor dependiente |
 | `mp-oauth-start` | Inicia OAuth de MercadoPago para conectar la cuenta del **profesor** (payouts); genera `state` anti-CSRF en `mp_oauth_states` y devuelve la URL de autorización |
 | `mp-oauth-callback` | Callback OAuth del profesor (sin JWT); valida `state`, canjea code→tokens y guarda la cuenta del vendedor |

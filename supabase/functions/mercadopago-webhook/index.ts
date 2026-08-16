@@ -46,7 +46,7 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
     await admin.from("classes").update({
       room_id: cart.roomId, start_time: firstStart, end_time: lastEnd,
       duration: durationMin, capacity: roomCapacity, status: "PUBLISHED",
-      reschedule_deadline: null,
+      reschedule_deadline: null, payment_session_id: session.id,
     }).eq("id", classId).eq("teacher_id", ownerId);
   } else {
     // Crea un borrador de reserva (el profesor lo completa luego).
@@ -55,7 +55,7 @@ async function materializeRoomReservation(admin: Admin, session: { id: string; o
       level: "BASICO", capacity: roomCapacity, duration: durationMin, price: cart.amount,
       start_time: firstStart, end_time: lastEnd,
       room_id: cart.roomId, teacher_id: ownerId,
-      status: "DRAFT", tipo_clase: "PROPIA",
+      status: "DRAFT", tipo_clase: "PROPIA", payment_session_id: session.id,
     }).select("id").single();
     classId = nueva?.id ?? null;
   }

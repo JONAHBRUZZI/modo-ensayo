@@ -349,6 +349,43 @@ que hizo `db push` en otra sesión. Ver también checklist de despliegue en `A1-
 
 ---
 
+## 14. Cancelación y reembolso de arriendo de sala (R19) — 16-ago-2026
+
+**Qué:** implementación de R19 (`02-Reglas-de-Negocio.md`) — el profesor que pagó un arriendo de
+sala, o la sede dueña de la sala, pueden cancelarlo hasta 24h antes del horario reservado con
+reembolso total.
+
+**Bug preexistente corregido en el mismo pase:** el botón "Eliminar borrador" en
+`ProfesorBorradoresPage.vue`, para borradores con sala reservada, decía "se liberará la sala
+reservada" pero `classService.deleteDraft()` es un `DELETE FROM classes` plano —
+`room_schedule_blocks.class_id` **no tiene foreign key**, así que el bloque quedaba huérfano
+(`OCCUPIED` para siempre) y el dinero pagado nunca se reembolsaba. Se corrigió reemplazando ese
+flujo por el nuevo, para borradores con `roomId`.
+
+**Cómo:**
+- Migración `20260816020000_room_reservation_cancel.sql`: nuevo valor `REFUNDED` en
+  `payment_session_status`, y columna `classes.payment_session_id` (ubica el pago de una reserva de
+  sala en O(1) al cancelar).
+- `mercadopago-webhook` (`materializeRoomReservation`): ahora guarda `payment_session_id` al crear
+  o republicar la clase de una reserva de sala pagada.
+- Nueva Edge Function `cancel-room-reservation`: valida (clase existe y tiene pago asociado, no está
+  ya `CANCELLED`/`COMPLETED`/`SUSPENDED`, **sin inscripciones `ACTIVE`** — guarda de integridad no
+  pedida explícitamente en R19, remite al flujo de "clase no realizada" si ya hay alumnos—, dentro
+  de las 24h, actor autorizado), reembolsa el 100% vía API de MercadoPago con el token de la **sede**
+  (no la plataforma — el cobro fue con split), libera los bloques a `AVAILABLE` y cancela la clase.
+- Frontend: `venueService.cancelRoomReservation(classId)`; botón "Cancelar reserva" en
+  `ProfesorBorradoresPage.vue` (reemplaza `deleteDraft` cuando hay sala) y "Cancelar arriendo y
+  reembolsar" en el detalle de `SedeMisClasesPage.vue` (solo clases `PROPIA`).
+**Archivos:** `migrations/20260816020000_room_reservation_cancel.sql`,
+`functions/mercadopago-webhook/index.ts`, `functions/cancel-room-reservation/index.ts`,
+`services/venueService.js`, `views/profesor/ProfesorBorradoresPage.vue`,
+`views/sede/SedeMisClasesPage.vue`, `config.toml`.
+**Estado:** código en `main`. **Migración y despliegue de Edge Functions pendientes** — sin
+ambiente de staging conectado en esta sesión, no se pudo probar un reembolso real contra
+MercadoPago. Recomendado: prueba end-to-end manual y controlada antes de confiar en el flujo.
+
+---
+
 ## Acciones de despliegue pendientes de este documento
 
 1. `supabase functions deploy process-refunds` (fix 4.2 / PR #43). ✅ desplegada 07-jul.
@@ -365,3 +402,5 @@ que hizo `db push` en otra sesión. Ver también checklist de despliegue en `A1-
 12. Aplicar `20260622000400_enforce_teacher_mp_connected.sql` (trigger que bloquea publicar una clase sin MercadoPago conectado). ⚠️ **Quedó sin aplicar desde el 22-jun** — detectado y corregido recién en la auditoría del 16-ago-2026 (ver sección 13). El resto de las 21 migraciones "pendientes" que reportaba el CLI ese día ya estaban aplicadas en el schema real; era solo un problema de tracking (ver 13).
 13. `supabase functions deploy mercadopago-webhook` (fixes 4.7, 11-jul). ✅ desplegada 16-ago.
 14. `supabase db push` de `20260710000002_full_delete_cascade.sql` (renombrada por colisión de timestamp con `venue_stats.sql`) y `20260711000000_rut_exists_rpc.sql` (aviso de RUT duplicado). ✅ aplicadas 16-ago.
+15. Aplicar `20260816020000_room_reservation_cancel.sql` (R19). ⏳ pendiente.
+16. `supabase functions deploy cancel-room-reservation mercadopago-webhook` (R19 — el webhook cambió para guardar `payment_session_id`). ⏳ pendiente.

@@ -167,6 +167,13 @@ export default {
     return invokeFunction('sede-reschedule-class', { body: { classId, roomId, blockIds, reason } })
   },
 
+  // R19: cancela un arriendo de sala pagado (hasta 24h antes, sin alumnos
+  // inscritos) y reembolsa el 100% al profesor. Puede invocarlo el profesor
+  // dueño de la clase o el admin de la sede.
+  cancelRoomReservation(classId) {
+    return invokeFunction('cancel-room-reservation', { body: { classId } })
+  },
+
   // ── Documentos de sede ──
   async getVenueDocuments(venueId) {
     const { data, error } = await supabase.from('venue_documents').select('*').eq('venue_id', venueId)

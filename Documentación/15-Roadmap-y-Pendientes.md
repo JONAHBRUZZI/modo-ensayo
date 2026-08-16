@@ -44,11 +44,12 @@ misma sesión. Ver "Cerrado" abajo para el detalle de cada uno.
 | Desembolso real a profesores | `process-payouts` → `disburseToSeller` es un stub de Fase 0; los `teacher_payouts` quedan `PENDING` pero el dinero no se gira automáticamente (money-out de MercadoPago Chile pendiente de habilitar) | `supabase/functions/process-payouts/` |
 | 2 tests fallando por timing | `CartPage.test.js` — el componente queda en "Cargando..." antes de que resuelva el mock; no es un bug de producto | `frontend/src/views/CartPage.test.js` |
 | `features/` sin usar | Carpetas `auth`, `cart`, `classes`, `payments`, `reschedules` bajo `frontend/src/features/` están vacías (solo `.gitkeep`); la lógica real vive en `services/` + `views/`. Corregido en `CLAUDE.md` en esta auditoría — decidir si se elimina la carpeta o se usa de verdad | `frontend/src/features/` |
-| CLI de Supabase desactualizado | v2.78.1 instalada, v2.114.0 disponible | — |
 | Advisors reales de Supabase nunca ejecutados formalmente | En esta auditoría se replicaron a mano los checks más importantes (RLS habilitado, `search_path` en funciones `SECURITY DEFINER`) por no tener el conector MCP disponible, pero nunca se corrió el motor real de Advisors del Dashboard | [Dashboard → Advisors](https://supabase.com/dashboard/project/remznaanexwgzeeupctv/advisors/security) |
 | Reembolso de arriendos de sala | No hay flujo para anular/devolver un `ROOM_RESERVATION` una vez pagado | — |
 | Validaciones de perfil server-side | Hoy solo en frontend; faltan triggers/constraints equivalentes en BD | — |
 | Rendimiento de vistas calientes | Cascadas de llamadas secuenciales en algunas vistas podrían paralelizarse | — |
+
+**✅ Cerrado:** CLI de Supabase actualizada v2.78.1 → v2.114.0 (`scoop update supabase`, 16-ago).
 
 ---
 

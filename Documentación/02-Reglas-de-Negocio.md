@@ -55,9 +55,15 @@ Un mismo documento de identidad no puede estar `APROBADO` en más de una cuenta 
   ingresar el RUT en la verificación de identidad, consulta si ya existe (en
   `identity_verifications` PENDING/APPROVED o en `profiles.rut` de otra cuenta) y **bloquea el
   envío del formulario** con un aviso. Es un chequeo del lado del cliente en el momento de subir el
-  documento — **no hay constraint único en la base de datos**, así que no cubre aprobaciones vía
-  API directa ni condiciones de carrera. `adminService.reviewIdentity()` sigue aprobando sin
-  reverificar. Ver roadmap (`15-Roadmap-y-Pendientes.md`, sección Crítico).
+  documento — no cubre aprobaciones vía API directa ni condiciones de carrera por sí solo.
+- **Constraint en base de datos (16-ago):** índice único parcial
+  `identity_verifications_document_approved_unique` sobre `document_number` normalizado (mismo
+  formato que `rut_ya_registrado`: sin puntos/guiones/espacios, mayúsculas), condicionado a
+  `status = 'APPROVED'` (migración `20260816000000_identity_document_unique.sql`). Cierra el gap
+  que el aviso del frontend no cubría. `adminService.reviewIdentity()` captura la violación
+  (código Postgres `23505`) y devuelve un mensaje claro en vez del error crudo de la base de datos.
+  **Estado: migración creada, pendiente de aplicar en remoto** — ver roadmap
+  (`15-Roadmap-y-Pendientes.md`).
 
 ---
 

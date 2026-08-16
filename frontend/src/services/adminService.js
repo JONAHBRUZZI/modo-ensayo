@@ -117,7 +117,14 @@ export default {
     const status = approved ? 'APPROVED' : 'REJECTED'
     const { data: idver, error } = await supabase
       .from('identity_verifications').update({ status }).eq('id', id).select('user_id').single()
-    if (error) throw error
+    if (error) {
+      // 23505 = violación del índice único identity_verifications_document_approved_unique (R05)
+      if (error.code === '23505') {
+        const message = 'Este documento de identidad ya está aprobado en otra cuenta.'
+        throw { response: { status: 409, data: { message } }, message }
+      }
+      throw error
+    }
     const { error: profErr } = await supabase
       .from('profiles')
       .update({

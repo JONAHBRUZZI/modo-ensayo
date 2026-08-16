@@ -9,24 +9,20 @@
 
 ## 🔴 Crítico / bugs conocidos
 
-### 1. R05 — Identidad duplicada: solo aviso en frontend, sin constraint en BD
-La documentación (`02-Reglas-de-Negocio.md`, regla R05, y `07-Plan-de-Pruebas.md`, escenario
-"Borde 1 — Identidad duplicada") dice que un documento de identidad ya aprobado en otra cuenta se
-rechaza. El **11-jul** se agregó una mitigación parcial (RPC `rut_ya_registrado`,
-`SECURITY DEFINER`) que avisa en el formulario de verificación si el RUT ya está registrado
-(`PENDING`/`APPROVED` en `identity_verifications` o en `profiles.rut` de otra cuenta) y bloquea el
-envío. Pero **sigue sin haber un constraint único en la base de datos**: `adminService.reviewIdentity()`
-(`frontend/src/services/adminService.js:115-129`) aprueba sin reverificar, y una aprobación vía API
-directa (bypaseando el frontend) no queda bloqueada.
+### 1. R05 — Constraint de identidad duplicada creado, falta aplicar en remoto
+**Actualización 16-ago (misma sesión):** se creó la migración
+`20260816000000_identity_document_unique.sql` — índice único parcial sobre
+`identity_verifications.document_number` (normalizado) para `status = 'APPROVED'`, más manejo del
+error en `adminService.reviewIdentity()` (`frontend/src/services/adminService.js`) para devolver un
+mensaje claro en vez del error crudo de Postgres. **Falta aplicar la migración en producción**
+(`supabase db push` desde una sesión con la cuenta correcta) — el índice incluye un chequeo previo
+que loguea como `WARNING` cualquier documento ya duplicado en `APPROVED`, por si hay que resolverlo
+a mano antes de que el `CREATE UNIQUE INDEX` pueda aplicarse.
 
-- **Riesgo:** suplantación de identidad / una persona con múltiples cuentas validadas, si no pasa
-  por el formulario normal.
-- **Era una regresión de la migración**: el backend Spring Boot original lo tenía como constraint
-  duro (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`).
-- **Fix sugerido:** constraint único parcial en Postgres —
-  `CREATE UNIQUE INDEX ON identity_verifications (document_number) WHERE status = 'APPROVED'` — o
-  chequeo explícito en `reviewIdentity()` antes de aprobar, para cerrar el gap que el aviso del
-  frontend no cubre.
+- **Riesgo mientras no se aplique:** suplantación de identidad / una persona con múltiples cuentas
+  validadas, vía aprobación por API directa (el aviso de RUT del 11-jul solo cubre el formulario).
+- **Era una regresión de la migración a Supabase**: el backend Spring Boot original lo tenía como
+  constraint duro (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`).
 
 ### ✅ Cerrado el 16-ago-2026 (sesión de la auditoría)
 - **Trigger `enforce_teacher_mp_connected` faltante en producción** (migración `20260622000400`,

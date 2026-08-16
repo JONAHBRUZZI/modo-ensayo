@@ -185,31 +185,44 @@ const ingresoTotal = computed(() => totales.value.arriendo + totales.value.clase
 const neto = computed(() => ingresoTotal.value - totales.value.egreso)
 
 onMounted(async () => {
-  await cargarMetricas()
-  try { payouts.value = await venueService.getVenueTeacherPayouts() } catch { payouts.value = [] }
-  payoutsLoading.value = false
+  // Las 4 secciones (métricas, payouts, clases por confirmar, conteo de
+  // salas) son independientes entre sí — se cargan en paralelo en vez de en
+  // cascada secuencial. Cada una maneja su propio error internamente.
+  await Promise.allSettled([
+    cargarMetricas(),
 
-  try {
-    const pendientes = await venueService.getPendingClasses()
-    stats.value.porConfirmar = Array.isArray(pendientes) ? pendientes.length : 0
-  } catch { stats.value.porConfirmar = 0 }
+    (async () => {
+      try { payouts.value = await venueService.getVenueTeacherPayouts() } catch { payouts.value = [] }
+      payoutsLoading.value = false
+    })(),
 
-  try {
-    const myVenues = await venueService.getMyVenues()
-    const vArr = Array.isArray(myVenues) ? myVenues : myVenues?.content || []
-    let totalSalas = 0
-    for (const v of vArr) {
+    (async () => {
       try {
-        const rooms = await venueService.getVenueRooms(v.id)
-        totalSalas += Array.isArray(rooms) ? rooms.length : 0
+        const pendientes = await venueService.getPendingClasses()
+        stats.value.porConfirmar = Array.isArray(pendientes) ? pendientes.length : 0
+      } catch { stats.value.porConfirmar = 0 }
+    })(),
+
+    (async () => {
+      try {
+        const myVenues = await venueService.getMyVenues()
+        const vArr = Array.isArray(myVenues) ? myVenues : myVenues?.content || []
+        // El conteo de salas por sede también es independiente entre sedes.
+        const conteos = await Promise.all(vArr.map(async (v) => {
+          try {
+            const rooms = await venueService.getVenueRooms(v.id)
+            return Array.isArray(rooms) ? rooms.length : 0
+          } catch (err) {
+            console.error('Error al cargar salas de la sede', err)
+            return 0
+          }
+        }))
+        stats.value.salas = conteos.reduce((a, b) => a + b, 0)
       } catch (err) {
         console.error('Error al cargar salas de la sede', err)
       }
-    }
-    stats.value.salas = totalSalas
-  } catch (err) {
-    console.error('Error al cargar salas de la sede', err)
-  }
+    })()
+  ])
 })
 
 async function cargarMetricas() {

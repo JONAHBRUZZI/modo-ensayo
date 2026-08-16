@@ -1,5 +1,13 @@
 import { supabase, currentUserId, camelize } from './supabase'
 
+// 23514 = check_violation (constraints chk_profiles_rut / chk_profiles_phone /
+// chk_refund_methods_rut / chk_identity_verifications_document_number).
+// Traduce el error crudo de Postgres a un mensaje entendible para el usuario.
+function friendlyCheckViolation(error, message) {
+  if (error?.code === '23514') throw { response: { status: 422, data: { message } }, message }
+  throw error
+}
+
 export default {
   async getProfile() {
     const { data: { session } } = await supabase.auth.getSession()
@@ -28,7 +36,7 @@ export default {
     if (data.phone !== undefined) patch.phone = data.phone
     const { data: row, error } = await supabase
       .from('profiles').update(patch).eq('id', uid).select('*').single()
-    if (error) throw error
+    if (error) friendlyCheckViolation(error, 'El teléfono o RUT ingresado no tiene un formato válido.')
     return row
   },
 
@@ -53,7 +61,7 @@ export default {
         rut: data.rut ?? null
       })
       .select('*').single()
-    if (error) throw error
+    if (error) friendlyCheckViolation(error, 'El RUT ingresado no es válido.')
     return camelize(row)
   },
 
@@ -93,7 +101,7 @@ export default {
         status: 'PENDING'
       })
       .select('*').single()
-    if (error) throw error
+    if (error) friendlyCheckViolation(error, 'El número de documento ingresado no es un RUT válido.')
     // Refleja "en revisión" en el perfil.
     await supabase.from('profiles').update({ identidad_estado: 'PENDIENTE' }).eq('id', uid)
     return row

@@ -28,7 +28,6 @@ modo-ensayo/
     src/
       components/           # Componentes reutilizables
       composables/          # Utilidades de Composition API (useToast, etc.)
-      features/             # Módulos por dominio (auth, cart, classes, payments, reschedules)
       hooks/                # Hooks (useNotifications)
       layouts/              # Layout compartido
       pages/                # Vistas de acceso

@@ -165,11 +165,34 @@ const profesorListo = computed(() => perfilCompleto.value && mpConectado.value)
 const tienePropias = computed(() => stats.value.propias > 0)
 
 onMounted(async () => {
-  // Stats generales (los listados de clases se ven desde las tarjetas pulsables)
+  // Las 5 llamadas son independientes entre sí — se cargan todas en paralelo
+  // (stats generales + perfil profesional + estado de MercadoPago).
   const [propias, asignadas, earnings] = await Promise.allSettled([
     classService.getTeacherPropias(),
     classService.getTeacherAsignadas(),
-    classService.getTeacherEarnings()
+    classService.getTeacherEarnings(),
+
+    (async () => {
+      // Perfil profesional (rating + completitud). Mismos criterios que exige
+      // create-class al publicar, para avisar de inmediato.
+      try {
+        const profile = await professionalProfileService.getMine()
+        if (profile?.averageRating) averageRating.value = profile.averageRating
+        perfilCompleto.value = !!(profile && (profile.especialidad || profile.disciplinaPrincipal) &&
+          profile.experienceYears != null)
+      } catch (err) {
+        console.error('Error al cargar perfil del profesor', err)
+      }
+    })(),
+
+    (async () => {
+      try {
+        const estado = await sellerService.getStatus()
+        mpConectado.value = !!estado?.connected
+      } catch (err) {
+        console.error('Error al cargar estado de MercadoPago', err)
+      }
+    })()
   ])
 
   const propiasData = propias.status === 'fulfilled' && Array.isArray(propias.value) ? propias.value : []
@@ -186,22 +209,6 @@ onMounted(async () => {
     stats.value.totalLiberado = earnings.value?.resumen?.totalLiberado || 0
   }
 
-  // Perfil profesional (rating + completitud) y estado de conexión MercadoPago.
-  // Mismos criterios que exige create-class al publicar, para avisar de inmediato.
-  try {
-    const profile = await professionalProfileService.getMine()
-    if (profile?.averageRating) averageRating.value = profile.averageRating
-    perfilCompleto.value = !!(profile && (profile.especialidad || profile.disciplinaPrincipal) &&
-      profile.experienceYears != null)
-  } catch (err) {
-    console.error('Error al cargar perfil del profesor', err)
-  }
-  try {
-    const estado = await sellerService.getStatus()
-    mpConectado.value = !!estado?.connected
-  } catch (err) {
-    console.error('Error al cargar estado de MercadoPago', err)
-  }
   readinessCargado.value = true
 })
 

@@ -41,19 +41,29 @@ misma sesión. Ver "Cerrado" abajo para el detalle de cada uno.
 
 | Ítem | Detalle | Dónde |
 |---|---|---|
-| Desembolso real a profesores | `process-payouts` → `disburseToSeller` es un stub de Fase 0; los `teacher_payouts` quedan `PENDING` pero el dinero no se gira automáticamente (money-out de MercadoPago Chile pendiente de habilitar) | `supabase/functions/process-payouts/` |
-| `features/` sin usar | Carpetas `auth`, `cart`, `classes`, `payments`, `reschedules` bajo `frontend/src/features/` están vacías (solo `.gitkeep`); la lógica real vive en `services/` + `views/`. Corregido en `CLAUDE.md` en esta auditoría — decidir si se elimina la carpeta o se usa de verdad | `frontend/src/features/` |
-| Advisors reales de Supabase nunca ejecutados formalmente | En esta auditoría se replicaron a mano los checks más importantes (RLS habilitado, `search_path` en funciones `SECURITY DEFINER`) por no tener el conector MCP disponible, pero nunca se corrió el motor real de Advisors del Dashboard | [Dashboard → Advisors](https://supabase.com/dashboard/project/remznaanexwgzeeupctv/advisors/security) |
-| Reembolso de arriendos de sala | No hay flujo para anular/devolver un `ROOM_RESERVATION` una vez pagado | — |
-| Validaciones de perfil server-side | Hoy solo en frontend; faltan triggers/constraints equivalentes en BD | — |
-| Rendimiento de vistas calientes | Cascadas de llamadas secuenciales en algunas vistas podrían paralelizarse | — |
+| Desembolso real a profesores | `process-payouts` → `disburseToSeller` es un stub de Fase 0; los `teacher_payouts` quedan `PENDING` pero el dinero no se gira automáticamente (money-out de MercadoPago Chile pendiente de habilitar). **Decisión de alcance del equipo, no deuda olvidada** — ver `02-Reglas-de-Negocio.md` R13 y `14-Preguntas-Tecnicas-Jonathan.md` | `supabase/functions/process-payouts/` |
+| Advisors reales de Supabase nunca ejecutados formalmente | En esta auditoría se replicaron a mano los checks más importantes (RLS habilitado, `search_path` en funciones `SECURITY DEFINER`) por no tener el conector MCP disponible, pero nunca se corrió el motor real de Advisors del Dashboard. **Acción manual, no de código** | [Dashboard → Advisors](https://supabase.com/dashboard/project/remznaanexwgzeeupctv/advisors/security) |
+| Reembolso de arriendos de sala | No hay flujo para anular/devolver un `ROOM_RESERVATION` una vez pagado. **Bloqueado en decisión de producto**: quién puede cancelar (profesor/sede/ambos), hasta cuándo, reembolso total o con penalidad — sin definir esto no se puede diseñar la migración/Edge Function | `supabase/functions/reserve-room-preference/`, `payment_sessions` |
 
-**✅ Cerrado:**
-- CLI de Supabase actualizada v2.78.1 → v2.114.0 (`scoop update supabase`, 16-ago).
+**✅ Cerrado el 16-ago-2026 (segunda sesión, deuda técnica):**
+- CLI de Supabase actualizada v2.78.1 → v2.114.0 (`scoop update supabase`).
 - Los 2 tests de `CartPage.test.js` — causa real: `associateService.getAssociates()` (llamado en
   paralelo con `getCart()` en `onMounted`) no estaba mockeado y disparaba una llamada real a
   Supabase que nunca resolvía en el entorno de test. Se mockeó y se cambió el `setTimeout` fijo por
   `flushPromises()`. Suite completa: **44/44 tests pasan** (antes 42/44).
+- `frontend/src/features/` (vacío, solo `.gitkeep`) — eliminado. Corregidas las referencias en
+  `CLAUDE.md` y `Documentación/04-Arquitectura.md`.
+- **Validaciones de perfil server-side**: nueva migración
+  `20260816010000_profile_validation_constraints.sql` — función `rut_valido()` (mismo algoritmo que
+  el frontend, verificado con 8 casos de prueba cruzados) + constraints en `profiles.rut`,
+  `profiles.phone`, `refund_methods.rut` e `identity_verifications.document_number` (solo cuando
+  `document_type = 'RUT'`, para no romper pasaportes). `userService.js` traduce el error de Postgres
+  (23514) a un mensaje claro. **Pendiente aplicar en producción** (`supabase db push`).
+- **Rendimiento de vistas calientes**: `AdminDashboardPage.vue` (7 llamadas secuenciales → 1
+  `Promise.allSettled`), `SedeDashboardPage.vue` (4 secuenciales + loop de salas por sede → paralelo
+  con `Promise.all`), `ProfesorDashboardPage.vue` (2 llamadas sueltas después del primer
+  `Promise.allSettled` → sumadas al mismo). Verificado: lint sin errores nuevos, 44/44 tests, build
+  de producción limpio.
 
 ---
 

@@ -557,14 +557,23 @@ async function cargarAnalytics() {
 }
 
 onMounted(async () => {
-  await cargarStats()
-  await cargarComisiones()
-  await cargarPagos()
-  await cargarMetrics()
-  await cargarAnalytics()
+  // Todas las tarjetas del dashboard son independientes entre sí y cada una ya
+  // maneja su propio error internamente — se cargan en paralelo en vez de en
+  // cascada secuencial.
+  await Promise.allSettled([
+    cargarStats(),
+    cargarComisiones(),
+    cargarPagos(),
+    cargarMetrics(),
+    cargarAnalytics(),
+    (async () => {
+      try { systemReviews.value = (await reviewService.getSystemReviews()).data || [] } catch { systemReviews.value = [] }
+    })(),
+    (async () => {
+      try { sysStats.value = (await reviewService.getSystemStats()).data || {} } catch { sysStats.value = {} }
+    })()
+  ])
   analyticsTimer = setInterval(cargarAnalytics, 30000)
-  try { systemReviews.value = (await reviewService.getSystemReviews()).data || [] } catch { systemReviews.value = [] }
-  try { sysStats.value = (await reviewService.getSystemStats()).data || {} } catch { sysStats.value = {} }
 })
 
 onUnmounted(() => { if (analyticsTimer) clearInterval(analyticsTimer) })

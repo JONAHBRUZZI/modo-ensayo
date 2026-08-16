@@ -28,29 +28,20 @@ directa (bypaseando el frontend) no queda bloqueada.
   chequeo explícito en `reviewIdentity()` antes de aprobar, para cerrar el gap que el aviso del
   frontend no cubre.
 
-### 2. Confirmar despliegue de los fixes del webhook de pago (11-jul)
-Dos commits del 2026-07-11 corrigen bugs de correctitud en `mercadopago-webhook` (ver
-`11-Mejoras-Incorporadas.md`, sección 4.7): aceptar inscripción aunque la clase cambió de estado, y
-tratar el HMAC como defensa en profundidad en vez de bloqueo. Ambos están marcados "requiere
-redeploy" en el commit, pero **no se pudo confirmar en la auditoría del 16-ago si la función
-desplegada en producción ya incluye estos cambios** (el CLI perdió el contexto de sesión antes de
-poder chequear `supabase functions list`).
-
-- **Acción:** entrar al Dashboard de Supabase → Edge Functions → `mercadopago-webhook` → revisar
-  fecha/versión del último deploy y compararla contra el commit `337f3ff`/`a4dd59d` (11-jul, ya en
-  `main`). Si es anterior, `supabase functions deploy mercadopago-webhook`.
-
-### 3. Verificar deploy de la migración `20260710000000_full_delete_cascade.sql`
-Commit `32f366c fix(admin): cascada de borrado completa para eliminar admins de sede`, mergeado a
-`main` después del corte de esta auditoría (no estaba en el schema comparado el 16-ago). Confirmar
-con `supabase migration list` / `supabase db push` que quedó aplicada en remoto antes de asumir que
-el borrado de admins de sede funciona en producción.
-
-### ✅ Cerrado en esta misma auditoría (16-ago-2026)
+### ✅ Cerrado el 16-ago-2026 (sesión de la auditoría)
 - **Trigger `enforce_teacher_mp_connected` faltante en producción** (migración `20260622000400`,
   aplicada desde el 22-jun pero nunca desplegada) — aplicado y verificado.
 - **Drift de tracking de migraciones** (22 migraciones locales marcadas "no aplicadas" cuando 21 ya
   lo estaban) — reconciliado con `migration repair`. Ver detalle en `11-Mejoras-Incorporadas.md` §13.
+- **Fixes del webhook de pago (11-jul)** — `mercadopago-webhook` redeployado (`supabase functions
+  deploy mercadopago-webhook`, confirmado en terminal del usuario). Los dos fixes de correctitud
+  (inscripción con clase en otro estado + HMAC como defensa en profundidad) ya están en producción.
+- **Colisión de timestamp de migración**: `full_delete_cascade.sql` y `venue_stats.sql` compartían
+  el mismo número de versión `20260710000000`, lo que confundía el tracking de
+  `supabase migration list`. Renombrado a `20260710000002_full_delete_cascade.sql` (commit
+  `638bf76`) y aplicado junto con `20260711000000_rut_exists_rpc.sql` vía `supabase db push` — ambos
+  confirmados en remoto sin errores. Con esto, **la cascada de borrado completa de admins de sede
+  (32f366c) y el aviso de RUT duplicado (R05, mitigación parcial) ya están en producción.**
 
 ---
 

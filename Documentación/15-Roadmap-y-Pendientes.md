@@ -72,8 +72,10 @@ misma sesión. Ver "Cerrado" abajo para el detalle de cada uno.
   columna `classes.payment_session_id`, UI en `ProfesorBorradoresPage.vue` y `SedeMisClasesPage.vue`.
   De paso se corrigió un bug preexistente: "Eliminar borrador" con sala reservada no liberaba
   realmente el bloque (`room_schedule_blocks.class_id` no tiene FK) ni reembolsaba — ver
-  `11-Mejoras-Incorporadas.md` §14. **Código en `main`, migración y deploy de Edge Functions
-  pendientes** (sin ambiente de staging conectado en esta sesión para probar un reembolso real).
+  `11-Mejoras-Incorporadas.md` §14. **En producción (16-ago)** — migración aplicada, funciones
+  desplegadas, verificado con `db dump`. **⚠️ Falta la prueba end-to-end con un reembolso real**
+  (reservar una sala de bajo costo y cancelarla) antes de confiar en el flujo — no se pudo hacer en
+  esta sesión.
 
 ---
 

@@ -380,9 +380,10 @@ flujo por el nuevo, para borradores con `roomId`.
 `functions/mercadopago-webhook/index.ts`, `functions/cancel-room-reservation/index.ts`,
 `services/venueService.js`, `views/profesor/ProfesorBorradoresPage.vue`,
 `views/sede/SedeMisClasesPage.vue`, `config.toml`.
-**Estado:** código en `main`. **Migración y despliegue de Edge Functions pendientes** — sin
-ambiente de staging conectado en esta sesión, no se pudo probar un reembolso real contra
-MercadoPago. Recomendado: prueba end-to-end manual y controlada antes de confiar en el flujo.
+**Estado:** código en `main`, migración aplicada y Edge Functions desplegadas (16-ago), verificado
+con `db dump` (`REFUNDED` en el enum, `classes.payment_session_id` con su FK). **Sin probar con un
+reembolso real todavía** — no se pudo hacer en esta sesión. Recomendado: prueba end-to-end manual y
+controlada (reservar una sala de bajo costo y cancelarla) antes de confiar en el flujo.
 
 ---
 
@@ -402,5 +403,5 @@ MercadoPago. Recomendado: prueba end-to-end manual y controlada antes de confiar
 12. Aplicar `20260622000400_enforce_teacher_mp_connected.sql` (trigger que bloquea publicar una clase sin MercadoPago conectado). ⚠️ **Quedó sin aplicar desde el 22-jun** — detectado y corregido recién en la auditoría del 16-ago-2026 (ver sección 13). El resto de las 21 migraciones "pendientes" que reportaba el CLI ese día ya estaban aplicadas en el schema real; era solo un problema de tracking (ver 13).
 13. `supabase functions deploy mercadopago-webhook` (fixes 4.7, 11-jul). ✅ desplegada 16-ago.
 14. `supabase db push` de `20260710000002_full_delete_cascade.sql` (renombrada por colisión de timestamp con `venue_stats.sql`) y `20260711000000_rut_exists_rpc.sql` (aviso de RUT duplicado). ✅ aplicadas 16-ago.
-15. Aplicar `20260816020000_room_reservation_cancel.sql` (R19). ⏳ pendiente.
-16. `supabase functions deploy cancel-room-reservation mercadopago-webhook` (R19 — el webhook cambió para guardar `payment_session_id`). ⏳ pendiente.
+15. Aplicar `20260816020000_room_reservation_cancel.sql` (R19). ✅ aplicada 16-ago.
+16. `supabase functions deploy cancel-room-reservation mercadopago-webhook` (R19 — el webhook cambió para guardar `payment_session_id`). ✅ desplegadas 16-ago.

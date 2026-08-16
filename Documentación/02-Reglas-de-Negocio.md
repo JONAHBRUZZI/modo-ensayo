@@ -235,8 +235,9 @@ Decisión tomada para cerrar el gap de "reembolso de arriendos de sala" (ver
   **sede** (no la plataforma, porque el arriendo se cobró con split) contra la API de MercadoPago;
   libera `room_schedule_blocks` a `AVAILABLE` y pasa la clase a `CANCELLED`. Columna
   `classes.payment_session_id` (migración `20260816020000_room_reservation_cancel.sql`) ubica el
-  pago a reembolsar. **Migración y despliegue de Edge Functions pendientes de aplicar en
-  producción** — ver `11-Mejoras-Incorporadas.md` §14.
+  pago a reembolsar. **Aplicado en producción (16-ago)** — migración y despliegue de
+  `cancel-room-reservation`/`mercadopago-webhook` confirmados. **Sin probar con un reembolso real
+  todavía** — ver `11-Mejoras-Incorporadas.md` §14.
 
 ---
 

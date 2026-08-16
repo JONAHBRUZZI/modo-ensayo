@@ -9,22 +9,18 @@
 
 ## 🔴 Crítico / bugs conocidos
 
-### 1. R05 — Constraint de identidad duplicada creado, falta aplicar en remoto
-**Actualización 16-ago (misma sesión):** se creó la migración
-`20260816000000_identity_document_unique.sql` — índice único parcial sobre
-`identity_verifications.document_number` (normalizado) para `status = 'APPROVED'`, más manejo del
-error en `adminService.reviewIdentity()` (`frontend/src/services/adminService.js`) para devolver un
-mensaje claro en vez del error crudo de Postgres. **Falta aplicar la migración en producción**
-(`supabase db push` desde una sesión con la cuenta correcta) — el índice incluye un chequeo previo
-que loguea como `WARNING` cualquier documento ya duplicado en `APPROVED`, por si hay que resolverlo
-a mano antes de que el `CREATE UNIQUE INDEX` pueda aplicarse.
-
-- **Riesgo mientras no se aplique:** suplantación de identidad / una persona con múltiples cuentas
-  validadas, vía aprobación por API directa (el aviso de RUT del 11-jul solo cubre el formulario).
-- **Era una regresión de la migración a Supabase**: el backend Spring Boot original lo tenía como
-  constraint duro (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`).
+Sin ítems abiertos al cierre de esta auditoría (16-ago-2026) — el último (R05) se resolvió en la
+misma sesión. Ver "Cerrado" abajo para el detalle de cada uno.
 
 ### ✅ Cerrado el 16-ago-2026 (sesión de la auditoría)
+- **R05 — Identidad duplicada:** índice único parcial `identity_verifications_document_approved_unique`
+  sobre `identity_verifications.document_number` (normalizado) para `status = 'APPROVED'`
+  (migración `20260816000000_identity_document_unique.sql`, commit `590d269`), más manejo del error
+  en `adminService.reviewIdentity()` para devolver un mensaje claro en vez del error crudo de
+  Postgres. Aplicado en producción sin conflictos (no había documentos duplicados preexistentes).
+  Cierra el gap que dejaba el aviso de RUT del frontend (11-jul), que no cubría aprobaciones vía API
+  directa ni condiciones de carrera. Era una regresión de la migración desde Spring Boot
+  (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`).
 - **Trigger `enforce_teacher_mp_connected` faltante en producción** (migración `20260622000400`,
   aplicada desde el 22-jun pero nunca desplegada) — aplicado y verificado.
 - **Drift de tracking de migraciones** (22 migraciones locales marcadas "no aplicadas" cuando 21 ya

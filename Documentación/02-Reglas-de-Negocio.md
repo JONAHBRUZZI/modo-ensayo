@@ -47,10 +47,11 @@ Cualquier usuario que quiera operar como **Maestro** o **Administrador de Sede**
 
 Un mismo documento de identidad no puede estar `APROBADO` en más de una cuenta de usuario. Esto previene suplantación y duplicación de cuentas validadas.
 
-- **⚠️ Estado real: mitigación parcial, no la regla completa.** El backend Spring Boot original
-  tenía este chequeo como constraint duro
-  (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`), y se perdió en
-  la migración a Supabase. El 11-jul se agregó un aviso en el frontend (RPC
+- **✅ Estado real: implementado (dos capas).** El backend Spring Boot original tenía este chequeo
+  como constraint duro
+  (`IdentityVerificationRepository.existsByDocumentNumberAndStatusAndUserIdNot()`) y se perdió en la
+  migración a Supabase; quedó cerrado el 16-ago. El 11-jul se había agregado un aviso en el frontend
+  (RPC
   `rut_ya_registrado`, `SECURITY DEFINER`, migración `20260711000000_rut_exists_rpc.sql`): al
   ingresar el RUT en la verificación de identidad, consulta si ya existe (en
   `identity_verifications` PENDING/APPROVED o en `profiles.rut` de otra cuenta) y **bloquea el
@@ -62,8 +63,8 @@ Un mismo documento de identidad no puede estar `APROBADO` en más de una cuenta 
   `status = 'APPROVED'` (migración `20260816000000_identity_document_unique.sql`). Cierra el gap
   que el aviso del frontend no cubría. `adminService.reviewIdentity()` captura la violación
   (código Postgres `23505`) y devuelve un mensaje claro en vez del error crudo de la base de datos.
-  **Estado: migración creada, pendiente de aplicar en remoto** — ver roadmap
-  (`15-Roadmap-y-Pendientes.md`).
+  **Estado: aplicado en producción (16-ago)** — sin documentos duplicados preexistentes, el índice
+  se creó sin conflictos.
 
 ---
 
@@ -258,7 +259,7 @@ PROPUESTO → DECISION_MAESTRO ─── acepta ──→ NOTIFICADO_ALUMNOS
 | R02 | Edge Functions `create-class` / `mercadopago-webhook` + índice `enrollments_unique_beneficiary` | Manual + integration |
 | R03 | Trigger `trg_classes_status` → `track_class_status()` | Manual |
 | R04 | `userService.uploadIdentity()` (frontend) + `adminService.reviewIdentity()` (PostgREST + RLS admin) | Manual |
-| R05 | **Ninguno — no implementado** (ver nota en la sección R05) | — |
+| R05 | Índice único `identity_verifications_document_approved_unique` (BD) + RPC `rut_ya_registrado` (aviso frontend) | Manual |
 | R06 | Edge Function `admin-approve-venue` | Manual |
 | R07 | `associateService.js`, `cart_items.beneficiary_type`/`beneficiary_id` | Manual |
 | R08 | Edge Function `admin-users` (`assignRole`/`revokeRole`) | Manual |

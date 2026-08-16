@@ -53,12 +53,16 @@ misma sesión. Ver "Cerrado" abajo para el detalle de cada uno.
   `flushPromises()`. Suite completa: **44/44 tests pasan** (antes 42/44).
 - `frontend/src/features/` (vacío, solo `.gitkeep`) — eliminado. Corregidas las referencias en
   `CLAUDE.md` y `Documentación/04-Arquitectura.md`.
-- **Validaciones de perfil server-side**: nueva migración
+- **Validaciones de perfil server-side**: migración
   `20260816010000_profile_validation_constraints.sql` — función `rut_valido()` (mismo algoritmo que
   el frontend, verificado con 8 casos de prueba cruzados) + constraints en `profiles.rut`,
   `profiles.phone`, `refund_methods.rut` e `identity_verifications.document_number` (solo cuando
   `document_type = 'RUT'`, para no romper pasaportes). `userService.js` traduce el error de Postgres
-  (23514) a un mensaje claro. **Pendiente aplicar en producción** (`supabase db push`).
+  (23514) a un mensaje claro. **Aplicado en producción** — el primer intento falló porque 2 filas
+  tenían un **nombre de persona guardado en `profiles.phone`** en vez de un teléfono (data corrupta
+  de un bug anterior, no recuperable); se limpió a `NULL` con la migración
+  `20260816005000_fix_corrupt_phone_data.sql` antes de reaplicar. Verificado con `db dump`: los 4
+  constraints y `rut_valido()` existen en el schema real.
 - **Rendimiento de vistas calientes**: `AdminDashboardPage.vue` (7 llamadas secuenciales → 1
   `Promise.allSettled`), `SedeDashboardPage.vue` (4 secuenciales + loop de salas por sede → paralelo
   con `Promise.all`), `ProfesorDashboardPage.vue` (2 llamadas sueltas después del primer

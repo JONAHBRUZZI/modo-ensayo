@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
 import CartPage from './CartPage.vue'
 
@@ -12,6 +12,15 @@ vi.mock('@/services/paymentService', () => ({
     ]}),
     removeFromCart: vi.fn().mockResolvedValue({}),
     checkout: vi.fn().mockResolvedValue({}),
+  }
+}))
+
+// Mock associateService: CartPage lo llama en paralelo con getCart en onMounted
+// (Promise.all). Sin mockear, dispara una llamada real a Supabase que nunca
+// resuelve en el entorno de test y deja el componente en loading=true.
+vi.mock('@/services/associateService', () => ({
+  default: {
+    getAssociates: vi.fn().mockResolvedValue([]),
   }
 }))
 
@@ -38,8 +47,7 @@ describe('CartPage', () => {
 
   it('renders cart items and total correctly', async () => {
     const wrapper = mount(CartPage, { global: { plugins: [router] } })
-    await new Promise(r => setTimeout(r, 50)) // wait for onMounted
-    await wrapper.vm.$nextTick()
+    await flushPromises() // resuelve el getCart mockeado y el onMounted async
 
     expect(wrapper.text()).toContain('Cueca Básica')
     expect(wrapper.text()).toContain('Ballet')
@@ -48,14 +56,12 @@ describe('CartPage', () => {
 
   it('shows confirm modal when clicking Pagar button', async () => {
     const wrapper = mount(CartPage, { global: { plugins: [router] } })
-    await new Promise(r => setTimeout(r, 50))
-    await wrapper.vm.$nextTick()
+    await flushPromises()
 
     const buttons = wrapper.findAll('button')
     expect(buttons.length).toBeGreaterThan(0)
     const payButton = buttons[buttons.length - 1]
-    payButton.trigger('click')
-    await wrapper.vm.$nextTick()
+    await payButton.trigger('click')
 
     expect(wrapper.vm.showConfirm).toBe(true)
   })

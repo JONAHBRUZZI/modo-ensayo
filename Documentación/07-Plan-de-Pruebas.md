@@ -57,12 +57,14 @@ como servicio) en vez de un servidor propio:
 | `__tests__/bugfix/g16-privileged-functions-no-auth.property.test.ts` | Propiedades | Las funciones privilegiadas (admin) rechazan cualquier request sin rol autorizado |
 | `__tests__/bugfix/preservation.property.test.ts` | Propiedades | Invariantes de negocio se preservan ante secuencias arbitrarias de operaciones |
 
-**Resultado de la última ejecución** (`npm run test`, 09-jul-2026): **42 de 44 tests pasan**
-(6 de 7 archivos en verde). Los 2 tests que fallan son de temporización en el mock de
-`CartPage.test.js` (el componente queda en estado "Cargando..." antes de que se resuelva el
-mock) — no reflejan un bug del producto, sino un ajuste pendiente en el test. `npm run lint`
-corre sin errores (0 errores, solo warnings de estilo) y `npm run build` genera el bundle de
-producción sin fallos.
+**Resultado de la última ejecución** (`npm run test`, 16-ago-2026): **44 de 44 tests pasan**
+(7 de 7 archivos en verde). Los 2 tests que fallaban en `CartPage.test.js` no eran solo un
+ajuste de temporización: `associateService` no estaba mockeado, así que `onMounted` (que hace
+`Promise.all([getCart(), getAssociates()])`) disparaba una llamada real a Supabase que nunca
+resolvía en el entorno de test, dejando el componente en `loading=true` indefinidamente. Se
+mockeó `associateService.getAssociates()` y se reemplazó el `setTimeout(50ms)` fijo por
+`flushPromises()` de `@vue/test-utils`. `npm run lint` corre sin errores (0 errores, solo
+warnings de estilo) y `npm run build` genera el bundle de producción sin fallos.
 
 ## 5. Plan de escenarios de aceptación
 

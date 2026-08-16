@@ -1,9 +1,9 @@
 # Reglas de Negocio · Modo Ensayo
 
-> **Versión:** 2.2 — Actualizado al 16-ago-2026
-> **Total de reglas:** 18 reglas formales del MVP
+> **Versión:** 2.3 — Actualizado al 16-ago-2026
+> **Total de reglas:** 19 reglas formales del MVP
 
-Estas reglas son las restricciones e invariantes del sistema, sus mecanismos de aplicación y consecuencias documentadas. Todas están implementadas, validadas en código y/o en la base de datos.
+Estas reglas son las restricciones e invariantes del sistema, sus mecanismos de aplicación y consecuencias documentadas. La mayoría están implementadas y validadas en código y/o en la base de datos; R19 es una decisión de producto documentada, pendiente de implementación (ver nota en la regla).
 
 ---
 
@@ -213,6 +213,25 @@ La decisión sobre un reagendamiento depende del `tipoClase`:
 Si la decisión la intenta el actor incorrecto, el sistema rechaza con error 403.
 
 - **Implementación:** Validación en la Edge Function `teacher-decision` (chequea `classes.tipo_clase` y que el actor sea el `teacher_id` correcto); para clases `ASIGNADA` la decisión la toma la sede vía `sede-reschedule-class`.
+
+---
+
+## R19 — Cancelación y reembolso de arriendo de sala (decisión de producto, 16-ago-2026)
+
+Decisión tomada para cerrar el gap de "reembolso de arriendos de sala" (ver
+`15-Roadmap-y-Pendientes.md`, deuda técnica):
+
+- **Quién puede cancelar:** el **profesor** que pagó el arriendo, o la **sede** dueña de la sala.
+  Cualquiera de los dos puede iniciar la cancelación.
+- **Plazo:** hasta **24 horas antes** del horario reservado (`room_schedule_blocks.start_time`).
+  Pasado ese plazo, no se puede cancelar por esta vía.
+- **Reembolso:** **total** — se devuelve el 100% de lo pagado (incluida la comisión de la
+  plataforma), sin penalidad.
+
+**⚠️ Estado: decisión documentada, no implementada todavía.** No existe hoy ninguna Edge
+Function, migración ni UI para este flujo — ver `15-Roadmap-y-Pendientes.md` para el plan técnico
+(extender `payment_session_status`, reembolsar con el token de la **sede**, no el de la plataforma,
+ya que el arriendo se cobra con split; liberar `room_schedule_blocks` de vuelta a `AVAILABLE`).
 
 ---
 

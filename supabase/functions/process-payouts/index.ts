@@ -1,14 +1,18 @@
 import { withSupabase } from "npm:@supabase/server";
 import { logInfo, logError, logWarn } from "../_shared/logger.ts";
-import { getValidSellerToken } from "../_shared/mpAuth.ts";
+import { FintocPayoutProvider } from "../_shared/fintocPayoutProvider.ts";
+import type { PayoutProvider } from "../_shared/payoutProvider.ts";
+
+const payoutProvider: PayoutProvider = new FintocPayoutProvider();
 
 /**
  * Edge Function: process-payouts
  *
  * Procesador batch de liquidaciones a profesores (Marketplace). Invocado por
  * pg_cron + pg_net con service_role key. Selecciona teacher_payouts PENDING,
- * resuelve la cuenta MP del profesor y ejecuta el desembolso de `net_amount`,
- * transicionando idempotentemente a PAID.
+ * resuelve los datos bancarios del profesor (`refund_methods`) y ejecuta el
+ * desembolso de `net_amount` vía `PayoutProvider` (Fintoc), transicionando
+ * idempotentemente a PAID.
  *
  * Idempotencia: el UPDATE final condiciona status = 'PENDING'; una segunda
  * pasada sobre el mismo payout afecta 0 filas. Si el desembolso falla, el payout
@@ -72,21 +76,42 @@ interface PayoutRow {
 }
 
 async function processOnePayout(admin: any, payout: PayoutRow): Promise<void> {
-  // 1. Resolver token + cuenta MP del profesor (refresca si está vencido).
-  const { accessToken, mpUserId } = await getValidSellerToken(admin, payout.teacher_id);
+  // 1. Resolver los datos bancarios del profesor (trg_enforce_payout_method
+  // ya garantiza que existan si publicó una clase, pero se valida igual).
+  const { data: rm, error: rmErr } = await admin
+    .from("refund_methods")
+    .select("bank, account_type, account_number, account_holder, rut")
+    .eq("user_id", payout.teacher_id)
+    .limit(1).maybeSingle();
+  if (rmErr || !rm) {
+    throw new Error(`Profesor ${payout.teacher_id} no tiene datos bancarios cargados`);
+  }
 
   // 2. Ejecutar el desembolso del neto al profesor.
-  const reference = await disburseToSeller({
-    accessToken,
-    mpUserId,
+  const { providerReference, status } = await payoutProvider.sendPayout({
+    recipient: {
+      holderName: rm.account_holder,
+      holderRut: rm.rut,
+      bank: rm.bank,
+      accountType: rm.account_type,
+      accountNumber: rm.account_number,
+    },
     amount: payout.net_amount,
     externalReference: payout.id,
   });
+  if (status !== "PAID") {
+    // El proveedor aceptó la transferencia pero sigue en proceso (ej. 'pending'
+    // en Fintoc) — se deja PENDING para que la próxima pasada del cron lo revise.
+    throw new Error(`Payout ${payout.id} en estado ${status} del lado de ${payoutProvider.name}, no confirmado todavía`);
+  }
 
   // 3. Cierre idempotente: solo si sigue PENDING.
   const { data: updated, error: updErr } = await admin
     .from("teacher_payouts")
-    .update({ status: "PAID", mp_reference: reference, paid_at: new Date().toISOString(), error_detail: null })
+    .update({
+      status: "PAID", mp_reference: providerReference, provider: payoutProvider.name,
+      paid_at: new Date().toISOString(), error_detail: null,
+    })
     .eq("id", payout.id)
     .eq("status", "PENDING")
     .select("id");
@@ -103,39 +128,8 @@ async function processOnePayout(admin: any, payout: PayoutRow): Promise<void> {
     action: "payout.paid",
     resource_type: "teacher_payout",
     resource_id: payout.id,
-    metadata: { teacher_id: payout.teacher_id, amount: payout.net_amount, reference },
+    metadata: { teacher_id: payout.teacher_id, amount: payout.net_amount, reference: providerReference, provider: payoutProvider.name },
   });
 
-  logInfo("payout_paid", { payoutId: payout.id, mpUserId, amount: payout.net_amount });
-}
-
-/**
- * Ejecuta el desembolso del neto al profesor.
- *
- * ⚠️ PENDIENTE (16-ago): MercadoPago no tiene API de money-out (confirmado
- * contra su propia documentación — su API es solo para vender productos y
- * servicios, no para transferir entre cuentas ya conectadas). El mecanismo
- * real se implementará con Fintoc (open banking chileno, transferencia
- * directa a los datos bancarios de `refund_methods`) detrás de la interfaz
- * `PayoutProvider` (`_shared/payoutProvider.ts`), pendiente de credenciales
- * de Fintoc. Ver Documentación/15-Roadmap-y-Pendientes.md.
- *
- * Hasta entonces, lanza para que el payout quede PENDING (seguro y
- * reintentable) en vez de marcar PAID sin mover dinero real.
- */
-async function disburseToSeller(_args: {
-  accessToken: string;
-  mpUserId: string;
-  amount: number;
-  externalReference: string;
-}): Promise<string> {
-  const mode = Deno.env.get("MP_PAYOUT_MODE"); // "live" cuando FintocPayoutProvider esté implementado
-  if (mode !== "live") {
-    throw new Error(
-      "Desembolso no configurado: implementar FintocPayoutProvider y setear MP_PAYOUT_MODE=live",
-    );
-  }
-  // TODO: reemplazar por PayoutProvider.sendPayout() (FintocPayoutProvider) cuando existan
-  // las credenciales de Fintoc. Ver _shared/payoutProvider.ts.
-  throw new Error("disburseToSeller live no implementado: pendiente de FintocPayoutProvider");
+  logInfo("payout_paid", { payoutId: payout.id, amount: payout.net_amount, provider: payoutProvider.name });
 }

@@ -411,8 +411,12 @@ realizada (`COMPLETED`). Una fila por pago liberado; el giro real queda
 > transferencia directa a los datos bancarios de `refund_methods`) detrás de una interfaz agnóstica
 > `PayoutProvider` (`supabase/functions/_shared/payoutProvider.ts`). Se evaluó Stripe Connect pero
 > requiere que la plataforma tenga una entidad legal en EE.UU./UK/UE/Canadá/Suiza — no viable para
-> un equipo registrado en Chile. **Estado: scaffold de la interfaz creado, integración real
-> pendiente de credenciales de Fintoc.**
+> un equipo registrado en Chile. **Estado: `FintocPayoutProvider` implementado y conectado en
+> `process-payouts`, firmando cada transferencia con JWS (RS256) según la documentación de Fintoc —
+> pero sin probar contra la API real en esta sesión.** Gaps conocidos sin resolver: el mapeo
+> banco→`institution_id` (`refund_methods.bank` es texto libre) solo cubre los bancos chilenos más
+> comunes, y el par de llaves JWS todavía no lo generó el usuario. Ver
+> `supabase/functions/_shared/fintocPayoutProvider.ts` para el detalle completo de lo pendiente.
 
 ### `uptime_checks`
 Latido de disponibilidad (M4). `pg_cron` inserta una fila cada 5 min; la métrica es

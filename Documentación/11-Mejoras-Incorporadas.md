@@ -418,9 +418,39 @@ controlada (reservar una sala de bajo costo y cancelarla) antes de confiar en el
 `functions/create-class/index.ts`, `functions/_shared/payoutProvider.ts`,
 `functions/process-payouts/index.ts` (comentarios), `views/profesor/ProfesionalProfilePage.vue`,
 `views/profesor/ProfesorDashboardPage.vue`, `views/profesor/ProfesorPagosPage.vue`.
-**Estado:** código listo. Migración y despliegue de `create-class` pendientes. La implementación
-real de `FintocPayoutProvider` queda pendiente de que el usuario consiga credenciales de Fintoc —
-`process-payouts` sigue en Fase 0 hasta entonces.
+**Estado:** código listo. Migración y despliegue de `create-class` pendientes.
+
+### 15.1 `FintocPayoutProvider` implementado — 16-ago-2026 (mismo día)
+
+**Qué:** el usuario consiguió sus API keys de Fintoc (cuenta test) más rápido de lo esperado, así
+que se implementó la integración real (no solo el scaffold de §15) en la misma sesión.
+
+**Cómo:** `_shared/fintocPayoutProvider.ts` — `POST https://api.fintoc.com/v2/transfers` firmado
+con **JWS (RS256)** por request (Fintoc lo exige para mover dinero, además de la Secret Key de la
+cuenta — es un mecanismo separado, con su propio par de llaves RSA). El firmado sigue el esquema
+documentado por Fintoc (protected header `{alg, nonce, ts, crit}` + raw body, ambos base64url,
+firmados con la private key) implementado con Web Crypto nativo de Deno (`crypto.subtle`), sin
+dependencias externas. `process-payouts` ya llama a este provider en vez del stub de MercadoPago.
+
+**⚠️ Sin probar contra la API real de Fintoc en esta sesión.** Gaps conocidos, documentados en el
+propio archivo:
+- El usuario todavía no generó el **par de llaves JWS** (es distinto de la Secret/Public Key que ya
+  tiene) ni lo subió al dashboard de Fintoc — sin eso, ninguna transferencia real puede firmarse.
+- El header `Authorization` se implementó como valor directo (sin prefijo `Bearer`) — no se pudo
+  confirmar con certeza absoluta contra la documentación pública; ajustar si la API devuelve 401.
+- El mapeo `refund_methods.bank` (texto libre) → `institution_id` de Fintoc (`cl_banco_estado`,
+  `cl_banco_de_chile`, etc.) solo cubre los bancos chilenos más comunes — si un profesor escribe el
+  nombre del banco distinto a como está en el mapeo, la transferencia falla con error claro (no se
+  intenta adivinar). Mejora a futuro: cambiar el formulario a un selector que consuma
+  `GET /v2/institutions`.
+- `refund_methods.account_type` (CORRIENTE/VISTA/AHORRO, texto libre) se mapea a `checking`/`sight`
+  con una heurística razonable, también sin confirmar.
+**Archivos:** `functions/_shared/fintocPayoutProvider.ts`, `functions/process-payouts/index.ts`.
+**Estado:** código escrito y sintácticamente verificado (Node `--experimental-strip-types --check`,
+sin Deno disponible en esta sesión para un chequeo de tipos completo). **No desplegado, no probado
+con dinero real.** Antes de confiar en el flujo: generar llaves JWS, subir la pública a Fintoc,
+`supabase secrets set FINTOC_SECRET_KEY FINTOC_JWS_PRIVATE_KEY`, desplegar, y probar con un payout
+de monto mínimo.
 
 ## Acciones de despliegue pendientes de este documento
 

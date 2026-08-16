@@ -1,5 +1,6 @@
 import type {
   PayoutProvider,
+  PayoutStatus,
   SendPayoutArgs,
   SendPayoutResult,
 } from "./payoutProvider.ts";
@@ -8,11 +9,12 @@ import type {
 // FintocPayoutProvider — desembolso real a profesores vía Fintoc
 // (open banking chileno, transferencia directa a cuenta bancaria).
 // ------------------------------------------------------------
-// ⚠️ SIN PROBAR CONTRA LA API REAL (16-ago-2026). Implementado contra la
-// documentación pública de Fintoc (docs.fintoc.com) y el comportamiento
-// del SDK oficial de Python (github.com/fintoc-com/fintoc-python), sin
-// poder ejecutar una llamada real en esta sesión. Antes de usar en
-// producción:
+// ⚠️ SIN PROBAR CONTRA LA API REAL (16-ago-2026). Re-verificado el
+// 16-ago-2026 contra docs.fintoc.com directamente (JWS, header
+// Authorization, valores de account_type y status del Transfer object
+// confirmados — ver detalle abajo) pero aún sin ejecutar un request real:
+// no hay credenciales de Fintoc ni forma de disparar transfers desde esta
+// sesión. Antes de usar en producción:
 //   1. Generar el par de llaves JWS (aparte de la Secret/Public Key de la
 //      cuenta): `openssl genrsa -out private_key.pem 2048` y
 //      `openssl rsa -in private_key.pem -outform PEM -pubout -out public_key.pem`.
@@ -22,6 +24,19 @@ import type {
 //   4. Probar con un payout de monto mínimo en modo test antes de confiar
 //      en el flujo (mismo criterio que R19).
 //
+// Confirmado contra docs.fintoc.com (16-ago-2026):
+//   - JWS: header protegido {alg:"RS256",nonce,ts,crit:["ts","nonce"]},
+//     firma sobre `${base64url(header)}.${base64url(rawBody)}`, enviada en
+//     `Fintoc-JWS-Signature` — coincide con lo implementado.
+//   - `Authorization: <secret_key>` sin prefijo `Bearer` — confirmado.
+//   - `account_type` para Chile: `checking` | `sight` — confirmado
+//     (docs.fintoc.com/api/transfers-api/transfers/transfer-object).
+//   - Status del Transfer: `pending|succeeded|rejected|failed|returned|
+//     return_pending|reject_failed` — mapeados en `mapTransferStatus`.
+//   - Idempotencia real la da el header `Idempotency-Key`, NO `reference_id`
+//     (ver docs.fintoc.com/reference/idempotent-requests) — se agregó,
+//     ausente en la implementación original.
+//
 // Gaps conocidos, no resueltos en este pase:
 //   - `BANK_TO_INSTITUTION`: mapeo de nombre de banco (texto libre en
 //     `refund_methods.bank`) a `institution_id` de Fintoc. Solo cubre los
@@ -29,14 +44,9 @@ import type {
 //     error claro en vez de adivinar. Alternativa mejor a futuro: cambiar
 //     el formulario de `RefundMethodPage.vue` a un selector que consuma
 //     `GET /v2/institutions` en vez de texto libre.
-//   - `ACCOUNT_TYPE_MAP`: `refund_methods.account_type` es texto libre
-//     (CORRIENTE/VISTA/AHORRO); se mapea a los valores que documenta
-//     Fintoc para Chile (`checking`/`sight`) con una heurística razonable,
-//     sin confirmar contra la API real.
-//   - El esquema exacto del header `Authorization` (con o sin prefijo
-//     `Bearer`) no se pudo confirmar con certeza en la documentación
-//     pública — implementado como valor directo (patrón más común en
-//     fintechs latinoamericanas); ajustar si la API rechaza con 401.
+//   - Sin probar contra un payout real: no hay forma de confirmar que el
+//     resto del payload (`counterparty`, `amount`, `currency`) sea aceptado
+//     tal cual por el endpoint sin credenciales de Fintoc.
 // ============================================================
 
 const FINTOC_API_BASE = "https://api.fintoc.com/v2";
@@ -78,6 +88,20 @@ function resolveInstitutionId(bankName: string): string {
 
 function resolveAccountType(accountType: string): string {
   return ACCOUNT_TYPE_MAP[accountType.trim().toUpperCase()] ?? "checking";
+}
+
+/**
+ * Estados de Transfer confirmados en docs.fintoc.com/api/transfers-api/transfers/transfer-object:
+ * "pending" | "succeeded" | "rejected" | "failed" | "returned" | "return_pending" | "reject_failed".
+ * Los terminales no exitosos deben mapear a FAILED — de lo contrario process-payouts
+ * los deja PENDING y el cron los reintenta indefinidamente.
+ */
+function mapTransferStatus(status: string): PayoutStatus {
+  if (status === "succeeded") return "PAID";
+  if (status === "rejected" || status === "failed" || status === "returned" || status === "reject_failed") {
+    return "FAILED";
+  }
+  return "PENDING";
 }
 
 function base64url(input: string | Uint8Array): string {
@@ -154,6 +178,13 @@ export class FintocPayoutProvider implements PayoutProvider {
         Authorization: secretKey,
         "Content-Type": "application/json",
         "Fintoc-JWS-Signature": jws,
+        // Sin esto, un reintento del cron de process-payouts (ante timeout de
+        // red o mientras el transfer sigue "pending") crea una transferencia
+        // bancaria real duplicada — `reference_id` es solo reconciliación,
+        // no dedup del lado de Fintoc. Se reusa `externalReference` (UUID
+        // estable del payout) para que reintentos del mismo payout deduplican.
+        // Fintoc olvida la key a las 24h; ver docs.fintoc.com/reference/idempotent-requests.
+        "Idempotency-Key": args.externalReference,
       },
       body: rawBody,
     });
@@ -166,7 +197,7 @@ export class FintocPayoutProvider implements PayoutProvider {
     const transfer = await resp.json();
     return {
       providerReference: transfer.id,
-      status: transfer.status === "succeeded" ? "PAID" : "PENDING",
+      status: mapTransferStatus(transfer.status),
     };
   }
 }

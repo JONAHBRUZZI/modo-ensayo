@@ -99,9 +99,23 @@ async function processOnePayout(admin: any, payout: PayoutRow): Promise<void> {
     amount: payout.net_amount,
     externalReference: payout.id,
   });
+
+  if (status === "FAILED") {
+    // Estado terminal no exitoso (ej. 'rejected'/'returned' en Fintoc) — no tiene
+    // sentido reintentar, se marca FAILED para revisión manual.
+    await admin.from("teacher_payouts")
+      .update({
+        status: "FAILED", mp_reference: providerReference, provider: payoutProvider.name,
+        error_detail: `Payout rechazado por ${payoutProvider.name}`,
+      })
+      .eq("id", payout.id).eq("status", "PENDING");
+    logError("payout_failed", new Error(`Payout ${payout.id} FAILED en ${payoutProvider.name}`), { payoutId: payout.id, providerReference });
+    return;
+  }
   if (status !== "PAID") {
     // El proveedor aceptó la transferencia pero sigue en proceso (ej. 'pending'
     // en Fintoc) — se deja PENDING para que la próxima pasada del cron lo revise.
+    // Seguro reintentar: sendPayout reusa el mismo Idempotency-Key por payout.
     throw new Error(`Payout ${payout.id} en estado ${status} del lado de ${payoutProvider.name}, no confirmado todavía`);
   }
 
